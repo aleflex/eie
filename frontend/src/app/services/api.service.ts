@@ -81,10 +81,24 @@ export class ApiService {
    * @private
    */
   private obtenerEncabezados(): HttpHeaders {
-    return new HttpHeaders({
+    let headers = new HttpHeaders({
       'Content-Type': 'application/json',
       'Accept': 'application/json'
     });
+
+    try {
+      const usuarioStr = localStorage.getItem('usuario');
+      if (usuarioStr) {
+        const usuario = JSON.parse(usuarioStr);
+        if (usuario && usuario.token) {
+          headers = headers.set('Authorization', `Bearer ${usuario.token}`);
+        }
+      }
+    } catch (e) {
+      console.error('Error leyendo token:', e);
+    }
+
+    return headers;
   }
 
   /**

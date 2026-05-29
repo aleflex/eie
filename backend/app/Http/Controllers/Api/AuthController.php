@@ -61,9 +61,13 @@ class AuthController extends Controller
                 $userData['rol'] = 'admin';
             }
 
+            $token = $user->createToken('auth_token')->plainTextToken;
+            $userData['token'] = $token;
+
             return response()->json([
                 'message' => 'Login exitoso',
-                'user' => $userData
+                'user' => $userData,
+                'token' => $token
             ]);
         }
 
