@@ -31,6 +31,7 @@ services:
       - "8000:80"
     environment:
       - APP_ENV=production
+      - APP_KEY=base64:kqhGiWhhoYvVoMAtxP7fVdpSCPts1Sqmhf79R91l42U=
       - APP_DEBUG=true
       - APP_URL=http://137.184.129.64:8000
       - DB_CONNECTION=mysql
