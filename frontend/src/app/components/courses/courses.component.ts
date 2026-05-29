@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { CourseService, Course } from '../../services/course.service';
+import { CourseService, Curso as Course } from '../../services/course.service';
 import { RouterModule } from '@angular/router';
 
 @Component({
