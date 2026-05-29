@@ -74,4 +74,3 @@ class Estudiante extends Model
         return $this->hasMany(Inscripcion::class, 'estudiante_id');
     }
 }
-}
