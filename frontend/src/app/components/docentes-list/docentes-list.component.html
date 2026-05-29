@@ -1,0 +1,233 @@
+<div class="dashboard-layout">
+  <!-- Barra Lateral -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <img src="assets/imagenes/logo.jpg" alt="Logo EIE" class="sidebar-logo">
+      <span>EIE PANEL</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a routerLink="/admin" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">dashboard</i> Panel Principal
+      </a>
+      <a routerLink="/students" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">people</i> Estudiantes
+      </a>
+      <a routerLink="/courses" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">school</i> Cursos
+      </a>
+      <a routerLink="/docentes-list" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">person</i> Instructores
+      </a>
+      <a routerLink="/paralelos" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">class</i> Paralelos
+      </a>
+      <a routerLink="/accesos" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">vpn_key</i> Credenciales / Accesos
+      </a>
+      <a routerLink="/settings" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">settings</i> Configuración
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button class="btn-logout" routerLink="/home">
+        <i class="material-icons-outlined">logout</i> Salir
+      </button>
+    </div>
+  </aside>
+
+  <!-- Contenido Principal -->
+  <main class="main-content">
+    <div class="students-container">
+      <div class="header">
+        <h1>Gestión de Instructores (CRUD)</h1>
+        <p>Desde aquí puedes modificar, actualizar y eliminar personal docente.</p>
+        <button class="btn-primary btn-new-docente" (click)="openCreateForm()">
+          <i class="material-icons">add</i> Nuevo Instructor
+        </button>
+      </div>
+
+      <!-- Formulario de Creación / Edición -->
+      <div *ngIf="selectedDocente" class="edit-section animate-fade-in">
+        <div class="card">
+          <div class="card-header">
+            <h2>{{ isEditing ? 'Actualizar Datos del Instructor' : 'Registrar Nuevo Instructor' }}</h2>
+            <button (click)="cancelEdit()" class="btn-close" aria-label="Cerrar" title="Cerrar">&times;</button>
+          </div>
+          <form (ngSubmit)="saveDocente()" class="edit-form">
+            <div class="form-grid">
+              <!-- Fotografía de Perfil -->
+              <div class="form-group col-12 student-photo-upload-group">
+                <label>Fotografía del Instructor</label>
+                <div class="edit-photo-container">
+                  <img *ngIf="selectedDocente.foto_url" [src]="'http://137.184.129.64:8000' + selectedDocente.foto_url" alt="Foto Docente" class="student-edit-avatar">
+                  <div *ngIf="!selectedDocente.foto_url" class="student-edit-avatar-placeholder">
+                    <span class="material-icons-outlined">person</span>
+                  </div>
+                  <div class="upload-btn-wrapper">
+                    <button type="button" class="btn-upload-photo">
+                      <i class="material-icons-outlined">photo_camera</i> Seleccionar Foto
+                    </button>
+                    <input type="file" (change)="onDocentePhotoSelected($event)" accept="image/*" capture="environment" aria-label="Seleccionar foto de perfil">
+                    <span class="file-chosen-name" *ngIf="docentePhotoFileName">{{ docentePhotoFileName }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="nombres">Nombres *</label>
+                <input type="text" id="nombres" [(ngModel)]="selectedDocente.nombres" name="nombres" class="form-control" required placeholder="Ej: Juan Carlos">
+              </div>
+              <div class="form-group">
+                <label for="apellidos">Apellidos</label>
+                <input type="text" id="apellidos" [(ngModel)]="selectedDocente.apellidos" name="apellidos" class="form-control" placeholder="Ej: Pérez Tapia">
+              </div>
+              <div class="form-group">
+                <label for="ci">Cédula de Identidad (C.I.)</label>
+                <input type="text" id="ci" [(ngModel)]="selectedDocente.ci" name="ci" class="form-control" placeholder="Ej: 1234567">
+              </div>
+              <div class="form-group">
+                <label for="correo_electronico">Correo Electrónico Personal</label>
+                <input type="email" id="correo_electronico" [(ngModel)]="selectedDocente.correo_electronico" name="correo_electronico" class="form-control" placeholder="personal@ejemplo.com">
+              </div>
+              <div class="form-group">
+                <label for="especialidad">Especialidad</label>
+                <input type="text" id="especialidad" [(ngModel)]="selectedDocente.especialidad" name="especialidad" class="form-control" placeholder="Ej: Inglés, Francés">
+              </div>
+              <div class="form-group">
+                <label for="telefono">Teléfono</label>
+                <input type="text" id="telefono" [(ngModel)]="selectedDocente.telefono" name="telefono" class="form-control" placeholder="Ej: +591 70000000">
+              </div>
+              <div class="form-group">
+                <label for="tipo_contrato">Tipo de Contrato</label>
+                <select id="tipo_contrato" [(ngModel)]="selectedDocente.tipo_contrato" name="tipo_contrato" class="form-control">
+                  <option value="">Seleccionar...</option>
+                  <option value="Ítem">Ítem</option>
+                  <option value="Contrato">Contrato</option>
+                </select>
+              </div>
+              <div class="form-group" *ngIf="selectedDocente.tipo_contrato === 'Contrato'">
+                <label for="fecha_contrato">Fecha de Contrato *</label>
+                <input type="date" id="fecha_contrato" [(ngModel)]="selectedDocente.fecha_contrato" name="fecha_contrato" class="form-control" required>
+              </div>
+              <div class="form-group" *ngIf="isEditing">
+                <label for="estado">Estado</label>
+                <select id="estado" [(ngModel)]="selectedDocente.estado" name="estado" class="form-control">
+                  <option value="Activo">Activo</option>
+                  <option value="Inactivo">Inactivo</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-actions mt-4">
+              <button type="submit" class="btn-save">{{ isEditing ? 'GUARDAR ACTUALIZACIÓN' : 'REGISTRAR INSTRUCTOR' }}</button>
+              <button type="button" (click)="cancelEdit()" class="btn-cancel">CANCELAR</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Barra de Búsqueda -->
+      <div class="search-container animate-fade-in mt-4">
+        <div class="search-box">
+          <div class="search-input-group">
+            <i class="material-icons-outlined search-icon">search</i>
+            <input
+              type="text"
+              [(ngModel)]="searchTerm"
+              (input)="onSearchInput()"
+              (keyup.enter)="onSearch()"
+              placeholder="Buscar por nombre, correo o especialidad..."
+              class="search-input"
+              aria-label="Término de búsqueda"
+            >
+          </div>
+          <div class="search-filters">
+            <button (click)="onSearch()" class="btn-search">BUSCAR</button>
+            <button *ngIf="searchTerm" (click)="searchTerm = ''; onSearch()" class="btn-clear" title="Limpiar búsqueda">
+              <i class="material-icons-outlined">close</i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabla de Docentes -->
+      <div class="table-card mt-4">
+        <div *ngIf="isLoading" class="loader">Cargando instructores...</div>
+
+        <table *ngIf="!isLoading">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Foto</th>
+              <th>C.I.</th>
+              <th>Nombre Completo</th>
+              <th>Correo Personal</th>
+              <th>Correo Institucional EIE</th>
+              <th>Especialidad</th>
+              <th>Contrato</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+             <tr *ngFor="let docente of filteredDocentes">
+               <td>{{ docente.id }}</td>
+               <td>
+                 <div class="avatar-container">
+                   <img *ngIf="docente.foto_url" [src]="'http://137.184.129.64:8000' + docente.foto_url" alt="Foto Instructor" class="student-avatar-circle">
+                   <div *ngIf="!docente.foto_url" class="student-avatar-placeholder">
+                     <span class="material-icons-outlined">person</span>
+                   </div>
+                 </div>
+               </td>
+               <td><strong>{{ docente.ci || 'N/A' }}</strong></td>
+              <td>{{ docente.nombres }} {{ docente.apellidos }}</td>
+              <td>{{ docente.correo_electronico || 'N/A' }}</td>
+              <td>
+                <span class="badge rounded-pill bg-info text-dark email-badge" *ngIf="docente.user?.email">
+                  {{ docente.user.email }}
+                </span>
+                <span class="text-muted italic small" *ngIf="!docente.user?.email">
+                  Sin asignar
+                </span>
+              </td>
+              <td>{{ docente.especialidad || 'General' }}</td>
+              <td>
+                <span *ngIf="docente.tipo_contrato">
+                  {{ docente.tipo_contrato }}
+                  <small *ngIf="docente.tipo_contrato === 'Contrato' && docente.fecha_contrato" class="text-muted d-block">
+                    ({{ docente.fecha_contrato }})
+                  </small>
+                </span>
+                <span *ngIf="!docente.tipo_contrato" class="text-muted">N/A</span>
+              </td>
+              <td>
+                <span class="status-badge" [ngClass]="docente.estado === 'Activo' ? 'bg-success' : 'bg-danger text-white'">
+                  {{ docente.estado }}
+                </span>
+              </td>
+              <td>
+                <div class="actions">
+                  <button (click)="toggleStatus(docente)" class="btn-history" [title]="docente.estado === 'Activo' ? 'Desactivar Instructor' : 'Activar Instructor'">
+                    <i class="material-icons-outlined">{{ docente.estado === 'Activo' ? 'toggle_on' : 'toggle_off' }}</i>
+                  </button>
+                  <button (click)="editDocente(docente)" class="btn-edit" title="Modificar / Actualizar">
+                    <i class="material-icons-outlined">edit</i>
+                  </button>
+                  <button (click)="deleteDocente(docente.id)" class="btn-delete" title="Eliminar">
+                    <i class="material-icons-outlined">delete</i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="filteredDocentes.length === 0">
+              <td colspan="9" class="text-center py-4 text-muted">No hay instructores registrados o que coincidan con la búsqueda.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>

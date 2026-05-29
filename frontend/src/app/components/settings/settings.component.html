@@ -1,0 +1,306 @@
+<div class="dashboard-layout">
+  <!-- Barra Lateral -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <img src="assets/imagenes/logo.jpg" alt="Logo EIE" class="sidebar-logo">
+      <span>EIE PANEL</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a routerLink="/admin" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">dashboard</i> Panel Principal
+      </a>
+      <a routerLink="/students" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">people</i> Estudiantes
+      </a>
+      <a routerLink="/courses" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">school</i> Cursos
+      </a>
+      <a routerLink="/docentes-list" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">person</i> Instructores
+      </a>
+      <a routerLink="/paralelos" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">class</i> Paralelos
+      </a>
+      <a routerLink="/accesos" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">vpn_key</i> Credenciales / Accesos
+      </a>
+      <a routerLink="/settings" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">settings</i> Configuración
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button (click)="onLogout()" class="btn-logout">
+        <i class="material-icons-outlined">logout</i> Salir
+      </button>
+    </div>
+  </aside>
+
+  <!-- Contenido Principal -->
+  <main class="main-content">
+    <header class="top-header">
+      <div class="header-left">
+        <h1>Configuración del Sistema</h1>
+        <p>Ajusta las reglas de negocio, límites del expediente digital y periodos de inscripción.</p>
+      </div>
+      <div class="header-right">
+        <div class="user-info-header">
+          <div class="user-info">
+            <span class="user-name">{{ user?.name }}</span>
+            <span class="user-role">Administrador</span>
+          </div>
+          <div class="user-header-avatar">
+            <img *ngIf="user?.foto_url" [src]="'http://137.184.129.64:8000' + user.foto_url" alt="Avatar" class="avatar-small">
+            <div *ngIf="!user?.foto_url" class="avatar-small-placeholder">
+              <span class="material-icons-outlined">person</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Feedback Alerts -->
+    <div *ngIf="successMessage" class="alert alert-success animate-fade-in">
+      <span class="material-icons-outlined">check_circle</span>
+      <p>{{ successMessage }}</p>
+    </div>
+    <div *ngIf="errorMessage" class="alert alert-danger animate-fade-in">
+      <span class="material-icons-outlined">error</span>
+      <p>{{ errorMessage }}</p>
+    </div>
+
+    <div class="settings-card-wrapper animate-fade-in delay-1">
+      <div *ngIf="isLoading" class="loader-container">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p>Cargando configuraciones...</p>
+      </div>
+
+      <div class="settings-grid" *ngIf="!isLoading">
+        <!-- Sub-pestañas internas -->
+        <aside class="settings-subnav">
+          <button [class.active]="activeTab === 'academic'" (click)="activeTab = 'academic'">
+            <i class="material-icons-outlined text-academic">calendar_today</i>
+            <div class="nav-label">
+              <strong>Periodo Académico</strong>
+              <span>Apertura y cierre de inscripciones</span>
+            </div>
+          </button>
+          
+          <button [class.active]="activeTab === 'files'" (click)="activeTab = 'files'">
+            <i class="material-icons-outlined text-files">cloud_upload</i>
+            <div class="nav-label">
+              <strong>Expediente Digital</strong>
+              <span>Límites y reglas de archivos</span>
+            </div>
+          </button>
+          
+          <button [class.active]="activeTab === 'institution'" (click)="activeTab = 'institution'">
+            <i class="material-icons-outlined text-inst">account_balance</i>
+            <div class="nav-label">
+              <strong>Datos del Plantel</strong>
+              <span>Firmas oficiales y membretes</span>
+            </div>
+          </button>
+
+          <button [class.active]="activeTab === 'profile'" (click)="activeTab = 'profile'">
+            <i class="material-icons-outlined text-profile">person</i>
+            <div class="nav-label">
+              <strong>Mi Perfil</strong>
+              <span>Foto, nombre y credenciales</span>
+            </div>
+          </button>
+        </aside>
+
+        <!-- Contenido de Formularios -->
+        <div class="settings-pane-content">
+          <!-- Pestaña 1: Periodo Académico -->
+          <div *ngIf="activeTab === 'academic'" class="settings-pane animate-fade-in">
+            <h2 class="pane-title">📅 Periodo de Inscripción y Matrículas</h2>
+            <p class="pane-description">Configura el rango de fechas exactas durante las cuales el portal web estará habilitado para inscripciones de alumnos nuevos y regulares.</p>
+            
+            <div class="row g-4">
+              <div class="col-md-6">
+                <div class="form-group-premium">
+                  <label for="fecha_inicio">Fecha y Hora de Apertura</label>
+                  <div class="input-wrapper">
+                    <span class="material-icons-outlined input-icon">play_circle_filled</span>
+                    <input type="datetime-local" id="fecha_inicio" [(ngModel)]="settings.fecha_inicio_inscripcion" class="form-control-premium">
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="form-group-premium">
+                  <label for="fecha_fin">Fecha y Hora de Cierre</label>
+                  <div class="input-wrapper">
+                    <span class="material-icons-outlined input-icon">cancel</span>
+                    <input type="datetime-local" id="fecha_fin" [(ngModel)]="settings.fecha_fin_inscripcion" class="form-control-premium">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pestaña 2: Expediente Digital -->
+          <div *ngIf="activeTab === 'files'" class="settings-pane animate-fade-in">
+            <h2 class="pane-title">📁 Control de Expediente Digital</h2>
+            <p class="pane-description">Regula el peso máximo y compresión de los archivos cargados por los estudiantes desde la web o la cámara de sus teléfonos inteligentes.</p>
+            
+            <div class="row g-4">
+              <div class="col-md-6">
+                <div class="form-group-premium">
+                  <label for="limite_pdf">Tamaño máximo de archivo (MB)</label>
+                  <div class="input-wrapper">
+                    <span class="material-icons-outlined input-icon">file_present</span>
+                    <input type="number" id="limite_pdf" [(ngModel)]="settings.limite_pdf_mb" min="1" max="25" class="form-control-premium">
+                  </div>
+                  <small class="form-help">Recomendado: 5MB para prevenir saturación de almacenamiento.</small>
+                </div>
+              </div>
+              
+              <div class="col-md-6">
+                <div class="form-group-premium">
+                  <label for="cupo_defecto">Cupo por paralelo predeterminado</label>
+                  <div class="input-wrapper">
+                    <span class="material-icons-outlined input-icon">groups</span>
+                    <input type="number" id="cupo_defecto" [(ngModel)]="settings.cupo_defecto_paralelo" min="1" max="100" class="form-control-premium">
+                  </div>
+                  <small class="form-help">Cupo de estudiantes sugerido al crear paralelos.</small>
+                </div>
+              </div>
+
+              <div class="col-12">
+                <div class="toggle-card">
+                  <div class="toggle-info">
+                    <strong>Compresión automática de imágenes</strong>
+                    <p>Comprime imágenes a formato JPEG antes de subirlas al servidor (reduce el uso de almacenamiento móvil y acelera la carga).</p>
+                  </div>
+                  <div class="form-check form-switch custom-switch">
+                    <input class="form-check-input" type="checkbox" id="comprimir" [(ngModel)]="settings.comprimir_imagenes" aria-label="Comprimir imágenes" title="Comprimir imágenes">
+                    <label class="form-check-label" for="comprimir"></label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pestaña 3: Datos del Plantel -->
+          <div *ngIf="activeTab === 'institution'" class="settings-pane animate-fade-in">
+            <h2 class="pane-title">🏛️ Datos y Firmas Oficiales</h2>
+            <p class="pane-description">Configura la información institucional que se imprimirá dinámicamente en los certificados oficiales y constancias académicas generadas por el sistema.</p>
+            
+            <div class="row g-4">
+              <div class="col-12">
+                <div class="form-group-premium">
+                  <label for="institucion">Nombre de la Institución</label>
+                  <div class="input-wrapper">
+                    <span class="material-icons-outlined input-icon">school</span>
+                    <input type="text" id="institucion" [(ngModel)]="settings.nombre_institucion" class="form-control-premium" placeholder="Ej. Escuela de Idiomas del Ejército">
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <div class="form-group-premium">
+                  <label for="director">Nombre del Director EIE</label>
+                  <div class="input-wrapper">
+                    <span class="material-icons-outlined input-icon">person_outline</span>
+                    <input type="text" id="director" [(ngModel)]="settings.nombre_director" class="form-control-premium" placeholder="Nombre completo de la autoridad">
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <div class="form-group-premium">
+                  <label for="grado">Grado/Cargo de Firma</label>
+                  <div class="input-wrapper">
+                    <span class="material-icons-outlined input-icon">military_tech</span>
+                    <input type="text" id="grado" [(ngModel)]="settings.grado_director" class="form-control-premium" placeholder="Ej. Coronel DAEN">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pestaña 4: Mi Perfil -->
+          <div *ngIf="activeTab === 'profile'" class="settings-pane animate-fade-in">
+            <h2 class="pane-title">👤 Configuración de Mi Perfil</h2>
+            <p class="pane-description">Actualiza tu fotografía de perfil, nombre visible y credenciales de acceso al sistema.</p>
+            
+            <div class="profile-edit-section">
+              <!-- Foto de perfil premium -->
+              <div class="profile-photo-uploader">
+                <div class="profile-avatar-large-container">
+                  <img *ngIf="user?.foto_url" [src]="'http://137.184.129.64:8000' + user.foto_url" alt="Foto Perfil" class="profile-avatar-large">
+                  <div *ngIf="!user?.foto_url" class="profile-avatar-large-placeholder">
+                    <span class="material-icons-outlined">person</span>
+                  </div>
+                </div>
+                <div class="profile-photo-actions">
+                  <div class="upload-btn-wrapper">
+                    <button type="button" class="btn-upload-photo">
+                      <i class="material-icons-outlined">photo_camera</i> Cambiar Fotografía
+                    </button>
+                    <input type="file" (change)="onProfilePhotoSelected($event)" accept="image/*" capture="environment" aria-label="Cambiar fotografía de perfil">
+                    <span class="file-chosen-name" *ngIf="profilePhotoFileName">{{ profilePhotoFileName }}</span>
+                  </div>
+                  <small class="text-muted d-block mt-2">Formatos permitidos: JPG, PNG. Máximo 2MB.</small>
+                </div>
+              </div>
+
+              <!-- Formulario de perfil -->
+              <form (ngSubmit)="guardarPerfil()" class="profile-form mt-4">
+                <div class="row g-4">
+                  <div class="col-md-6">
+                    <div class="form-group-premium">
+                      <label for="profile_name">Nombre Completo *</label>
+                      <div class="input-wrapper">
+                        <span class="material-icons-outlined input-icon">person</span>
+                        <input type="text" id="profile_name" [(ngModel)]="profileData.name" name="name" class="form-control-premium" required>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-group-premium">
+                      <label for="profile_email">Correo Electrónico *</label>
+                      <div class="input-wrapper">
+                        <span class="material-icons-outlined input-icon">email</span>
+                        <input type="email" id="profile_email" [(ngModel)]="profileData.email" name="email" class="form-control-premium" required>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-12">
+                    <div class="form-group-premium">
+                      <label for="profile_password">Nueva Contraseña (Dejar vacío para no cambiar)</label>
+                      <div class="input-wrapper">
+                        <span class="material-icons-outlined input-icon">lock</span>
+                        <input type="password" id="profile_password" [(ngModel)]="profileData.password" name="password" class="form-control-premium" placeholder="Mínimo 8 caracteres">
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="pane-footer mt-5">
+                  <button type="submit" class="btn-save-premium" [disabled]="isSavingProfile">
+                    <span class="material-icons-outlined button-icon" *ngIf="!isSavingProfile">save</span>
+                    <div class="spinner-border spinner-border-sm" role="status" *ngIf="isSavingProfile"></div>
+                    <span>{{ isSavingProfile ? 'Guardando perfil...' : 'Guardar Datos de Perfil' }}</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- Botón de guardar cambios de sistema (oculto en perfil) -->
+          <div class="pane-footer mt-5" *ngIf="activeTab !== 'profile'">
+            <button (click)="guardarConfiguraciones()" class="btn-save-premium" [disabled]="isSaving">
+              <span class="material-icons-outlined button-icon" *ngIf="!isSaving">save</span>
+              <div class="spinner-border spinner-border-sm" role="status" *ngIf="isSaving"></div>
+              <span>{{ isSaving ? 'Guardando cambios...' : 'Guardar y Aplicar Cambios' }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>

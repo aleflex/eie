@@ -1,0 +1,242 @@
+<div class="dashboard-layout">
+  <!-- Barra Lateral (Copiada para consistencia) -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <img src="assets/imagenes/logo.jpg" alt="Logo EIE" class="sidebar-logo">
+      <span>EIE PANEL</span>
+    </div>
+    <nav class="sidebar-nav">
+      <a routerLink="/admin" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">dashboard</i> Panel Principal
+      </a>
+      <a routerLink="/students" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">people</i> Estudiantes
+      </a>
+      <a routerLink="/courses" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">school</i> Cursos
+      </a>
+      <a routerLink="/docentes-list" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">person</i> Instructores
+      </a>
+      <a routerLink="/paralelos" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">class</i> Paralelos
+      </a>
+      <a routerLink="/accesos" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">vpn_key</i> Credenciales / Accesos
+      </a>
+      <a routerLink="/settings" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">settings</i> Configuración
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button class="btn-logout" routerLink="/home">
+        <i class="material-icons-outlined">logout</i> Salir
+      </button>
+    </div>
+  </aside>
+
+  <!-- Contenido Principal -->
+  <main class="main-content">
+    <div class="students-container">
+      <div class="header">
+        <h1>Gestión de Paralelos y Horarios</h1>
+        <p>Configura los grupos, aulas y turnos académicos.</p>
+        <button class="btn-primary btn-new-paralelo" (click)="showForm = !showForm">
+          <i class="material-icons">{{ showForm ? 'close' : 'add' }}</i>
+          {{ showForm ? 'Cancelar' : 'Nuevo Paralelo' }}
+        </button>
+      </div>
+
+      <!-- Formulario de Creación/Edición -->
+      <div *ngIf="showForm" class="edit-section animate-fade-in">
+        <div class="card">
+          <div class="card-header">
+            <h2>{{ selectedParalelo.id ? 'Actualizar' : 'Crear' }} Paralelo</h2>
+          </div>
+          <form (ngSubmit)="saveParalelo()" class="edit-form">
+
+            <!-- Pancarta de error de conflicto -->
+            <div *ngIf="errorMsg" class="conflict-alert">
+              <i class="material-icons-outlined">warning</i>
+              <span>{{ errorMsg }}</span>
+            </div>
+
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="paralelo_nombre">Nombre del Paralelo</label>
+                <input type="text" id="paralelo_nombre" [(ngModel)]="selectedParalelo.nombre" name="nombre" class="form-control" placeholder="Ej: Paralelo A" required>
+              </div>
+              <div class="form-group">
+                <label for="curso_id">Curso / Idioma</label>
+                <select id="curso_id" [(ngModel)]="selectedParalelo.curso_id" name="curso_id" class="form-control" required aria-label="Seleccionar curso e idioma">
+                  <option value="">Seleccione un curso...</option>
+                  <option *ngFor="let c of courses" [value]="c.id">{{ c.idioma }} - {{ c.nivel }}</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="aula_id">Aula</label>
+                <select id="aula_id" [(ngModel)]="selectedParalelo.aula_id" name="aula_id" class="form-control" aria-label="Seleccionar aula">
+                  <option value="">Sin aula asignada</option>
+                  <option *ngFor="let a of aulas" [value]="a.id">{{ a.nombre }} (Cap: {{ a.capacidad }})</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="mt-4">
+              <label class="fw-bold d-block mb-2">Asignar Instructores:</label>
+              <p class="conflict-hint" *ngIf="selectedParalelo.horarios?.length > 0">
+                <i class="material-icons-outlined">info</i>
+                Los instructores en <span class="text-conflict-highlight">rojo</span> ya tienen clases en el horario seleccionado y no pueden ser asignados.
+              </p>
+              <div class="horarios-grid">
+                <div *ngFor="let d of docentes"
+                     class="horario-chip"
+                     [class.active]="isDocenteSelected(d.id)"
+                     [class.chip-conflict]="docenteTieneConflicto(d.id) && !isDocenteSelected(d.id)"
+                     [title]="docenteTieneConflicto(d.id) ? getNombreConflicto(d.id) : ''"
+                     (click)="toggleDocente(d.id)">
+                  <i class="material-icons-outlined">{{ docenteTieneConflicto(d.id) && !isDocenteSelected(d.id) ? 'block' : 'person' }}</i>
+                  <span>{{ d.user?.name }} ({{ d.especialidad }})</span>
+                  <span *ngIf="docenteTieneConflicto(d.id) && !isDocenteSelected(d.id)" class="conflict-tag">Ocupado</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-4">
+              <label class="fw-bold d-block mb-2">Seleccionar Horarios (Turnos):</label>
+              <div class="horarios-grid">
+                <div *ngFor="let h of horarios"
+                     class="horario-chip"
+                     [class.active]="isHorarioSelected(h.id)"
+                     (click)="toggleHorario(h.id)">
+                  <i class="material-icons-outlined">schedule</i>
+                  <span>{{ h.dia_semana }}: {{ h.hora_inicio.substring(0,5) }} - {{ h.hora_fin.substring(0,5) }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-actions mt-4">
+              <button type="submit" class="btn-save">GUARDAR PARALELO</button>
+              <button type="button" (click)="resetForm()" class="btn-cancel">CANCELAR</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Tabla de Paralelos -->
+      <div class="table-card mt-4">
+        <div *ngIf="isLoading" class="loader">Cargando paralelos...</div>
+
+        <table *ngIf="!isLoading">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Paralelo</th>
+              <th>Curso / Nivel</th>
+              <th>Aula</th>
+              <th>Instructor(es)</th>
+              <th>Horarios</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let p of paralelos">
+              <td>#{{ p.id }}</td>
+              <td><strong>{{ p.nombre }}</strong></td>
+              <td>{{ p.curso?.idioma }} - {{ p.curso?.nivel }}</td>
+              <td><span class="status-badge badge-aula">{{ p.aula?.nombre || 'N/A' }}</span></td>
+              <td>
+                <div *ngFor="let d of p.docentes" class="small-badge badge-docente">
+                  {{ d.user?.name }}
+                </div>
+                <span *ngIf="p.docentes?.length === 0" class="text-muted">Sin asignar</span>
+              </td>
+              <td>
+                <div *ngFor="let h of p.horarios" class="small-badge">
+                  {{ h.dia_semana }} ({{ h.hora_inicio.substring(0,5) }})
+                </div>
+              </td>
+              <td>
+                <div class="actions">
+                  <button (click)="editParalelo(p)" class="btn-edit" title="Editar"><i class="material-icons-outlined">edit</i></button>
+                  <button (click)="deleteParalelo(p.id)" class="btn-delete" title="Eliminar"><i class="material-icons-outlined">delete</i></button>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="paralelos.length === 0">
+              <td colspan="7" class="text-center py-4 text-muted">No hay paralelos configurados.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Gestión de Aulas (Sección Homologada) -->
+      <div class="header mt-5" id="gestion-aulas-header">
+        <h1>Gestión de Aulas</h1>
+        <p>Registra nuevas aulas físicas o elimina las existentes de la institución.</p>
+        <button class="btn-primary btn-new-aula" (click)="showAulaForm = !showAulaForm; isEditingAula = false">
+          <i class="material-icons">{{ showAulaForm ? 'close' : 'add' }}</i>
+          {{ showAulaForm ? 'Cancelar' : 'Nueva Aula' }}
+        </button>
+      </div>
+
+      <!-- Formulario de Creación / Edición de Aula -->
+      <div *ngIf="showAulaForm" class="edit-section animate-fade-in">
+        <div class="card">
+          <div class="card-header">
+            <h2>{{ isEditingAula ? 'Editar Aula' : 'Crear Nueva Aula' }}</h2>
+            <button (click)="resetAulaForm()" class="btn-close" aria-label="Cerrar" title="Cerrar">&times;</button>
+          </div>
+          <form (ngSubmit)="saveAula()" class="edit-form">
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="aula_nombre_form">Nombre del Aula *</label>
+                <input type="text" id="aula_nombre_form" [(ngModel)]="newAula.nombre" name="nombre" class="form-control" placeholder="Ej: Aula 301, Laboratorio C" required>
+              </div>
+              <div class="form-group">
+                <label for="aula_capacidad_form">Capacidad (Asientos)</label>
+                <input type="number" id="aula_capacidad_form" [(ngModel)]="newAula.capacidad" name="capacidad" class="form-control" placeholder="Ej: 30">
+              </div>
+            </div>
+            <div class="form-actions mt-4">
+              <button type="submit" class="btn-save">{{ isEditingAula ? 'GUARDAR ACTUALIZACIÓN' : 'GUARDAR AULA' }}</button>
+              <button type="button" (click)="resetAulaForm()" class="btn-cancel">CANCELAR</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Tabla de Aulas -->
+      <div class="table-card mt-4 mb-5">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nombre del Aula</th>
+              <th>Capacidad</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let a of aulas">
+              <td>#{{ a.id }}</td>
+              <td><strong>{{ a.nombre }}</strong></td>
+              <td><span class="status-badge text-dark badge-capacidad">{{ a.capacidad || 'N/A' }} asientos</span></td>
+              <td>
+                <div class="actions">
+                  <button (click)="editAula(a)" class="btn-edit" title="Editar Aula"><i class="material-icons-outlined">edit</i></button>
+                  <button (click)="deleteAula(a.id)" class="btn-delete" title="Eliminar Aula"><i class="material-icons-outlined">delete</i></button>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="aulas.length === 0">
+              <td colspan="4" class="text-center py-4 text-muted">No hay aulas configuradas.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </main>
+</div>

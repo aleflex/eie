@@ -1,0 +1,142 @@
+@import '../students/students.component.css';
+
+.horarios-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.horario-chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: white;
+    position: relative;
+}
+
+.horario-chip:hover {
+    background: #f8f9fa;
+    border-color: #007bff;
+}
+
+.horario-chip.active {
+    background: #e7f1ff;
+    border-color: #007bff;
+    color: #007bff;
+}
+
+/* Chip con conflicto de horario */
+.horario-chip.chip-conflict {
+    background: #fff1f2;
+    border-color: #fca5a5;
+    color: #b91c1c;
+    cursor: not-allowed;
+    opacity: 0.85;
+}
+
+.horario-chip.chip-conflict:hover {
+    background: #fee2e2;
+    border-color: #ef4444;
+}
+
+.horario-chip i {
+    font-size: 18px;
+}
+
+/* Etiqueta "Ocupado" dentro del chip */
+.conflict-tag {
+    margin-left: auto;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    background: #fee2e2;
+    color: #b91c1c;
+    border: 1px solid #fca5a5;
+    padding: 1px 6px;
+    border-radius: 10px;
+    white-space: nowrap;
+}
+
+/* Banner de alerta de conflicto */
+.conflict-alert {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    background: #fff7ed;
+    border: 1.5px solid #fb923c;
+    border-radius: 10px;
+    padding: 0.9rem 1.2rem;
+    margin-bottom: 1.2rem;
+    color: #9a3412;
+    font-weight: 600;
+    font-size: 0.88rem;
+    animation: shake 0.3s ease;
+}
+
+.conflict-alert i {
+    font-size: 1.4rem;
+    color: #f97316;
+    flex-shrink: 0;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+/* Hint informativo sobre instructores bloqueados */
+.conflict-hint {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.8rem;
+    color: #64748b;
+    margin-bottom: 0.5rem;
+    margin-top: -0.3rem;
+}
+
+.conflict-hint i {
+    font-size: 1rem;
+    color: var(--primary-color);
+}
+
+.small-badge {
+    font-size: 11px;
+    background: #f1f3f5;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-bottom: 2px;
+    display: inline-block;
+    margin-right: 4px;
+}
+
+.btn-new-paralelo, .btn-new-aula {
+    margin-top: 15px;
+}
+
+.text-conflict-highlight {
+    color: #dc2626;
+    font-weight: 700;
+}
+
+.badge-aula {
+    background: #e3f2fd !important;
+    color: #1976d2 !important;
+}
+
+.badge-docente {
+    background: #e8f5e9 !important;
+    color: #2e7d32 !important;
+}
+
+.badge-capacidad {
+    background: #e2e8f0 !important;
+    font-weight: 700 !important;
+}

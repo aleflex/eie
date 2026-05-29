@@ -1,0 +1,328 @@
+<div class="dashboard-layout">
+  <!-- Barra Lateral -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <img src="assets/imagenes/logo.jpg" alt="Logo EIE" class="sidebar-logo">
+      <span>EIE PORTAL</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <button [class.active]="activeTab === 'profile'" (click)="activeTab = 'profile'" class="nav-btn">
+        <i class="material-icons-outlined">person</i> Mi Perfil
+      </button>
+      <button [class.active]="activeTab === 'history'" (click)="activeTab = 'history'" class="nav-btn">
+        <i class="material-icons-outlined">history_edu</i> Historial Académico
+      </button>
+      <button [class.active]="activeTab === 'documents'" (click)="activeTab = 'documents'" class="nav-btn">
+        <i class="material-icons-outlined">folder_shared</i> Expediente Digital
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button (click)="onLogout()" class="btn-logout">
+        <i class="material-icons-outlined">logout</i> Cerrar Sesión
+      </button>
+    </div>
+  </aside>
+
+  <!-- Contenido Principal -->
+  <main class="main-content">
+    <header class="top-header">
+      <div class="header-left">
+        <h1>Portal del Estudiante</h1>
+        <p>Consulta tus calificaciones, descarga constancias y administra tus documentos oficiales.</p>
+      </div>
+      <div class="header-right">
+        <div class="user-info-header">
+          <div class="user-info">
+            <span class="user-name">{{ student?.nombres }} {{ student?.apellidos }}</span>
+            <span class="user-role">Estudiante EIE</span>
+          </div>
+          <div class="user-header-avatar">
+            <img *ngIf="student?.foto_4x4_url" [src]="'http://137.184.129.64:8000' + student.foto_4x4_url" alt="Avatar" class="avatar-small">
+            <div *ngIf="!student?.foto_4x4_url" class="avatar-small-placeholder">
+              <span class="material-icons-outlined">person</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Loader -->
+    <div *ngIf="isLoading" class="loader-container">
+      <div class="spinner-border text-primary" role="status"></div>
+      <p>Cargando información del estudiante...</p>
+    </div>
+
+    <!-- Mensajes de Alerta -->
+    <div *ngIf="errorMessage" class="alert alert-danger animate-fade-in">
+      <span class="material-icons-outlined">error</span>
+      <p>{{ errorMessage }}</p>
+    </div>
+
+    <!-- PANELES DE CONTENIDO -->
+    <div *ngIf="!isLoading && student" class="settings-card-wrapper animate-fade-in">
+      
+      <!-- PESTAÑA 1: MI PERFIL -->
+      <div *ngIf="activeTab === 'profile'" class="settings-pane-content">
+        <div class="profile-dashboard-layout">
+          
+          <!-- Lado Izquierdo: Foto 4x4 y Datos Rápidos -->
+          <div class="profile-card-side">
+            <div class="profile-avatar-large-container">
+              <img *ngIf="student.foto_4x4_url" [src]="'http://137.184.129.64:8000' + student.foto_4x4_url" alt="Foto 4x4" class="profile-avatar-large">
+              <div *ngIf="!student.foto_4x4_url" class="profile-avatar-large-placeholder">
+                <span class="material-icons-outlined">person</span>
+              </div>
+            </div>
+            
+            <h2 class="profile-name-tag">{{ student.nombres }} {{ student.apellidos }}</h2>
+            <span class="profile-ci-tag">C.I. {{ student.ci }}</span>
+            
+            <div class="profile-photo-change mt-4">
+              <label class="form-label-small">Actualizar Fotografía 4x4</label>
+              <div class="upload-btn-wrapper w-100">
+                <button type="button" class="btn-upload-photo w-100 justify-content-center">
+                  <i class="material-icons-outlined">photo_camera</i> Seleccionar Foto
+                </button>
+                <input type="file" (change)="onPhotoSelected($event)" accept="image/*" capture="environment" aria-label="Seleccionar fotografía 4x4">
+              </div>
+              <span class="file-chosen-name text-center d-block mt-1" *ngIf="photoFileName">{{ photoFileName }}</span>
+              <button *ngIf="photoFile" (click)="uploadPhoto()" [disabled]="uploading" class="btn-save-photo-now mt-2">
+                {{ uploading ? 'Subiendo...' : 'SUBIR FOTO' }}
+              </button>
+            </div>
+
+            <!-- Botón de Certificado -->
+            <button (click)="downloadCertificate()" class="btn-print-certificate mt-4 w-100">
+              <i class="material-icons-outlined">print</i>
+              <span>Imprimir Constancia</span>
+            </button>
+          </div>
+
+          <!-- Lado Derecho: Datos Académicos y de Contacto -->
+          <div class="profile-info-side">
+            <h2 class="pane-title">📋 Datos Personales y Familiares</h2>
+            <div class="info-grid mt-4">
+              <div class="info-item">
+                <span class="info-label">Categoría</span>
+                <span class="info-value font-bold text-uppercase text-primary">{{ student.tipo_usuario }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Lugar de Nacimiento</span>
+                <span class="info-value">{{ student.lugar_nacimiento }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Fecha de Nacimiento</span>
+                <span class="info-value">{{ student.fecha_nacimiento }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Estado Civil</span>
+                <span class="info-value text-capitalize">{{ student.estado_civil }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Grupo Sanguíneo</span>
+                <span class="info-value">{{ student.grupo_sanguineo }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Celular</span>
+                <span class="info-value">{{ student.celular }}</span>
+              </div>
+              <div class="info-item col-span-2">
+                <span class="info-label">Correo Electrónico Personal</span>
+                <span class="info-value">{{ student.correo_electronico || 'N/A' }}</span>
+              </div>
+              <div class="info-item col-span-2">
+                <span class="info-label">Domicilio Declarado</span>
+                <span class="info-value">{{ student.domicilio }}</span>
+              </div>
+
+              <!-- Información de Tutor -->
+              <div class="col-span-2 section-divider-dashed"></div>
+              <h3 class="col-span-2 section-subtitle-dashboard">Padres o Tutor y Contacto</h3>
+              
+              <div class="info-item col-span-2">
+                <span class="info-label">Nombres y Apellidos del Tutor</span>
+                <span class="info-value">{{ student.nombre_padres || 'Sin registrar' }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">C.I. del Tutor</span>
+                <span class="info-value">{{ student.ci_tutor || 'Sin registrar' }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Contacto de Emergencia</span>
+                <span class="info-value">{{ student.contacto_emergencia || 'Sin registrar' }}</span>
+              </div>
+              <div class="info-item col-span-2" *ngIf="student.hermanos_inscritos">
+                <span class="info-label">Hermanos Inscritos</span>
+                <span class="info-value">{{ student.hermanos_inscritos }}</span>
+              </div>
+            </div>
+          </div>
+          
+        </div>
+      </div>
+
+      <!-- PESTAÑA 2: HISTORIAL ACADÉMICO -->
+      <div *ngIf="activeTab === 'history'" class="settings-pane-content">
+        <h2 class="pane-title">🎓 Historial de Cursos y Calificaciones</h2>
+        <p class="pane-description">A continuación, se listan los niveles oficiales en los que te has inscrito, junto con las notas asentadas por tus docentes.</p>
+
+        <div *ngIf="!student.inscripciones || student.inscripciones.length === 0" class="empty-history text-center py-5">
+          <i class="material-icons-outlined text-muted fs-large">school</i>
+          <p class="text-muted mt-3">Aún no cuentas con registros de inscripciones académicas activas.</p>
+        </div>
+
+        <div class="history-list-portal" *ngIf="student.inscripciones && student.inscripciones.length > 0">
+          <div *ngFor="let item of student.inscripciones" class="portal-history-item mb-4 p-4 border rounded-3 bg-light shadow-sm">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div>
+                <h3 class="text-primary mb-1">{{ item.curso?.idioma }} — {{ item.curso?.nivel }}</h3>
+                <small class="text-muted">Horario: {{ item.curso?.horario }} | Modalidad: <strong class="text-capitalize text-secondary">{{ item.curso?.modalidad || 'Presencial' }}</strong></small>
+              </div>
+              <span class="badge rounded-pill status-pill-portal"
+                    [ngClass]="{
+                      'bg-success': item.estado === 'activo',
+                      'bg-warning text-dark': item.estado === 'pendiente',
+                      'bg-danger': item.estado === 'retirado',
+                      'bg-primary': item.estado === 'finalizado'
+                    }">
+                {{ item.estado === 'activo' ? 'Habilitado' : item.estado === 'pendiente' ? 'Pendiente' : item.estado }}
+              </span>
+            </div>
+
+            <!-- Tabla de Notas para esta Inscripción -->
+            <div class="table-responsive">
+              <table class="table table-hover table-sm border bg-white rounded-2 overflow-hidden">
+                <thead class="bg-light">
+                  <tr>
+                    <th>Actividad / Evaluación</th>
+                    <th class="text-center" style="width: 150px;">Nota</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let nota of item.notas">
+                    <td class="ps-3">{{ nota.descripcion }}</td>
+                    <td class="text-center fw-bold" [class.text-danger]="nota.nota < 70" [class.text-success]="nota.nota >= 70">
+                      {{ nota.nota }} / 100
+                    </td>
+                  </tr>
+                  <tr *ngIf="!item.notas || item.notas.length === 0">
+                    <td colspan="2" class="text-center text-muted small py-3 italic">
+                      Aún no hay calificaciones parciales registradas para este periodo por el instructor.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PESTAÑA 3: EXPEDIENTE DIGITAL -->
+      <div *ngIf="activeTab === 'documents'" class="settings-pane-content">
+        <h2 class="pane-title">📁 Administración de Documentos Oficiales</h2>
+        <p class="pane-description">Carga de forma digital tu documentación de respaldo para la validación física en dirección. Se permiten formatos PDF, JPG, PNG de máximo 5MB.</p>
+
+        <!-- Formulario de Subida -->
+        <div class="upload-section mb-4 p-4 bg-light rounded-3 border">
+          <h6 class="fw-bold mb-3">Subir Nuevo Documento Oficial</h6>
+          <div class="row g-3 align-items-end">
+            <div class="col-md-5">
+              <label for="docTypePortal" class="form-label-small">Tipo de Documento</label>
+              <select id="docTypePortal" [(ngModel)]="docType" class="form-select" aria-label="Tipo de documento">
+                <option value="Carnet de Identidad">Carnet de Identidad</option>
+                <option value="Título de Bachiller">Título de Bachiller</option>
+                <option value="Certificado de Nacimiento">Certificado de Nacimiento</option>
+                <option value="Boleta de Depósito">Boleta de Depósito</option>
+                <option value="Otro">Otro</option>
+              </select>
+            </div>
+            <div class="col-md-5">
+              <label for="filePortalInput" class="form-label-small">Seleccionar Archivo</label>
+              <input type="file" id="filePortalInput" (change)="onFileSelected($event)" class="form-control" accept=".pdf,.jpg,.jpeg,.png">
+            </div>
+            <div class="col-md-2">
+              <button (click)="uploadFile()" [disabled]="!selectedFile || uploading" class="btn btn-primary w-100 py-2">
+                <span *ngIf="!uploading">SUBIR ARCHIVO</span>
+                <span *ngIf="uploading">...</span>
+              </button>
+            </div>
+          </div>
+          <!-- Advertencias -->
+          <div *ngIf="docWarning" class="warning-msg-admin mt-3 animate-fade-in">
+            <small class="text-warning-msg">⚠️ {{ docWarning }}</small>
+          </div>
+        </div>
+
+        <!-- Tabla de Documentos Subidos -->
+        <div class="documents-list-portal">
+          <h6 class="fw-bold mb-3 text-secondary">Mis Documentos Cargados</h6>
+          
+          <div *ngIf="docsLoading" class="text-center py-4">
+            <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+            <p class="text-muted mt-2 small">Cargando expediente digital...</p>
+          </div>
+
+          <div *ngIf="!docsLoading && studentDocuments.length === 0" class="text-center py-4 text-muted italic">
+            No tienes documentos oficiales subidos en este expediente digital todavía.
+          </div>
+
+          <table class="table table-hover align-middle border bg-white" *ngIf="!docsLoading && studentDocuments.length > 0">
+            <thead class="bg-light">
+              <tr>
+                <th class="ps-3">Tipo de Documento</th>
+                <th>Nombre del Archivo</th>
+                <th>Tamaño</th>
+                <th class="text-center" style="width: 150px;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let doc of studentDocuments">
+                <td class="ps-3"><strong>{{ doc.tipo_documento }}</strong></td>
+                <td>{{ doc.nombre_archivo }}</td>
+                <td><small class="text-muted">{{ (doc.peso / 1024).toFixed(1) }} KB</small></td>
+                <td class="text-center">
+                  <div class="d-flex justify-content-center gap-2">
+                    <button (click)="previewDocument(doc)" class="btn btn-sm btn-outline-primary py-1 px-2" title="Ver Documento">
+                      <i class="material-icons-outlined doc-action-icon" style="font-size: 18px;">visibility</i>
+                    </button>
+                    <button (click)="removeDocument(doc.id)" class="btn btn-sm btn-outline-danger py-1 px-2" title="Eliminar">
+                      <i class="material-icons-outlined doc-action-icon" style="font-size: 18px;">delete</i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- VISOR DE DOCUMENTACIÓN RESPONSIVO EN MÓVILES (RF 15) -->
+  <div class="modal-backdrop" *ngIf="showPreviewModal" (click)="closePreviewModal()"></div>
+  <div class="document-preview-modal-wrapper animate-fade-in" *ngIf="showPreviewModal">
+    <div class="preview-modal-dialog">
+      <div class="preview-modal-content">
+        <div class="preview-modal-header bg-dark text-white">
+          <h5 class="modal-title m-0">
+            <i class="material-icons-outlined align-middle me-2">visibility</i>
+            {{ activePreviewDoc?.tipo_documento }}
+          </h5>
+          <button type="button" class="btn-close btn-close-white" (click)="closePreviewModal()" aria-label="Cerrar" title="Cerrar"></button>
+        </div>
+        <div class="preview-modal-body p-0">
+          <!-- Visor de PDF (HU15 - T2: Contenedor fluido de 100vw) -->
+          <iframe *ngIf="isPreviewPdf" [src]="activePreviewUrl" class="pdf-viewer-frame" title="Visor de PDF"></iframe>
+          
+          <!-- Visor de Imágenes -->
+          <div *ngIf="isPreviewImage" class="image-viewer-container">
+            <img [src]="activePreviewUrl" alt="Vista previa" class="image-viewer-img">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,28 @@
+<header>
+  <nav class="navbar" [class.scrolled]="isScrolled">
+    <div class="nav-container">
+      <div class="logo">
+        <img src="assets/imagenes/logo.jpg" alt="Logo EIE" class="logo-img">
+        <div class="logo-text">
+            <h1>ESCUELA DE IDIOMAS</h1>
+            <span>DEL EJÉRCITO</span>
+        </div>
+      </div>
+
+      <div class="nav-links" [class.active]="isMobileMenuOpen">
+        <a routerLink="/" (click)="closeMenu()">Inicio</a>
+        <a href="#historia" (click)="closeMenu()">Historia</a>
+        <a href="#mision-vision" (click)="closeMenu()">Nosotros</a>
+        <a href="#objetivos" (click)="closeMenu()">Servicios</a>
+        <a class="btn-inscribirse" routerLink="/inscripcion" (click)="closeMenu()">Inscripciones</a>
+        <a class="btn-login" routerLink="/login" (click)="closeMenu()">
+          <i class="material-icons-outlined">lock</i> Acceder
+        </a>
+      </div>
+
+      <div class="hamburger" (click)="toggleMenu()">
+        <span class="material-icons-outlined">{{ isMobileMenuOpen ? 'close' : 'menu' }}</span>
+      </div>
+    </div>
+  </nav>
+</header>

@@ -1,0 +1,565 @@
+<div class="dashboard-layout">
+  <!-- Barra Lateral (Copiada para mantener consistencia) -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <img src="assets/imagenes/logo.jpg" alt="Logo EIE" class="sidebar-logo">
+      <span>EIE PANEL</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a routerLink="/admin" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">dashboard</i> Panel Principal
+      </a>
+      <a routerLink="/students" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">people</i> Estudiantes
+      </a>
+      <a routerLink="/courses" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">school</i> Cursos
+      </a>
+      <a routerLink="/docentes-list" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">person</i> Instructores
+      </a>
+      <a routerLink="/paralelos" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">class</i> Paralelos
+      </a>
+      <a routerLink="/accesos" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">vpn_key</i> Credenciales / Accesos
+      </a>
+      <a routerLink="/settings" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">settings</i> Configuración
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button class="btn-logout" routerLink="/home">
+        <i class="material-icons-outlined">logout</i> Salir
+      </button>
+    </div>
+  </aside>
+
+  <!-- Contenido Principal -->
+  <main class="main-content">
+    <div class="students-container">
+      <div class="header">
+        <h1>Gestión de Estudiantes (CRUD)</h1>
+        <p>Desde aquí puedes modificar, actualizar y eliminar alumnos.</p>
+      </div>
+
+      <!-- Formulario de Edición -->
+      <div *ngIf="selectedStudent" class="edit-section animate-fade-in">
+        <div class="card">
+          <div class="card-header">
+            <h2>Actualizar Datos del Estudiante</h2>
+            <button (click)="cancelEdit()" class="btn-close" aria-label="Cerrar" title="Cerrar">&times;</button>
+          </div>
+          <form (ngSubmit)="updateStudent()" class="edit-form">
+            <div class="form-grid">
+              <!-- Fotografía de Perfil (4x4) -->
+              <div class="form-group col-12 student-photo-upload-group">
+                <label>Fotografía de Perfil (4x4)</label>
+                <div class="edit-photo-container">
+                  <img *ngIf="selectedStudent.foto_4x4_url" [src]="apiBase + selectedStudent.foto_4x4_url" alt="Foto Actual" class="student-edit-avatar">
+                  <div *ngIf="!selectedStudent.foto_4x4_url" class="student-edit-avatar-placeholder">
+                    <span class="material-icons-outlined">person</span>
+                  </div>
+                  <div class="upload-btn-wrapper">
+                    <button type="button" class="btn-upload-photo">
+                      <i class="material-icons-outlined">photo_camera</i> Seleccionar Nueva Foto
+                    </button>
+                    <input type="file" (change)="onAdminPhotoSelected($event)" accept="image/*" capture="environment" aria-label="Seleccionar foto de perfil">
+                    <span class="file-chosen-name" *ngIf="adminPhotoFileName">{{ adminPhotoFileName }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Datos Básicos -->
+              <div class="form-group">
+                <label for="nombres">Nombres</label>
+                <input type="text" id="nombres" [(ngModel)]="selectedStudent.nombres" name="nombres" class="form-control">
+              </div>
+              <div class="form-group">
+                <label for="apellidos">Apellidos</label>
+                <input type="text" id="apellidos" [(ngModel)]="selectedStudent.apellidos" name="apellidos" class="form-control">
+              </div>
+              <div class="form-group">
+                <label for="ci">CI</label>
+                <input type="text" id="ci" [(ngModel)]="selectedStudent.ci" name="ci" class="form-control">
+              </div>
+              <div class="form-group">
+                <label for="tipo_usuario">Tipo de Usuario</label>
+                <select id="tipo_usuario" [(ngModel)]="selectedStudent.tipo_usuario" name="tipo_usuario" class="form-control">
+                  <option value="normal">Normal / Civil</option>
+                  <option value="militar">Personal Militar</option>
+                  <option value="hijo_militar">Hijo de Militar</option>
+                  <option value="emi">Estudiante EMI</option>
+                </select>
+              </div>
+
+              <!-- Datos de Nacimiento y Estado -->
+              <div class="form-group">
+                <label for="lugar_nacimiento">Lugar de Nacimiento</label>
+                <input type="text" id="lugar_nacimiento" [(ngModel)]="selectedStudent.lugar_nacimiento" name="lugar_nacimiento" class="form-control">
+              </div>
+              <div class="form-group">
+                <label for="fecha_nacimiento">Fecha de Nacimiento</label>
+                <input type="date" id="fecha_nacimiento" [(ngModel)]="selectedStudent.fecha_nacimiento" name="fecha_nacimiento" class="form-control">
+              </div>
+              <div class="form-group">
+                <label for="estado_civil">Estado Civil</label>
+                <select id="estado_civil" [(ngModel)]="selectedStudent.estado_civil" name="estado_civil" class="form-control">
+                  <option value="Soltero">Soltero/a</option>
+                  <option value="Casado">Casado/a</option>
+                  <option value="Divorciado">Divorciado/a</option>
+                  <option value="Viudo">Viudo/a</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="grupo_sanguineo">Grupo Sanguíneo</label>
+                <input type="text" id="grupo_sanguineo" [(ngModel)]="selectedStudent.grupo_sanguineo" name="grupo_sanguineo" class="form-control">
+              </div>
+
+              <!-- Contacto y Educación -->
+              <div class="form-group">
+                <label for="celular">Celular</label>
+                <input type="text" id="celular" [(ngModel)]="selectedStudent.celular" name="celular" class="form-control">
+              </div>
+              <div class="form-group">
+                <label for="correo_electronico">Correo Electrónico</label>
+                <input type="email" id="correo_electronico" [(ngModel)]="selectedStudent.correo_electronico" name="correo_electronico" class="form-control">
+              </div>
+              <div class="form-group">
+                <label for="anio_egreso_bachiller">Año Bachiller</label>
+                <input type="number" id="anio_egreso_bachiller" [(ngModel)]="selectedStudent.anio_egreso_bachiller" name="anio_egreso_bachiller" class="form-control">
+              </div>
+              <div class="form-group">
+                <label for="domicilio">Domicilio</label>
+                <input type="text" id="domicilio" [(ngModel)]="selectedStudent.domicilio" name="domicilio" class="form-control">
+              </div>
+
+              <!-- Campos Militares (Solo si aplica) -->
+              <div class="form-group" *ngIf="selectedStudent.tipo_usuario === 'militar'">
+                <label for="grado_academico">Grado Académico</label>
+                <input type="text" id="grado_academico" [(ngModel)]="selectedStudent.grado_academico" name="grado_academico" class="form-control">
+              </div>
+              <div class="form-group" *ngIf="selectedStudent.tipo_usuario === 'militar'">
+                <label for="arma_especialidad">Arma o Especialidad</label>
+                <input type="text" id="arma_especialidad" [(ngModel)]="selectedStudent.arma_especialidad" name="arma_especialidad" class="form-control">
+              </div>
+              <div class="form-group" *ngIf="selectedStudent.tipo_usuario === 'militar'">
+                <label for="carnet_militar">Carnet Militar</label>
+                <input type="text" id="carnet_militar" [(ngModel)]="selectedStudent.carnet_militar" name="carnet_militar" class="form-control">
+              </div>
+              <div class="form-group" *ngIf="selectedStudent.tipo_usuario === 'hijo_militar'">
+                <label for="carnet_cossmil">Carnet COSSMIL</label>
+                <input type="text" id="carnet_cossmil" [(ngModel)]="selectedStudent.carnet_cossmil" name="carnet_cossmil" class="form-control">
+              </div>
+              
+              <!-- Datos de Padres y Tutor (Visibles para todos) -->
+              <div class="form-group">
+                <label for="nombre_padres">Nombre de los Padres / Tutor</label>
+                <input type="text" id="nombre_padres" [(ngModel)]="selectedStudent.nombre_padres" name="nombre_padres" class="form-control">
+              </div>
+              <div class="form-group">
+                <label for="ci_tutor">C.I. del Tutor</label>
+                <input type="text" id="ci_tutor" [(ngModel)]="selectedStudent.ci_tutor" name="ci_tutor" class="form-control">
+              </div>
+              <div class="form-group">
+                <label for="hermanos_inscritos">Hermanos Inscritos</label>
+                <input type="text" id="hermanos_inscritos" [(ngModel)]="selectedStudent.hermanos_inscritos" name="hermanos_inscritos" class="form-control">
+              </div>
+              <div class="form-group">
+                <label for="contacto_emergencia">Contacto de Emergencia</label>
+                <input type="text" id="contacto_emergencia" [(ngModel)]="selectedStudent.contacto_emergencia" name="contacto_emergencia" class="form-control">
+              </div>
+            </div>
+
+            <!-- Gestión Académica -->
+            <div class="section-divider"></div>
+            <h3 class="section-subtitle">Gestión Académica</h3>
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="estado_inscripcion">Estado de Inscripción</label>
+                <select id="estado_inscripcion" [(ngModel)]="selectedStudent.estado_inscripcion" name="estado_inscripcion" class="form-control status-select">
+                  <option value="pendiente">Pendiente (En espera)</option>
+                  <option value="activo">Activo (Cursando)</option>
+                  <option value="finalizado">Finalizado (Nivel aprobado)</option>
+                  <option value="retirado">Retirado (Baja)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="curso_id">Curso / Nivel Asignado</label>
+                <select id="curso_id" [(ngModel)]="selectedStudent.curso_id" name="curso_id" class="form-control" (change)="onCourseChange()" [class.is-invalid]="quotaError">
+                  <option *ngFor="let course of courses" [value]="course.id">
+                    {{ course.idioma }} - {{ course.nivel }} ({{ course.horario }}) - [{{ course.inscripciones_count }}/{{ course.cupo_maximo }}]
+                  </option>
+                </select>
+                <!-- Mensaje de Error de Cupo -->
+                <div *ngIf="quotaError" class="quota-alert animate-fade-in">
+                  <i class="material-icons-outlined">error_outline</i>
+                  {{ quotaError }}
+                </div>
+              </div>
+              <div class="form-group" *ngIf="selectedStudent.inscripcion_id">
+                <label for="paralelo_id">Paralelo Asignado</label>
+                <select id="paralelo_id" [(ngModel)]="selectedStudent.paralelo_id" name="paralelo_id" class="form-control" aria-label="Seleccionar paralelo">
+                  <option value="">Sin paralelo asignado</option>
+                  <option *ngFor="let p of filteredParalelos" [value]="p.id">
+                    {{ p.nombre }} - {{ p.aula?.nombre || 'Sin aula' }}
+                  </option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-actions mt-4">
+              <button type="submit" class="btn-save" [disabled]="quotaError">GUARDAR ACTUALIZACIÓN</button>
+              <button type="button" (click)="cancelEdit()" class="btn-cancel">CANCELAR</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Barra de Búsqueda -->
+      <div class="search-container animate-fade-in">
+        <div class="search-box">
+          <div class="search-input-group">
+            <i class="material-icons-outlined search-icon">search</i>
+            <input
+              type="text"
+              [(ngModel)]="searchTerm"
+              (input)="onSearchInput()"
+              (keyup.enter)="onSearch()"
+              [placeholder]="searchType === 'nombre' ? 'Buscar por nombre o apellido...' : 'Buscar por carnet de identidad...'"
+              class="search-input"
+              aria-label="Término de búsqueda"
+            >
+
+          </div>
+          <div class="search-filters">
+            <select [(ngModel)]="searchType" class="search-select" aria-label="Filtrar búsqueda por">
+              <option value="nombre">Por Nombre</option>
+              <option value="ci">Por CI</option>
+            </select>
+            <button (click)="onSearch()" class="btn-search">BUSCAR</button>
+            <button *ngIf="searchTerm" (click)="searchTerm = ''; onSearch()" class="btn-clear" title="Limpiar búsqueda">
+              <i class="material-icons-outlined">close</i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabla de Estudiantes -->
+
+      <div class="table-card">
+        <div *ngIf="isLoading" class="loader">Cargando alumnos...</div>
+
+        <table *ngIf="!isLoading">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Foto</th>
+              <th>Tipo</th>
+              <th>Nombres</th>
+              <th>Apellidos</th>
+              <th>CI</th>
+              <th>Lugar/Fecha Nacimiento</th>
+              <th>Celular</th>
+              <th>Correo Personal</th>
+              <th>Correo Institucional (EIE)</th>
+              <th>Curso / Paralelo</th>
+              <th>Estado Académico</th>
+              <th>Grado/Arma/Carnets</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let student of students">
+              <td>{{ student.id }}</td>
+              <td>
+                <div class="avatar-container">
+                  <img *ngIf="student.foto_4x4_url" [src]="apiBase + student.foto_4x4_url" alt="Foto 4x4" class="student-avatar-circle">
+                  <div *ngIf="!student.foto_4x4_url" class="student-avatar-placeholder">
+                    <span class="material-icons-outlined">person</span>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <span class="status-badge" [ngClass]="student.tipo_usuario">
+                  {{ student.tipo_usuario }}
+                </span>
+              </td>
+              <td>{{ student.nombres }}</td>
+              <td>{{ student.apellidos }}</td>
+              <td>{{ student.ci }}</td>
+              <td>{{ student.lugar_nacimiento }} ({{ student.fecha_nacimiento }})</td>
+              <td>{{ student.celular }}</td>
+              <td>{{ student.correo_electronico || 'N/A' }}</td>
+              <td>
+                <span class="badge rounded-pill bg-info text-dark email-badge" *ngIf="student.user?.email">
+                  {{ student.user.email }}
+                </span>
+                <span class="text-muted italic small" *ngIf="!student.user?.email">
+                  Sin asignar
+                </span>
+              </td>
+              <td>
+                <span *ngIf="student.inscripciones && student.inscripciones.length > 0">
+                  <b>{{ student.inscripciones[0].curso?.idioma }}</b><br>
+                  <small class="text-muted">{{ student.inscripciones[0].curso?.nivel }}</small>
+                  <div *ngIf="student.inscripciones[0].paralelo" class="small-badge mt-1 badge-paralelo">
+                    {{ student.inscripciones[0].paralelo?.nombre }}
+                  </div>
+                </span>
+                <span *ngIf="!student.inscripciones || student.inscripciones.length === 0">-</span>
+              </td>
+              <td>
+                <span *ngIf="student.inscripciones && student.inscripciones.length > 0">
+                  <span class="badge rounded-pill"
+                        [ngClass]="{
+                          'bg-success': student.inscripciones[0]?.estado === 'activo',
+                          'bg-warning text-dark': student.inscripciones[0]?.estado === 'pendiente',
+                          'bg-danger': student.inscripciones[0]?.estado === 'retirado',
+                          'bg-primary': student.inscripciones[0]?.estado === 'finalizado'
+                        }">
+                    {{ student.inscripciones[0]?.estado === 'activo' ? 'Habilitado' :
+                       student.inscripciones[0]?.estado === 'pendiente' ? 'Pendiente' :
+                       student.inscripciones[0]?.estado }}
+                  </span>
+                </span>
+                <span *ngIf="!student.inscripciones || student.inscripciones.length === 0">-</span>
+              </td>
+              <td>
+                <small *ngIf="student.tipo_usuario === 'militar'">{{ student.grado_academico }} / {{ student.arma_especialidad }} (CM: {{ student.carnet_militar }})</small>
+                <span *ngIf="student.tipo_usuario !== 'militar'">-</span>
+              </td>
+              <td>
+                <div class="actions">
+                  <button (click)="viewHistory(student.id)" class="btn-history" title="Ver Historial"><i class="material-icons-outlined">history_edu</i></button>
+                  <button (click)="openDocumentsModal(student)" class="btn-docs" title="Documentos"><i class="material-icons-outlined">folder</i></button>
+                  <button (click)="downloadCertificate(student)" class="btn-print" title="Imprimir Constancia"><i class="material-icons-outlined">print</i></button>
+                  <button (click)="editStudent(student)" class="btn-edit" title="Editar"><i class="material-icons-outlined">edit</i></button>
+                  <button (click)="openDeleteModal(student.id)" class="btn-delete" title="Eliminar"><i class="material-icons-outlined">delete</i></button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- MODAL DE HISTORIAL ACADÉMICO -->
+  <div class="modal-backdrop" *ngIf="showHistoryModal"></div>
+  <div class="modal" [class.show]="showHistoryModal" [style.display]="showHistoryModal ? 'block' : 'none'" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title">
+            <i class="material-icons-outlined align-middle">school</i>
+            Historial Académico: {{ academicHistory?.estudiante?.nombres }} {{ academicHistory?.estudiante?.apellidos }}
+          </h5>
+          <button type="button" class="btn-close btn-close-white" (click)="closeHistoryModal()" aria-label="Cerrar" title="Cerrar"></button>
+        </div>
+        <div class="modal-body py-4">
+          <div *ngIf="historyLoading" class="text-center py-4">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2">Cargando registros académicos...</p>
+          </div>
+
+          <div *ngIf="!historyLoading && academicHistory">
+            <div class="history-list">
+              <div *ngFor="let item of academicHistory.historial" class="history-item mb-4">
+                <div class="history-header d-flex justify-content-between align-items-center">
+                  <div class="course-title">
+                    <h4 class="mb-0 text-primary">{{ item.curso?.idioma }} - {{ item.curso?.nivel }}</h4>
+                    <small class="text-muted">Inscrito el: {{ item.fecha_registro | date:'mediumDate' }}</small>
+                  </div>
+                  <span class="badge rounded-pill"
+                        [ngClass]="{
+                          'bg-success': item.estado === 'activo',
+                          'bg-warning text-dark': item.estado === 'pendiente',
+                          'bg-danger': item.estado === 'retirado',
+                          'bg-primary': item.estado === 'finalizado'
+                        }">
+                    {{ item.estado === 'activo' ? 'Habilitado' :
+                       item.estado === 'pendiente' ? 'Pendiente' :
+                       item.estado }}
+                  </span>
+                </div>
+
+                <div class="grades-section mt-2">
+                  <table class="table table-sm table-hover border">
+                    <thead class="bg-light">
+                      <tr>
+                        <th>Actividad / Examen</th>
+                        <th class="text-center">Nota</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let nota of item.notas">
+                        <td>{{ nota.descripcion }}</td>
+                        <td class="text-center fw-bold" [class.text-danger]="nota.nota < 70" [class.text-success]="nota.nota >= 70">
+                          {{ nota.nota }}
+                        </td>
+                      </tr>
+                      <tr *ngIf="!item.notas || item.notas.length === 0">
+                        <td colspan="2" class="text-center text-muted small">No hay notas registradas para este curso.</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary" (click)="closeHistoryModal()">CERRAR</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE CONFIRMACIÓN (Bootstrap Style) -->
+  <div class="modal-backdrop" *ngIf="showDeleteModal"></div>
+  <div class="modal" [class.show]="showDeleteModal" [style.display]="showDeleteModal ? 'block' : 'none'" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg">
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title">
+            <i class="material-icons-outlined align-middle">warning</i>
+            Confirmar Eliminación
+          </h5>
+          <button type="button" class="btn-close btn-close-white" (click)="closeDeleteModal()" aria-label="Cerrar" title="Cerrar"></button>
+        </div>
+        <div class="modal-body py-4 text-center">
+          <div class="mb-3">
+            <i class="material-icons-outlined text-danger modal-icon-large">report_problem</i>
+          </div>
+          <p class="fs-5 mb-0">¿Estás seguro de que deseas eliminar este registro?</p>
+          <p class="text-muted small">Esta acción no se puede deshacer y borrará permanentemente los datos del estudiante.</p>
+        </div>
+        <div class="modal-footer bg-light">
+          <button type="button" class="btn btn-secondary px-4" (click)="closeDeleteModal()">CANCELAR</button>
+          <button type="button" class="btn btn-danger px-4" (click)="executeDelete()">SÍ, ELIMINAR</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE DOCUMENTACIÓN DIGITAL -->
+
+  <div class="modal-backdrop" *ngIf="showDocumentsModal"></div>
+  <div class="modal" [class.show]="showDocumentsModal" [style.display]="showDocumentsModal ? 'block' : 'none'" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg">
+        <div class="modal-header bg-dark text-white">
+          <h5 class="modal-title">
+            <i class="material-icons-outlined align-middle">folder_shared</i>
+            Expediente Digital: {{ currentStudentForDocs?.nombres }} {{ currentStudentForDocs?.apellidos }}
+          </h5>
+          <button type="button" class="btn-close btn-close-white" (click)="closeDocumentsModal()" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body py-4">
+
+          <!-- Formulario de Subida -->
+          <div class="upload-section mb-4 p-3 bg-light rounded-3 border">
+            <h6 class="fw-bold mb-3">Subir Nuevo Documento (.pdf, .jpg, .png)</h6>
+            <div class="row g-2">
+              <div class="col-md-5">
+                <select [(ngModel)]="docType" class="form-select" aria-label="Tipo de documento">
+                  <option value="Carnet de Identidad">Carnet de Identidad</option>
+                  <option value="Título de Bachiller">Título de Bachiller</option>
+                  <option value="Certificado de Nacimiento">Certificado de Nacimiento</option>
+                  <option value="Boleta de Depósito">Boleta de Depósito</option>
+                  <option value="Otro">Otro</option>
+                </select>
+              </div>
+              <div class="col-md-5">
+                <input type="file" (change)="onFileSelected($event)" class="form-control" accept=".pdf,.jpg,.jpeg,.png" aria-label="Seleccionar archivo para subir">
+              </div>
+              <div class="col-md-2">
+                <button (click)="uploadFile()" [disabled]="!selectedFile || uploading" class="btn btn-primary w-100">
+                  <span *ngIf="!uploading">SUBIR</span>
+                  <span *ngIf="uploading">...</span>
+                </button>
+              </div>
+            </div>
+            <!-- Advertencia Inteligente de Coherencia -->
+            <div *ngIf="docWarning" class="warning-msg-admin mt-2 animate-fade-in">
+              <small class="text-warning-msg">⚠️ {{ docWarning }}</small>
+            </div>
+            <small class="text-muted mt-2 d-block">* Tamaño máximo: 5MB</small>
+          </div>
+
+          <!-- Lista de Documentos -->
+          <div class="documents-list">
+            <h6 class="fw-bold mb-3">Documentos Cargados</h6>
+            <div *ngIf="docsLoading" class="text-center py-3">
+              <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+            </div>
+
+            <div *ngIf="!docsLoading && studentDocuments.length === 0" class="text-center py-3 text-muted italic">
+              No hay documentos cargados en este expediente.
+            </div>
+
+            <table class="table table-hover align-middle border" *ngIf="!docsLoading && studentDocuments.length > 0">
+              <thead class="bg-light">
+                <tr>
+                  <th>Tipo</th>
+                  <th>Nombre Archivo</th>
+                  <th>Tamaño</th>
+                  <th class="text-center">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let doc of studentDocuments">
+                  <td><strong>{{ doc.tipo_documento }}</strong></td>
+                  <td>{{ doc.nombre_archivo }}</td>
+                  <td><small>{{ (doc.peso / 1024).toFixed(1) }} KB</small></td>
+                  <td class="text-center">
+                    <div class="d-flex justify-content-center gap-2">
+                      <button (click)="previewDocument(doc)" class="btn btn-sm btn-outline-primary" title="Ver Documento">
+                        <i class="material-icons-outlined doc-action-icon">visibility</i>
+                      </button>
+                      <button (click)="removeDocument(doc.id)" class="btn btn-sm btn-outline-danger" title="Eliminar">
+                        <i class="material-icons-outlined doc-action-icon">delete</i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeDocumentsModal()">CERRAR EXPEDIENTE</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VISOR DE DOCUMENTACIÓN RESPONSIVO EN MÓVILES (RF 15) -->
+  <div class="modal-backdrop" *ngIf="showPreviewModal" (click)="closePreviewModal()"></div>
+  <div class="document-preview-modal-wrapper animate-fade-in" *ngIf="showPreviewModal">
+    <div class="preview-modal-dialog">
+      <div class="preview-modal-content">
+        <div class="preview-modal-header bg-dark text-white">
+          <h5 class="modal-title m-0">
+            <i class="material-icons-outlined align-middle me-2">visibility</i>
+            {{ activePreviewDoc?.tipo_documento }}
+          </h5>
+          <button type="button" class="btn-close btn-close-white" (click)="closePreviewModal()" aria-label="Cerrar" title="Cerrar">&times;</button>
+        </div>
+        <div class="preview-modal-body p-0">
+          <!-- Visor de PDF (HU15 - T2: Contenedor fluido de 100vw) -->
+          <iframe *ngIf="isPreviewPdf" [src]="activePreviewUrl" class="pdf-viewer-frame" title="Visor de PDF"></iframe>
+          
+          <!-- Visor de Imágenes -->
+          <div *ngIf="isPreviewImage" class="image-viewer-container">
+            <img [src]="activePreviewUrl" alt="Vista previa" class="image-viewer-img">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+

@@ -1,0 +1,339 @@
+<div class="dashboard-layout">
+  <!-- Barra Lateral -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <img src="assets/imagenes/logo.jpg" alt="Logo EIE" class="sidebar-logo">
+      <span>EIE PANEL</span>
+    </div>
+
+    <div class="docente-profile" *ngIf="docente">
+      <div class="profile-avatar">
+        <i class="material-icons-outlined">person</i>
+      </div>
+      <div class="profile-info">
+        <span class="profile-name">{{ docente.user?.name }}</span>
+        <span class="profile-role">Instructor</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <p class="nav-section-title">MIS PARALELOS</p>
+      <button
+        *ngFor="let paralelo of paralelos"
+        class="nav-item paralelo-nav-btn"
+        [class.active]="paraleloActivo?.id === paralelo.id"
+        (click)="seleccionarParalelo(paralelo)"
+      >
+        <i class="material-icons-outlined">class</i>
+        <div class="paralelo-nav-info">
+          <span class="paralelo-nombre">{{ paralelo.nombre }}</span>
+          <span class="paralelo-curso">{{ paralelo.curso?.idioma }} - {{ paralelo.curso?.nivel }}</span>
+        </div>
+        <span class="student-count-badge">{{ paralelo.inscripciones?.length || 0 }}</span>
+      </button>
+      <div *ngIf="paralelos.length === 0 && !isLoading" class="no-paralelos">
+        <i class="material-icons-outlined">info</i>
+        <span>Sin paralelos asignados</span>
+      </div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button (click)="onLogout()" class="btn-logout">
+        <i class="material-icons-outlined">logout</i> Salir
+      </button>
+    </div>
+  </aside>
+
+  <!-- Contenido Principal -->
+  <main class="main-content">
+    <header class="top-header">
+      <div class="header-left">
+        <h1>Panel del Instructor</h1>
+        <p>Gestione notas y asistencias de sus paralelos.</p>
+      </div>
+      <div class="header-right">
+        <div class="user-info" *ngIf="user">
+          <span class="user-name">{{ user.name }}</span>
+          <span class="user-role">Instructor</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Alerta de contrato por vencer -->
+    <div *ngIf="!isLoading && contratoPorVencer" class="contract-warning animate-fade-in delay-1">
+      <i class="material-icons-outlined">warning_amber</i>
+      <div class="warning-text">
+        <strong>Atención:</strong> Su contrato está por vencer ({{ docente?.fecha_contrato | date:'dd/MM/yyyy' }}).
+        Por favor, contáctese con dirección o apersónese a administración para recontratar.
+      </div>
+    </div>
+
+    <!-- Cargando -->
+    <div *ngIf="isLoading" class="loader">
+      <div class="spinner"></div>
+      <p>Cargando información...</p>
+    </div>
+
+    <!-- Error -->
+    <div *ngIf="errorMsg && !isLoading" class="error-card">
+      <i class="material-icons-outlined">error_outline</i>
+      <p>{{ errorMsg }}</p>
+    </div>
+
+    <!-- Estadísticas -->
+    <section class="stats-grid animate-fade-in" *ngIf="!isLoading && !errorMsg">
+      <div class="stat-card">
+        <div class="stat-icon blue">
+          <i class="material-icons-outlined">class</i>
+        </div>
+        <div class="stat-info">
+          <h3>{{ paralelos.length }}</h3>
+          <p>Paralelos Asignados</p>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon green">
+          <i class="material-icons-outlined">people</i>
+        </div>
+        <div class="stat-info">
+          <h3>{{ totalEstudiantes }}</h3>
+          <p>Total Estudiantes</p>
+        </div>
+      </div>
+      <div class="stat-card" *ngIf="paraleloActivo">
+        <div class="stat-icon gold">
+          <i class="material-icons-outlined">assignment</i>
+        </div>
+        <div class="stat-info">
+          <h3>{{ paraleloActivo.inscripciones?.length || 0 }}</h3>
+          <p>En paralelo activo</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Panel con tabs -->
+    <section class="table-container animate-fade-in delay-1" *ngIf="!isLoading && paraleloActivo">
+
+      <!-- Tabs de navegación -->
+      <div class="tabs-header">
+        <button class="tab-btn" [class.active]="tabActivo === 'lista'" (click)="setTab('lista')">
+          <i class="material-icons-outlined">list</i> Lista
+        </button>
+        <button class="tab-btn" [class.active]="tabActivo === 'notas'" (click)="setTab('notas')">
+          <i class="material-icons-outlined">grade</i> Notas
+        </button>
+        <button class="tab-btn" [class.active]="tabActivo === 'asistencia'" (click)="setTab('asistencia')">
+          <i class="material-icons-outlined">how_to_reg</i> Asistencia
+        </button>
+
+        <div class="tab-header-right">
+          <button class="btn-print no-print" (click)="imprimirLista()">
+            <i class="material-icons-outlined">print</i> Generar PDF
+          </button>
+        </div>
+      </div>
+
+      <!-- Info del paralelo -->
+      <div class="paralelo-meta no-print">
+        <span class="meta-badge">
+          <i class="material-icons-outlined">school</i>
+          {{ paraleloActivo.curso?.idioma }} — {{ paraleloActivo.curso?.nivel }}
+        </span>
+        <span class="meta-badge" *ngIf="paraleloActivo.aula">
+          <i class="material-icons-outlined">location_on</i>
+          Aula: {{ paraleloActivo.aula?.nombre }}
+        </span>
+        <span class="meta-badge" *ngFor="let horario of paraleloActivo.horarios">
+          <i class="material-icons-outlined">schedule</i>
+          {{ horario.dia_semana }} {{ horario.hora_inicio | slice:0:5 }} - {{ horario.hora_fin | slice:0:5 }}
+        </span>
+      </div>
+
+      <!-- ======================== TAB: LISTA ======================== -->
+      <div *ngIf="tabActivo === 'lista'">
+        <div class="table-header-info print-title">
+          <h2><i class="material-icons-outlined">group</i> Lista — {{ paraleloActivo.nombre }}</h2>
+        </div>
+        <div class="table-responsive">
+          <table *ngIf="estudiantesActivos.length > 0">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Nombres y Apellidos</th>
+                <th>C.I.</th>
+                <th>Teléfono</th>
+                <th>Correo Electrónico</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let insc of estudiantesActivos; let i = index">
+                <td>{{ i + 1 }}</td>
+                <td><span class="full-name">{{ insc.estudiante?.nombres }} {{ insc.estudiante?.apellidos }}</span></td>
+                <td>{{ insc.estudiante?.ci }}</td>
+                <td>{{ insc.estudiante?.celular || '—' }}</td>
+                <td>{{ insc.estudiante?.correo_electronico || '—' }}</td>
+                <td>
+                  <span class="estado-badge"
+                    [class.estado-activo]="insc.estado === 'activo'"
+                    [class.estado-pendiente]="insc.estado === 'pendiente'"
+                    [class.estado-retirado]="insc.estado === 'retirado'">
+                    {{ insc.estado === 'activo' ? 'Habilitado' : insc.estado === 'pendiente' ? 'Pendiente' : insc.estado }}
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div *ngIf="estudiantesActivos.length === 0" class="empty-state">
+            <i class="material-icons-outlined">person_off</i>
+            <p>No hay estudiantes inscritos en este paralelo.</p>
+          </div>
+        </div>
+        <div class="lista-footer print-only">
+          <p>Instituto de Idiomas EIE — Lista generada el {{ today | date:'fullDate' }}</p>
+          <p>Firma del Instructor: ______________________________</p>
+        </div>
+      </div>
+
+      <!-- ======================== TAB: NOTAS ======================== -->
+      <div *ngIf="tabActivo === 'notas'" class="no-print">
+        <div class="notas-toolbar">
+          <div class="periodo-selector">
+            <label>Periodo:</label>
+            <select [(ngModel)]="periodoSeleccionado" class="form-select-sm" title="Seleccionar Periodo" aria-label="Seleccionar Periodo">
+              <option value="Parcial 1">Parcial 1</option>
+              <option value="Parcial 2">Parcial 2</option>
+              <option value="Parcial 3">Parcial 3</option>
+              <option value="Final">Final</option>
+            </select>
+          </div>
+          <button class="btn-save-all" (click)="guardarTodasLasNotas()" [disabled]="savingNotas">
+            <i class="material-icons-outlined">save</i>
+            {{ savingNotas ? 'Guardando...' : 'Guardar Notas' }}
+          </button>
+        </div>
+
+        <div class="table-responsive">
+          <table *ngIf="estudiantesActivos.length > 0">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Estudiante</th>
+                <th>C.I.</th>
+                <th>Nota (0-100)</th>
+                <th>Observación</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let insc of estudiantesActivos; let i = index">
+                <td>{{ i + 1 }}</td>
+                <td><span class="full-name">{{ insc.estudiante?.nombres }} {{ insc.estudiante?.apellidos }}</span></td>
+                <td>{{ insc.estudiante?.ci }}</td>
+                <td>
+                  <input
+                    type="number" min="0" max="100" step="0.5"
+                    class="nota-input"
+                    [(ngModel)]="notasForm[insc.id + '_' + periodoSeleccionado]"
+                    placeholder="—"
+                    [class.nota-aprobado]="getNotaValor(insc.id) >= 51"
+                    [class.nota-reprobado]="getNotaValor(insc.id) > 0 && getNotaValor(insc.id) < 51"
+                  >
+                </td>
+                <td>
+                  <input
+                    type="text"
+                    class="obs-input"
+                    [(ngModel)]="observacionesForm[insc.id + '_' + periodoSeleccionado]"
+                    placeholder="Opcional..."
+                  >
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div *ngIf="notasMsg" class="save-msg" [class.save-error]="notasError">
+          <i class="material-icons-outlined">{{ notasError ? 'error' : 'check_circle' }}</i>
+          {{ notasMsg }}
+        </div>
+      </div>
+
+      <!-- ======================== TAB: ASISTENCIA ======================== -->
+      <div *ngIf="tabActivo === 'asistencia'" class="no-print">
+        <div class="asistencia-toolbar">
+          <div class="fecha-selector">
+            <label for="fechaAsistenciaInput"><i class="material-icons-outlined">calendar_today</i> Fecha:</label>
+            <input id="fechaAsistenciaInput" type="date" [(ngModel)]="fechaAsistencia" class="form-input-date"
+                   [max]="today | date:'yyyy-MM-dd'" title="Fecha de asistencia" aria-label="Fecha de asistencia">
+          </div>
+          <button class="btn-save-all" (click)="guardarAsistencia()" [disabled]="savingAsistencia">
+            <i class="material-icons-outlined">save</i>
+            {{ savingAsistencia ? 'Guardando...' : 'Guardar Asistencia' }}
+          </button>
+        </div>
+
+        <div class="table-responsive">
+          <table *ngIf="estudiantesActivos.length > 0">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Estudiante</th>
+                <th>C.I.</th>
+                <th>Estado</th>
+                <th>Observación</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let insc of estudiantesActivos; let i = index">
+                <td>{{ i + 1 }}</td>
+                <td><span class="full-name">{{ insc.estudiante?.nombres }} {{ insc.estudiante?.apellidos }}</span></td>
+                <td>{{ insc.estudiante?.ci }}</td>
+                <td>
+                  <div class="asistencia-btns">
+                    <button class="btn-asistencia presente"
+                      [class.selected]="asistenciaForm[insc.id] === 'presente'"
+                      (click)="setAsistencia(insc.id, 'presente')">P</button>
+                    <button class="btn-asistencia ausente"
+                      [class.selected]="asistenciaForm[insc.id] === 'ausente'"
+                      (click)="setAsistencia(insc.id, 'ausente')">A</button>
+                    <button class="btn-asistencia tardanza"
+                      [class.selected]="asistenciaForm[insc.id] === 'tardanza'"
+                      (click)="setAsistencia(insc.id, 'tardanza')">T</button>
+                    <button class="btn-asistencia justificado"
+                      [class.selected]="asistenciaForm[insc.id] === 'justificado'"
+                      (click)="setAsistencia(insc.id, 'justificado')">J</button>
+                  </div>
+                </td>
+                <td>
+                  <input type="text" class="obs-input"
+                    [(ngModel)]="observacionAsistenciaForm[insc.id]"
+                    placeholder="Opcional...">
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="asistencia-legend">
+          <span class="legend-item"><span class="legend-dot presente"></span> P = Presente</span>
+          <span class="legend-item"><span class="legend-dot ausente"></span> A = Ausente</span>
+          <span class="legend-item"><span class="legend-dot tardanza"></span> T = Tardanza</span>
+          <span class="legend-item"><span class="legend-dot justificado"></span> J = Justificado</span>
+        </div>
+
+        <div *ngIf="asistenciaMsg" class="save-msg" [class.save-error]="asistenciaError">
+          <i class="material-icons-outlined">{{ asistenciaError ? 'error' : 'check_circle' }}</i>
+          {{ asistenciaMsg }}
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Sin paralelo -->
+    <div *ngIf="!isLoading && !paraleloActivo && !errorMsg" class="empty-dashboard">
+      <i class="material-icons-outlined">inbox</i>
+      <h3>No tiene paralelos asignados</h3>
+      <p>Contacte al administrador para que le asigne paralelos.</p>
+    </div>
+  </main>
+</div>

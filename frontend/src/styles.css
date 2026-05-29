@@ -1,0 +1,357 @@
+/* You can add global styles to this file, and also import other style files */
+
+:root {
+  /* Official EMI Palette */
+  --primary-color: #003B71; /* EMI Blue */
+  --secondary-color: #F9B233; /* EMI Yellow */
+  --accent-color: #004a99;
+  
+  --bg-white: #ffffff;
+  --bg-silver-suede: #f4f7f9;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f8fafc;
+  --text-primary: #1a1f26;
+  --text-muted: #5a6370;
+  --text-blue: #003B71;
+  
+  --glass-border: rgba(0, 0, 0, 0.08);
+  --glass-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  
+  --transition: all 0.25s ease-in-out;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: linear-gradient(135deg, var(--bg-white) 0%, var(--bg-silver-suede) 100%);
+  background-attachment: fixed;
+  color: var(--text-primary);
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+}
+
+/* Glassmorphism utility */
+.glass-panel {
+  background: var(--bg-card);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  border-radius: 16px;
+}
+
+/* Smooth Scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.8s ease-out forwards;
+}
+
+.delay-1 { animation-delay: 0.2s; }
+.delay-2 { animation-delay: 0.4s; }
+.delay-3 { animation-delay: 0.6s; }
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-dark);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--primary-color);
+  border-radius: 5px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--secondary-color);
+}
+
+/* ==========================================
+   EPIC 3: INTERFAZ MÓVIL RESPONSIVA
+   ========================================== */
+@media (max-width: 768px) {
+  /* Contenedor Principal en Móvil */
+  .dashboard-layout {
+    flex-direction: column !important;
+  }
+
+  /* Transformar Sidebar en un Top Nav Premium y Pegajoso */
+  .sidebar {
+    width: 100% !important;
+    min-height: auto !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 0.6rem 1rem !important;
+    position: sticky !important;
+    top: 0;
+    z-index: 1000 !important;
+    background: var(--primary-color) !important;
+    border-bottom: 3px solid var(--secondary-color) !important;
+    box-shadow: 0 4px 10px rgba(0, 59, 113, 0.15);
+  }
+
+  .sidebar-header {
+    padding: 0 !important;
+    gap: 0.5rem !important;
+  }
+
+  .sidebar-logo {
+    height: 32px !important;
+  }
+
+  .sidebar-header span {
+    font-size: 0.95rem !important;
+  }
+
+  /* Menú de Navegación Horizontal Deslizable */
+  .sidebar-nav {
+    display: flex !important;
+    flex-direction: row !important;
+    padding: 0 !important;
+    margin: 0 0.8rem !important;
+    gap: 0.4rem !important;
+    overflow-x: auto !important;
+    flex: 1 !important;
+    scrollbar-width: none !important; /* Firefox */
+  }
+
+  .sidebar-nav::-webkit-scrollbar {
+    display: none !important; /* Chrome, Safari, Opera */
+  }
+
+  .nav-item, .nav-btn {
+    margin-bottom: 0 !important;
+    white-space: nowrap !important;
+    padding: 0.5rem 0.8rem !important;
+    font-size: 0.8rem !important;
+    border-radius: 8px !important;
+    background: transparent !important;
+    color: rgba(255, 255, 255, 0.75) !important;
+    border: none !important;
+  }
+
+  .nav-item:hover, .nav-btn:hover, .nav-item.active, .nav-btn.active {
+    background: rgba(255, 255, 255, 0.15) !important;
+    color: white !important;
+  }
+
+  .sidebar-footer {
+    padding: 0 !important;
+    border-top: none !important;
+    margin-left: 0.5rem !important;
+  }
+
+  .btn-logout {
+    padding: 0.5rem 0.8rem !important;
+    font-size: 0.8rem !important;
+    width: auto !important;
+    white-space: nowrap !important;
+  }
+
+  /* Ajuste de Espaciado del Contenido */
+  .main-content {
+    padding: 1rem !important;
+  }
+
+  .top-header {
+    flex-direction: column !important;
+    gap: 1rem !important;
+    align-items: stretch !important;
+    margin-bottom: 1.5rem !important;
+  }
+
+  .user-info-header {
+    align-self: flex-start !important;
+    width: 100% !important;
+    justify-content: space-between !important;
+  }
+
+  /* Grillas de Formularios y Detalles */
+  .form-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.8rem !important;
+  }
+
+  .profile-dashboard-layout {
+    grid-template-columns: 1fr !important;
+    gap: 1.5rem !important;
+  }
+
+  .info-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.8rem !important;
+  }
+
+  .col-span-2 {
+    grid-column: span 1 !important;
+  }
+
+  /* Selector de Categorías (Inscripciones) */
+  .user-type-selector {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.5rem !important;
+  }
+
+  .type-card {
+    width: 100% !important;
+  }
+
+  /* Tablas Responsivas con Desplazamiento Horizontal Suave */
+  .table-card {
+    padding: 1rem !important;
+    border-radius: 12px !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  table {
+    min-width: 600px !important; /* Asegura que la tabla no se colapse ilegiblemente */
+  }
+
+  th, td {
+    padding: 0.6rem 0.5rem !important;
+    font-size: 0.8rem !important;
+  }
+
+  .actions {
+    gap: 0.4rem !important;
+    align-items: center !important;
+  }
+
+  /* T2. Aumentar el área táctil (touch target) a 44px en móviles para fácil interacción con los dedos */
+  .actions button, .btn-edit, .btn-delete, .btn-history, .btn-docs, .btn-print {
+    width: 44px !important;
+    height: 44px !important;
+    border-radius: 10px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .actions button i, .btn-edit i, .btn-delete i, .btn-history i, .btn-docs i, .btn-print i {
+    font-size: 20px !important; /* Aumenta el tamaño del icono */
+  }
+
+
+
+  /* Secciones de Carga de Archivos */
+  .edit-photo-container {
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 1rem !important;
+    text-align: center !important;
+  }
+
+  .profile-photo-uploader {
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 1.2rem !important;
+    text-align: center !important;
+    padding: 1.2rem !important;
+  }
+
+  /* Modales en Pantallas Pequeñas */
+  .modal-dialog {
+    margin: 1rem !important;
+    max-width: calc(100% - 2rem) !important;
+  }
+}
+
+/* Visor de Documentación Responsivo (RF 15) */
+.document-preview-modal-wrapper {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.preview-modal-dialog {
+  width: 95%;
+  max-width: 900px;
+  height: 90vh;
+}
+.preview-modal-content {
+  background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border: none;
+}
+.preview-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+}
+.preview-modal-body {
+  flex: 1;
+  background: #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.pdf-viewer-frame {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+.image-viewer-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: #0f172a;
+}
+.image-viewer-img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+@media (max-width: 768px) {
+  .preview-modal-dialog {
+    width: 100vw !important;
+    height: 100vh !important;
+    margin: 0 !important;
+  }
+  .preview-modal-content {
+    border-radius: 0 !important;
+    height: 100% !important;
+  }
+  .pdf-viewer-frame, .image-viewer-container {
+    width: 100vw !important;
+    height: calc(100vh - 56px) !important; /* Subtract header height */
+  }
+}
+

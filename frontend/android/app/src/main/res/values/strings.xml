@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">EIE</string>
+    <string name="title_activity_main">EIE</string>
+    <string name="package_name">com.eie.app</string>
+    <string name="custom_url_scheme">com.eie.app</string>
+</resources>

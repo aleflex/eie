@@ -1,0 +1,96 @@
+<div class="admin-panel-container">
+  <div class="glass-form-card">
+    <div class="card-header">
+      <div class="header-icon">
+        <i class="fa fa-user-tie"></i>
+      </div>
+      <h2>{{ isEditMode ? 'Edición de Perfil' : 'Registro de Instructores' }}</h2>
+      <p>{{ isEditMode ? 'Actualiza tu información personal' : 'Crea tu cuenta como personal docente' }}</p>
+    </div>
+
+    <!-- Mensajes de Éxito / Error -->
+    <div *ngIf="successMessage" class="alert alert-success">
+      <i class="fa fa-check-circle"></i> {{ successMessage }}
+    </div>
+    <div *ngIf="errorMessage" class="alert alert-danger">
+      <i class="fa fa-exclamation-circle"></i> {{ errorMessage }}
+    </div>
+
+    <form [formGroup]="docenteForm" (ngSubmit)="onSubmit()" class="modern-form">
+      
+      <!-- Nombre Completo -->
+      <div class="form-group">
+        <label for="name">Nombre Completo <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <i class="fa fa-id-badge input-icon"></i>
+          <input type="text" id="name" formControlName="name" placeholder="Ej: Juan Pérez" class="glass-input">
+        </div>
+        <div class="error-msg" *ngIf="docenteForm.get('name')?.invalid && docenteForm.get('name')?.touched">
+          El nombre es requerido.
+        </div>
+      </div>
+
+      <!-- Correo Electrónico -->
+      <div class="form-group">
+        <label for="email">Correo Electrónico <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <i class="fa fa-envelope input-icon"></i>
+          <input type="email" id="email" formControlName="email" placeholder="instructor@ejemplo.com" class="glass-input">
+        </div>
+        <div class="error-msg" *ngIf="docenteForm.get('email')?.invalid && docenteForm.get('email')?.touched">
+          Ingresa un correo electrónico válido.
+        </div>
+      </div>
+
+      <!-- Contraseña -->
+      <div class="form-group">
+        <label for="password">Contraseña de Acceso <span class="required">*</span></label>
+        <div class="input-wrapper">
+          <i class="fa fa-lock input-icon"></i>
+          <input type="password" id="password" formControlName="password" placeholder="Mínimo 8 caracteres" class="glass-input">
+        </div>
+        <div class="error-msg" *ngIf="docenteForm.get('password')?.invalid && docenteForm.get('password')?.touched">
+          La contraseña debe tener al menos 8 caracteres.
+        </div>
+      </div>
+
+      <div class="form-row">
+        <!-- Especialidad -->
+        <div class="form-group half-width">
+          <label for="especialidad">Especialidad</label>
+          <div class="input-wrapper">
+            <i class="fa fa-star input-icon"></i>
+            <input type="text" id="especialidad" formControlName="especialidad" placeholder="Ej: Matemáticas" class="glass-input">
+          </div>
+        </div>
+
+        <!-- Teléfono -->
+        <div class="form-group half-width">
+          <label for="telefono">Teléfono</label>
+          <div class="input-wrapper">
+            <i class="fa fa-phone input-icon"></i>
+            <input type="text" id="telefono" formControlName="telefono" placeholder="Ej: +591 70000000" class="glass-input">
+          </div>
+        </div>
+      </div>
+
+      <!-- Botón de Envío -->
+      <div class="form-actions">
+        <button type="submit" class="btn-submit" [disabled]="isSubmitting || docenteForm.invalid">
+          <span *ngIf="!isSubmitting">
+            <i class="fa" [ngClass]="isEditMode ? 'fa-save' : 'fa-user-plus'"></i> 
+            {{ isEditMode ? 'Guardar Cambios' : 'Registrarme' }}
+          </span>
+          <span *ngIf="isSubmitting"><i class="fa fa-spinner fa-spin"></i> Procesando...</span>
+        </button>
+      </div>
+
+      <div class="text-center mt-3">
+        <a routerLink="/login" class="text-muted back-to-login">
+          <i class="fa fa-arrow-left"></i> Volver al Login
+        </a>
+      </div>
+
+    </form>
+  </div>
+</div>

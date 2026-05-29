@@ -1,0 +1,118 @@
+@import '../students/students.component.css';
+
+/* Modality badge container */
+.modality-box {
+  display: flex;
+  flex-direction: column;
+}
+
+.modality-box small {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  margin-top: 2px;
+}
+
+/* Quota progress bar styles */
+.quota-progress-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  width: 120px;
+}
+
+.progress-bar-small {
+  height: 6px;
+  background: #edf2f7;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: #ffa000;
+  transition: width 0.3s ease;
+}
+
+.progress-fill.bg-hab {
+  background: #2e7d32;
+}
+
+.progress-fill.bg-full {
+  background: #c62828;
+}
+
+/* Pagination bar styles */
+.pagination-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 1.2rem;
+  border-top: 1px solid #edf2f7;
+  background: #f8faff;
+}
+
+.btn-page {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-page:hover:not(:disabled) {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+.btn-page:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.page-info {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #4a5568;
+}
+
+/* Specific Modality and Quota badges */
+.status-badge.Presencial {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.status-badge.Virtual {
+  background: #f3e5f5;
+  color: #7b1fa2;
+}
+
+.status-badge.Semi-presencial {
+  background: #fff3e0;
+  color: #ef6c00;
+}
+
+.status-badge.pend {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.status-badge.hab {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.status-badge.full {
+  background: #eceff1;
+  color: #455a64;
+}
+
+.btn-new-course {
+  margin-top: 15px;
+}

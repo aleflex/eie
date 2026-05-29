@@ -1,0 +1,156 @@
+<div class="dashboard-layout">
+  <!-- Barra Lateral -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <img src="assets/imagenes/logo.jpg" alt="Logo EIE" class="sidebar-logo">
+      <span>EIE PANEL</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a routerLink="/admin" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">dashboard</i> Panel Principal
+      </a>
+      <a routerLink="/students" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">people</i> Estudiantes
+      </a>
+      <a routerLink="/courses" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">school</i> Cursos
+      </a>
+      <a routerLink="/docentes-list" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">person</i> Instructores
+      </a>
+      <a routerLink="/paralelos" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">class</i> Paralelos
+      </a>
+      <a routerLink="/accesos" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">vpn_key</i> Credenciales / Accesos
+      </a>
+      <a routerLink="/settings" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">settings</i> Configuración
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button (click)="onLogout()" class="btn-logout">
+        <i class="material-icons-outlined">logout</i> Salir
+      </button>
+    </div>
+  </aside>
+
+  <!-- Contenido Principal -->
+  <main class="main-content">
+    <header class="top-header">
+      <div class="header-left">
+        <h1>Bienvenido al Sistema EIE</h1>
+        <p>Resumen general del estado de las inscripciones.</p>
+      </div>
+      <div class="header-right">
+        <div class="user-info">
+          <span class="user-name">{{ user?.name }}</span>
+          <span class="user-role">Administrador</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Solo Estadísticas, sin tablas de gestión -->
+    <section class="stats-grid animate-fade-in">
+      <div class="stat-card">
+        <div class="stat-icon blue">
+          <i class="material-icons-outlined">assignment</i>
+        </div>
+        <div class="stat-info">
+          <h3>{{ inscripciones.length }}</h3>
+          <p>Total Inscritos</p>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon green">
+          <i class="material-icons-outlined">check_circle</i>
+        </div>
+        <div class="stat-info">
+          <h3>{{ habilitadosCount }}</h3>
+          <p>Habilitados</p>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon gold">
+          <i class="material-icons-outlined">pending_actions</i>
+        </div>
+        <div class="stat-info">
+          <h3>{{ pendientesCount }}</h3>
+          <p>Pendientes</p>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Listado de Inscripciones Recientes -->
+    <section class="table-container animate-fade-in delay-1">
+      <div class="table-header">
+        <h2>Inscripciones Recientes</h2>
+        <p>Monitoreo de los últimos registros habilitados y pendientes.</p>
+      </div>
+
+      <div *ngIf="isLoading" class="loader">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p>Cargando información...</p>
+      </div>
+
+      <div class="table-responsive" *ngIf="!isLoading">
+        <table class="table table-hover align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>Estudiante</th>
+              <th>CI</th>
+              <th>Curso / Idioma</th>
+              <th>Fecha Registro</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let inscripcion of inscripciones">
+              <td>
+                <div class="user-cell">
+                  <span class="full-name">{{ inscripcion.estudiante?.nombres }} {{ inscripcion.estudiante?.apellidos }}</span>
+                  <span class="email">{{ inscripcion.estudiante?.correo_electronico }}</span>
+                </div>
+              </td>
+              <td>{{ inscripcion.estudiante?.ci }}</td>
+              <td>
+                <strong>{{ inscripcion.curso?.idioma }}</strong><br>
+                <small class="text-muted">{{ inscripcion.curso?.nivel }}</small>
+              </td>
+              <td>{{ inscripcion.fecha_registro | date:'mediumDate' }}</td>
+              <td>
+                <span class="badge rounded-pill"
+                      [ngClass]="{
+                        'bg-success': inscripcion.estado === 'activo',
+                        'bg-warning text-dark': inscripcion.estado === 'pendiente',
+                        'bg-danger': inscripcion.estado === 'retirado',
+                        'bg-primary': inscripcion.estado === 'finalizado'
+                      }">
+                  {{ inscripcion.estado === 'activo' ? 'Habilitado' :
+                     inscripcion.estado === 'pendiente' ? 'Pendiente' :
+                     inscripcion.estado }}
+                </span>
+              </td>
+            </tr>
+            <tr *ngIf="inscripciones.length === 0">
+              <td colspan="5" class="text-center py-4 text-muted">No hay inscripciones registradas.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="welcome-section mt-4">
+      <div class="welcome-card">
+        <i class="material-icons-outlined">info</i>
+        <p>Utilice el menú lateral para acceder a la gestión de <b>Estudiantes</b> si necesita modificar, actualizar o eliminar registros.</p>
+      </div>
+    </section>
+
+  </main>
+</div>

@@ -1,0 +1,343 @@
+<div class="dashboard-layout">
+  <!-- Barra Lateral -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <img src="assets/imagenes/logo.jpg" alt="Logo EIE" class="sidebar-logo">
+      <span>EIE PANEL</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a routerLink="/admin" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">dashboard</i> Panel Principal
+      </a>
+      <a routerLink="/students" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">people</i> Estudiantes
+      </a>
+      <a routerLink="/courses" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">school</i> Cursos
+      </a>
+      <a routerLink="/docentes-list" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">person</i> Instructores
+      </a>
+      <a routerLink="/paralelos" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">class</i> Paralelos
+      </a>
+      <a routerLink="/accesos" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">vpn_key</i> Credenciales / Accesos
+      </a>
+      <a routerLink="/settings" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">settings</i> Configuración
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button (click)="onLogout()" class="btn-logout">
+        <i class="material-icons-outlined">logout</i> Salir
+      </button>
+    </div>
+  </aside>
+
+  <!-- Contenido Principal -->
+  <main class="main-content">
+    <header class="top-header">
+      <div class="header-left">
+        <h1>Gestión de Credenciales y Accesos</h1>
+        <p>Controla de forma segura el correo de ingreso y las contraseñas de instructores, estudiantes y administradores.</p>
+      </div>
+      <div class="header-right">
+        <div class="user-info">
+          <span class="user-name">{{ user?.name }}</span>
+          <span class="user-role">Administrador</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Contenedor Principal de la Tabla de Accesos -->
+    <section class="table-container animate-fade-in">
+      
+      <!-- Filtros y Barra de Búsqueda -->
+      <div class="filters-bar">
+        <!-- Pestañas de Roles -->
+        <div class="role-tabs">
+          <button [class.active]="activeTab === 'todos'" (click)="cambiarTab('todos')">
+            <span class="material-icons-outlined">groups</span> Todos
+          </button>
+          <button [class.active]="activeTab === 'docente'" (click)="cambiarTab('docente')">
+            <span class="material-icons-outlined">person</span> Instructores
+          </button>
+          <button [class.active]="activeTab === 'estudiante'" (click)="cambiarTab('estudiante')">
+            <span class="material-icons-outlined">people</span> Estudiantes
+          </button>
+          <button [class.active]="activeTab === 'admin'" (click)="cambiarTab('admin')">
+            <span class="material-icons-outlined">military_tech</span> Administradores
+          </button>
+        </div>
+
+        <!-- Botón para crear nuevo Administrador -->
+        <button *ngIf="activeTab === 'admin'" (click)="openAdminCreateForm()" class="btn btn-assign">
+          <span class="material-icons-outlined btn-icon">add</span>
+          <span>Nuevo Administrador</span>
+        </button>
+
+        <!-- Barra de Búsqueda Unificada -->
+        <div class="search-input-group">
+          <i class="material-icons-outlined search-icon">search</i>
+          <input 
+            type="text" 
+            [(ngModel)]="searchTerm" 
+            (input)="onSearchInput()" 
+            placeholder="Buscar por nombre, CI o correo..." 
+            class="search-input"
+            aria-label="Buscar personas"
+          >
+        </div>
+
+        <!-- Selector de Estado de Cuenta (Solo si no es pestaña de admin) -->
+        <div class="status-select-group" *ngIf="activeTab !== 'admin'">
+          <select [(ngModel)]="statusFilter" (change)="filtrarPersonas()" class="filter-select" aria-label="Filtrar por estado de acceso">
+            <option value="todos">Todos los Estados</option>
+            <option value="con_acceso">Con Cuenta de Acceso</option>
+            <option value="sin_acceso">Sin Cuenta de Acceso</option>
+          </select>
+        </div>
+      </div>
+
+      <div *ngIf="isLoading" class="loader">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p>Cargando nómina del establecimiento...</p>
+      </div>
+
+      <!-- Tabla de Personas -->
+      <div class="table-responsive mt-3" *ngIf="!isLoading">
+        <table class="table table-hover align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>Nombre Completo</th>
+              <th>Rol en Sistema</th>
+              <th>Cédula de Identidad</th>
+              <th>Correo Electrónico (Acceso)</th>
+              <th>Estado de Acceso</th>
+              <th class="text-center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let persona of filteredPersonas" class="persona-row">
+              <td>
+                <div class="user-cell">
+                  <span class="full-name">{{ persona.nombres }} {{ persona.apellidos }}</span>
+                  <small class="text-muted" *ngIf="persona.telefono && persona.telefono !== 'N/A'">Tel: {{ persona.telefono }}</small>
+                </div>
+              </td>
+              <td>
+                <span class="badge rounded-pill" 
+                      [ngClass]="{
+                        'bg-primary': persona.tipo === 'docente',
+                        'bg-success': persona.tipo === 'estudiante',
+                        'bg-danger': persona.tipo === 'admin'
+                      }">
+                  {{ persona.tipo === 'docente' ? 'Instructor' : 
+                     persona.tipo === 'estudiante' ? 'Estudiante' : 'Administrador' }}
+                </span>
+              </td>
+              <td><strong>{{ persona.ci }}</strong></td>
+              <td>
+                <span class="email-text" *ngIf="persona.tiene_cuenta">
+                  {{ persona.correo_electronico }}
+                </span>
+                <span class="text-muted italic small" *ngIf="!persona.tiene_cuenta">
+                  Sin credenciales asignadas
+                </span>
+              </td>
+              <td>
+                <span class="badge status-badge"
+                      [ngClass]="persona.tiene_cuenta ? 'con-acceso' : 'sin-acceso'">
+                  {{ persona.tiene_cuenta ? 'Con Acceso' : 'Sin Acceso' }}
+                </span>
+              </td>
+              <td class="text-center">
+                <div class="d-flex justify-content-center gap-2">
+                  <!-- Botón Asignar (Si no tiene cuenta y no es admin) -->
+                  <button *ngIf="!persona.tiene_cuenta && persona.tipo !== 'admin'" 
+                          (click)="openAssignModal(persona)" 
+                          class="btn btn-sm btn-assign" 
+                          title="Asignar Credenciales">
+                    <span class="material-icons-outlined btn-icon">vpn_key</span>
+                    <span>Asignar Acceso</span>
+                  </button>
+
+                  <!-- Botones de Gestión (Si ya tiene cuenta) -->
+                  <button *ngIf="persona.tiene_cuenta" 
+                          (click)="openEditModal(persona)" 
+                          class="btn btn-sm btn-edit-credentials" 
+                          title="Modificar Correo o Contraseña">
+                    <span class="material-icons-outlined">edit</span>
+                    <span>Gestionar</span>
+                  </button>
+                  
+                  <button *ngIf="persona.tiene_cuenta" 
+                          (click)="desvincularCuenta(persona)" 
+                          [disabled]="user?.id === persona.user_id"
+                          class="btn btn-sm btn-revoke" 
+                          [title]="user?.id === persona.user_id ? 'No puedes auto-eliminarte del sistema' : 'Eliminar Cuenta / Acceso'">
+                    <span class="material-icons-outlined">link_off</span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="filteredPersonas.length === 0">
+              <td colspan="6" class="text-center py-5 text-muted">
+                <span class="material-icons-outlined block-icon d-block mb-2">search_off</span>
+                No se encontraron personas con los filtros seleccionados.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- ==================== MODAL 1: ASIGNAR CREDENCIALES / CREAR ADMIN ==================== -->
+  <div class="modal-backdrop-overlay" *ngIf="showAssignModal">
+    <div class="modal-card-custom animate-fade-in">
+      <div class="modal-header-custom text-white" [ngClass]="selectedPersona?.tipo === 'admin' ? 'bg-dark-custom' : 'bg-primary-custom'">
+        <h5 class="modal-title-custom">
+          <span class="material-icons-outlined align-middle">vpn_key</span>
+          {{ selectedPersona?.tipo === 'admin' ? 'Registrar Administrador' : 'Asignar Acceso: ' + selectedPersona?.nombres + ' ' + selectedPersona?.apellidos }}
+        </h5>
+        <button type="button" class="btn-close-custom" (click)="closeAssignModal()" aria-label="Cerrar">&times;</button>
+      </div>
+      <div class="modal-body-custom py-4">
+        <p class="modal-instruction">
+          {{ selectedPersona?.tipo === 'admin' 
+             ? 'Crea una nueva cuenta de tipo Administrador con privilegios totales de gestión en el sistema.' 
+             : 'Crea una cuenta de usuario para que el ' + (selectedPersona?.tipo === 'docente' ? 'instructor' : 'estudiante') + ' pueda iniciar sesión.' }}
+        </p>
+
+        <div class="alert-info-custom mb-3 animate-fade-in">
+          <span class="material-icons-outlined alert-icon-mini">warning_amber</span>
+          <span>
+            <strong>Importante:</strong> El correo electrónico debe ser único. Si una persona tiene múltiples roles (ej. instructor y estudiante), debe usar correos diferentes para cada rol para permitir un inicio de sesión correcto.
+          </span>
+        </div>
+        
+        <form (ngSubmit)="asignarCredenciales()" #assignForm="ngForm">
+          <!-- Campo Nombre Completo (Solo para Administrador Nuevo) -->
+          <div class="form-group-custom mb-3" *ngIf="selectedPersona?.tipo === 'admin'">
+            <label for="assign_nombres">Nombre Completo del Administrador *</label>
+            <div class="input-icon-wrapper">
+              <span class="material-icons-outlined">person_outline</span>
+              <input 
+                type="text" 
+                id="assign_nombres" 
+                [(ngModel)]="formModel.nombres" 
+                (ngModelChange)="onAdminNameChange()"
+                name="nombres" 
+                class="form-control-custom" 
+                required 
+                placeholder="Ej: Cnl. DAEN Juan Pérez">
+            </div>
+          </div>
+
+          <div class="form-group-custom">
+            <label for="assign_email">Correo electrónico de Ingreso *</label>
+            <div class="input-icon-wrapper">
+              <span class="material-icons-outlined">email</span>
+              <input 
+                type="email" 
+                id="assign_email" 
+                [(ngModel)]="formModel.email" 
+                name="email" 
+                class="form-control-custom" 
+                required 
+                placeholder="usuario@eie.edu.bo">
+            </div>
+          </div>
+
+          <div class="form-group-custom mt-3">
+            <label for="assign_password">Contraseña de Acceso *</label>
+            <div class="input-icon-wrapper">
+              <span class="material-icons-outlined">lock</span>
+              <input 
+                type="password" 
+                id="assign_password" 
+                [(ngModel)]="formModel.password" 
+                name="password" 
+                class="form-control-custom" 
+                required 
+                minlength="8"
+                placeholder="Mínimo 8 caracteres">
+            </div>
+          </div>
+
+          <div class="modal-footer-custom mt-4">
+            <button type="button" class="btn-cancel-custom" (click)="closeAssignModal()">CANCELAR</button>
+            <button type="submit" class="btn-submit-custom" [ngClass]="selectedPersona?.tipo === 'admin' ? 'btn-submit-dark' : ''" [disabled]="!assignForm.valid">
+              {{ selectedPersona?.tipo === 'admin' ? 'REGISTRAR' : 'CREAR CUENTA' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 2: GESTIONAR / EDITAR CREDENCIALES ==================== -->
+  <div class="modal-backdrop-overlay" *ngIf="showEditModal">
+    <div class="modal-card-custom animate-fade-in">
+      <div class="modal-header-custom bg-dark-custom text-white">
+        <h5 class="modal-title-custom">
+          <span class="material-icons-outlined align-middle">lock_reset</span>
+          Gestionar Cuenta: {{ selectedPersona?.nombres }} {{ selectedPersona?.apellidos }}
+        </h5>
+        <button type="button" class="btn-close-custom" (click)="closeEditModal()" aria-label="Cerrar">&times;</button>
+      </div>
+      <div class="modal-body-custom py-4">
+        <p class="modal-instruction">Modifica el correo de acceso o asigna una nueva contraseña para la cuenta vinculada.</p>
+
+        <div class="alert-info-custom mb-3 animate-fade-in">
+          <span class="material-icons-outlined alert-icon-mini">warning_amber</span>
+          <span>
+            <strong>Nota de Seguridad:</strong> Si cambias el correo de acceso, asegúrate de notificar al usuario. Este correo debe ser único en la base de datos de credenciales.
+          </span>
+        </div>
+        
+        <form (ngSubmit)="actualizarCredenciales()" #editForm="ngForm">
+          <div class="form-group-custom">
+            <label for="edit_email">Correo electrónico de Ingreso *</label>
+            <div class="input-icon-wrapper">
+              <span class="material-icons-outlined">email</span>
+              <input 
+                type="email" 
+                id="edit_email" 
+                [(ngModel)]="formModel.email" 
+                name="email" 
+                class="form-control-custom" 
+                required 
+                placeholder="usuario@eie.edu.bo">
+            </div>
+          </div>
+
+          <div class="form-group-custom mt-3">
+            <label for="edit_password">Nueva Contraseña (Opcional)</label>
+            <div class="input-icon-wrapper">
+              <span class="material-icons-outlined">lock</span>
+              <input 
+                type="password" 
+                id="edit_password" 
+                [(ngModel)]="formModel.password" 
+                name="password" 
+                class="form-control-custom" 
+                minlength="8"
+                placeholder="Dejar en blanco para mantener la actual">
+            </div>
+            <small class="form-help text-muted mt-1">Escribe una contraseña solo si deseas cambiar la contraseña actual del usuario.</small>
+          </div>
+
+          <div class="modal-footer-custom mt-4">
+            <button type="button" class="btn-cancel-custom" (click)="closeEditModal()">CANCELAR</button>
+            <button type="submit" class="btn-submit-custom btn-submit-dark" [disabled]="!editForm.valid">GUARDAR CAMBIOS</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

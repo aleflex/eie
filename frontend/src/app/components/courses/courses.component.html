@@ -1,0 +1,204 @@
+<div class="dashboard-layout">
+  <!-- Barra Lateral -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <img src="assets/imagenes/logo.jpg" alt="Logo EIE" class="sidebar-logo">
+      <span>EIE PANEL</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a routerLink="/admin" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">dashboard</i> Panel Principal
+      </a>
+      <a routerLink="/students" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">people</i> Estudiantes
+      </a>
+      <a routerLink="/courses" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">school</i> Cursos
+      </a>
+      <a routerLink="/docentes-list" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">person</i> Instructores
+      </a>
+      <a routerLink="/paralelos" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">class</i> Paralelos
+      </a>
+      <a routerLink="/accesos" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">vpn_key</i> Credenciales / Accesos
+      </a>
+      <a routerLink="/settings" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">settings</i> Configuración
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button class="btn-logout" routerLink="/home">
+        <i class="material-icons-outlined">logout</i> Salir
+      </button>
+    </div>
+  </aside>
+
+  <!-- Contenido Principal -->
+  <main class="main-content">
+    <div class="students-container">
+      <div class="header">
+        <h1>Gestión de Cursos</h1>
+        <p>Administra la oferta académica de la institución</p>
+        <button class="btn-primary btn-new-course" (click)="openCreateForm()">
+          <i class="material-icons">add</i> Nuevo Curso
+        </button>
+      </div>
+
+      <!-- Formulario de Creación/Edición en Línea -->
+      <div *ngIf="showForm" class="edit-section animate-fade-in">
+        <div class="card">
+          <div class="card-header">
+            <h2>{{ isEditing ? 'Editar Curso' : 'Crear Nuevo Curso' }}</h2>
+            <button (click)="closeForm()" class="btn-close" aria-label="Cerrar" title="Cerrar">&times;</button>
+          </div>
+          <form (ngSubmit)="saveCourse()" class="edit-form">
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="idioma">Idioma</label>
+                <input type="text" id="idioma" [(ngModel)]="currentCourse.idioma" name="idioma" class="form-control" placeholder="Ej. Inglés" required>
+              </div>
+              <div class="form-group">
+                <label for="nivel">Nivel</label>
+                <select id="nivel" [(ngModel)]="currentCourse.nivel" name="nivel" class="form-control" required>
+                  <option *ngFor="let nivel of nivelesDisponibles" [value]="nivel">{{nivel}}</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="modalidad">Modalidad</label>
+                <select id="modalidad" [(ngModel)]="currentCourse.modalidad" name="modalidad" class="form-control" required>
+                  <option value="Presencial">Presencial</option>
+                  <option value="Virtual">Virtual</option>
+                  <option value="Semi-presencial">Semi-presencial</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="horario">Horario</label>
+                <input type="text" id="horario" [(ngModel)]="currentCourse.horario" name="horario" class="form-control" placeholder="Ej. 08:00 - 10:00" required>
+              </div>
+              <div class="form-group">
+                <label for="cupo_minimo">Cupo Mínimo</label>
+                <input type="number" id="cupo_minimo" [(ngModel)]="currentCourse.cupo_minimo" name="cupo_minimo" class="form-control" required>
+              </div>
+              <div class="form-group">
+                <label for="cupo_maximo">Cupo Máximo</label>
+                <input type="number" id="cupo_maximo" [(ngModel)]="currentCourse.cupo_maximo" name="cupo_maximo" class="form-control" required>
+              </div>
+            </div>
+            <div class="form-actions mt-4">
+              <button type="submit" class="btn-save">GUARDAR CAMBIOS</button>
+              <button type="button" (click)="closeForm()" class="btn-cancel">CANCELAR</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Barra de Búsqueda -->
+      <div class="search-container animate-fade-in">
+        <div class="search-box">
+          <div class="search-input-group">
+            <i class="material-icons-outlined search-icon">search</i>
+            <input
+              type="text"
+              [(ngModel)]="searchTerm"
+              (input)="onSearchInput()"
+              (keyup.enter)="onSearch()"
+              [placeholder]="searchType === 'idioma' ? 'Buscar por idioma...' : searchType === 'nivel' ? 'Buscar por nivel...' : searchType === 'modalidad' ? 'Buscar por modalidad...' : 'Buscar por idioma, nivel o modalidad...'"
+              class="search-input"
+              aria-label="Término de búsqueda"
+            >
+          </div>
+          <div class="search-filters">
+            <select [(ngModel)]="searchType" class="search-select" aria-label="Filtrar búsqueda por">
+              <option value="all">Por Todo</option>
+              <option value="idioma">Por Idioma</option>
+              <option value="nivel">Por Nivel</option>
+              <option value="modalidad">Por Modalidad</option>
+            </select>
+            <button (click)="onSearch()" class="btn-search">BUSCAR</button>
+            <button *ngIf="searchTerm" (click)="searchTerm = ''; onSearch()" class="btn-clear" title="Limpiar búsqueda">
+              <i class="material-icons-outlined">close</i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-card animate-fade-in">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Idioma</th>
+              <th>Nivel</th>
+              <th>Modalidad</th>
+              <th>Progreso Cupos</th>
+              <th>Min/Máx</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let curso of pagedCourses">
+              <td>#{{curso.id}}</td>
+              <td><b>{{curso.idioma}}</b></td>
+              <td>{{curso.nivel}}</td>
+              <td>
+                <div class="modality-box">
+                  <span class="status-badge" [ngClass]="curso.modalidad">{{curso.modalidad}}</span>
+                  <small>{{curso.horario}}</small>
+                </div>
+              </td>
+              <td>
+                <div class="quota-progress-container">
+                  <div class="progress-bar-small">
+                    <div class="progress-fill" [style.width.%]="(curso.inscripciones_count || 0) / curso.cupo_maximo * 100"
+                         [ngClass]="{'bg-full': (curso.inscripciones_count || 0) >= curso.cupo_maximo, 'bg-hab': (curso.inscripciones_count || 0) >= curso.cupo_minimo}"></div>
+                  </div>
+                  <small>{{curso.inscripciones_count || 0}} / {{curso.cupo_maximo}}</small>
+                </div>
+              </td>
+              <td>{{curso.cupo_minimo}} / {{curso.cupo_maximo}}</td>
+              <td>
+                <span class="status-badge" [ngClass]="{
+                  'pend': (curso.inscripciones_count || 0) < curso.cupo_minimo,
+                  'hab': (curso.inscripciones_count || 0) >= curso.cupo_minimo && (curso.inscripciones_count || 0) < curso.cupo_maximo,
+                  'full': (curso.inscripciones_count || 0) >= curso.cupo_maximo
+                }">
+                  {{ (curso.inscripciones_count || 0) < curso.cupo_minimo ? 'Pendiente' :
+                     (curso.inscripciones_count || 0) >= curso.cupo_maximo ? 'Lleno' : 'Habilitado' }}
+                </span>
+              </td>
+              <td>
+                <div class="actions">
+                  <button (click)="editCourse(curso)" class="btn-edit" title="Editar">
+                    <i class="material-icons-outlined">edit</i>
+                  </button>
+                  <button (click)="deleteCourse(curso.id)" class="btn-delete" title="Eliminar">
+                    <i class="material-icons-outlined">delete</i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="pagedCourses.length === 0">
+              <td colspan="8" class="text-center py-4 text-muted">No se encontraron cursos que coincidan con la búsqueda.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Paginación -->
+        <div class="pagination-bar" *ngIf="totalPages > 1">
+          <button (click)="setPage(currentPage - 1)" [disabled]="currentPage === 1" class="btn-page">
+            <i class="material-icons">chevron_left</i>
+          </button>
+          <span class="page-info">Página {{currentPage}} de {{totalPages}}</span>
+          <button (click)="setPage(currentPage + 1)" [disabled]="currentPage === totalPages" class="btn-page">
+            <i class="material-icons">chevron_right</i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>

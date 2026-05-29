@@ -1,0 +1,9 @@
+@import '../students/students.component.css';
+
+.btn-new-docente {
+  margin-top: 15px;
+}
+
+.email-badge {
+  font-weight: 500;
+}

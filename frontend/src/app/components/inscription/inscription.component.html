@@ -1,0 +1,653 @@
+<app-navbar></app-navbar>
+
+<div class="inscription-container">
+  <div class="form-card animate-fade-in">
+    <div class="form-header">
+      <img src="assets/imagenes/logo.jpg" alt="EIE Logo" class="form-logo">
+      <h1 class="form-title">FORMULARIO DE INSCRIPCIÓN</h1>
+      <p class="form-subtitle">Escuela de Idiomas del Ejército - EIE</p>
+    </div>
+
+    <!-- Barra de Progreso del Asistente -->
+    <div class="stepper-progress-container">
+      <div class="stepper-track">
+        <div class="stepper-line" [style.width.%]="(currentStep - 1) * 50"></div>
+      </div>
+      <div class="step-node" [class.active]="currentStep === 1" [class.completed]="currentStep > 1" (click)="goToStep(1)">
+        <div class="circle-node">
+          <i class="material-icons" *ngIf="currentStep > 1">check</i>
+          <span *ngIf="currentStep <= 1">1</span>
+        </div>
+        <span class="step-label">Datos Personales</span>
+      </div>
+      <div class="step-node" [class.active]="currentStep === 2" [class.completed]="currentStep > 2" (click)="goToStep(2)">
+        <div class="circle-node">
+          <i class="material-icons" *ngIf="currentStep > 2">check</i>
+          <span *ngIf="currentStep <= 2">2</span>
+        </div>
+        <span class="step-label">Contacto y Curso</span>
+      </div>
+      <div class="step-node" [class.active]="currentStep === 3" [class.completed]="currentStep > 3" (click)="goToStep(3)">
+        <div class="circle-node">
+          <span>3</span>
+        </div>
+        <span class="step-label">Documentos</span>
+      </div>
+    </div>
+
+    <form [formGroup]="inscriptionForm" (ngSubmit)="onSubmit()" class="inscription-form">
+
+      <!-- PASO 1: CATEGORÍA Y DATOS PERSONALES -->
+      <div *ngIf="currentStep === 1" class="step-content animate-slide-right">
+        <!-- Tipo de Usuario (Categoría) -->
+        <div class="section-title">Categoría de Inscripción</div>
+        <div class="user-type-selector">
+          <label class="type-card" [class.active]="userType === 'normal'">
+            <input type="radio" formControlName="userType" value="normal" class="hidden-radio">
+            <div class="card-content">
+              <div class="card-icon-wrapper">
+                <i class="material-icons">person</i>
+              </div>
+              <span class="card-label">Civil / Normal</span>
+              <div class="card-badge" *ngIf="userType === 'normal'">
+                <i class="material-icons">check</i>
+              </div>
+            </div>
+          </label>
+
+          <label class="type-card" [class.active]="userType === 'militar'">
+            <input type="radio" formControlName="userType" value="militar" class="hidden-radio">
+            <div class="card-content">
+              <div class="card-icon-wrapper">
+                <i class="material-icons">shield</i>
+              </div>
+              <span class="card-label">Personal Militar</span>
+              <div class="card-badge" *ngIf="userType === 'militar'">
+                <i class="material-icons">check</i>
+              </div>
+            </div>
+          </label>
+
+          <label class="type-card" [class.active]="userType === 'hijo_militar'">
+            <input type="radio" formControlName="userType" value="hijo_militar" class="hidden-radio">
+            <div class="card-content">
+              <div class="card-icon-wrapper">
+                <i class="material-icons">people</i>
+              </div>
+              <span class="card-label">Hijo de Militar</span>
+              <div class="card-badge" *ngIf="userType === 'hijo_militar'">
+                <i class="material-icons">check</i>
+              </div>
+            </div>
+          </label>
+
+          <label class="type-card" [class.active]="userType === 'emi'">
+            <input type="radio" formControlName="userType" value="emi" class="hidden-radio">
+            <div class="card-content">
+              <div class="card-icon-wrapper">
+                <i class="material-icons">school</i>
+              </div>
+              <span class="card-label">Estudiante EMI</span>
+              <div class="card-badge" *ngIf="userType === 'emi'">
+                <i class="material-icons">check</i>
+              </div>
+            </div>
+          </label>
+        </div>
+
+        <!-- Datos Personales -->
+        <div class="section-title">Datos Personales</div>
+        <div class="row">
+          <div class="col-md-4 form-group">
+            <label for="nombres">Nombres *</label>
+            <input type="text" id="nombres" formControlName="nombres" class="form-control"
+                   [class.is-invalid]="(isSubmitted || f['nombres'].touched) && f['nombres'].errors" placeholder="Ej. Juan">
+            <div *ngIf="(isSubmitted || f['nombres'].touched) && f['nombres'].errors" class="error-msg">
+              <small *ngIf="f['nombres'].errors['required']">El nombre es obligatorio.</small>
+              <small *ngIf="f['nombres'].errors['minlength']">Mínimo 3 caracteres.</small>
+            </div>
+          </div>
+          <div class="col-md-4 form-group">
+            <label for="apellidos">Apellidos *</label>
+            <input type="text" id="apellidos" formControlName="apellidos" class="form-control"
+                   [class.is-invalid]="(isSubmitted || f['apellidos'].touched) && f['apellidos'].errors" placeholder="Ej. Pérez Mamani">
+            <div *ngIf="(isSubmitted || f['apellidos'].touched) && f['apellidos'].errors" class="error-msg">
+              <small *ngIf="f['apellidos'].errors['required']">Los apellidos son obligatorios.</small>
+              <small *ngIf="f['apellidos'].errors['pattern']">Debe ingresar sus dos apellidos (Paterno y Materno).</small>
+            </div>
+          </div>
+          <div class="col-md-4 form-group">
+            <label for="ci">Cédula de Identidad *</label>
+            <input type="text" id="ci" formControlName="ci" class="form-control"
+                   (keypress)="onlyNumbers($event)"
+                   [class.is-invalid]="(isSubmitted || f['ci'].touched) && f['ci'].errors" placeholder="Número de CI">
+            <div *ngIf="(isSubmitted || f['ci'].touched) && f['ci'].errors" class="error-msg">
+              <small *ngIf="f['ci'].errors['required']">El CI es obligatorio.</small>
+              <small *ngIf="f['ci'].errors['pattern']">Solo números permitidos.</small>
+              <small *ngIf="f['ci'].errors['minlength']">Mínimo 6 dígitos.</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="row mt-3">
+          <div class="col-md-3 form-group">
+            <label for="lugarNacimiento">Lugar de Nacimiento *</label>
+            <select id="lugarNacimiento" formControlName="lugarNacimiento" class="form-control"
+                    [class.is-invalid]="(isSubmitted || f['lugarNacimiento'].touched) && f['lugarNacimiento'].errors">
+              <option value="">Seleccione...</option>
+              <option value="La Paz">La Paz</option>
+              <option value="Cochabamba">Cochabamba</option>
+              <option value="Santa Cruz">Santa Cruz</option>
+              <option value="Oruro">Oruro</option>
+              <option value="Potosí">Potosí</option>
+              <option value="Tarija">Tarija</option>
+              <option value="Chuquisaca">Chuquisaca</option>
+              <option value="Beni">Beni</option>
+              <option value="Pando">Pando</option>
+            </select>
+            <div *ngIf="(isSubmitted || f['lugarNacimiento'].touched) && f['lugarNacimiento'].errors" class="error-msg">
+              <small *ngIf="f['lugarNacimiento'].errors['required']">El lugar de nacimiento es obligatorio.</small>
+            </div>
+          </div>
+          <div class="col-md-3 form-group">
+            <label for="fechaNacimiento">Fecha de Nacimiento *</label>
+            <input type="date" id="fechaNacimiento" formControlName="fechaNacimiento" class="form-control"
+                   [class.is-invalid]="(isSubmitted || f['fechaNacimiento'].touched) && f['fechaNacimiento'].errors">
+            <div *ngIf="(isSubmitted || f['fechaNacimiento'].touched) && f['fechaNacimiento'].errors" class="error-msg">
+              <small>Campo obligatorio.</small>
+            </div>
+          </div>
+          <div class="col-md-2 form-group">
+            <label for="edad">Edad (Autocalculado)</label>
+            <input type="number" id="edad" formControlName="edad" class="form-control readonly-input" readonly
+                   [class.is-invalid]="(isSubmitted || f['edad'].touched) && f['edad'].errors">
+            <div *ngIf="(isSubmitted || f['edad'].touched) && f['edad'].errors" class="error-msg">
+              <small *ngIf="f['edad'].errors['required']">Requerido.</small>
+              <small *ngIf="f['edad'].errors['min'] || f['edad'].errors['max']">Edad inválida (5-60).</small>
+            </div>
+          </div>
+          <div class="col-md-4 form-group">
+            <label for="estadoCivil">Estado Civil *</label>
+            <select id="estadoCivil" formControlName="estadoCivil" class="form-control"
+                    [class.is-invalid]="(isSubmitted || f['estadoCivil'].touched) && f['estadoCivil'].errors">
+              <option value="">Seleccione...</option>
+              <option value="soltero">Soltero/a</option>
+              <option value="casado">Casado/a</option>
+              <option value="divorciado">Divorciado/a</option>
+            </select>
+            <div *ngIf="(isSubmitted || f['estadoCivil'].touched) && f['estadoCivil'].errors" class="error-msg">
+              <small>Campo obligatorio.</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Campos Especiales Militares (Solo para militares) -->
+        <div class="row mt-3 animate-fade-in" *ngIf="userType === 'militar'">
+          <div class="col-md-12">
+            <div class="section-title sub-section">Información Institucional / Militar</div>
+          </div>
+          <div class="col-md-3 form-group">
+            <label for="gradoAcademico">Grado Académico</label>
+            <input type="text" id="gradoAcademico" formControlName="gradoAcademico" class="form-control" placeholder="Ej. Sbtte. / Tte.">
+          </div>
+          <div class="col-md-3 form-group">
+            <label for="armaEspecialidad">Arma/Especialidad</label>
+            <input type="text" id="armaEspecialidad" formControlName="armaEspecialidad" class="form-control" placeholder="Ej. Infantería / Com.">
+          </div>
+          <div class="col-md-3 form-group">
+            <label for="carnetMilitar">Carnet Militar (Nro.)</label>
+            <input type="text" id="carnetMilitar" formControlName="carnetMilitar" class="form-control" (keypress)="onlyNumbers($event)" placeholder="Ej. 12345">
+          </div>
+          <div class="col-md-3 form-group">
+            <label for="carnetCossmil">Carnet Cossmil (Nro.)</label>
+            <input type="text" id="carnetCossmil" formControlName="carnetCossmil" class="form-control" (keypress)="onlyNumbers($event)" placeholder="Ej. 12345">
+          </div>
+        </div>
+
+        <!-- Información de Padres, Tutor o Responsable (Para todos: Civil, Hijo de Militar, EMI) -->
+        <div class="row mt-4 animate-fade-in">
+          <div class="col-md-12">
+            <div class="section-title sub-section">Información de Padres, Tutor o Responsable</div>
+          </div>
+          <div class="col-md-6 form-group">
+            <label for="nombrePadres">Nombres y Apellidos de los Padres / Tutor <span *ngIf="userType !== 'militar'">*</span></label>
+            <input type="text" id="nombrePadres" formControlName="nombrePadres" class="form-control"
+                   [class.is-invalid]="(isSubmitted || f['nombrePadres'].touched) && f['nombrePadres'].errors" placeholder="Nombre completo del tutor o padres">
+            <div *ngIf="(isSubmitted || f['nombrePadres'].touched) && f['nombrePadres'].errors" class="error-msg">
+              <small *ngIf="f['nombrePadres'].errors['required']">El nombre del tutor o padres es obligatorio.</small>
+              <small *ngIf="f['nombrePadres'].errors['minlength']">Mínimo 6 caracteres.</small>
+            </div>
+          </div>
+          <div class="col-md-6 form-group">
+            <label for="ciTutor">C.I. del Tutor o Responsable <span *ngIf="userType !== 'militar'">*</span></label>
+            <input type="text" id="ciTutor" formControlName="ciTutor" class="form-control"
+                   (keypress)="onlyNumbers($event)"
+                   [class.is-invalid]="(isSubmitted || f['ciTutor'].touched) && f['ciTutor'].errors" placeholder="Número de carnet de identidad">
+            <div *ngIf="(isSubmitted || f['ciTutor'].touched) && f['ciTutor'].errors" class="error-msg">
+              <small *ngIf="f['ciTutor'].errors['required']">El C.I. del tutor es obligatorio.</small>
+              <small *ngIf="f['ciTutor'].errors['pattern']">Solo números permitidos.</small>
+              <small *ngIf="f['ciTutor'].errors['minlength']">Mínimo 6 dígitos.</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="row mt-3 animate-fade-in">
+          <div class="col-md-6 form-group">
+            <label for="hermanosInscritos">Nombres de Hermanos Inscritos (Si corresponde)</label>
+            <input type="text" id="hermanosInscritos" formControlName="hermanosInscritos" class="form-control" placeholder="Ej. Carlos Pérez, María Pérez">
+          </div>
+          <div class="col-md-6 form-group">
+            <label for="contactoEmergencia">En caso de emergencia Llamar a *</label>
+            <input type="text" id="contactoEmergencia" formControlName="contactoEmergencia" class="form-control"
+                   [class.is-invalid]="(isSubmitted || f['contactoEmergencia'].touched) && f['contactoEmergencia'].errors" placeholder="Nombre y celular de contacto de emergencia">
+            <div *ngIf="(isSubmitted || f['contactoEmergencia'].touched) && f['contactoEmergencia'].errors" class="error-msg">
+              <small *ngIf="f['contactoEmergencia'].errors['required']">El contacto de emergencia es obligatorio.</small>
+              <small *ngIf="f['contactoEmergencia'].errors['minlength']">Mínimo 4 caracteres.</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PASO 2: CONTACTO, ACADÉMICOS Y CURSO -->
+      <div *ngIf="currentStep === 2" class="step-content animate-slide-right">
+        <!-- Contacto y Datos Generales -->
+        <div class="section-title">Datos de Contacto</div>
+        <div class="row">
+          <div class="col-md-4 form-group">
+            <label for="email">Correo Electrónico *</label>
+            <input type="email" id="email" formControlName="email" class="form-control"
+                   [class.is-invalid]="(isSubmitted || f['email'].touched) && f['email'].errors" placeholder="nombre@ejemplo.com">
+            <div *ngIf="(isSubmitted || f['email'].touched) && f['email'].errors" class="error-msg">
+              <small *ngIf="f['email'].errors['required']">El email es obligatorio.</small>
+              <small *ngIf="f['email'].errors['email']">Email inválido.</small>
+            </div>
+          </div>
+          <div class="col-md-4 form-group">
+            <label for="celular">Celular *</label>
+            <div class="input-group-phone">
+              <select formControlName="celularPrefix" class="prefix-select" title="Prefijo de país" aria-label="Prefijo de país">
+                <option value="+591">+591 (BO)</option>
+                <option value="+54">+54 (AR)</option>
+                <option value="+55">+55 (BR)</option>
+                <option value="+56">+56 (CL)</option>
+                <option value="+51">+51 (PE)</option>
+                <option value="+57">+57 (CO)</option>
+                <option value="+34">+34 (ES)</option>
+                <option value="+1">+1 (US/CA)</option>
+              </select>
+              <input type="tel" id="celular" formControlName="celular" class="form-control phone-input"
+                     (keypress)="onlyNumbers($event)"
+                     [class.is-invalid]="(isSubmitted || f['celular'].touched) && f['celular'].errors" placeholder="Ej. 70000000">
+            </div>
+            <div *ngIf="(isSubmitted || f['celular'].touched) && f['celular'].errors" class="error-msg">
+              <small *ngIf="f['celular'].errors['required']">El celular es obligatorio.</small>
+              <small *ngIf="f['celular'].errors['pattern']">Debe tener entre 7 y 10 dígitos.</small>
+            </div>
+          </div>
+          <div class="col-md-4 form-group">
+            <label for="domicilio">Domicilio *</label>
+            <input type="text" id="domicilio" formControlName="domicilio" class="form-control"
+                   [class.is-invalid]="(isSubmitted || f['domicilio'].touched) && f['domicilio'].errors" placeholder="Zona, Avenida, Nro Calle">
+            <div *ngIf="(isSubmitted || f['domicilio'].touched) && f['domicilio'].errors" class="error-msg">
+              <small>El domicilio es obligatorio.</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="row mt-3">
+          <div class="col-md-4 form-group">
+            <label for="grupoSanguineo">Grupo Sanguíneo *</label>
+            <select id="grupoSanguineo" formControlName="grupoSanguineo" class="form-control"
+                    [class.is-invalid]="(isSubmitted || f['grupoSanguineo'].touched) && f['grupoSanguineo'].errors">
+              <option value="">Seleccione...</option>
+              <option value="ORh+ (O+)">ORh+ (O+)</option>
+              <option value="ORh- (O-)">ORh- (O-)</option>
+              <option value="ARh+ (A+)">ARh+ (A+)</option>
+              <option value="ARh- (A-)">ARh- (A-)</option>
+              <option value="BRh+ (B+)">BRh+ (B+)</option>
+              <option value="BRh- (B-)">BRh- (B-)</option>
+              <option value="ABRh+ (AB+)">ABRh+ (AB+)</option>
+              <option value="ABRh- (AB-)">ABRh- (AB-)</option>
+            </select>
+            <div *ngIf="(isSubmitted || f['grupoSanguineo'].touched) && f['grupoSanguineo'].errors" class="error-msg">
+              <small>El grupo sanguíneo es obligatorio.</small>
+            </div>
+          </div>
+          <div class="col-md-4 form-group">
+            <label for="anioBachiller">Año Bachiller *</label>
+            <input type="number" id="anioBachiller" formControlName="anioBachiller" class="form-control"
+                   [class.is-invalid]="(isSubmitted || f['anioBachiller'].touched) && f['anioBachiller'].errors" placeholder="Ej. 2018">
+            <div *ngIf="(isSubmitted || f['anioBachiller'].touched) && f['anioBachiller'].errors" class="error-msg">
+              <small *ngIf="f['anioBachiller'].errors['required']">Campo obligatorio.</small>
+              <small *ngIf="f['anioBachiller'].errors['min'] || f['anioBachiller'].errors['max']">Año inválido (1950-2026).</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Datos del Curso -->
+        <div class="section-title mt-4">Datos del Curso</div>
+        <div class="row">
+          <div class="col-md-3 form-group">
+            <label for="tipoCurso">Tipo de Curso *</label>
+            <select id="tipoCurso" formControlName="tipoCurso" class="form-control"
+                    [class.is-invalid]="(isSubmitted || f['tipoCurso'].touched) && f['tipoCurso'].errors">
+              <option value="presencial">Presencial</option>
+              <option value="virtual">Virtual</option>
+            </select>
+            <div *ngIf="(isSubmitted || f['tipoCurso'].touched) && f['tipoCurso'].errors" class="error-msg">
+              <small>Campo obligatorio.</small>
+            </div>
+          </div>
+          <div class="col-md-3 form-group">
+            <label for="idioma">Idioma *</label>
+            <select id="idioma" formControlName="idioma" class="form-control"
+                    [class.is-invalid]="(isSubmitted || f['idioma'].touched) && f['idioma'].errors">
+              <option value="Inglés">Inglés</option>
+              <option value="Francés">Francés</option>
+              <option value="Alemán">Alemán</option>
+              <option value="Portugués">Portugués</option>
+              <option value="Chino Mandarín">Chino Mandarín</option>
+            </select>
+            <div *ngIf="(isSubmitted || f['idioma'].touched) && f['idioma'].errors" class="error-msg">
+              <small>Campo obligatorio.</small>
+            </div>
+          </div>
+          <div class="col-md-3 form-group">
+            <label for="nivel">Nivel *</label>
+            <select id="nivel" formControlName="nivel" class="form-control"
+                    [class.is-invalid]="(isSubmitted || f['nivel'].touched) && f['nivel'].errors">
+              <option value="">Seleccione...</option>
+              <option value="NIVEL I (BOOK 1-6)">NIVEL I (BOOK 1-6)</option>
+              <option value="NIVEL II (BOOK 7-12)">NIVEL II (BOOK 7-12)</option>
+              <option value="NIVEL III (BOOK 13-18)">NIVEL III (BOOK 13-18)</option>
+              <option value="NIVEL IV (BOOK 19-24)">NIVEL IV (BOOK 19-24)</option>
+              <option value="NIVEL V (BOOK 25-30)">NIVEL V (BOOK 25-30)</option>
+            </select>
+            <div *ngIf="(isSubmitted || f['nivel'].touched) && f['nivel'].errors" class="error-msg">
+              <small>Campo obligatorio.</small>
+            </div>
+          </div>
+          <div class="col-md-3 form-group">
+            <label for="horario">Horario *</label>
+            <select id="horario" formControlName="horario" class="form-control"
+                    [class.is-invalid]="(isSubmitted || f['horario'].touched) && f['horario'].errors">
+              <option value="">Seleccione...</option>
+              <option value="08:00 - 10:00 (Lunes a Viernes)">08:00 - 10:00 (Lunes a Viernes)</option>
+              <option value="10:00 - 12:00 (Lunes a Viernes)">10:00 - 12:00 (Lunes a Viernes)</option>
+              <option value="14:00 - 16:00 (Lunes a Viernes)">14:00 - 16:00 (Lunes a Viernes)</option>
+              <option value="16:00 - 18:00 (Lunes a Viernes)">16:00 - 18:00 (Lunes a Viernes)</option>
+              <option value="18:30 - 20:30 (Lunes a Viernes)">18:30 - 20:30 (Lunes a Viernes)</option>
+              <option value="19:00 - 21:00 (Lunes a Viernes)">19:00 - 21:00 (Lunes a Viernes)</option>
+              <option value="08:00 - 13:00 (Sábados)">08:00 - 13:00 (Sábados)</option>
+              <option value="14:00 - 19:00 (Sábados)">14:00 - 19:00 (Sábados)</option>
+            </select>
+            <div *ngIf="(isSubmitted || f['horario'].touched) && f['horario'].errors" class="error-msg">
+              <small>El horario es obligatorio.</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PASO 3: DOCUMENTACIÓN Y SUBIDA DE ARCHIVOS -->
+      <div *ngIf="currentStep === 3" class="step-content animate-slide-right">
+        <div class="section-title">Documentos Requeridos (Fotos / Escaneos)</div>
+        <div class="highlight-req">
+          <p class="mb-0"><strong>Nota Importante:</strong> Todos los documentos cargados deben ser legibles y nítidos. Los formatos aceptados son imágenes (JPG, PNG) y documentos PDF (máximo 5MB por archivo).</p>
+        </div>
+
+        <div formGroupName="archivos" class="row mt-4">
+          <!-- Carnet de Identidad -->
+          <div class="col-md-6 form-group">
+            <label class="field-label-drop">Carnet de Identidad *</label>
+            <div class="custom-dropzone"
+                 [class.has-file]="fileNames['carnet']"
+                 [class.is-invalid]="(isSubmitted || inscriptionForm.get('archivos.carnet')?.touched) && inscriptionForm.get('archivos.carnet')?.invalid">
+              <input id="file_carnet" type="file" (change)="onFileSelected($event, 'carnet')" class="real-file-input" accept="image/*,application/pdf" title="Subir Carnet de Identidad" aria-label="Subir Carnet de Identidad">
+
+              <div class="dropzone-content" *ngIf="!fileNames['carnet']">
+                <i class="material-icons cloud-icon">cloud_upload</i>
+                <span class="upload-title">Seleccionar Archivo</span>
+                <span class="upload-subtitle">Parte frontal y trasera de tu C.I.</span>
+              </div>
+
+              <div class="dropzone-preview animate-fade-in" *ngIf="fileNames['carnet']">
+                <i class="material-icons file-icon text-success-icon">picture_as_pdf</i>
+                <div class="file-details">
+                  <span class="file-name">{{ fileNames['carnet'] }}</span>
+                  <span class="file-status">Archivo cargado correctamente</span>
+                </div>
+                <button type="button" class="btn-remove-file" (click)="removeFile('carnet')" title="Quitar archivo">
+                  <i class="material-icons">close</i>
+                </button>
+              </div>
+            </div>
+            <!-- Advertencia Inteligente de Coherencia -->
+            <div *ngIf="fileWarnings['carnet']" class="warning-msg mt-2 animate-fade-in">
+              <i class="material-icons align-middle text-warning-icon">warning</i>
+              <small class="align-middle ml-1">{{ fileWarnings['carnet'] }}</small>
+            </div>
+            <div *ngIf="(isSubmitted || inscriptionForm.get('archivos.carnet')?.touched) && inscriptionForm.get('archivos.carnet')?.invalid" class="error-msg">
+              <small>El Carnet de Identidad es obligatorio.</small>
+            </div>
+            <small class="text-muted mt-1">Formatos: Imagen o PDF.</small>
+          </div>
+
+          <!-- Título de Bachiller -->
+          <div class="col-md-6 form-group">
+            <label class="field-label-drop">Título de Bachiller *</label>
+            <div class="custom-dropzone"
+                 [class.has-file]="fileNames['titulo']"
+                 [class.is-invalid]="(isSubmitted || inscriptionForm.get('archivos.titulo')?.touched) && inscriptionForm.get('archivos.titulo')?.invalid">
+              <input id="file_titulo" type="file" (change)="onFileSelected($event, 'titulo')" class="real-file-input" accept="image/*,application/pdf" title="Subir Título de Bachiller" aria-label="Subir Título de Bachiller">
+
+              <div class="dropzone-content" *ngIf="!fileNames['titulo']">
+                <i class="material-icons cloud-icon">cloud_upload</i>
+                <span class="upload-title">Seleccionar Archivo</span>
+                <span class="upload-subtitle">Escaneo o foto de tu Título de Bachiller</span>
+              </div>
+
+              <div class="dropzone-preview animate-fade-in" *ngIf="fileNames['titulo']">
+                <i class="material-icons file-icon text-success-icon">picture_as_pdf</i>
+                <div class="file-details">
+                  <span class="file-name">{{ fileNames['titulo'] }}</span>
+                  <span class="file-status">Archivo cargado correctamente</span>
+                </div>
+                <button type="button" class="btn-remove-file" (click)="removeFile('titulo')" title="Quitar archivo">
+                  <i class="material-icons">close</i>
+                </button>
+              </div>
+            </div>
+            <!-- Advertencia Inteligente de Coherencia -->
+            <div *ngIf="fileWarnings['titulo']" class="warning-msg mt-2 animate-fade-in">
+              <i class="material-icons align-middle text-warning-icon">warning</i>
+              <small class="align-middle ml-1">{{ fileWarnings['titulo'] }}</small>
+            </div>
+            <div *ngIf="(isSubmitted || inscriptionForm.get('archivos.titulo')?.touched) && inscriptionForm.get('archivos.titulo')?.invalid" class="error-msg">
+              <small>El Título de Bachiller es obligatorio.</small>
+            </div>
+            <small class="text-muted mt-1">Formatos: Imagen o PDF.</small>
+          </div>
+
+          <!-- Certificado de Nacimiento -->
+          <div class="col-md-6 form-group mt-3">
+            <label class="field-label-drop">Certificado de Nacimiento *</label>
+            <div class="custom-dropzone"
+                 [class.has-file]="fileNames['nacimiento']"
+                 [class.is-invalid]="(isSubmitted || inscriptionForm.get('archivos.nacimiento')?.touched) && inscriptionForm.get('archivos.nacimiento')?.invalid">
+              <input id="file_nacimiento" type="file" (change)="onFileSelected($event, 'nacimiento')" class="real-file-input" accept="image/*,application/pdf" title="Subir Certificado de Nacimiento" aria-label="Subir Certificado de Nacimiento">
+
+              <div class="dropzone-content" *ngIf="!fileNames['nacimiento']">
+                <i class="material-icons cloud-icon">cloud_upload</i>
+                <span class="upload-title">Seleccionar Archivo</span>
+                <span class="upload-subtitle">Escaneo o foto de tu Certificado de Nacimiento</span>
+              </div>
+
+              <div class="dropzone-preview animate-fade-in" *ngIf="fileNames['nacimiento']">
+                <i class="material-icons file-icon text-success-icon">picture_as_pdf</i>
+                <div class="file-details">
+                  <span class="file-name">{{ fileNames['nacimiento'] }}</span>
+                  <span class="file-status">Archivo cargado correctamente</span>
+                </div>
+                <button type="button" class="btn-remove-file" (click)="removeFile('nacimiento')" title="Quitar archivo">
+                  <i class="material-icons">close</i>
+                </button>
+              </div>
+            </div>
+            <!-- Advertencia Inteligente de Coherencia -->
+            <div *ngIf="fileWarnings['nacimiento']" class="warning-msg mt-2 animate-fade-in">
+              <i class="material-icons align-middle text-warning-icon">warning</i>
+              <small class="align-middle ml-1">{{ fileWarnings['nacimiento'] }}</small>
+            </div>
+            <div *ngIf="(isSubmitted || inscriptionForm.get('archivos.nacimiento')?.touched) && inscriptionForm.get('archivos.nacimiento')?.invalid" class="error-msg">
+              <small>El Certificado de Nacimiento es obligatorio.</small>
+            </div>
+            <small class="text-muted mt-1">Formatos: Imagen o PDF.</small>
+          </div>
+
+          <!-- Boleta de Depósito -->
+          <div class="col-md-6 form-group mt-3">
+            <label class="field-label-drop">Boleta de Depósito *</label>
+            <div class="custom-dropzone"
+                 [class.has-file]="fileNames['deposito']"
+                 [class.is-invalid]="(isSubmitted || inscriptionForm.get('archivos.deposito')?.touched) && inscriptionForm.get('archivos.deposito')?.invalid">
+              <input id="file_deposito" type="file" (change)="onFileSelected($event, 'deposito')" class="real-file-input" accept="image/*,application/pdf" title="Subir Boleta de Depósito" aria-label="Subir Boleta de Depósito">
+
+              <div class="dropzone-content" *ngIf="!fileNames['deposito']">
+                <i class="material-icons cloud-icon">cloud_upload</i>
+                <span class="upload-title">Seleccionar Archivo</span>
+                <span class="upload-subtitle">Comprobante de depósito/pago bancario</span>
+              </div>
+
+              <div class="dropzone-preview animate-fade-in" *ngIf="fileNames['deposito']">
+                <i class="material-icons file-icon text-success-icon">receipt_long</i>
+                <div class="file-details">
+                  <span class="file-name">{{ fileNames['deposito'] }}</span>
+                  <span class="file-status">Archivo cargado correctamente</span>
+                </div>
+                <button type="button" class="btn-remove-file" (click)="removeFile('deposito')" title="Quitar archivo">
+                  <i class="material-icons">close</i>
+                </button>
+              </div>
+            </div>
+            <!-- Advertencia Inteligente de Coherencia -->
+            <div *ngIf="fileWarnings['deposito']" class="warning-msg mt-2 animate-fade-in">
+              <i class="material-icons align-middle text-warning-icon">warning</i>
+              <small class="align-middle ml-1">{{ fileWarnings['deposito'] }}</small>
+            </div>
+            <div *ngIf="(isSubmitted || inscriptionForm.get('archivos.deposito')?.touched) && inscriptionForm.get('archivos.deposito')?.invalid" class="error-msg">
+              <small>La Boleta de Depósito es obligatoria.</small>
+            </div>
+            <small class="text-muted mt-1">Formatos: Imagen o PDF.</small>
+          </div>
+
+          <!-- Fotografía Personal 4x4 -->
+          <div class="col-md-6 form-group mt-3">
+            <label class="field-label-drop">Fotografía Personal 4x4 *</label>
+            <div class="custom-dropzone"
+                 [class.has-file]="fileNames['foto']"
+                 [class.is-invalid]="(isSubmitted || inscriptionForm.get('archivos.foto')?.touched) && inscriptionForm.get('archivos.foto')?.invalid">
+              <input id="file_foto" type="file" (change)="onFileSelected($event, 'foto')" class="real-file-input" accept="image/*" title="Subir Foto 4x4" aria-label="Subir Foto 4x4">
+
+              <div class="dropzone-content" *ngIf="!fileNames['foto']">
+                <i class="material-icons cloud-icon">account_circle</i>
+                <span class="upload-title">Seleccionar Fotografía</span>
+                <span class="upload-subtitle">Foto formal fondo blanco 4x4 cm</span>
+              </div>
+
+              <div class="dropzone-preview animate-fade-in" *ngIf="fileNames['foto']">
+                <i class="material-icons file-icon text-success-icon">badge</i>
+                <div class="file-details">
+                  <span class="file-name">{{ fileNames['foto'] }}</span>
+                  <span class="file-status">Fotografía cargada correctamente</span>
+                </div>
+                <button type="button" class="btn-remove-file" (click)="removeFile('foto')" title="Quitar fotografía">
+                  <i class="material-icons">close</i>
+                </button>
+              </div>
+            </div>
+            <!-- Advertencia Inteligente de Coherencia -->
+            <div *ngIf="fileWarnings['foto']" class="warning-msg mt-2 animate-fade-in">
+              <i class="material-icons align-middle text-warning-icon">warning</i>
+              <small class="align-middle ml-1">{{ fileWarnings['foto'] }}</small>
+            </div>
+            <div *ngIf="(isSubmitted || inscriptionForm.get('archivos.foto')?.touched) && inscriptionForm.get('archivos.foto')?.invalid" class="error-msg">
+              <small>La Fotografía 4x4 es obligatoria.</small>
+            </div>
+            <small class="text-muted mt-1">Formatos: Imagen (JPG, PNG).</small>
+          </div>
+
+          <!-- Credencial o Factura EMI (Solo para estudiantes EMI) -->
+          <div class="col-md-6 form-group mt-3 animate-fade-in" *ngIf="userType === 'emi'">
+            <label class="field-label-drop">Credencial EMI o Factura de Mensualidad *</label>
+            <div class="custom-dropzone"
+                 [class.has-file]="fileNames['credencialEmi']"
+                 [class.is-invalid]="(isSubmitted || inscriptionForm.get('archivos.credencialEmi')?.touched) && inscriptionForm.get('archivos.credencialEmi')?.invalid">
+              <input id="file_credencialEmi" type="file" (change)="onFileSelected($event, 'credencialEmi')" class="real-file-input" accept="image/*,application/pdf" title="Subir Credencial o Factura EMI" aria-label="Subir Credencial o Factura EMI">
+
+              <div class="dropzone-content" *ngIf="!fileNames['credencialEmi']">
+                <i class="material-icons cloud-icon">school</i>
+                <span class="upload-title">Seleccionar Documento</span>
+                <span class="upload-subtitle">Foto o PDF de tu credencial o factura mensual</span>
+              </div>
+
+              <div class="dropzone-preview animate-fade-in" *ngIf="fileNames['credencialEmi']">
+                <i class="material-icons file-icon text-success-icon">badge</i>
+                <div class="file-details">
+                  <span class="file-name">{{ fileNames['credencialEmi'] }}</span>
+                  <span class="file-status">Documento cargado correctamente</span>
+                </div>
+                <button type="button" class="btn-remove-file" (click)="removeFile('credencialEmi')" title="Quitar credencial">
+                  <i class="material-icons">close</i>
+                </button>
+              </div>
+            </div>
+            <!-- Advertencia Inteligente de Coherencia -->
+            <div *ngIf="fileWarnings['credencialEmi']" class="warning-msg mt-2 animate-fade-in">
+              <i class="material-icons align-middle text-warning-icon">warning</i>
+              <small class="align-middle ml-1">{{ fileWarnings['credencialEmi'] }}</small>
+            </div>
+            <div *ngIf="(isSubmitted || inscriptionForm.get('archivos.credencialEmi')?.touched) && inscriptionForm.get('archivos.credencialEmi')?.invalid" class="error-msg">
+              <small>La credencial o factura EMI es obligatoria.</small>
+            </div>
+            <small class="text-muted mt-1">Formatos: Imagen o PDF.</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation buttons inside the form card -->
+      <div class="form-navigation mt-5">
+        <button type="button" class="btn-nav btn-prev" *ngIf="currentStep > 1" (click)="prevStep()">
+          <i class="material-icons">chevron_left</i> ANTERIOR
+        </button>
+
+        <button type="button" class="btn-nav btn-next ml-auto" *ngIf="currentStep < totalSteps" (click)="nextStep()">
+          SIGUIENTE <i class="material-icons">chevron_right</i>
+        </button>
+
+        <button type="submit" class="btn-nav btn-submit ml-auto" *ngIf="currentStep === totalSteps" [disabled]="isLoading">
+          <span *ngIf="!isLoading">FINALIZAR INSCRIPCIÓN <i class="material-icons">send</i></span>
+          <span *ngIf="isLoading" class="spinner-container">
+            <span class="loading-spinner"></span> ENVIANDO...
+          </span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal de Alerta Premium Success / Error -->
+<div class="modal-backdrop-overlay" *ngIf="showModal" (click)="closeModal()">
+  <div class="modal-card animate-zoom-in" [class.success]="modalType === 'success'" [class.error]="modalType === 'error'" (click)="$event.stopPropagation()">
+    <div class="modal-header-icon">
+      <i class="material-icons" *ngIf="modalType === 'success'">check_circle</i>
+      <i class="material-icons" *ngIf="modalType === 'error'">error</i>
+    </div>
+    <h2 class="modal-title">{{ modalType === 'success' ? '¡Inscripción Exitosa!' : '¡Ha ocurrido un error!' }}</h2>
+    <p class="modal-body-text">{{ modalMessage }}</p>
+    <div class="modal-footer-btn">
+      <button type="button" class="btn-modal-close" (click)="closeModal()">Aceptar</button>
+    </div>
+  </div>
+</div>
+
+<app-footer></app-footer>
