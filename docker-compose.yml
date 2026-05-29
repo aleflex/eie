@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  # 1. Base de datos MySQL (Imagen oficial de Oracle, libre de errores de red de Docker Hub)
+  db:
+    image: container-registry.oracle.com/mysql/community-server:8.0
+    container_name: eie-mysql
+    restart: always
+    environment:
+      MYSQL_DATABASE: eie_inscripciones
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_ROOT_HOST: '%'
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 2. Backend Laravel (PHP 8.2 + Apache)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: eie-backend
+    restart: always
+    ports:
+      - "8000:80"
+    environment:
+      - APP_ENV=production
+      - APP_DEBUG=true
+      - APP_URL=http://137.184.129.64:8000
+      - DB_CONNECTION=mysql
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_DATABASE=eie_inscripciones
+      - DB_USERNAME=root
+      - DB_PASSWORD=root
+    volumes:
+      - ./backend/storage:/var/www/html/storage
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # 3. Frontend Angular (Nginx)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: eie-frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+volumes:
+  mysql-data:

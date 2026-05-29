@@ -1,0 +1,4 @@
+vendor
+.git
+storage/app
+bootstrap/cache/*
