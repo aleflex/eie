@@ -1,11 +1,14 @@
-# Servidor de producción optimizado con Nginx
+# Etapa 1: Construcción (Node)
+FROM node:18-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+RUN npm run build --configuration=production
+
+# Etapa 2: Servidor (Nginx)
 FROM nginx:alpine
-
-# Copiar los archivos ya compilados localmente en el host
-COPY ./dist/frontend/browser /usr/share/nginx/html
-
-# Copiar la configuración de redirección de SPA
+COPY --from=builder /app/dist/frontend/browser /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
-
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
