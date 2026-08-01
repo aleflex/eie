@@ -3,7 +3,7 @@
  * Coloca aquí la URL de tu servidor backend en la nube si tienes una (Ej: https://eie-backend.com o URL Ngrok).
  * Si está vacío '', se conectará automáticamente a tu servidor Laravel (IP Local / Localhost).
  */
-const DOMINIO_SERVIDOR_BACKEND: string = ''; // Ej: 'https://mi-backend.com'
+const DOMINIO_SERVIDOR_BACKEND: string = 'https://eie-cochabamba.sytes.net'; // Servidor Backend HTTPS de producción
 
 const getApiUrl = () => {
   if (typeof window !== 'undefined') {
@@ -28,9 +28,12 @@ const getApiUrl = () => {
       return 'http://10.10.11.222:8000';
     }
 
-    // Si está desplegado en Vercel u otro hosting web sin backend local propio
+    // Si está desplegado en Vercel y no hay DOMINIO_SERVIDOR_BACKEND ni custom_api_url,
+    // usar el origen HTTPS de Vercel para que las peticiones /api pasen por las rewrites de vercel.json
     if (window.location.hostname.includes('vercel.app')) {
-      return 'http://10.10.11.222:8000';
+      return DOMINIO_SERVIDOR_BACKEND && DOMINIO_SERVIDOR_BACKEND.trim() !== ''
+        ? DOMINIO_SERVIDOR_BACKEND.replace(/\/+$/, '')
+        : window.location.origin;
     }
 
     return `${window.location.protocol}//${window.location.hostname}:8000`;

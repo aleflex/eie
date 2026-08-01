@@ -147,7 +147,17 @@ export class LoginComponent implements OnInit {
       },
       error: (error) => {
         console.error('❌ Error de inicio de sesión', error);
-        this.mensajeError = error.error?.message || 'Nombre de usuario o contraseña incorrectos. Por favor verifique sus datos.';
+        if (error.status === 0) {
+          const apiIsHttp = (this.currentApiUrl || '').startsWith('http://');
+          const pageIsHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
+          if (pageIsHttps && apiIsHttp) {
+            this.mensajeError = `⚠️ Error de seguridad (Mixed Content): Tu web en Vercel (HTTPS) no puede conectar al servidor HTTP (${this.currentApiUrl}). Configura una URL de servidor HTTPS (ej. Ngrok o servidor desplegado) en "Configurar Servidor".`;
+          } else {
+            this.mensajeError = `❌ No se pudo conectar al servidor API (${this.currentApiUrl}). Verifique que el servidor backend esté encendido y accesible.`;
+          }
+        } else {
+          this.mensajeError = error.error?.message || 'Nombre de usuario o contraseña incorrectos. Por favor verifique sus datos.';
+        }
       }
     });
   }

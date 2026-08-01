@@ -38,8 +38,6 @@
         <i class="material-icons-outlined">login</i> INICIAR SESIÓN
       </button>
 
-
-
       <div class="login-footer">
         <a routerLink="/" class="back-link mt-2">
           <i class="material-icons-outlined">arrow_back</i> Volver al Inicio
@@ -106,19 +104,23 @@
 
     <!-- Input de Dirección de Servidor -->
     <div class="form-group" style="width: 100%; text-align: left;">
-      <label for="custom_api" style="font-weight: 700; font-size: 0.85rem; color: #334155;">Nueva URL del Servidor</label>
+      <label for="custom_api" style="font-weight: 700; font-size: 0.85rem; color: #334155;">Nueva URL del
+        Servidor</label>
       <input type="text" id="custom_api" name="custom_api" [(ngModel)]="customApiUrl" class="form-control"
         style="padding: 0.8rem 1rem;" placeholder="Ej. http://10.0.3.2:8000 o http://10.10.4.192:8000">
-      
+
       <!-- Presets Rápidos -->
       <div style="display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.6rem;">
-        <button type="button" (click)="setPresetUrl('http://10.0.3.2:8000')" style="padding: 0.3rem 0.6rem; font-size: 0.72rem; border-radius: 6px; border: 1px solid #0284c7; background: #e0f2fe; color: #0369a1; font-weight: 700; cursor: pointer;">
+        <button type="button" (click)="setPresetUrl('http://10.0.3.2:8000')"
+          style="padding: 0.3rem 0.6rem; font-size: 0.72rem; border-radius: 6px; border: 1px solid #0284c7; background: #e0f2fe; color: #0369a1; font-weight: 700; cursor: pointer;">
           💻 Genymotion (10.0.3.2:8000)
         </button>
-        <button type="button" (click)="setPresetUrl('http://10.10.11.222:8000')" style="padding: 0.3rem 0.6rem; font-size: 0.72rem; border-radius: 6px; border: 1px solid #16a34a; background: #f0fdf4; color: #15803d; font-weight: 700; cursor: pointer;">
+        <button type="button" (click)="setPresetUrl('http://10.10.11.222:8000')"
+          style="padding: 0.3rem 0.6rem; font-size: 0.72rem; border-radius: 6px; border: 1px solid #16a34a; background: #f0fdf4; color: #15803d; font-weight: 700; cursor: pointer;">
           📲 Celular Físico (10.10.11.222)
         </button>
-        <button type="button" (click)="setPresetUrl('http://10.0.2.2:8000')" style="padding: 0.3rem 0.6rem; font-size: 0.72rem; border-radius: 6px; border: 1px solid #8b5cf6; background: #f3e8ff; color: #6b21a8; font-weight: 700; cursor: pointer;">
+        <button type="button" (click)="setPresetUrl('http://10.0.2.2:8000')"
+          style="padding: 0.3rem 0.6rem; font-size: 0.72rem; border-radius: 6px; border: 1px solid #8b5cf6; background: #f3e8ff; color: #6b21a8; font-weight: 700; cursor: pointer;">
           🤖 Android Studio (10.0.2.2:8000)
         </button>
       </div>
