@@ -1,38 +1,56 @@
 <div class="dashboard-layout">
   <!-- Barra Lateral -->
-  <aside class="sidebar">
+  <aside class="sidebar" [class.collapsed]="isSidebarCollapsed" [class.mobile-open]="isMobileMenuOpen">
     <div class="sidebar-header">
       <img src="assets/imagenes/logo.jpg" alt="Logo EIE" class="sidebar-logo">
-      <span>EIE PANEL</span>
+      <span *ngIf="!isSidebarCollapsed">EIE PANEL</span>
+      <button type="button" class="mobile-hamburger-btn" (click)="toggleMobileMenu()" aria-label="Abrir menú mobile">
+        <i class="material-icons-outlined">{{ isMobileMenuOpen ? 'close' : 'menu' }}</i>
+      </button>
+      <button type="button" class="btn-toggle-sidebar" (click)="toggleSidebar()" [title]="isSidebarCollapsed ? 'Expandir menú' : 'Contraer menú'">
+        <i class="material-icons-outlined">{{ isSidebarCollapsed ? 'chevron_right' : 'chevron_left' }}</i>
+      </button>
     </div>
 
     <nav class="sidebar-nav">
       <a routerLink="/admin" routerLinkActive="active" class="nav-item">
-        <i class="material-icons-outlined">dashboard</i> Panel Principal
+        <i class="material-icons-outlined">dashboard</i>
+        <span *ngIf="!isSidebarCollapsed">Panel Principal</span>
       </a>
       <a routerLink="/students" routerLinkActive="active" class="nav-item">
-        <i class="material-icons-outlined">people</i> Estudiantes
+        <i class="material-icons-outlined">people</i>
+        <span *ngIf="!isSidebarCollapsed">Estudiantes</span>
       </a>
       <a routerLink="/courses" routerLinkActive="active" class="nav-item">
-        <i class="material-icons-outlined">school</i> Cursos
+        <i class="material-icons-outlined">school</i>
+        <span *ngIf="!isSidebarCollapsed">Cursos</span>
       </a>
       <a routerLink="/docentes-list" routerLinkActive="active" class="nav-item">
-        <i class="material-icons-outlined">person</i> Instructores
+        <i class="material-icons-outlined">person</i>
+        <span *ngIf="!isSidebarCollapsed">Instructores</span>
       </a>
       <a routerLink="/paralelos" routerLinkActive="active" class="nav-item">
-        <i class="material-icons-outlined">class</i> Paralelos
+        <i class="material-icons-outlined">class</i>
+        <span *ngIf="!isSidebarCollapsed">Paralelos</span>
+      </a>
+      <a routerLink="/reports" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">bar_chart</i>
+        <span *ngIf="!isSidebarCollapsed">Reportes y Estadísticas</span>
       </a>
       <a routerLink="/accesos" routerLinkActive="active" class="nav-item">
-        <i class="material-icons-outlined">vpn_key</i> Credenciales / Accesos
+        <i class="material-icons-outlined">vpn_key</i>
+        <span *ngIf="!isSidebarCollapsed">Credenciales / Accesos</span>
       </a>
       <a routerLink="/settings" routerLinkActive="active" class="nav-item">
-        <i class="material-icons-outlined">settings</i> Configuración
+        <i class="material-icons-outlined">settings</i>
+        <span *ngIf="!isSidebarCollapsed">Configuración</span>
       </a>
     </nav>
 
     <div class="sidebar-footer">
       <button (click)="onLogout()" class="btn-logout">
-        <i class="material-icons-outlined">logout</i> Salir
+        <i class="material-icons-outlined">logout</i>
+        <span *ngIf="!isSidebarCollapsed">Salir</span>
       </button>
     </div>
   </aside>
@@ -51,7 +69,7 @@
             <span class="user-role">Administrador</span>
           </div>
           <div class="user-header-avatar">
-            <img *ngIf="user?.foto_url" [src]="'http://137.184.129.64:8000' + user.foto_url" alt="Avatar" class="avatar-small">
+            <img *ngIf="user?.foto_url" [src]="apiUrl + user.foto_url" alt="Avatar" class="avatar-small">
             <div *ngIf="!user?.foto_url" class="avatar-small-placeholder">
               <span class="material-icons-outlined">person</span>
             </div>
@@ -82,7 +100,7 @@
           <button [class.active]="activeTab === 'academic'" (click)="activeTab = 'academic'">
             <i class="material-icons-outlined text-academic">calendar_today</i>
             <div class="nav-label">
-              <strong>Periodo Académico</strong>
+              <strong>Periodo</strong>
               <span>Apertura y cierre de inscripciones</span>
             </div>
           </button>
@@ -90,7 +108,7 @@
           <button [class.active]="activeTab === 'files'" (click)="activeTab = 'files'">
             <i class="material-icons-outlined text-files">cloud_upload</i>
             <div class="nav-label">
-              <strong>Expediente Digital</strong>
+              <strong>Expediente</strong>
               <span>Límites y reglas de archivos</span>
             </div>
           </button>
@@ -98,7 +116,7 @@
           <button [class.active]="activeTab === 'institution'" (click)="activeTab = 'institution'">
             <i class="material-icons-outlined text-inst">account_balance</i>
             <div class="nav-label">
-              <strong>Datos del Plantel</strong>
+              <strong>Plantel & Firmas</strong>
               <span>Firmas oficiales y membretes</span>
             </div>
           </button>
@@ -231,7 +249,7 @@
               <!-- Foto de perfil premium -->
               <div class="profile-photo-uploader">
                 <div class="profile-avatar-large-container">
-                  <img *ngIf="user?.foto_url" [src]="'http://137.184.129.64:8000' + user.foto_url" alt="Foto Perfil" class="profile-avatar-large">
+                  <img *ngIf="user?.foto_url" [src]="apiUrl + user.foto_url" alt="Foto Perfil" class="profile-avatar-large">
                   <div *ngIf="!user?.foto_url" class="profile-avatar-large-placeholder">
                     <span class="material-icons-outlined">person</span>
                   </div>
@@ -275,6 +293,25 @@
                       <div class="input-wrapper">
                         <span class="material-icons-outlined input-icon">lock</span>
                         <input type="password" id="profile_password" [(ngModel)]="profileData.password" name="password" class="form-control-premium" placeholder="Mínimo 8 caracteres">
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Configuración de Biometría Estilo Banco -->
+                  <div class="col-12 mt-3">
+                    <div class="toggle-card" style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 14px; padding: 1.2rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem;">
+                      <div class="toggle-info d-flex align-items-center gap-3">
+                        <div style="background: #e0f2fe; color: #0284c7; min-width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                          <i class="material-icons-outlined" style="font-size: 24px;">fingerprint</i>
+                        </div>
+                        <div>
+                          <strong style="color: #0f172a; font-size: 0.95rem; display: block;">Acceso Biométrico (Huella / Rostro)</strong>
+                          <p style="margin: 0; font-size: 0.82rem; color: #64748b;">Activa el sensor biométrico del celular para ingresar a tu cuenta sin ingresar contraseña (igual que las apps de banco).</p>
+                        </div>
+                      </div>
+                      <div class="form-check form-switch custom-switch" style="margin: 0;">
+                        <input class="form-check-input" type="checkbox" id="biometricSwitchAdmin" [checked]="biometricEnabled" (change)="toggleBiometric($event)" style="width: 48px; height: 26px; cursor: pointer;" aria-label="Activar acceso biométrico" title="Activar acceso biométrico">
+                        <label class="form-check-label" for="biometricSwitchAdmin"></label>
                       </div>
                     </div>
                   </div>

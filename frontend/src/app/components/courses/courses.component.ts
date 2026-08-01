@@ -13,6 +13,11 @@ import { RouterModule } from '@angular/router';
 })
 export class CoursesComponent implements OnInit {
   courses: Course[] = [];
+  isSidebarCollapsed = false;
+
+  toggleSidebar() {
+    this.isSidebarCollapsed = !this.isSidebarCollapsed;
+  }
   
   // Paginación y Filtros
   pagedCourses: Course[] = [];
@@ -29,7 +34,6 @@ export class CoursesComponent implements OnInit {
     idioma: 'Inglés',
     nivel: 'NIVEL I (BOOK 1-6)',
     modalidad: 'Presencial',
-    horario: '08:00 - 10:00',
     cupo_minimo: 10,
     cupo_maximo: 30
   };
@@ -73,7 +77,6 @@ export class CoursesComponent implements OnInit {
         filtered = this.courses.filter(c => 
           c.idioma.toLowerCase().includes(term) || 
           c.nivel.toLowerCase().includes(term) ||
-          c.horario.toLowerCase().includes(term) ||
           c.modalidad.toLowerCase().includes(term)
         );
       }
@@ -110,7 +113,6 @@ export class CoursesComponent implements OnInit {
       idioma: 'Inglés', 
       nivel: 'NIVEL I (BOOK 1-6)', 
       modalidad: 'Presencial', 
-      horario: '08:00 - 10:00', 
       cupo_minimo: 10,
       cupo_maximo: 30 
     };
@@ -152,7 +154,7 @@ export class CoursesComponent implements OnInit {
     if (id && confirm('¿Está seguro de eliminar este curso?')) {
       this.courseService.deleteCourse(id).subscribe({
         next: () => this.loadCourses(),
-        error: (err) => alert('No se puede eliminar el curso porque tiene inscripciones activas.')
+        error: (err) => alert(err.error?.message || err.error?.error || 'Error al eliminar el curso.')
       });
     }
   }

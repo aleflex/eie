@@ -18,6 +18,18 @@ export class AccesosComponent implements OnInit {
   isLoading: boolean = true;
   user: any = null;
 
+  // Control de la barra lateral (Sidebar)
+  isSidebarCollapsed: boolean = false;
+  isMobileMenuOpen: boolean = false;
+
+  toggleSidebar() {
+    this.isSidebarCollapsed = !this.isSidebarCollapsed;
+  }
+
+  toggleMobileMenu() {
+    this.isMobileMenuOpen = !this.isMobileMenuOpen;
+  }
+
   // Filtros
   searchTerm: string = '';
   activeTab: string = 'todos'; // 'todos', 'docente', 'estudiante', 'admin'
@@ -194,14 +206,18 @@ export class AccesosComponent implements OnInit {
   openAssignModal(persona: any) {
     this.selectedPersona = persona;
     
-    // Sugerir el correo institucional por defecto para cuentas nuevas
-    const correoActual = persona.correo_electronico || '';
-    const esInstitucional = correoActual.includes('@est.eie.edu.bo') || correoActual.includes('@doc.eie.edu.bo');
-    const emailSugerido = esInstitucional ? correoActual : this.generarCorreoInstitucional(persona);
+    let usuarioSugerido = persona.usuario || '';
+    if (!usuarioSugerido && persona.nombres) {
+      const nom = persona.nombres.split(' ')[0].toLowerCase();
+      const ape = (persona.apellidos || '').split(' ')[0].toLowerCase();
+      usuarioSugerido = ape ? `${nom}.${ape}` : nom;
+      usuarioSugerido = usuarioSugerido.replace(/[^a-z0-9.]/g, '');
+    }
 
     this.formModel = {
       nombres: '',
-      email: emailSugerido,
+      usuario: usuarioSugerido,
+      email: persona.correo_electronico || '',
       password: ''
     };
     this.showAssignModal = true;
@@ -210,7 +226,7 @@ export class AccesosComponent implements OnInit {
   closeAssignModal() {
     this.showAssignModal = false;
     this.selectedPersona = null;
-    this.formModel = { nombres: '', email: '', password: '' };
+    this.formModel = { nombres: '', usuario: '', email: '', password: '' };
   }
 
   asignarCredenciales() {
@@ -221,14 +237,15 @@ export class AccesosComponent implements OnInit {
       return;
     }
 
-    if (!this.formModel.email || !this.formModel.password) {
-      alert('Por favor complete todos los campos obligatorios.');
+    if (!this.formModel.usuario || !this.formModel.password) {
+      alert('Por favor complete el Nombre de Usuario y la Contraseña obligatorios.');
       return;
     }
 
     const payload: any = {
       tipo: this.selectedPersona.tipo,
-      email: this.formModel.email,
+      usuario: this.formModel.usuario,
+      email: this.formModel.email || `${this.formModel.usuario}@eie.edu.bo`,
       password: this.formModel.password
     };
 
@@ -255,6 +272,7 @@ export class AccesosComponent implements OnInit {
     this.selectedPersona = persona;
     this.formModel = {
       nombres: persona.nombres || '',
+      usuario: persona.usuario || '',
       email: persona.correo_electronico || '',
       password: ''
     };
@@ -264,16 +282,17 @@ export class AccesosComponent implements OnInit {
   closeEditModal() {
     this.showEditModal = false;
     this.selectedPersona = null;
-    this.formModel = { nombres: '', email: '', password: '' };
+    this.formModel = { nombres: '', usuario: '', email: '', password: '' };
   }
 
   actualizarCredenciales() {
-    if (!this.selectedPersona || !this.formModel.email) {
-      alert('El correo electrónico es requerido.');
+    if (!this.selectedPersona || !this.formModel.usuario) {
+      alert('El Nombre de Usuario es requerido.');
       return;
     }
 
     const payload: any = {
+      usuario: this.formModel.usuario,
       email: this.formModel.email
     };
 
@@ -296,7 +315,7 @@ export class AccesosComponent implements OnInit {
   // --- DESVINCULAR CUENTA ---
   desvincularCuenta(persona: any) {
     // Prohibir la auto-eliminación
-    if (this.user && this.user.id === persona.user_id) {
+    if (this.user && (this.user.id === persona.user_id || this.user.id_usuario === persona.user_id)) {
       alert('Seguridad del Sistema: No puedes eliminar tu propia cuenta de acceso activa.');
       return;
     }

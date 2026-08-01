@@ -1,19 +1,25 @@
 <div class="dashboard-layout">
+  <!-- Backdrop para menú móvil -->
+  <div class="mobile-menu-backdrop" *ngIf="isMobileMenuOpen" (click)="toggleMobileMenu()"></div>
+
   <!-- Barra Lateral -->
-  <aside class="sidebar">
+  <aside class="sidebar" [class.mobile-open]="isMobileMenuOpen">
     <div class="sidebar-header">
       <img src="assets/imagenes/logo.jpg" alt="Logo EIE" class="sidebar-logo">
       <span>EIE PORTAL</span>
+      <button type="button" class="mobile-hamburger-btn d-lg-none" (click)="toggleMobileMenu()" aria-label="Abrir menú mobile" style="background: none; border: none; color: white; cursor: pointer; padding: 0.2rem; margin-left: auto;">
+        <i class="material-icons-outlined">{{ isMobileMenuOpen ? 'close' : 'menu' }}</i>
+      </button>
     </div>
 
     <nav class="sidebar-nav">
-      <button [class.active]="activeTab === 'profile'" (click)="activeTab = 'profile'" class="nav-btn">
+      <button [class.active]="activeTab === 'profile'" (click)="activeTab = 'profile'; isMobileMenuOpen = false" class="nav-btn">
         <i class="material-icons-outlined">person</i> Mi Perfil
       </button>
-      <button [class.active]="activeTab === 'history'" (click)="activeTab = 'history'" class="nav-btn">
+      <button [class.active]="activeTab === 'history'" (click)="activeTab = 'history'; isMobileMenuOpen = false" class="nav-btn">
         <i class="material-icons-outlined">history_edu</i> Historial Académico
       </button>
-      <button [class.active]="activeTab === 'documents'" (click)="activeTab = 'documents'" class="nav-btn">
+      <button [class.active]="activeTab === 'documents'" (click)="activeTab = 'documents'; isMobileMenuOpen = false" class="nav-btn">
         <i class="material-icons-outlined">folder_shared</i> Expediente Digital
       </button>
     </nav>
@@ -28,18 +34,23 @@
   <!-- Contenido Principal -->
   <main class="main-content">
     <header class="top-header">
-      <div class="header-left">
-        <h1>Portal del Estudiante</h1>
-        <p>Consulta tus calificaciones, descarga constancias y administra tus documentos oficiales.</p>
+      <div class="d-flex align-items-center gap-2">
+        <button type="button" class="mobile-menu-trigger d-lg-none" (click)="toggleMobileMenu()" aria-label="Abrir navegación" style="background: #003b71; border: none; color: white; padding: 0.5rem; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+          <i class="material-icons-outlined">menu</i>
+        </button>
+        <div class="header-left">
+          <h1 style="margin: 0; font-size: 1.5rem; font-weight: 800; color: #003b71;">Portal del Estudiante</h1>
+          <p style="margin: 0; font-size: 0.85rem; color: #64748b;">Consulta tus calificaciones, descarga constancias y administra tus documentos oficiales.</p>
+        </div>
       </div>
-      <div class="header-right">
+      <div class="header-right mt-2 mt-sm-0">
         <div class="user-info-header">
           <div class="user-info">
             <span class="user-name">{{ student?.nombres }} {{ student?.apellidos }}</span>
             <span class="user-role">Estudiante EIE</span>
           </div>
           <div class="user-header-avatar">
-            <img *ngIf="student?.foto_4x4_url" [src]="'http://137.184.129.64:8000' + student.foto_4x4_url" alt="Avatar" class="avatar-small">
+            <img *ngIf="student?.foto_4x4_url" [src]="apiUrl + student.foto_4x4_url" alt="Avatar" class="avatar-small">
             <div *ngIf="!student?.foto_4x4_url" class="avatar-small-placeholder">
               <span class="material-icons-outlined">person</span>
             </div>
@@ -70,7 +81,7 @@
           <!-- Lado Izquierdo: Foto 4x4 y Datos Rápidos -->
           <div class="profile-card-side">
             <div class="profile-avatar-large-container">
-              <img *ngIf="student.foto_4x4_url" [src]="'http://137.184.129.64:8000' + student.foto_4x4_url" alt="Foto 4x4" class="profile-avatar-large">
+              <img *ngIf="student.foto_4x4_url" [src]="apiUrl + student.foto_4x4_url" alt="Foto 4x4" class="profile-avatar-large">
               <div *ngIf="!student.foto_4x4_url" class="profile-avatar-large-placeholder">
                 <span class="material-icons-outlined">person</span>
               </div>
@@ -93,8 +104,27 @@
               </button>
             </div>
 
+            <!-- Configuración de Biometría Estilo Banco -->
+            <div class="biometric-card-student mt-3 p-3 rounded-3 border" style="background: #f8fafc; border-color: #cbd5e1 !important;">
+              <div class="d-flex align-items-center justify-content-between gap-2">
+                <div class="d-flex align-items-center gap-2">
+                  <div style="background: #e0f2fe; color: #0284c7; min-width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                    <i class="material-icons-outlined" style="font-size: 20px;">fingerprint</i>
+                  </div>
+                  <div>
+                    <strong style="font-size: 0.85rem; color: #0f172a; display: block;">Acceso por Huella / Rostro</strong>
+                    <small style="font-size: 0.74rem; color: #64748b;" class="d-block">Activar ingreso rápido biométrico</small>
+                  </div>
+                </div>
+                <div class="form-check form-switch m-0">
+                  <input class="form-check-input" type="checkbox" id="biometricSwitchStudent" [checked]="biometricEnabled" (change)="toggleBiometric($event)" style="width: 44px; height: 22px; cursor: pointer;" aria-label="Activar ingreso rápido biométrico" title="Activar ingreso rápido biométrico">
+                  <label class="form-check-label" for="biometricSwitchStudent"></label>
+                </div>
+              </div>
+            </div>
+
             <!-- Botón de Certificado -->
-            <button (click)="downloadCertificate()" class="btn-print-certificate mt-4 w-100">
+            <button (click)="downloadCertificate()" class="btn-print-certificate mt-3 w-100">
               <i class="material-icons-outlined">print</i>
               <span>Imprimir Constancia</span>
             </button>
@@ -136,23 +166,25 @@
                 <span class="info-label">Domicilio Declarado</span>
                 <span class="info-value">{{ student.domicilio }}</span>
               </div>
-
-              <!-- Información de Tutor -->
-              <div class="col-span-2 section-divider-dashed"></div>
-              <h3 class="col-span-2 section-subtitle-dashboard">Padres o Tutor y Contacto</h3>
-              
               <div class="info-item col-span-2">
-                <span class="info-label">Nombres y Apellidos del Tutor</span>
-                <span class="info-value">{{ student.nombre_padres || 'Sin registrar' }}</span>
-              </div>
-              <div class="info-item">
-                <span class="info-label">C.I. del Tutor</span>
-                <span class="info-value">{{ student.ci_tutor || 'Sin registrar' }}</span>
-              </div>
-              <div class="info-item">
                 <span class="info-label">Contacto de Emergencia</span>
                 <span class="info-value">{{ student.contacto_emergencia || 'Sin registrar' }}</span>
               </div>
+
+              <!-- Información de Tutor (Solo para no militares) -->
+              <ng-container *ngIf="student.tipo_usuario !== 'militar'">
+                <div class="col-span-2 section-divider-dashed"></div>
+                <h3 class="col-span-2 section-subtitle-dashboard">Padres o Tutor</h3>
+                
+                <div class="info-item col-span-2">
+                  <span class="info-label">Nombres y Apellidos del Tutor</span>
+                  <span class="info-value">{{ student.nombre_padres || 'Sin registrar' }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">C.I. del Tutor</span>
+                  <span class="info-value">{{ student.ci_tutor || 'Sin registrar' }}</span>
+                </div>
+              </ng-container>
               <div class="info-item col-span-2" *ngIf="student.hermanos_inscritos">
                 <span class="info-label">Hermanos Inscritos</span>
                 <span class="info-value">{{ student.hermanos_inscritos }}</span>
@@ -203,7 +235,7 @@
                 <tbody>
                   <tr *ngFor="let nota of item.notas">
                     <td class="ps-3">{{ nota.descripcion }}</td>
-                    <td class="text-center fw-bold" [class.text-danger]="nota.nota < 70" [class.text-success]="nota.nota >= 70">
+                    <td class="text-center fw-bold" [class.text-danger]="nota.nota < 71" [class.text-success]="nota.nota >= 71">
                       {{ nota.nota }} / 100
                     </td>
                   </tr>
@@ -224,8 +256,25 @@
         <h2 class="pane-title">📁 Administración de Documentos Oficiales</h2>
         <p class="pane-description">Carga de forma digital tu documentación de respaldo para la validación física en dirección. Se permiten formatos PDF, JPG, PNG de máximo 5MB.</p>
 
+        <!-- Mensajes de Estado del Permiso de Carga -->
+        <div *ngIf="puedeSubirDocumentos()" class="alert alert-info py-2 px-3 mb-3 d-flex align-items-center gap-2" style="font-size: 0.9rem; border-radius: 8px;">
+          <i class="material-icons-outlined" style="font-size: 20px;">info</i>
+          <span>Tienes habilitada la subida de documentos hasta el: <strong>{{ obtenerFechaLimiteFormatted() }}</strong></span>
+        </div>
+
+        <div *ngIf="!puedeSubirDocumentos()" class="alert alert-warning py-3 px-4 mb-4 d-flex align-items-start gap-3" style="font-size: 0.95rem; border-radius: 12px; border-left: 5px solid #ffc107; background: #fffdf5; border-top: 1px solid #ffeeba; border-right: 1px solid #ffeeba; border-bottom: 1px solid #ffeeba;">
+          <i class="material-icons-outlined text-warning" style="font-size: 24px;">lock</i>
+          <div>
+            <h6 class="fw-bold mb-1 text-dark" style="font-size: 1.05rem;">Carga de documentos bloqueada</h6>
+            <p class="text-muted mb-0">Solo puedes subir documentos cuando el administrador te otorgue permisos. Si tu plazo expiró o requieres subir nuevos respaldos, ponte en contacto con la administración.</p>
+            <span *ngIf="student?.documentos_habilitados_hasta" class="d-inline-block mt-2 text-danger small fw-semibold">
+              El plazo finalizó el: {{ obtenerFechaLimiteFormatted() }}
+            </span>
+          </div>
+        </div>
+
         <!-- Formulario de Subida -->
-        <div class="upload-section mb-4 p-4 bg-light rounded-3 border">
+        <div *ngIf="puedeSubirDocumentos()" class="upload-section mb-4 p-4 bg-light rounded-3 border">
           <h6 class="fw-bold mb-3">Subir Nuevo Documento Oficial</h6>
           <div class="row g-3 align-items-end">
             <div class="col-md-5">

@@ -1,8 +1,94 @@
 @import '../students/students.component.css';
 
+/* Control de vistas Escritorio vs Móvil */
+.mobile-cards-view {
+    display: none;
+}
+
+.table-responsive-container {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    background: white;
+    margin-top: 1rem;
+}
+
+.custom-responsive-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 680px;
+}
+
+.custom-responsive-table th,
+.custom-responsive-table td {
+    padding: 12px 14px;
+    vertical-align: middle;
+}
+
+.custom-responsive-table th {
+    background: #f8fafc;
+    color: #475569;
+    font-weight: 700;
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid #e2e8f0;
+    white-space: nowrap;
+}
+
+.custom-responsive-table td {
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.9rem;
+}
+
+.actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+}
+
+.btn-edit, .btn-delete {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    min-height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.btn-edit {
+    background: #e0f2fe;
+    color: #0284c7;
+}
+
+.btn-edit:active, .btn-edit:hover {
+    background: #0284c7;
+    color: white;
+    transform: scale(1.05);
+}
+
+.btn-delete {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.btn-delete:active, .btn-delete:hover {
+    background: #dc2626;
+    color: white;
+    transform: scale(1.05);
+}
+
 .horarios-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     gap: 10px;
     margin-top: 10px;
 }
@@ -110,15 +196,42 @@
 .small-badge {
     font-size: 11px;
     background: #f1f3f5;
-    padding: 2px 6px;
-    border-radius: 4px;
-    margin-bottom: 2px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    margin-bottom: 3px;
     display: inline-block;
     margin-right: 4px;
+    font-weight: 600;
 }
 
-.btn-new-paralelo, .btn-new-aula {
-    margin-top: 15px;
+.btn-primary, .btn-new-paralelo, .btn-new-aula {
+    background: linear-gradient(135deg, #003b71 0%, #00284d 100%) !important;
+    color: white !important;
+    border: none !important;
+    padding: 0.75rem 1.4rem !important;
+    border-radius: 12px !important;
+    font-weight: 800 !important;
+    font-size: 0.9rem !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0.5rem !important;
+    cursor: pointer !important;
+    box-shadow: 0 4px 14px rgba(0, 59, 113, 0.25) !important;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    margin-top: 10px;
+}
+
+.btn-primary:hover, .btn-new-paralelo:hover, .btn-new-aula:hover {
+    background: linear-gradient(135deg, #00284d 0%, #001833 100%) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 20px rgba(0, 59, 113, 0.35) !important;
+}
+
+.btn-primary:active, .btn-new-paralelo:active, .btn-new-aula:active {
+    transform: translateY(0) !important;
 }
 
 .text-conflict-highlight {
@@ -139,4 +252,154 @@
 .badge-capacidad {
     background: #e2e8f0 !important;
     font-weight: 700 !important;
+}
+
+/* RESPONSIVIDAD MÓVIL Y APK (< 768px) */
+@media (max-width: 768px) {
+    .desktop-table-view {
+        display: none !important;
+    }
+
+    .mobile-cards-view {
+        display: flex !important;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .mobile-paralelo-card {
+        background: white;
+        border-radius: 14px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.07);
+        border: 1px solid #e2e8f0;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .mobile-card-header {
+        background: #f8fafc;
+        padding: 14px 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .paralelo-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 1.05rem;
+        color: #1e293b;
+    }
+
+    .paralelo-title i {
+        color: #0284c7;
+        font-size: 1.3rem;
+    }
+
+    .mobile-card-body {
+        padding: 14px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .mobile-card-row {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .mobile-label {
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: #64748b;
+        text-transform: uppercase;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .mobile-label i {
+        font-size: 1rem;
+    }
+
+    .mobile-val {
+        font-size: 0.95rem;
+        color: #0f172a;
+    }
+
+    .badges-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+
+    .mobile-card-actions {
+        display: flex;
+        gap: 10px;
+        padding: 12px 16px;
+        background: #fafafa;
+        border-top: 1px solid #f1f5f9;
+    }
+
+    .btn-mobile-action {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 11px 14px;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 0.85rem;
+        border: none;
+        cursor: pointer;
+        transition: transform 0.15s ease, background-color 0.15s ease;
+    }
+
+    .btn-mobile-edit {
+        background: #0284c7;
+        color: white;
+    }
+
+    .btn-mobile-edit:active {
+        background: #0369a1;
+        transform: scale(0.98);
+    }
+
+    .btn-mobile-delete {
+        background: #ef4444;
+        color: white;
+    }
+
+    .btn-mobile-delete:active {
+        background: #b91c1c;
+        transform: scale(0.98);
+    }
+
+    .header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+    }
+
+    .btn-new-paralelo, .btn-new-aula {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 12px;
+        font-size: 0.95rem;
+        border-radius: 10px;
+    }
+
+    .horarios-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
 }

@@ -4,46 +4,71 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Curso;
+use App\Models\Idioma;
+use App\Models\Nivel;
+use App\Models\Modalidad;
 use Illuminate\Http\Request;
 
-/**
- * Controlador de Cursos/Paralelos
- * Gestiona todas las operaciones CRUD de cursos disponibles en el sistema.
- * Cada curso representa un paralelo específico de un idioma y nivel.
- */
 class CourseController extends Controller
 {
     /**
      * Obtiene el listado de todos los cursos disponibles con el conteo de inscripciones
-     * @return \Illuminate\Http\JsonResponse
      */
     public function index()
     {
-        return response()->json(Curso::withCount('inscripciones')->get());
+        $cursos = Curso::with(['idioma', 'nivelRel', 'modalidadRel'])->withCount('inscripciones')->get()->map(function($curso) {
+            return [
+                'id_curso' => $curso->id_curso,
+                'id' => $curso->id_curso, // Fallback para compatibilidad con el frontend
+                'idioma' => $curso->idioma ? ($curso->idioma->nombre_idioma ?? $curso->idioma->nombre) : '',
+                'nivel' => $curso->nivel,
+                'modalidad' => $curso->modalidad,
+                'cupo_minimo' => $curso->cupo_minimo,
+                'cupo_maximo' => $curso->cupo_maximo,
+                'inscripciones_count' => $curso->inscripciones_count
+            ];
+        });
+        return response()->json($cursos);
     }
 
     /**
      * Crea un nuevo curso en el sistema
-     * Valida que los datos requeridos sean correctos antes de guardar
-     *
-     * @param Request $request Contiene los datos del nuevo curso
-     * @return \Illuminate\Http\JsonResponse Curso creado o errores de validación
      */
     public function store(Request $request)
     {
-        \Illuminate\Support\Facades\Log::info('Datos recibidos para nuevo curso:', $request->all());
         try {
-            $validado = $request->validate([
-                'idioma' => 'nullable|string|max:100',        // Ej: Inglés, Francés, Alemán
-                'nivel' => 'nullable|string|max:100',         // Ej: NIVEL I, NIVEL II, etc.
-                'modalidad' => 'nullable|string|max:100',     // Ej: Presencial, Virtual, Híbrida
-                'horario' => 'nullable|string|max:100',       // Ej: 08:00 - 10:00
-                'cupo_minimo' => 'nullable|numeric|min:1',    // Mínimo de estudiantes
-                'cupo_maximo' => 'nullable|numeric|min:1',    // Máximo de estudiantes
+            $request->validate([
+                'idioma' => 'required|string|max:100',
+                'nivel' => 'required|string|max:100',
+                'modalidad' => 'required|string|max:100',
+                'cupo_minimo' => 'nullable|numeric|min:1',
+                'cupo_maximo' => 'nullable|numeric|min:1',
             ]);
 
-            $curso = Curso::create($validado);
-            return response()->json($curso, 201);
+            // Normalización en base de datos para catálogos 3NF
+            $idioma = Idioma::firstOrCreate(['nombre_idioma' => $request->idioma]);
+            $nivel = Nivel::firstOrCreate(['nombre_nivel' => $request->nivel]);
+            $modalidad = Modalidad::firstOrCreate(['nombre_modalidad' => $request->modalidad]);
+
+            $curso = Curso::create([
+                'id_idioma' => $idioma->id_idioma,
+                'id_nivel' => $nivel->id_nivel,
+                'id_modalidad' => $modalidad->id_modalidad,
+                'cupo_minimo' => $request->cupo_minimo ?? 0,
+                'cupo_maximo' => $request->cupo_maximo ?? 30,
+                'estado' => 'Activo'
+            ]);
+
+            return response()->json([
+                'id_curso' => $curso->id_curso,
+                'id' => $curso->id_curso,
+                'idioma' => $idioma->nombre_idioma ?? $idioma->nombre,
+                'nivel' => $curso->nivel,
+                'modalidad' => $curso->modalidad,
+                'cupo_minimo' => $curso->cupo_minimo,
+                'cupo_maximo' => $curso->cupo_maximo,
+            ], 201);
+
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'message' => 'Error de validación',
@@ -51,7 +76,7 @@ class CourseController extends Controller
             ], 422);
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Error interno del servidor',
+                'message' => 'Error interno del servidor: ' . $e->getMessage(),
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -59,35 +84,60 @@ class CourseController extends Controller
 
     /**
      * Obtiene los datos de un curso específico
-     * @param int $id ID del curso
-     * @return \Illuminate\Http\JsonResponse
      */
     public function show($id)
     {
-        return response()->json(Curso::findOrFail($id));
+        $curso = Curso::with(['idioma', 'nivelRel', 'modalidadRel'])->findOrFail($id);
+        
+        return response()->json([
+            'id_curso' => $curso->id_curso,
+            'id' => $curso->id_curso,
+            'idioma' => $curso->idioma->nombre_idioma ?? $curso->idioma->nombre ?? '',
+            'nivel' => $curso->nivel ?? '',
+            'modalidad' => $curso->modalidad ?? '',
+            'cupo_minimo' => $curso->cupo_minimo,
+            'cupo_maximo' => $curso->cupo_maximo,
+        ]);
     }
 
     /**
      * Actualiza los datos de un curso existente
-     * @param Request $request Nuevos datos del curso
-     * @param int $id ID del curso a actualizar
-     * @return \Illuminate\Http\JsonResponse
      */
     public function update(Request $request, $id)
     {
         try {
             $curso = Curso::findOrFail($id);
-            $validado = $request->validate([
-                'idioma' => 'nullable|string|max:100',
-                'nivel' => 'nullable|string|max:100',
-                'modalidad' => 'nullable|string|max:100',
-                'horario' => 'nullable|string|max:100',
+            $request->validate([
+                'idioma' => 'required|string|max:100',
+                'nivel' => 'required|string|max:100',
+                'modalidad' => 'required|string|max:100',
                 'cupo_minimo' => 'nullable|numeric|min:1',
                 'cupo_maximo' => 'nullable|numeric|min:1',
             ]);
 
-            $curso->update($validado);
-            return response()->json($curso);
+            // Actualizar/Crear registros de catálogo 3NF
+            $idioma = Idioma::firstOrCreate(['nombre_idioma' => $request->idioma]);
+            $nivel = Nivel::firstOrCreate(['nombre_nivel' => $request->nivel]);
+            $modalidad = Modalidad::firstOrCreate(['nombre_modalidad' => $request->modalidad]);
+
+            $curso->update([
+                'id_idioma' => $idioma->id_idioma,
+                'id_nivel' => $nivel->id_nivel,
+                'id_modalidad' => $modalidad->id_modalidad,
+                'cupo_minimo' => $request->cupo_minimo ?? $curso->cupo_minimo,
+                'cupo_maximo' => $request->cupo_maximo ?? $curso->cupo_maximo,
+            ]);
+
+            return response()->json([
+                'id_curso' => $curso->id_curso,
+                'id' => $curso->id_curso,
+                'idioma' => $idioma->nombre_idioma ?? $idioma->nombre,
+                'nivel' => $curso->nivel,
+                'modalidad' => $curso->modalidad,
+                'cupo_minimo' => $curso->cupo_minimo,
+                'cupo_maximo' => $curso->cupo_maximo,
+            ]);
+
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json(['errors' => $e->errors()], 422);
         } catch (\Exception $e) {
@@ -96,21 +146,24 @@ class CourseController extends Controller
     }
 
     /**
-     * Elimina un curso del sistema
-     * Primero elimina todas las inscripciones asociadas
-     *
-     * @param int $id ID del curso a eliminar
-     * @return \Illuminate\Http\JsonResponse
+     * Elimina un curso específico del sistema
      */
     public function destroy($id)
     {
-        $curso = Curso::findOrFail($id);
+        try {
+            $curso = Curso::findOrFail($id);
+            
+            // Eliminar dependencias vinculadas si existen
+            $curso->paralelos()->delete();
+            $curso->inscripciones()->delete();
+            $curso->delete();
 
-        // Eliminar inscripciones vinculadas primero (cascada)
-        $curso->inscripciones()->delete();
-
-        // Eliminar el curso
-        $curso->delete();
-        return response()->json(['message' => 'Curso eliminado exitosamente']);
+            return response()->json(['message' => 'Curso eliminado correctamente.']);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al eliminar el curso.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }

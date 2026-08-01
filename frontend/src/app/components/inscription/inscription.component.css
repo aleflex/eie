@@ -837,3 +837,49 @@
 .phone-input {
     flex: 1;
 }
+
+/* Botón de Configuración de API flotante para móvil */
+.btn-api-config-trigger {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: transparent;
+  border: none;
+  color: var(--secondary-color);
+  font-size: 1.6rem;
+  cursor: pointer;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  z-index: 10;
+}
+
+.btn-api-config-trigger:hover {
+  background: rgba(249, 178, 51, 0.1);
+  color: var(--primary-color);
+  transform: rotate(45deg);
+}
+
+.btn-api-modal {
+  padding: 0.8rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-reset:hover {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+}
+
+.btn-save:hover {
+  background: #002c54 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0, 59, 113, 0.2);
+}

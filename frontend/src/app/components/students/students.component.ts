@@ -7,6 +7,7 @@ import { environment } from '../../../environments/environment';
 import { StudentService } from '../../services/student.service';
 import { CourseService } from '../../services/course.service';
 import { InscriptionService } from '../../services/inscription.service';
+import { downloadFile } from '../../utils/file-downloader';
 import { ParaleloService } from '../../services/paralelo.service';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
@@ -21,12 +22,36 @@ import { ImageCompressorService } from '../../services/image-compressor.service'
 })
 export class StudentsComponent implements OnInit {
   students: any[] = [];
+  allStudents: any[] = [];
   courses: any[] = [];
   paralelos: any[] = [];
   filteredParalelos: any[] = [];
   selectedStudent: any = null;
   apiBase: string = environment.apiUrl.replace('/api', '');
   isLoading: boolean = true;
+  isSidebarCollapsed: boolean = false;
+  isMobileMenuOpen: boolean = false;
+  expandedStudentIds: Set<number> = new Set<number>();
+
+  toggleSidebar() {
+    this.isSidebarCollapsed = !this.isSidebarCollapsed;
+  }
+
+  toggleMobileMenu() {
+    this.isMobileMenuOpen = !this.isMobileMenuOpen;
+  }
+
+  toggleRow(studentId: number) {
+    if (this.expandedStudentIds.has(studentId)) {
+      this.expandedStudentIds.delete(studentId);
+    } else {
+      this.expandedStudentIds.add(studentId);
+    }
+  }
+
+  isRowExpanded(studentId: number): boolean {
+    return this.expandedStudentIds.has(studentId);
+  }
   
   // Variables para Historial Académico
   showHistoryModal: boolean = false;
@@ -89,7 +114,8 @@ export class StudentsComponent implements OnInit {
     this.isLoading = true;
     this.studentService.getStudents().subscribe({
       next: (data) => {
-        this.students = data;
+        this.allStudents = data || [];
+        this.students = data || [];
         this.isLoading = false;
       },
       error: (err) => {
@@ -172,14 +198,21 @@ export class StudentsComponent implements OnInit {
     this.quotaError = null;
     this.adminPhotoFile = null;
     this.adminPhotoFileName = '';
+
+    if (this.selectedStudent.documentos_habilitados_hasta) {
+      this.selectedStudent.documentos_habilitados_hasta = this.selectedStudent.documentos_habilitados_hasta.replace(' ', 'T').substring(0, 16);
+    }
     
     if (student.inscripciones && student.inscripciones.length > 0) {
       const ins = student.inscripciones[0];
-      this.selectedStudent.inscripcion_id = ins.id;
-      this.selectedStudent.estado_inscripcion = ins.estado;
-      this.selectedStudent.curso_id = ins.curso_id;
-      this.selectedStudent.paralelo_id = ins.paralelo_id || '';
+      this.selectedStudent.inscripcion_id = ins.id_inscripcion || ins.id;
+      this.selectedStudent.estado_inscripcion = (ins.estado || 'activo').toLowerCase();
+      this.selectedStudent.curso_id = ins.id_curso || ins.curso_id || (ins.curso ? (ins.curso.id_curso || ins.curso.id) : '');
+      this.selectedStudent.paralelo_id = ins.id_paralelo || ins.paralelo_id || '';
     } else {
+      this.selectedStudent.inscripcion_id = null;
+      this.selectedStudent.estado_inscripcion = 'activo';
+      this.selectedStudent.curso_id = '';
       this.selectedStudent.paralelo_id = '';
     }
 
@@ -283,28 +316,34 @@ export class StudentsComponent implements OnInit {
   }
 
   onSearch() {
-    // Si no hay término, recargar todos
     if (!this.searchTerm || this.searchTerm.trim() === '') {
-      this.loadStudents();
+      this.students = [...this.allStudents];
       return;
     }
 
-    this.isLoading = true;
-    this.studentService.searchStudents(this.searchTerm, this.searchType).subscribe({
-      next: (data) => {
-        this.students = data;
-        this.isLoading = false;
-      },
-      error: (err) => {
-        console.error('Error searching students', err);
-        this.isLoading = false;
+    const term = this.searchTerm.trim().toLowerCase();
+    const wordBoundaryRegex = new RegExp(`\\b${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'i');
+
+    this.students = this.allStudents.filter(st => {
+      const nombres = st.nombres || st.user?.nombres || '';
+      const apellidos = st.apellidos || st.user?.apellidos || '';
+      const fullName = `${nombres} ${apellidos}`.trim();
+      const ci = `${st.ci || st.user?.ci || ''}`;
+
+      if (this.searchType === 'ci') {
+        return ci.toLowerCase().includes(term);
       }
+
+      return wordBoundaryRegex.test(nombres) ||
+             wordBoundaryRegex.test(apellidos) ||
+             wordBoundaryRegex.test(fullName) ||
+             ci.toLowerCase().includes(term);
     });
   }
 
   // Método que se dispara en cada tecla
   onSearchInput() {
-    this.searchSubject.next(this.searchTerm);
+    this.onSearch();
   }
 
   // --- GESTIÓN DE DOCUMENTOS ---
@@ -433,16 +472,11 @@ export class StudentsComponent implements OnInit {
       return;
     }
 
-    const inscriptionId = student.inscripciones[0].id;
-    
+    const inscriptionId = student.inscripciones[0].id_inscripcion || student.inscripciones[0].id;
+
     this.inscriptionService.downloadCertificate(inscriptionId).subscribe({
       next: (blob) => {
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `constancia_${student.ci}.pdf`;
-        link.click();
-        window.URL.revokeObjectURL(url);
+        downloadFile(blob, `constancia_${student.ci}.pdf`);
       },
       error: (err) => {
         console.error('Error al descargar el PDF', err);
@@ -453,11 +487,25 @@ export class StudentsComponent implements OnInit {
 
   previewDocument(doc: any) {
     this.activePreviewDoc = doc;
-    const apiBase = environment.apiUrl.replace('/api', '');
-    const url = apiBase + '/storage/documentos/' + doc.ruta_archivo;
+    const apiBase = environment.apiUrl.replace(/\/api\/?$/, '');
+    let path = doc.ruta_archivo || doc.archivo || '';
+
+    let url = '';
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      url = path;
+    } else if (path.startsWith('/storage/documentos/')) {
+      url = apiBase + path;
+    } else if (path.startsWith('/storage/')) {
+      url = apiBase + path;
+    } else if (path.startsWith('storage/')) {
+      url = apiBase + '/' + path;
+    } else {
+      url = apiBase + '/storage/documentos/' + path.replace(/^\/+/, '');
+    }
+
     this.activePreviewUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
 
-    const ext = doc.ruta_archivo.split('.').pop().toLowerCase();
+    const ext = path.split('.').pop().toLowerCase();
     this.isPreviewPdf = ext === 'pdf';
     this.isPreviewImage = ['jpg', 'jpeg', 'png', 'gif'].includes(ext);
 
@@ -470,6 +518,10 @@ export class StudentsComponent implements OnInit {
     this.activePreviewUrl = null;
     this.isPreviewPdf = false;
     this.isPreviewImage = false;
+  }
+
+  onImageError(event: any) {
+    event.target.src = 'assets/default-avatar.png';
   }
 }
 

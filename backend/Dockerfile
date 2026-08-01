@@ -12,6 +12,11 @@ RUN apt-get update && apt-get install -y \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install pdo_mysql gd bcmath
 
+# Configurar limites de subida de archivos para soportar fotos de celular de alta resolucion
+RUN echo "upload_max_filesize = 64M" > /usr/local/etc/php/conf.d/uploads.ini \
+    && echo "post_max_size = 64M" >> /usr/local/etc/php/conf.d/uploads.ini \
+    && echo "memory_limit = 256M" >> /usr/local/etc/php/conf.d/uploads.ini
+
 # Habilitar el módulo mod_rewrite de Apache para Laravel
 RUN a2enmod rewrite
 

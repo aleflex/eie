@@ -1,5 +1,52 @@
 /* You can add global styles to this file, and also import other style files */
 
+/* Local Material Icons */
+@font-face {
+  font-family: 'Material Icons';
+  font-style: normal;
+  font-weight: 400;
+  src: url('assets/fonts/material-icons.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Material Icons Outlined';
+  font-style: normal;
+  font-weight: 400;
+  src: url('assets/fonts/material-icons-outlined.otf') format('opentype');
+}
+
+.material-icons {
+  font-family: 'Material Icons';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.material-icons-outlined {
+  font-family: 'Material Icons Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 :root {
   /* Official EMI Palette */
   --primary-color: #003B71; /* EMI Blue */
@@ -80,38 +127,80 @@ html {
   background: var(--primary-color);
   border-radius: 5px;
 }
-::-webkit-scrollbar-thumb:hover {
-  background: var(--secondary-color);
+.mobile-hamburger-btn {
+  display: none;
+}
+
+.btn-toggle-sidebar {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  color: rgba(255, 255, 255, 0.85);
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.btn-toggle-sidebar:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
 }
 
 /* ==========================================
    EPIC 3: INTERFAZ MÓVIL RESPONSIVA
    ========================================== */
-@media (max-width: 768px) {
+@media (max-width: 1200px) {
+  /* Ocultar tabla rígida de escritorio y activar tarjetas verticales móviles con información completa */
+  .desktop-table-view {
+    display: none !important;
+  }
+
+  .mobile-cards-view {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1.2rem !important;
+  }
+
   /* Contenedor Principal en Móvil */
   .dashboard-layout {
     flex-direction: column !important;
-  }
-
-  /* Transformar Sidebar en un Top Nav Premium y Pegajoso */
+  }  /* Transformar Sidebar en un Top Nav Premium y Colapsable */
   .sidebar {
     width: 100% !important;
     min-height: auto !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-    padding: 0.6rem 1rem !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    padding: 0 1.5rem !important;
     position: sticky !important;
     top: 0;
     z-index: 1000 !important;
     background: var(--primary-color) !important;
     border-bottom: 3px solid var(--secondary-color) !important;
     box-shadow: 0 4px 10px rgba(0, 59, 113, 0.15);
+    max-height: 60px !important;
+    overflow: hidden !important;
+    transition: max-height 0.3s ease-in-out !important;
+  }
+
+  .sidebar.mobile-open {
+    max-height: 100vh !important;
+    overflow-y: auto !important;
   }
 
   .sidebar-header {
+    height: 60px !important;
     padding: 0 !important;
-    gap: 0.5rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    flex-shrink: 0 !important;
   }
 
   .sidebar-logo {
@@ -119,34 +208,57 @@ html {
   }
 
   .sidebar-header span {
-    font-size: 0.95rem !important;
+    font-size: 1.1rem !important;
+    font-weight: 800 !important;
   }
 
-  /* Menú de Navegación Horizontal Deslizable */
+  /* Hamburger Menu Button */
+  .mobile-hamburger-btn {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    color: white !important;
+    width: 44px !important;
+    height: 44px !important;
+    cursor: pointer !important;
+    outline: none !important;
+  }
+  
+  .mobile-hamburger-btn i {
+    font-size: 28px !important;
+  }
+
+  .btn-toggle-sidebar {
+    display: none !important;
+  }
+
+  /* Menú de Navegación Vertical Desplegable */
   .sidebar-nav {
     display: flex !important;
-    flex-direction: row !important;
-    padding: 0 !important;
-    margin: 0 0.8rem !important;
-    gap: 0.4rem !important;
-    overflow-x: auto !important;
-    flex: 1 !important;
-    scrollbar-width: none !important; /* Firefox */
-  }
-
-  .sidebar-nav::-webkit-scrollbar {
-    display: none !important; /* Chrome, Safari, Opera */
+    flex-direction: column !important;
+    padding: 1rem 0 !important;
+    margin: 0 !important;
+    gap: 0.5rem !important;
+    overflow-x: visible !important;
+    flex: none !important;
   }
 
   .nav-item, .nav-btn {
+    width: 100% !important;
     margin-bottom: 0 !important;
     white-space: nowrap !important;
-    padding: 0.5rem 0.8rem !important;
-    font-size: 0.8rem !important;
-    border-radius: 8px !important;
+    padding: 0.8rem 1rem !important;
+    font-size: 0.95rem !important;
+    border-radius: 10px !important;
     background: transparent !important;
     color: rgba(255, 255, 255, 0.75) !important;
     border: none !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 1rem !important;
   }
 
   .nav-item:hover, .nav-btn:hover, .nav-item.active, .nav-btn.active {
@@ -155,16 +267,21 @@ html {
   }
 
   .sidebar-footer {
-    padding: 0 !important;
-    border-top: none !important;
-    margin-left: 0.5rem !important;
+    padding: 1rem 0 2rem 0 !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+    margin-left: 0 !important;
+    width: 100% !important;
   }
 
   .btn-logout {
-    padding: 0.5rem 0.8rem !important;
-    font-size: 0.8rem !important;
-    width: auto !important;
+    padding: 0.8rem !important;
+    font-size: 0.95rem !important;
+    width: 100% !important;
     white-space: nowrap !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0.5rem !important;
   }
 
   /* Ajuste de Espaciado del Contenido */
@@ -220,8 +337,38 @@ html {
   .table-card {
     padding: 1rem !important;
     border-radius: 12px !important;
+  }
+
+  .table-container {
+    padding: 1rem !important;
+    border-radius: 12px !important;
+  }
+
+  .table-card, .table-responsive {
     overflow-x: auto !important;
     -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: thin !important;
+    scrollbar-color: var(--primary-color) #f1f5f9 !important;
+  }
+
+  .table-card::-webkit-scrollbar, .table-responsive::-webkit-scrollbar {
+    display: block !important;
+    height: 6px !important;
+  }
+  .table-card::-webkit-scrollbar-track, .table-responsive::-webkit-scrollbar-track {
+    background: #f1f5f9 !important;
+    border-radius: 3px !important;
+  }
+  .table-card::-webkit-scrollbar-thumb, .table-responsive::-webkit-scrollbar-thumb {
+    background: var(--primary-color) !important;
+    border-radius: 3px !important;
+  }
+
+  .table-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.5rem !important;
+    margin-bottom: 1rem !important;
   }
 
   table {
@@ -238,18 +385,21 @@ html {
     align-items: center !important;
   }
 
-  /* T2. Aumentar el área táctil (touch target) a 44px en móviles para fácil interacción con los dedos */
-  .actions button, .btn-edit, .btn-delete, .btn-history, .btn-docs, .btn-print {
-    width: 44px !important;
-    height: 44px !important;
+  /* RF14 - HU14 - T2: Aumentar el área táctil (touch target) a mínimo 44px con padding holgado para interacción con los dedos */
+  .actions button, .btn-edit, .btn-delete, .btn-history, .btn-docs, .btn-print, .btn-save, .btn-cancel, .btn-upload-photo, .btn-mobile-act {
+    min-width: 44px !important;
+    min-height: 44px !important;
+    padding: 0.65rem 1.1rem !important;
     border-radius: 10px !important;
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
+    gap: 0.5rem !important;
+    touch-action: manipulation;
   }
 
   .actions button i, .btn-edit i, .btn-delete i, .btn-history i, .btn-docs i, .btn-print i {
-    font-size: 20px !important; /* Aumenta el tamaño del icono */
+    font-size: 22px !important; /* Iconos optimizados para toque táctil */
   }
 
 
@@ -275,6 +425,7 @@ html {
     margin: 1rem !important;
     max-width: calc(100% - 2rem) !important;
   }
+
 }
 
 /* Visor de Documentación Responsivo (RF 15) */
@@ -352,6 +503,62 @@ html {
   .pdf-viewer-frame, .image-viewer-container {
     width: 100vw !important;
     height: calc(100vh - 56px) !important; /* Subtract header height */
+  }
+
+  /* Mobile Cards Layout for Inscriptions (replaces table on small screens) */
+  .mobile-cards-list {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1rem !important;
+    margin-top: 1rem !important;
+  }
+
+  .mobile-card {
+    background: #ffffff;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    padding: 1.2rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+
+  .mobile-card-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .mobile-card-row.header-row {
+    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 0.6rem;
+    margin-bottom: 0.2rem;
+  }
+
+  .mobile-card-name {
+    font-weight: 700;
+    color: var(--primary-color);
+    font-size: 1rem;
+  }
+
+  .mobile-card-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .mobile-card-details p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: #475569;
+    line-height: 1.4;
+  }
+
+  .mobile-card-details strong {
+    color: #0f172a;
+    font-weight: 600;
   }
 }
 

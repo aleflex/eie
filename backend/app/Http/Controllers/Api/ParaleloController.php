@@ -11,6 +11,17 @@ use Illuminate\Support\Facades\DB;
 
 class ParaleloController extends Controller
 {
+    const STATIC_HORARIOS = [
+        1 => ['dia_semana' => 'Lunes a Viernes', 'hora_inicio' => '08:00:00', 'hora_fin' => '10:00:00'],
+        2 => ['dia_semana' => 'Lunes a Viernes', 'hora_inicio' => '10:00:00', 'hora_fin' => '12:00:00'],
+        3 => ['dia_semana' => 'Lunes a Viernes', 'hora_inicio' => '14:00:00', 'hora_fin' => '16:00:00'],
+        4 => ['dia_semana' => 'Lunes a Viernes', 'hora_inicio' => '16:00:00', 'hora_fin' => '18:00:00'],
+        5 => ['dia_semana' => 'Lunes a Viernes', 'hora_inicio' => '18:30:00', 'hora_fin' => '20:30:00'],
+        6 => ['dia_semana' => 'Lunes a Viernes', 'hora_inicio' => '19:00:00', 'hora_fin' => '21:00:00'],
+        7 => ['dia_semana' => 'Sábado', 'hora_inicio' => '08:00:00', 'hora_fin' => '13:00:00'],
+        8 => ['dia_semana' => 'Sábado', 'hora_inicio' => '14:00:00', 'hora_fin' => '19:00:00'],
+    ];
+
     /**
      * Mostrar un listado de todos los paralelos.
      */
@@ -25,17 +36,17 @@ class ParaleloController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'curso_id' => 'required|exists:cursos,id',
-            'aula_id' => 'nullable|exists:aulas,id',
+            'curso_id' => 'required|exists:cursos,id_curso',
+            'aula_id' => 'nullable|exists:aulas,id_aula',
             'nombre' => 'required|string|max:255',
             'docentes' => 'nullable|array',
-            'docentes.*' => 'exists:docentes,id',
+            'docentes.*' => 'exists:docentes,id_docente',
             'horarios' => 'required|array|min:1',
-            'horarios.*' => 'exists:horarios,id'
+            'horarios.*' => 'integer|min:1|max:8'
         ]);
 
         // Validar cruce de horarios para cada docente
-        if ($request->has('docentes')) {
+        if ($request->has('docentes') && !empty($request->docentes)) {
             foreach ($request->docentes as $docenteId) {
                 if ($this->checkOverlap($docenteId, $request->horarios)) {
                     return response()->json([
@@ -49,12 +60,25 @@ class ParaleloController extends Controller
         try {
             DB::beginTransaction();
 
-            $paralelo = Paralelo::create($request->only(['curso_id', 'aula_id', 'nombre']));
+            $paralelo = Paralelo::create([
+                'id_curso' => $request->curso_id,
+                'id_aula' => $request->aula_id,
+                'nombre_paralelo' => $request->nombre,
+            ]);
 
-            $paralelo->horarios()->sync($request->horarios);
+            if ($request->has('docentes') && !empty($request->docentes)) {
+                $paralelo->docentes()->attach($request->docentes);
+            }
 
-            if ($request->has('docentes')) {
-                $paralelo->docentes()->sync($request->docentes);
+            // Crear los registros de horarios para el paralelo
+            foreach ($request->horarios as $staticId) {
+                $static = self::STATIC_HORARIOS[$staticId];
+                $horario = Horario::create([
+                    'dia_semana' => $static['dia_semana'],
+                    'hora_inicio' => $static['hora_inicio'],
+                    'hora_fin' => $static['hora_fin']
+                ]);
+                $paralelo->horarios()->attach($horario->id_horario);
             }
 
             DB::commit();
@@ -85,19 +109,19 @@ class ParaleloController extends Controller
         $paralelo = Paralelo::findOrFail($id);
 
         $request->validate([
-            'curso_id' => 'required|exists:cursos,id',
-            'aula_id' => 'nullable|exists:aulas,id',
+            'curso_id' => 'required|exists:cursos,id_curso',
+            'aula_id' => 'nullable|exists:aulas,id_aula',
             'nombre' => 'required|string|max:255',
             'docentes' => 'nullable|array',
-            'docentes.*' => 'exists:docentes,id',
+            'docentes.*' => 'exists:docentes,id_docente',
             'horarios' => 'required|array|min:1',
-            'horarios.*' => 'exists:horarios,id'
+            'horarios.*' => 'integer|min:1|max:8'
         ]);
 
         // Validar cruce de horarios para cada docente (excluyendo este paralelo)
-        if ($request->has('docentes')) {
+        if ($request->has('docentes') && !empty($request->docentes)) {
             foreach ($request->docentes as $docenteId) {
-                if ($this->checkOverlap($docenteId, $request->horarios, $paralelo->id)) {
+                if ($this->checkOverlap($docenteId, $request->horarios, $paralelo->id_paralelo)) {
                     return response()->json([
                         'message' => "Conflicto de horario: El docente ya está ocupado en otro paralelo en los horarios seleccionados.",
                         'docente_id' => $docenteId
@@ -109,12 +133,30 @@ class ParaleloController extends Controller
         try {
             DB::beginTransaction();
 
-            $paralelo->update($request->only(['curso_id', 'aula_id', 'nombre']));
-
-            $paralelo->horarios()->sync($request->horarios);
+            $paralelo->update([
+                'id_curso' => $request->curso_id,
+                'id_aula' => $request->aula_id,
+                'nombre_paralelo' => $request->nombre,
+            ]);
 
             if ($request->has('docentes')) {
                 $paralelo->docentes()->sync($request->docentes);
+            }
+
+            // Obtener y eliminar horarios anteriores de la base de datos y la relación
+            $horarioIds = $paralelo->horarios()->pluck('horarios.id_horario');
+            $paralelo->horarios()->detach();
+            Horario::whereIn('id_horario', $horarioIds)->delete();
+
+            // Crear nuevos horarios
+            foreach ($request->horarios as $staticId) {
+                $static = self::STATIC_HORARIOS[$staticId];
+                $horario = Horario::create([
+                    'dia_semana' => $static['dia_semana'],
+                    'hora_inicio' => $static['hora_inicio'],
+                    'hora_fin' => $static['hora_fin']
+                ]);
+                $paralelo->horarios()->attach($horario->id_horario);
             }
 
             DB::commit();
@@ -134,18 +176,28 @@ class ParaleloController extends Controller
      */
     private function checkOverlap($docenteId, $newHorarioIds, $excludeParaleloId = null)
     {
-        // Buscamos todos los horarios ocupados por el docente en otros paralelos
-        $query = DB::table('horario_paralelo')
-            ->join('docente_paralelo', 'horario_paralelo.paralelo_id', '=', 'docente_paralelo.paralelo_id')
-            ->where('docente_paralelo.docente_id', $docenteId);
-
+        $paralelosQuery = Paralelo::whereHas('docentes', function($q) use ($docenteId) {
+            $q->where('docentes.id_docente', $docenteId);
+        });
         if ($excludeParaleloId) {
-            $query->where('horario_paralelo.paralelo_id', '!=', $excludeParaleloId);
+            $paralelosQuery->where('id_paralelo', '!=', $excludeParaleloId);
+        }
+        $paralelos = $paralelosQuery->with('horarios')->get();
+
+        $ocupados = [];
+        foreach ($paralelos as $p) {
+            foreach ($p->horarios as $h) {
+                foreach (self::STATIC_HORARIOS as $id => $static) {
+                    if ($h->dia_semana === $static['dia_semana'] &&
+                        substr($h->hora_inicio, 0, 5) === substr($static['hora_inicio'], 0, 5) &&
+                        substr($h->hora_fin, 0, 5) === substr($static['hora_fin'], 0, 5)) {
+                        $ocupados[] = $id;
+                        break;
+                    }
+                }
+            }
         }
 
-        $ocupados = $query->pluck('horario_id')->toArray();
-
-        // Si hay alguna intersección entre los horarios ocupados y los nuevos, hay choque
         return count(array_intersect($ocupados, $newHorarioIds)) > 0;
     }
 
@@ -171,11 +223,14 @@ class ParaleloController extends Controller
     public function storeAula(Request $request)
     {
         $request->validate([
-            'nombre' => 'required|string|max:255|unique:aulas,nombre',
+            'nombre' => 'required|string|max:255|unique:aulas,nombre_aula',
             'capacidad' => 'nullable|integer|min:1'
         ]);
 
-        $aula = Aula::create($request->only(['nombre', 'capacidad']));
+        $aula = Aula::create([
+            'nombre_aula' => $request->nombre,
+            'capacidad' => $request->capacidad
+        ]);
 
         return response()->json([
             'message' => 'Aula creada exitosamente',
@@ -189,11 +244,14 @@ class ParaleloController extends Controller
             $aula = Aula::findOrFail($id);
 
             $request->validate([
-                'nombre' => 'required|string|max:255|unique:aulas,nombre,' . $aula->id,
+                'nombre' => 'required|string|max:255|unique:aulas,nombre_aula,' . $aula->id_aula . ',id_aula',
                 'capacidad' => 'nullable|integer|min:1'
             ]);
 
-            $aula->update($request->only(['nombre', 'capacidad']));
+            $aula->update([
+                'nombre_aula' => $request->nombre,
+                'capacidad' => $request->capacidad
+            ]);
 
             return response()->json([
                 'message' => 'Aula actualizada exitosamente',
@@ -234,6 +292,16 @@ class ParaleloController extends Controller
 
     public function getHorarios()
     {
-        return response()->json(Horario::all());
+        $response = [];
+        foreach (self::STATIC_HORARIOS as $id => $static) {
+            $response[] = [
+                'id' => $id,
+                'id_horario' => $id,
+                'dia_semana' => $static['dia_semana'],
+                'hora_inicio' => $static['hora_inicio'],
+                'hora_fin' => $static['hora_fin']
+            ];
+        }
+        return response()->json($response);
     }
 }

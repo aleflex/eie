@@ -21,15 +21,16 @@ class AccesoController extends Controller
         // 1. Obtener Docentes con su cuenta de usuario
         $docentes = Docente::with('user')->get()->map(function ($docente) {
             return [
-                'persona_id' => $docente->id,
-                'user_id' => $docente->user_id,
+                'persona_id' => $docente->id_docente,
+                'user_id' => $docente->id_usuario,
                 'nombres' => $docente->nombres ?? 'Docente',
                 'apellidos' => $docente->apellidos ?? '',
                 'ci' => $docente->ci ?? 'N/A',
                 'tipo' => 'docente',
+                'usuario' => $docente->user ? $docente->user->usuario : null,
                 'correo_electronico' => $docente->user ? $docente->user->email : $docente->correo_electronico,
                 'telefono' => $docente->telefono,
-                'tiene_cuenta' => $docente->user_id !== null,
+                'tiene_cuenta' => $docente->id_usuario !== null,
                 'estado' => $docente->estado ?? 'Activo'
             ];
         });
@@ -37,32 +38,34 @@ class AccesoController extends Controller
         // 2. Obtener Estudiantes con su cuenta de usuario
         $estudiantes = Estudiante::with('user')->get()->map(function ($estudiante) {
             return [
-                'persona_id' => $estudiante->id,
-                'user_id' => $estudiante->user_id,
+                'persona_id' => $estudiante->id_estudiante,
+                'user_id' => $estudiante->id_usuario,
                 'nombres' => $estudiante->nombres,
                 'apellidos' => $estudiante->apellidos,
                 'ci' => $estudiante->ci,
                 'tipo' => 'estudiante',
+                'usuario' => $estudiante->user ? $estudiante->user->usuario : null,
                 'correo_electronico' => $estudiante->user ? $estudiante->user->email : $estudiante->correo_electronico,
                 'telefono' => $estudiante->celular,
-                'tiene_cuenta' => $estudiante->user_id !== null,
+                'tiene_cuenta' => $estudiante->id_usuario !== null,
                 'estado' => 'Activo'
             ];
         });
 
         // 3. Obtener Administradores (usuarios de la tabla users que no son docentes ni estudiantes)
-        $docenteUserIds = Docente::whereNotNull('user_id')->pluck('user_id')->toArray();
-        $estudianteUserIds = Estudiante::whereNotNull('user_id')->pluck('user_id')->toArray();
+        $docenteUserIds = Docente::whereNotNull('id_usuario')->pluck('id_usuario')->toArray();
+        $estudianteUserIds = Estudiante::whereNotNull('id_usuario')->pluck('id_usuario')->toArray();
         $excluidos = array_merge($docenteUserIds, $estudianteUserIds);
 
-        $administradores = User::whereNotIn('id', $excluidos)->get()->map(function ($user) {
+        $administradores = User::whereNotIn('id_usuario', $excluidos)->get()->map(function ($user) {
             return [
-                'persona_id' => $user->id,
-                'user_id' => $user->id,
+                'persona_id' => $user->id_usuario,
+                'user_id' => $user->id_usuario,
                 'nombres' => $user->name,
                 'apellidos' => '',
                 'ci' => 'N/A',
                 'tipo' => 'admin',
+                'usuario' => $user->usuario,
                 'correo_electronico' => $user->email,
                 'telefono' => 'N/A',
                 'tiene_cuenta' => true,
@@ -85,54 +88,72 @@ class AccesoController extends Controller
             'persona_id' => 'required_unless:tipo,admin|integer',
             'tipo' => 'required|string|in:docente,estudiante,admin',
             'nombres' => 'required_if:tipo,admin|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users,email',
+            'usuario' => 'sometimes|required|string|max:100|unique:usuarios,usuario',
+            'email' => 'nullable|string|email|max:255',
             'password' => 'required|string|min:8',
         ]);
 
         try {
             DB::beginTransaction();
 
-            $name = '';
+            $nombres = '';
+            $apellidos = '';
+
             if ($request->tipo === 'admin') {
-                // Crear administrador directamente
-                $name = $request->nombres;
+                $nombres = $request->nombres;
+                $apellidos = 'Admin';
             } elseif ($request->tipo === 'docente') {
                 $docente = Docente::findOrFail($request->persona_id);
-                if ($docente->user_id) {
+                if ($docente->id_usuario) {
                     return response()->json(['message' => 'El docente ya cuenta con un usuario asignado'], 422);
                 }
-                $name = $docente->user ? $docente->user->name : 'Instructor EIE';
+                $nombres = $docente->nombres;
+                $apellidos = $docente->apellidos;
             } else {
                 $estudiante = Estudiante::findOrFail($request->persona_id);
-                if ($estudiante->user_id) {
+                if ($estudiante->id_usuario) {
                     return response()->json(['message' => 'El estudiante ya cuenta con un usuario asignado'], 422);
                 }
-                $name = $estudiante->nombres . ' ' . $estudiante->apellidos;
+                $nombres = $estudiante->nombres;
+                $apellidos = $estudiante->apellidos;
             }
+
+            // Usar nombre de usuario personalizado o generar automático
+            $username = $request->filled('usuario') 
+                ? strtolower(trim($request->usuario)) 
+                : User::generateUsername($nombres, $apellidos);
+
+            $email = $request->filled('email') 
+                ? strtolower(trim($request->email)) 
+                : "{$username}@eie.edu.bo";
 
             // 1. Crear el usuario
             $user = User::create([
-                'name' => $name,
-                'email' => $request->email,
+                'id_rol' => $request->tipo === 'admin' ? 1 : ($request->tipo === 'docente' ? 2 : 3),
+                'correo_institucional' => $email,
+                'usuario' => $username,
                 'password' => Hash::make($request->password),
+                'debe_cambiar_password' => true,
+                'estado' => 'ACTIVO',
+                'nombres' => $nombres,
+                'apellidos' => $apellidos,
             ]);
 
             // 2. Vincular el usuario si aplica
             if ($request->tipo === 'docente') {
-                $docente->user_id = $user->id;
-                $user->name = $user->name === 'Instructor EIE' ? 'Instructor ' . $docente->id : $user->name;
-                $user->save();
+                $docente->id_usuario = $user->id_usuario;
                 $docente->save();
             } elseif ($request->tipo === 'estudiante') {
-                $estudiante->user_id = $user->id;
+                $estudiante->id_usuario = $user->id_usuario;
                 $estudiante->save();
             }
 
             DB::commit();
 
             return response()->json([
-                'message' => $request->tipo === 'admin' ? 'Administrador registrado con éxito' : 'Credenciales asignadas correctamente',
-                'user' => $user
+                'message' => $request->tipo === 'admin' ? "Administrador creado. Usuario: {$username}" : "Credenciales creadas. Usuario: {$username}",
+                'user' => $user,
+                'usuario_generado' => $username
             ], 201);
 
         } catch (\Exception $e) {
@@ -152,24 +173,33 @@ class AccesoController extends Controller
         $user = User::findOrFail($userId);
 
         $request->validate([
-            'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
+            'usuario' => 'required|string|max:100|unique:usuarios,usuario,' . $user->id_usuario . ',id_usuario',
+            'email' => 'nullable|string|email|max:255',
             'password' => 'nullable|string|min:8',
         ]);
 
         try {
             DB::beginTransaction();
 
-            $user->email = $request->email;
+            if ($request->filled('usuario')) {
+                $user->usuario = strtolower(trim($request->usuario));
+            }
+            if ($request->filled('email')) {
+                $user->correo_institucional = strtolower(trim($request->email));
+            }
             if ($request->filled('password')) {
                 $user->password = Hash::make($request->password);
+                $user->debe_cambiar_password = true; // Exigir cambio al actualizar la contraseña por admin
             }
             $user->save();
 
-            // Sincronizar el correo en estudiantes si corresponde
-            $estudiante = Estudiante::where('user_id', $user->id)->first();
-            if ($estudiante) {
-                $estudiante->correo_electronico = $request->email;
-                $estudiante->save();
+            // Sincronizar el correo en estudiantes si corresponde y se proporcionó
+            if ($request->filled('email')) {
+                $estudiante = Estudiante::where('id_usuario', $user->id_usuario)->first();
+                if ($estudiante) {
+                    $estudiante->correo_electronico = strtolower(trim($request->email));
+                    $estudiante->save();
+                }
             }
 
             DB::commit();
@@ -189,7 +219,7 @@ class AccesoController extends Controller
     }
 
     /**
-     * Desvincula y elimina la cuenta de un usuario sin eliminar a la persona (o elimina un administrador)
+     * Desvincula y elimina la cuenta de un usuario sin eliminar a la persona
      */
     public function desvincular($userId)
     {
@@ -198,13 +228,8 @@ class AccesoController extends Controller
         try {
             DB::beginTransaction();
 
-            // Desvincular de docentes
-            Docente::where('user_id', $user->id)->update(['user_id' => null]);
-
-            // Desvincular de estudiantes
-            Estudiante::where('user_id', $user->id)->update(['user_id' => null]);
-
-            // Eliminar usuario
+            Docente::where('id_usuario', $user->id_usuario)->update(['id_usuario' => null]);
+            Estudiante::where('id_usuario', $user->id_usuario)->update(['id_usuario' => null]);
             $user->delete();
 
             DB::commit();

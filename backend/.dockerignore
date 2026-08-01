@@ -2,3 +2,6 @@ vendor
 .git
 storage/app
 bootstrap/cache/*
+public/storage
+__pycache__
+.venv

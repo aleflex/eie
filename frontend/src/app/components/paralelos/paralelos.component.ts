@@ -19,6 +19,11 @@ export class ParalelosComponent implements OnInit {
   aulas: any[] = [];
   docentes: any[] = [];
   horarios: any[] = [];
+  isSidebarCollapsed = false;
+
+  toggleSidebar() {
+    this.isSidebarCollapsed = !this.isSidebarCollapsed;
+  }
   
   isLoading = true;
   showForm = false;

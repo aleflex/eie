@@ -12,7 +12,7 @@ export interface Curso {
   idioma: string;           // Idioma que se imparte
   nivel: string;            // Nivel del curso
   modalidad: string;        // Modalidad (presencial, virtual, híbrida)
-  horario: string;          // Horario del curso
+  horario?: string;         // Horario opcional del curso
   cupo_minimo: number;      // Cupo mínimo de estudiantes
   cupo_maximo: number;      // Cupo máximo de estudiantes
   inscripciones_count?: number;  // Cantidad de inscripciones actuales

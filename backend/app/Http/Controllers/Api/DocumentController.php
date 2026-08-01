@@ -13,7 +13,7 @@ class DocumentController extends Controller
     // Listar documentos de un estudiante
     public function index($estudianteId)
     {
-        $documentos = Documento::where('estudiante_id', $estudianteId)->get();
+        $documentos = Documento::where('id_estudiante', $estudianteId)->get();
         return response()->json($documentos);
     }
 
@@ -21,14 +21,40 @@ class DocumentController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'estudiante_id' => 'required|exists:estudiantes,id',
+            'estudiante_id' => 'required|exists:estudiantes,id_estudiante',
             'tipo_documento' => 'required|string',
             'archivo' => 'required|file|mimes:pdf,jpg,png|max:5120', // Máximo 5MB
+            'observacion' => 'nullable|string'
         ]);
 
         try {
             $file = $request->file('archivo');
             $estudianteId = $request->estudiante_id;
+
+            // Verificar si el usuario autenticado es un estudiante y si tiene el permiso vencido/inactivo
+            $user = auth()->user();
+            if ($user) {
+                $checkEstudiante = \App\Models\Estudiante::where('id_usuario', $user->id_usuario)->first();
+                if ($checkEstudiante && $checkEstudiante->id_estudiante == $estudianteId) {
+                    $hasta = $checkEstudiante->documentos_habilitados_hasta;
+                    if (!$hasta || now()->greaterThan(\Carbon\Carbon::parse($hasta))) {
+                        return response()->json([
+                            'message' => 'No tienes permisos activos para subir documentos. Solicita autorización al administrador.'
+                        ], 403);
+                    }
+                }
+            } else {
+                // Fallback: Si no hay sesión activa en el request, validar la fecha en el estudiante objetivo
+                $estudianteObj = Estudiante::find($estudianteId);
+                if ($estudianteObj) {
+                    $hasta = $estudianteObj->documentos_habilitados_hasta;
+                    if (!$hasta || now()->greaterThan(\Carbon\Carbon::parse($hasta))) {
+                        return response()->json([
+                            'message' => 'No tienes permisos activos para subir documentos. Solicita autorización al administrador.'
+                        ], 403);
+                    }
+                }
+            }
 
             // Generar un nombre único para el archivo
             $fileName = time() . '_' . $file->getClientOriginalName();
@@ -36,14 +62,25 @@ class DocumentController extends Controller
             // Guardar en el disco 'documentos' (storage/app/public/documentos)
             $path = $file->storeAs('estudiantes/' . $estudianteId, $fileName, 'documentos');
 
+            // Buscar tipo documento en catalogo
+            $tipoDoc = \DB::table('tipos_documentos')
+                ->where('nombre_tipo_documento', $request->tipo_documento)
+                ->first();
+            
+            if (!$tipoDoc) {
+                $tipoDoc = \DB::table('tipos_documentos')
+                    ->whereRaw('LOWER(nombre_tipo_documento) = ?', [strtolower($request->tipo_documento)])
+                    ->first();
+            }
+
+            $idTipoDoc = $tipoDoc ? $tipoDoc->id_tipo_documento : 1;
+
             // Crear el registro en la base de datos
             $documento = Documento::create([
-                'estudiante_id' => $estudianteId,
+                'id_estudiante' => $estudianteId,
                 'tipo_documento' => $request->tipo_documento,
-                'nombre_archivo' => $file->getClientOriginalName(),
-                'ruta_archivo' => $path,
-                'extension' => $file->getClientOriginalExtension(),
-                'peso' => $file->getSize(),
+                'nombre_archivo' => $fileName,
+                'ruta_archivo' => '/storage/documentos/' . $path,
             ]);
 
             return response()->json([
@@ -69,7 +106,8 @@ class DocumentController extends Controller
 
         try {
             // Eliminar el archivo físico
-            Storage::disk('documentos')->delete($documento->ruta_archivo);
+            $filePath = str_replace('/storage/documentos/', '', $documento->archivo);
+            Storage::disk('documentos')->delete($filePath);
             
             // Eliminar el registro de la base de datos
             $documento->delete();
@@ -83,4 +121,3 @@ class DocumentController extends Controller
         }
     }
 }
-

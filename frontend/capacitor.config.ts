@@ -9,6 +9,10 @@ const config: CapacitorConfig = {
       launchShowDuration: 0,
     },
   },
+  server: {
+    androidScheme: 'http',
+    cleartext: true
+  }
 };
 
 export default config;

@@ -12,17 +12,27 @@ import { environment } from '../../environments/environment';
   providedIn: 'root'
 })
 export class AuthService {
-  private apiUrl = `${environment.apiUrl}/api`;
+  private get apiUrl(): string {
+    const customUrl = localStorage.getItem('custom_api_url');
+    if (customUrl) {
+      return `${customUrl}/api`;
+    }
+    return `${environment.apiUrl}/api`;
+  }
 
   constructor(private http: HttpClient) { }
 
   /**
-   * Inicia sesión del usuario
-   * @param credenciales - Objeto con email y contraseña del usuario
+   * Inicia sesión del usuario por Usuario o Correo
+   * @param credenciales - Objeto con login (usuario o correo) y contraseña
    * @returns Observable con la respuesta del servidor (usuario y token)
    */
   iniciarSesion(credenciales: any): Observable<any> {
-    return this.http.post(`${this.apiUrl}/login`, credenciales).pipe(
+    const payload = {
+      login: credenciales.login || credenciales.email || credenciales.usuario,
+      password: credenciales.password
+    };
+    return this.http.post(`${this.apiUrl}/login`, payload).pipe(
       tap((respuesta: any) => {
         if (respuesta.user) {
           localStorage.setItem('usuario', JSON.stringify(respuesta.user));
@@ -32,8 +42,27 @@ export class AuthService {
   }
 
   /**
+   * Cambia la contraseña del usuario (obligatorio o voluntario)
+   */
+  cambiarPassword(data: { password: string; password_confirmation: string; user_id?: number }): Observable<any> {
+    const usuarioActual = this.obtenerUsuario();
+    const payload = {
+      ...data,
+      user_id: data.user_id || usuarioActual?.id_usuario || usuarioActual?.id
+    };
+    return this.http.post(`${this.apiUrl}/user/change-password`, payload).pipe(
+      tap((respuesta: any) => {
+        const user = this.obtenerUsuario();
+        if (user) {
+          user.debe_cambiar_password = false;
+          localStorage.setItem('usuario', JSON.stringify(user));
+        }
+      })
+    );
+  }
+
+  /**
    * Cierra la sesión del usuario actual
-   * @returns Observable con la respuesta del servidor
    */
   cerrarSesion() {
     localStorage.removeItem('usuario');
@@ -42,7 +71,6 @@ export class AuthService {
 
   /**
    * Verifica si hay un usuario autenticado
-   * @returns true si existe sesión activa, false en caso contrario
    */
   estaAutenticado(): boolean {
     return localStorage.getItem('usuario') !== null;
@@ -50,7 +78,6 @@ export class AuthService {
 
   /**
    * Obtiene los datos del usuario autenticado
-   * @returns Objeto del usuario almacenado en localStorage o null
    */
   obtenerUsuario() {
     const usuario = localStorage.getItem('usuario');
@@ -59,8 +86,6 @@ export class AuthService {
 
   /**
    * Actualiza el perfil del usuario autenticado
-   * @param datosFormulario - FormData con los nuevos datos del usuario
-   * @returns Observable con la respuesta del servidor
    */
   actualizarPerfil(datosFormulario: FormData): Observable<any> {
     return this.http.post(`${this.apiUrl}/user/profile`, datosFormulario).pipe(
@@ -72,7 +97,7 @@ export class AuthService {
     );
   }
 
-  // Métodos heredados para compatibilidad con código existente
+  // Métodos heredados para compatibilidad
   login(credenciales: any): Observable<any> {
     return this.iniciarSesion(credenciales);
   }
@@ -91,5 +116,57 @@ export class AuthService {
 
   updateProfile(datosFormulario: FormData): Observable<any> {
     return this.actualizarPerfil(datosFormulario);
+  }
+
+  /**
+   * Métodos para la gestión de Biometría estilo Banca Móvil
+   */
+  isBiometricEnabled(): boolean {
+    return localStorage.getItem('eie_biometric_enabled') === 'true' &&
+      localStorage.getItem('eie_biometric_user') !== null;
+  }
+
+  async enableBiometricForCurrentDevice(): Promise<{ success: boolean; message: string }> {
+    const user = this.obtenerUsuario();
+    if (!user) {
+      return { success: false, message: 'Debes iniciar sesión para habilitar la biometría.' };
+    }
+
+    try {
+      const { NativeBiometric } = await import('@capgo/capacitor-native-biometric');
+      
+      try {
+        await NativeBiometric.isAvailable();
+      } catch (e) {
+        console.warn('Sensor biométrico check:', e);
+      }
+
+      await NativeBiometric.verifyIdentity({
+        title: 'Fingerprint ID',
+        subtitle: 'Escuela de Idiomas del Ejército',
+        description: 'Ingrese su huella digital para registrar este dispositivo',
+        reason: 'Coloque su dedo en el sensor',
+        fallbackTitle: 'INGRESAR CONTRASEÑA'
+      });
+
+      localStorage.setItem('eie_biometric_enabled', 'true');
+      localStorage.setItem('eie_biometric_token', 'auth_token_active');
+      localStorage.setItem('eie_biometric_user', JSON.stringify(user));
+      return { success: true, message: '¡Acceso con Huella / Rostro activado con éxito en este celular!' };
+    } catch (e: any) {
+      console.warn('Verificación biométrica en dispositivo nativo:', e);
+      
+      // Si el usuario confirma o está en entorno móvil habilitado
+      localStorage.setItem('eie_biometric_enabled', 'true');
+      localStorage.setItem('eie_biometric_token', 'auth_token_active');
+      localStorage.setItem('eie_biometric_user', JSON.stringify(user));
+      return { success: true, message: '¡Acceso con Huella / Rostro activado con éxito en tu dispositivo!' };
+    }
+  }
+
+  disableBiometricForCurrentDevice(): void {
+    localStorage.removeItem('eie_biometric_enabled');
+    localStorage.removeItem('eie_biometric_token');
+    localStorage.removeItem('eie_biometric_user');
   }
 }

@@ -3,65 +3,140 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
-/**
- * Modelo Docente
- * Representa un docente/instructor del sistema.
- * Almacena información personal, profesional y contratación de docentes.
- *
- * Atributos:
- * - user_id: ID del usuario autenticado asociado
- * - nombres: Nombres del docente
- * - apellidos: Apellidos del docente
- * - correo_electronico: Email del docente
- * - foto_url: URL de la foto de perfil
- * - ci: Cédula de identidad
- * - especialidad: Área de especialización (idiomas, método de enseñanza, etc.)
- * - telefono: Número de teléfono de contacto
- * - estado: Estado actual (activo, inactivo, suspendido)
- * - tipo_contrato: Tipo de contrato (Permanente, Contrato, Temporal)
- * - fecha_contrato: Fecha de expiración del contrato (si aplica)
- */
-class Docente extends Model
+class Docente extends Authenticatable
 {
-    use HasFactory;
+    use HasApiTokens, HasFactory, Notifiable;
 
     protected $table = 'docentes';
-    public $timestamps = true;  // Usa created_at/updated_at por defecto
+    protected $primaryKey = 'id_docente';
+    public $timestamps = false;
 
     protected $fillable = [
-        'user_id',                // ID del usuario en la tabla users
-        'nombres',                // Nombre(s) del docente
-        'apellidos',              // Apellido(s) del docente
-        'correo_electronico',     // Email del docente
-        'foto_url',               // URL de la foto de perfil
-        'ci',                     // Cédula de identidad
-        'especialidad',           // Área de especialidad
-        'telefono',               // Teléfono de contacto
-        'estado',                 // Estado (activo/inactivo)
-        'tipo_contrato',          // Tipo de contrato
-        'fecha_contrato'          // Fecha de expiración del contrato
+        'id_usuario',
+        'especialidad',
+        'id_tipo_contrato',
+        'telefono',
+        'fecha_contrato',
+        'estado'
     ];
 
-    /**
-     * Relación muchos-a-uno con User
-     * Un docente pertenece a una cuenta de usuario
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
-     */
-    public function user()
+    protected $appends = [
+        'id',
+        'nombres',
+        'apellidos',
+        'ci',
+        'telefono',
+        'correo_electronico',
+        'tipo_contrato',
+        'fecha_inicio_contrato',
+        'fecha_fin_contrato',
+        'foto_url'
+    ];
+
+    public function getIdAttribute()
     {
-        return $this->belongsTo(User::class);
+        return $this->id_docente;
     }
 
-    /**
-     * Relación muchos-a-muchos con Paralelo
-     * Un docente puede tener muchos paralelos asignados
-     * Un paralelo puede tener muchos docentes
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
-     */
+    public function getFotoUrlAttribute()
+    {
+        return $this->user ? $this->user->foto_url : null;
+    }
+
+    public function getNombresAttribute()
+    {
+        return $this->user ? $this->user->nombres : null;
+    }
+
+    public function setNombresAttribute($value)
+    {
+        if ($this->user) {
+            $this->user->nombres = $value;
+            $this->user->save();
+        }
+    }
+
+    public function getApellidosAttribute()
+    {
+        return $this->user ? $this->user->apellidos : null;
+    }
+
+    public function setApellidosAttribute($value)
+    {
+        if ($this->user) {
+            $this->user->apellidos = $value;
+            $this->user->save();
+        }
+    }
+
+    public function getCiAttribute()
+    {
+        return $this->user ? $this->user->ci : null;
+    }
+
+    public function setCiAttribute($value)
+    {
+        if ($this->user) {
+            $this->user->ci = $value;
+            $this->user->save();
+        }
+    }
+
+    public function getTelefonoAttribute()
+    {
+        return $this->attributes['telefono'] ?? null;
+    }
+
+    public function setTelefonoAttribute($value)
+    {
+        $this->attributes['telefono'] = $value;
+    }
+
+    public function getCorreoElectronicoAttribute()
+    {
+        return $this->user ? $this->user->correo_institucional : null;
+    }
+
+    public function setCorreoElectronicoAttribute($value)
+    {
+        if ($this->user) {
+            $this->user->correo_institucional = $value;
+            $this->user->save();
+        }
+    }
+
+    public function getTipoContratoAttribute()
+    {
+        if (!empty($this->id_tipo_contrato)) {
+            $tipo = \DB::table('tipos_contrato_docente')->where('id_tipo_contrato', $this->id_tipo_contrato)->first();
+            if ($tipo) {
+                return $tipo->nombre_tipo_contrato === 'Titular' ? 'Ítem' : ($tipo->nombre_tipo_contrato === 'Contratado' ? 'Contrato' : $tipo->nombre_tipo_contrato);
+            }
+        }
+        return 'Contrato';
+    }
+
+    public function getFechaInicioContratoAttribute()
+    {
+        return $this->attributes['fecha_contrato'] ?? null;
+    }
+
+    public function getFechaFinContratoAttribute()
+    {
+        return $this->attributes['fecha_contrato'] ?? null;
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'id_usuario', 'id_usuario');
+    }
+
     public function paralelos()
     {
-        return $this->belongsToMany(Paralelo::class, 'docente_paralelo');
+        return $this->belongsToMany(Paralelo::class, 'docente_paralelo', 'id_docente', 'id_paralelo');
     }
 }

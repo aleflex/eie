@@ -5,6 +5,7 @@ import { Router, RouterModule } from '@angular/router';
 import { SettingsService } from '../../services/settings.service';
 import { AuthService } from '../../services/auth.service';
 import { ImageCompressorService } from '../../services/image-compressor.service';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-settings',
@@ -14,11 +15,24 @@ import { ImageCompressorService } from '../../services/image-compressor.service'
   styleUrl: './settings.component.css'
 })
 export class SettingsComponent implements OnInit {
+  apiUrl = environment.apiUrl;
   activeTab: string = 'academic';
   isLoading: boolean = true;
   isSaving: boolean = false;
   isSavingProfile: boolean = false;
   user: any = null;
+
+  // Control de la barra lateral (Sidebar)
+  isSidebarCollapsed: boolean = false;
+  isMobileMenuOpen: boolean = false;
+
+  toggleSidebar() {
+    this.isSidebarCollapsed = !this.isSidebarCollapsed;
+  }
+
+  toggleMobileMenu() {
+    this.isMobileMenuOpen = !this.isMobileMenuOpen;
+  }
 
   // Datos para Mi Perfil
   profileData: any = {
@@ -68,7 +82,32 @@ export class SettingsComponent implements OnInit {
       this.profileData.name = this.user.name || '';
       this.profileData.email = this.user.email || '';
     }
+    this.biometricEnabled = this.authService.isBiometricEnabled();
     this.cargarConfiguraciones();
+  }
+
+  biometricEnabled: boolean = false;
+
+  async toggleBiometric(event: any) {
+    const isChecked = event.target.checked;
+    if (isChecked) {
+      const res = await this.authService.enableBiometricForCurrentDevice();
+      if (res.success) {
+        this.biometricEnabled = true;
+        this.successMessage = res.message;
+        setTimeout(() => this.successMessage = '', 4000);
+      } else {
+        this.biometricEnabled = false;
+        event.target.checked = false;
+        this.errorMessage = res.message;
+        setTimeout(() => this.errorMessage = '', 4000);
+      }
+    } else {
+      this.authService.disableBiometricForCurrentDevice();
+      this.biometricEnabled = false;
+      this.successMessage = 'Acceso biométrico (Huella/Rostro) desactivado en este dispositivo.';
+      setTimeout(() => this.successMessage = '', 4000);
+    }
   }
 
   /**

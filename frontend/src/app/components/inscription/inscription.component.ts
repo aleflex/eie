@@ -1,15 +1,16 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { NavbarComponent } from '../navbar/navbar.component';
 import { FooterComponent } from '../footer/footer.component';
 import { InscriptionService } from '../../services/inscription.service';
 import { ImageCompressorService } from '../../services/image-compressor.service';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-inscription',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, NavbarComponent, FooterComponent],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, NavbarComponent, FooterComponent],
   templateUrl: './inscription.component.html',
   styleUrl: './inscription.component.css'
 })
@@ -26,6 +27,11 @@ export class InscriptionComponent implements OnInit {
   showModal = false;
   modalType: 'success' | 'error' = 'success';
   modalMessage = '';
+
+  // Configuración de API dinámica (para APK móvil y pruebas)
+  showApiConfigModal: boolean = false;
+  customApiUrl: string = '';
+  currentApiUrl: string = '';
 
   // Almacenar nombres de archivo seleccionados para dropzones personalizados
   fileNames: { [key: string]: string } = {
@@ -60,6 +66,54 @@ export class InscriptionComponent implements OnInit {
   ngOnInit(): void {
     this.initForm();
     this.setupFormSubscriptions();
+    this.customApiUrl = localStorage.getItem('custom_api_url') || '';
+    this.currentApiUrl = environment.apiUrl;
+  }
+
+  /**
+   * Abre el modal de configuración de conexión
+   */
+  openApiConfig() {
+    this.customApiUrl = localStorage.getItem('custom_api_url') || '';
+    this.showApiConfigModal = true;
+  }
+
+  /**
+   * Cierra el modal de configuración de conexión
+   */
+  closeApiConfig() {
+    this.showApiConfigModal = false;
+  }
+
+  /**
+   * Guarda la URL personalizada de la API y recarga la aplicación
+   */
+  saveApiConfig() {
+    if (this.customApiUrl && this.customApiUrl.trim() !== '') {
+      let url = this.customApiUrl.trim();
+      // Eliminar barra diagonal final si existe
+      if (url.endsWith('/')) {
+        url = url.slice(0, -1);
+      }
+      // Asegurar protocolo
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        url = 'http://' + url;
+      }
+      localStorage.setItem('custom_api_url', url);
+    } else {
+      localStorage.removeItem('custom_api_url');
+    }
+    this.showApiConfigModal = false;
+    window.location.reload();
+  }
+
+  /**
+   * Restablece la URL a los valores de fábrica
+   */
+  resetApiConfig() {
+    localStorage.removeItem('custom_api_url');
+    this.showApiConfigModal = false;
+    window.location.reload();
   }
 
   /**
@@ -74,7 +128,7 @@ export class InscriptionComponent implements OnInit {
       armaEspecialidad: [''],
       lugarNacimiento: ['', Validators.required],
       fechaNacimiento: ['', Validators.required],
-      ci: ['', [Validators.required, Validators.pattern(/^[0-9]+$/), Validators.minLength(6)]],
+      ci: ['', [Validators.required, Validators.pattern(/^[0-9]{7,8}$/)]],
       carnetMilitar: [''],
       carnetCossmil: [''],
       estadoCivil: ['', Validators.required],
@@ -90,7 +144,7 @@ export class InscriptionComponent implements OnInit {
       idioma: ['Inglés', Validators.required],
       tipoCurso: ['regular', Validators.required],
       nombrePadres: ['', [Validators.required, Validators.minLength(6)]],
-      ciTutor: ['', [Validators.required, Validators.pattern(/^[0-9]+$/), Validators.minLength(6)]],
+      ciTutor: ['', [Validators.required, Validators.pattern(/^[0-9]{7,8}$/)]],
       hermanosInscritos: [''],
       contactoEmergencia: ['', [Validators.required, Validators.minLength(4)]],
       archivos: this.fb.group({
@@ -133,7 +187,7 @@ export class InscriptionComponent implements OnInit {
         
         // Re-add validators for non-military
         nombrePadresCtrl?.setValidators([Validators.required, Validators.minLength(6)]);
-        ciTutorCtrl?.setValidators([Validators.required, Validators.pattern(/^[0-9]+$/), Validators.minLength(6)]);
+        ciTutorCtrl?.setValidators([Validators.required, Validators.pattern(/^[0-9]{7,8}$/)]);
       } else {
         // Remove validators for military
         nombrePadresCtrl?.clearValidators();

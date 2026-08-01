@@ -1,38 +1,53 @@
 <div class="dashboard-layout">
   <!-- Barra Lateral -->
-  <aside class="sidebar">
+  <aside class="sidebar" [class.collapsed]="isSidebarCollapsed">
     <div class="sidebar-header">
       <img src="assets/imagenes/logo.jpg" alt="Logo EIE" class="sidebar-logo">
-      <span>EIE PANEL</span>
+      <span *ngIf="!isSidebarCollapsed">EIE PANEL</span>
+      <button type="button" class="btn-toggle-sidebar" (click)="toggleSidebar()" [title]="isSidebarCollapsed ? 'Expandir menú' : 'Contraer menú'">
+        <i class="material-icons-outlined">{{ isSidebarCollapsed ? 'menu' : 'chevron_left' }}</i>
+      </button>
     </div>
 
     <nav class="sidebar-nav">
       <a routerLink="/admin" routerLinkActive="active" class="nav-item">
-        <i class="material-icons-outlined">dashboard</i> Panel Principal
+        <i class="material-icons-outlined">dashboard</i>
+        <span *ngIf="!isSidebarCollapsed">Panel Principal</span>
       </a>
       <a routerLink="/students" routerLinkActive="active" class="nav-item">
-        <i class="material-icons-outlined">people</i> Estudiantes
+        <i class="material-icons-outlined">people</i>
+        <span *ngIf="!isSidebarCollapsed">Estudiantes</span>
       </a>
       <a routerLink="/courses" routerLinkActive="active" class="nav-item">
-        <i class="material-icons-outlined">school</i> Cursos
+        <i class="material-icons-outlined">school</i>
+        <span *ngIf="!isSidebarCollapsed">Cursos</span>
       </a>
       <a routerLink="/docentes-list" routerLinkActive="active" class="nav-item">
-        <i class="material-icons-outlined">person</i> Instructores
+        <i class="material-icons-outlined">person</i>
+        <span *ngIf="!isSidebarCollapsed">Instructores</span>
       </a>
       <a routerLink="/paralelos" routerLinkActive="active" class="nav-item">
-        <i class="material-icons-outlined">class</i> Paralelos
+        <i class="material-icons-outlined">class</i>
+        <span *ngIf="!isSidebarCollapsed">Paralelos</span>
+      </a>
+      <a routerLink="/reports" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">bar_chart</i>
+        <span *ngIf="!isSidebarCollapsed">Reportes y Estadísticas</span>
       </a>
       <a routerLink="/accesos" routerLinkActive="active" class="nav-item">
-        <i class="material-icons-outlined">vpn_key</i> Credenciales / Accesos
+        <i class="material-icons-outlined">vpn_key</i>
+        <span *ngIf="!isSidebarCollapsed">Credenciales / Accesos</span>
       </a>
       <a routerLink="/settings" routerLinkActive="active" class="nav-item">
-        <i class="material-icons-outlined">settings</i> Configuración
+        <i class="material-icons-outlined">settings</i>
+        <span *ngIf="!isSidebarCollapsed">Configuración</span>
       </a>
     </nav>
 
     <div class="sidebar-footer">
       <button class="btn-logout" routerLink="/home">
-        <i class="material-icons-outlined">logout</i> Salir
+        <i class="material-icons-outlined">logout</i>
+        <span *ngIf="!isSidebarCollapsed">Salir</span>
       </button>
     </div>
   </aside>
@@ -43,8 +58,8 @@
       <div class="header">
         <h1>Gestión de Cursos</h1>
         <p>Administra la oferta académica de la institución</p>
-        <button class="btn-primary btn-new-course" (click)="openCreateForm()">
-          <i class="material-icons">add</i> Nuevo Curso
+        <button class="btn-new-course" (click)="openCreateForm()">
+          <i class="material-icons-outlined">add_circle</i> + Nuevo Curso
         </button>
       </div>
 
@@ -74,10 +89,6 @@
                   <option value="Virtual">Virtual</option>
                   <option value="Semi-presencial">Semi-presencial</option>
                 </select>
-              </div>
-              <div class="form-group">
-                <label for="horario">Horario</label>
-                <input type="text" id="horario" [(ngModel)]="currentCourse.horario" name="horario" class="form-control" placeholder="Ej. 08:00 - 10:00" required>
               </div>
               <div class="form-group">
                 <label for="cupo_minimo">Cupo Mínimo</label>
@@ -126,11 +137,11 @@
         </div>
       </div>
 
-      <div class="table-card animate-fade-in">
+      <!-- VISTA EN ESCRITORIO (Tabla) -->
+      <div class="table-card desktop-table-view animate-fade-in">
         <table class="data-table">
           <thead>
             <tr>
-              <th>ID</th>
               <th>Idioma</th>
               <th>Nivel</th>
               <th>Modalidad</th>
@@ -142,14 +153,10 @@
           </thead>
           <tbody>
             <tr *ngFor="let curso of pagedCourses">
-              <td>#{{curso.id}}</td>
               <td><b>{{curso.idioma}}</b></td>
               <td>{{curso.nivel}}</td>
               <td>
-                <div class="modality-box">
-                  <span class="status-badge" [ngClass]="curso.modalidad">{{curso.modalidad}}</span>
-                  <small>{{curso.horario}}</small>
-                </div>
+                <span class="status-badge" [ngClass]="curso.modalidad">{{curso.modalidad}}</span>
               </td>
               <td>
                 <div class="quota-progress-container">
@@ -183,12 +190,85 @@
               </td>
             </tr>
             <tr *ngIf="pagedCourses.length === 0">
-              <td colspan="8" class="text-center py-4 text-muted">No se encontraron cursos que coincidan con la búsqueda.</td>
+              <td colspan="7" class="text-center py-4 text-muted">No se encontraron cursos que coincidan con la búsqueda.</td>
             </tr>
           </tbody>
         </table>
 
-        <!-- Paginación -->
+        <!-- Paginación Escritorio -->
+        <div class="pagination-bar" *ngIf="totalPages > 1">
+          <button (click)="setPage(currentPage - 1)" [disabled]="currentPage === 1" class="btn-page">
+            <i class="material-icons">chevron_left</i>
+          </button>
+          <span class="page-info">Página {{currentPage}} de {{totalPages}}</span>
+          <button (click)="setPage(currentPage + 1)" [disabled]="currentPage === totalPages" class="btn-page">
+            <i class="material-icons">chevron_right</i>
+          </button>
+        </div>
+      </div>
+
+      <!-- VISTA EN MÓVIL / APK (Tarjetas Adaptables) -->
+      <div class="mobile-cards-view mt-4">
+        <div *ngFor="let curso of pagedCourses" class="course-card-mobile"
+          [class.is-hab]="(curso.inscripciones_count || 0) >= curso.cupo_minimo && (curso.inscripciones_count || 0) < curso.cupo_maximo"
+          [class.is-pend]="(curso.inscripciones_count || 0) < curso.cupo_minimo"
+          [class.is-full]="(curso.inscripciones_count || 0) >= curso.cupo_maximo">
+
+          <div class="card-mobile-header">
+            <div class="course-mobile-title-box">
+              <span class="course-mobile-idioma">{{ curso.idioma }}</span>
+              <span class="course-mobile-nivel">{{ curso.nivel }}</span>
+            </div>
+            <span class="status-badge" [ngClass]="{
+              'pend': (curso.inscripciones_count || 0) < curso.cupo_minimo,
+              'hab': (curso.inscripciones_count || 0) >= curso.cupo_minimo && (curso.inscripciones_count || 0) < curso.cupo_maximo,
+              'full': (curso.inscripciones_count || 0) >= curso.cupo_maximo
+            }">
+              {{ (curso.inscripciones_count || 0) < curso.cupo_minimo ? 'Pendiente' :
+                 (curso.inscripciones_count || 0) >= curso.cupo_maximo ? 'Lleno' : 'Habilitado' }}
+            </span>
+          </div>
+
+          <div class="card-mobile-details">
+            <div class="mobile-detail-item">
+              <i class="material-icons-outlined">laptop_chromebook</i>
+              <span><strong>Modalidad:</strong></span>
+              <span class="status-badge" [ngClass]="curso.modalidad">{{ curso.modalidad }}</span>
+            </div>
+            <div class="mobile-detail-item">
+              <i class="material-icons-outlined">bar_chart</i>
+              <span><strong>Progreso Cupos:</strong></span>
+              <div class="mobile-progress-wrapper">
+                <div class="progress-bar-small">
+                  <div class="progress-fill" [style.width.%]="(curso.inscripciones_count || 0) / curso.cupo_maximo * 100"
+                       [ngClass]="{'bg-full': (curso.inscripciones_count || 0) >= curso.cupo_maximo, 'bg-hab': (curso.inscripciones_count || 0) >= curso.cupo_minimo}"></div>
+                </div>
+                <small><strong>{{ curso.inscripciones_count || 0 }} / {{ curso.cupo_maximo }}</strong></small>
+              </div>
+            </div>
+            <div class="mobile-detail-item">
+              <i class="material-icons-outlined">groups</i>
+              <span><strong>Cupo Min / Máx:</strong> {{ curso.cupo_minimo }} min - {{ curso.cupo_maximo }} máx</span>
+            </div>
+          </div>
+
+          <div class="card-mobile-actions">
+            <button type="button" (click)="editCourse(curso)" class="btn-mobile-action btn-mobile-edit" title="Editar Curso">
+              <i class="material-icons-outlined">edit</i>
+              <span>Editar</span>
+            </button>
+            <button type="button" (click)="deleteCourse(curso.id)" class="btn-mobile-action btn-mobile-delete" title="Eliminar Curso">
+              <i class="material-icons-outlined">delete</i>
+              <span>Eliminar</span>
+            </button>
+          </div>
+        </div>
+
+        <div *ngIf="pagedCourses.length === 0" class="text-center py-4 text-muted">
+          No se encontraron cursos que coincidan con la búsqueda.
+        </div>
+
+        <!-- Paginación Móvil -->
         <div class="pagination-bar" *ngIf="totalPages > 1">
           <button (click)="setPage(currentPage - 1)" [disabled]="currentPage === 1" class="btn-page">
             <i class="material-icons">chevron_left</i>

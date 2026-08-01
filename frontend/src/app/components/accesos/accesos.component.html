@@ -1,38 +1,56 @@
 <div class="dashboard-layout">
   <!-- Barra Lateral -->
-  <aside class="sidebar">
+  <aside class="sidebar" [class.collapsed]="isSidebarCollapsed" [class.mobile-open]="isMobileMenuOpen">
     <div class="sidebar-header">
       <img src="assets/imagenes/logo.jpg" alt="Logo EIE" class="sidebar-logo">
-      <span>EIE PANEL</span>
+      <span *ngIf="!isSidebarCollapsed">EIE PANEL</span>
+      <button type="button" class="mobile-hamburger-btn" (click)="toggleMobileMenu()" aria-label="Abrir menú mobile">
+        <i class="material-icons-outlined">{{ isMobileMenuOpen ? 'close' : 'menu' }}</i>
+      </button>
+      <button type="button" class="btn-toggle-sidebar" (click)="toggleSidebar()" [title]="isSidebarCollapsed ? 'Expandir menú' : 'Contraer menú'">
+        <i class="material-icons-outlined">{{ isSidebarCollapsed ? 'chevron_right' : 'chevron_left' }}</i>
+      </button>
     </div>
 
     <nav class="sidebar-nav">
       <a routerLink="/admin" routerLinkActive="active" class="nav-item">
-        <i class="material-icons-outlined">dashboard</i> Panel Principal
+        <i class="material-icons-outlined">dashboard</i>
+        <span *ngIf="!isSidebarCollapsed">Panel Principal</span>
       </a>
       <a routerLink="/students" routerLinkActive="active" class="nav-item">
-        <i class="material-icons-outlined">people</i> Estudiantes
+        <i class="material-icons-outlined">people</i>
+        <span *ngIf="!isSidebarCollapsed">Estudiantes</span>
       </a>
       <a routerLink="/courses" routerLinkActive="active" class="nav-item">
-        <i class="material-icons-outlined">school</i> Cursos
+        <i class="material-icons-outlined">school</i>
+        <span *ngIf="!isSidebarCollapsed">Cursos</span>
       </a>
       <a routerLink="/docentes-list" routerLinkActive="active" class="nav-item">
-        <i class="material-icons-outlined">person</i> Instructores
+        <i class="material-icons-outlined">person</i>
+        <span *ngIf="!isSidebarCollapsed">Instructores</span>
       </a>
       <a routerLink="/paralelos" routerLinkActive="active" class="nav-item">
-        <i class="material-icons-outlined">class</i> Paralelos
+        <i class="material-icons-outlined">class</i>
+        <span *ngIf="!isSidebarCollapsed">Paralelos</span>
+      </a>
+      <a routerLink="/reports" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">bar_chart</i>
+        <span *ngIf="!isSidebarCollapsed">Reportes y Estadísticas</span>
       </a>
       <a routerLink="/accesos" routerLinkActive="active" class="nav-item">
-        <i class="material-icons-outlined">vpn_key</i> Credenciales / Accesos
+        <i class="material-icons-outlined">vpn_key</i>
+        <span *ngIf="!isSidebarCollapsed">Credenciales / Accesos</span>
       </a>
       <a routerLink="/settings" routerLinkActive="active" class="nav-item">
-        <i class="material-icons-outlined">settings</i> Configuración
+        <i class="material-icons-outlined">settings</i>
+        <span *ngIf="!isSidebarCollapsed">Configuración</span>
       </a>
     </nav>
 
     <div class="sidebar-footer">
       <button (click)="onLogout()" class="btn-logout">
-        <i class="material-icons-outlined">logout</i> Salir
+        <i class="material-icons-outlined">logout</i>
+        <span *ngIf="!isSidebarCollapsed">Salir</span>
       </button>
     </div>
   </aside>
@@ -107,16 +125,17 @@
         <p>Cargando nómina del establecimiento...</p>
       </div>
 
-      <!-- Tabla de Personas -->
-      <div class="table-responsive mt-3" *ngIf="!isLoading">
+      <!-- Tabla de Personas para Escritorio (Desktop) -->
+      <div class="table-responsive mt-3 d-none d-md-block" *ngIf="!isLoading">
         <table class="table table-hover align-middle">
           <thead class="table-light">
             <tr>
               <th>Nombre Completo</th>
+              <th>Nombre de Usuario</th>
               <th>Rol en Sistema</th>
               <th>Cédula de Identidad</th>
-              <th>Correo Electrónico (Acceso)</th>
-              <th>Estado de Acceso</th>
+              <th>Correo Electrónico</th>
+              <th>Estado</th>
               <th class="text-center">Acciones</th>
             </tr>
           </thead>
@@ -127,6 +146,13 @@
                   <span class="full-name">{{ persona.nombres }} {{ persona.apellidos }}</span>
                   <small class="text-muted" *ngIf="persona.telefono && persona.telefono !== 'N/A'">Tel: {{ persona.telefono }}</small>
                 </div>
+              </td>
+              <td>
+                <span class="badge bg-light text-dark font-monospace" *ngIf="persona.usuario" style="border: 1px solid #cbd5e1; font-size: 0.85rem; padding: 0.35rem 0.6rem;">
+                  <i class="material-icons-outlined" style="font-size: 0.9rem; vertical-align: middle; margin-right: 2px;">account_circle</i>
+                  {{ persona.usuario }}
+                </span>
+                <span class="text-muted italic small" *ngIf="!persona.usuario">Sin usuario</span>
               </td>
               <td>
                 <span class="badge rounded-pill" 
@@ -193,6 +219,91 @@
           </tbody>
         </table>
       </div>
+
+      <!-- Tarjetas Responsivas para Celulares y APK (Mobile View < 768px) -->
+      <div class="mobile-cards-view d-block d-md-none mt-3" *ngIf="!isLoading">
+        <div *ngFor="let persona of filteredPersonas" class="persona-card-mobile animate-fade-in mb-3">
+          <div class="card-mobile-header">
+            <div class="user-avatar-badge">
+              <span class="material-icons-outlined">
+                {{ persona.tipo === 'docente' ? 'school' : persona.tipo === 'estudiante' ? 'person' : 'security' }}
+              </span>
+            </div>
+            <div class="user-info-mobile">
+              <h3 class="user-name-mobile">{{ persona.nombres }} {{ persona.apellidos }}</h3>
+              <span class="badge rounded-pill" 
+                    [ngClass]="{
+                      'bg-primary': persona.tipo === 'docente',
+                      'bg-success': persona.tipo === 'estudiante',
+                      'bg-danger': persona.tipo === 'admin'
+                    }">
+                {{ persona.tipo === 'docente' ? 'Instructor' : 
+                   persona.tipo === 'estudiante' ? 'Estudiante' : 'Administrador' }}
+              </span>
+            </div>
+          </div>
+
+          <div class="card-mobile-body">
+            <div class="info-row" *ngIf="persona.usuario">
+              <span class="info-label"><i class="material-icons-outlined">account_circle</i> Usuario:</span>
+              <span class="info-value"><strong class="font-monospace text-primary">{{ persona.usuario }}</strong></span>
+            </div>
+            <div class="info-row">
+              <span class="info-label"><i class="material-icons-outlined">badge</i> CI:</span>
+              <span class="info-value"><strong>{{ persona.ci }}</strong></span>
+            </div>
+            <div class="info-row" *ngIf="persona.telefono && persona.telefono !== 'N/A'">
+              <span class="info-label"><i class="material-icons-outlined">phone</i> Teléfono:</span>
+              <span class="info-value">{{ persona.telefono }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label"><i class="material-icons-outlined">email</i> Correo:</span>
+              <span class="info-value">
+                <span class="email-text" *ngIf="persona.tiene_cuenta">{{ persona.correo_electronico }}</span>
+                <span class="text-muted italic small" *ngIf="!persona.tiene_cuenta">Sin credenciales</span>
+              </span>
+            </div>
+            <div class="info-row">
+              <span class="info-label"><i class="material-icons-outlined">verified_user</i> Estado:</span>
+              <span class="info-value">
+                <span class="badge status-badge" [ngClass]="persona.tiene_cuenta ? 'con-acceso' : 'sin-acceso'">
+                  {{ persona.tiene_cuenta ? 'Con Acceso' : 'Sin Acceso' }}
+                </span>
+              </span>
+            </div>
+          </div>
+
+          <div class="card-mobile-footer">
+            <!-- Botón Asignar -->
+            <button *ngIf="!persona.tiene_cuenta && persona.tipo !== 'admin'" 
+                    (click)="openAssignModal(persona)" 
+                    class="btn btn-assign btn-block-mobile">
+              <span class="material-icons-outlined btn-icon">vpn_key</span>
+              <span>Asignar Acceso</span>
+            </button>
+
+            <!-- Botones Gestionar y Desvincular -->
+            <div *ngIf="persona.tiene_cuenta" class="mobile-action-buttons">
+              <button (click)="openEditModal(persona)" class="btn btn-edit-credentials flex-1">
+                <span class="material-icons-outlined">edit</span>
+                <span>Gestionar</span>
+              </button>
+
+              <button (click)="desvincularCuenta(persona)" 
+                      [disabled]="user?.id === persona.user_id"
+                      class="btn btn-revoke" 
+                      [title]="user?.id === persona.user_id ? 'No puedes auto-eliminarte del sistema' : 'Eliminar Cuenta / Acceso'">
+                <span class="material-icons-outlined">link_off</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="filteredPersonas.length === 0" class="empty-state-mobile text-center py-4">
+          <span class="material-icons-outlined block-icon d-block mb-2">search_off</span>
+          <p class="text-muted mb-0">No se encontraron personas con los filtros seleccionados.</p>
+        </div>
+      </div>
     </section>
   </main>
 
@@ -214,9 +325,9 @@
         </p>
 
         <div class="alert-info-custom mb-3 animate-fade-in">
-          <span class="material-icons-outlined alert-icon-mini">warning_amber</span>
+          <span class="material-icons-outlined alert-icon-mini">info</span>
           <span>
-            <strong>Importante:</strong> El correo electrónico debe ser único. Si una persona tiene múltiples roles (ej. instructor y estudiante), debe usar correos diferentes para cada rol para permitir un inicio de sesión correcto.
+            <strong>Nombre de usuario automático:</strong> El sistema generará automáticamente un usuario de acceso (ej: <code>juan.perez</code>). En su primer inicio de sesión, el usuario deberá cambiar obligatoriamente la contraseña por una privada.
           </span>
         </div>
         
@@ -239,17 +350,17 @@
           </div>
 
           <div class="form-group-custom">
-            <label for="assign_email">Correo electrónico de Ingreso *</label>
+            <label for="assign_usuario">Nombre de Usuario de Ingreso *</label>
             <div class="input-icon-wrapper">
-              <span class="material-icons-outlined">email</span>
+              <span class="material-icons-outlined">account_circle</span>
               <input 
-                type="email" 
-                id="assign_email" 
-                [(ngModel)]="formModel.email" 
-                name="email" 
+                type="text" 
+                id="assign_usuario" 
+                [(ngModel)]="formModel.usuario" 
+                name="usuario" 
                 class="form-control-custom" 
                 required 
-                placeholder="usuario@eie.edu.bo">
+                placeholder="Ej. carlos.mendoza">
             </div>
           </div>
 
@@ -291,18 +402,33 @@
         <button type="button" class="btn-close-custom" (click)="closeEditModal()" aria-label="Cerrar">&times;</button>
       </div>
       <div class="modal-body-custom py-4">
-        <p class="modal-instruction">Modifica el correo de acceso o asigna una nueva contraseña para la cuenta vinculada.</p>
+        <p class="modal-instruction">Modifica el Nombre de Usuario de acceso, correo institucional o asigna una nueva contraseña para la cuenta vinculada.</p>
 
         <div class="alert-info-custom mb-3 animate-fade-in">
-          <span class="material-icons-outlined alert-icon-mini">warning_amber</span>
+          <span class="material-icons-outlined alert-icon-mini">account_circle</span>
           <span>
-            <strong>Nota de Seguridad:</strong> Si cambias el correo de acceso, asegúrate de notificar al usuario. Este correo debe ser único en la base de datos de credenciales.
+            <strong>Nombre de Usuario:</strong> Este es el identificador principal con el cual el usuario iniciará sesión en el sistema y la aplicación móvil.
           </span>
         </div>
         
         <form (ngSubmit)="actualizarCredenciales()" #editForm="ngForm">
+          <div class="form-group-custom mb-3">
+            <label for="edit_usuario">Nombre de Usuario de Ingreso *</label>
+            <div class="input-icon-wrapper">
+              <span class="material-icons-outlined">account_circle</span>
+              <input 
+                type="text" 
+                id="edit_usuario" 
+                [(ngModel)]="formModel.usuario" 
+                name="usuario" 
+                class="form-control-custom" 
+                required 
+                placeholder="Ej. carlos.mendoza">
+            </div>
+          </div>
+
           <div class="form-group-custom">
-            <label for="edit_email">Correo electrónico de Ingreso *</label>
+            <label for="edit_email">Correo Electrónico (Notificaciones / Contacto)</label>
             <div class="input-icon-wrapper">
               <span class="material-icons-outlined">email</span>
               <input 
@@ -311,7 +437,6 @@
                 [(ngModel)]="formModel.email" 
                 name="email" 
                 class="form-control-custom" 
-                required 
                 placeholder="usuario@eie.edu.bo">
             </div>
           </div>

@@ -1,38 +1,53 @@
 <div class="dashboard-layout">
   <!-- Barra Lateral -->
-  <aside class="sidebar">
+  <aside class="sidebar" [class.collapsed]="isSidebarCollapsed">
     <div class="sidebar-header">
       <img src="assets/imagenes/logo.jpg" alt="Logo EIE" class="sidebar-logo">
-      <span>EIE PANEL</span>
+      <span *ngIf="!isSidebarCollapsed">EIE PANEL</span>
+      <button type="button" class="btn-toggle-sidebar" (click)="toggleSidebar()" [title]="isSidebarCollapsed ? 'Expandir menú' : 'Contraer menú'">
+        <i class="material-icons-outlined">{{ isSidebarCollapsed ? 'menu' : 'chevron_left' }}</i>
+      </button>
     </div>
 
     <nav class="sidebar-nav">
       <a routerLink="/admin" routerLinkActive="active" class="nav-item">
-        <i class="material-icons-outlined">dashboard</i> Panel Principal
+        <i class="material-icons-outlined">dashboard</i>
+        <span *ngIf="!isSidebarCollapsed">Panel Principal</span>
       </a>
       <a routerLink="/students" routerLinkActive="active" class="nav-item">
-        <i class="material-icons-outlined">people</i> Estudiantes
+        <i class="material-icons-outlined">people</i>
+        <span *ngIf="!isSidebarCollapsed">Estudiantes</span>
       </a>
       <a routerLink="/courses" routerLinkActive="active" class="nav-item">
-        <i class="material-icons-outlined">school</i> Cursos
+        <i class="material-icons-outlined">school</i>
+        <span *ngIf="!isSidebarCollapsed">Cursos</span>
       </a>
       <a routerLink="/docentes-list" routerLinkActive="active" class="nav-item">
-        <i class="material-icons-outlined">person</i> Instructores
+        <i class="material-icons-outlined">person</i>
+        <span *ngIf="!isSidebarCollapsed">Instructores</span>
       </a>
       <a routerLink="/paralelos" routerLinkActive="active" class="nav-item">
-        <i class="material-icons-outlined">class</i> Paralelos
+        <i class="material-icons-outlined">class</i>
+        <span *ngIf="!isSidebarCollapsed">Paralelos</span>
+      </a>
+      <a routerLink="/reports" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">bar_chart</i>
+        <span *ngIf="!isSidebarCollapsed">Reportes y Estadísticas</span>
       </a>
       <a routerLink="/accesos" routerLinkActive="active" class="nav-item">
-        <i class="material-icons-outlined">vpn_key</i> Credenciales / Accesos
+        <i class="material-icons-outlined">vpn_key</i>
+        <span *ngIf="!isSidebarCollapsed">Credenciales / Accesos</span>
       </a>
       <a routerLink="/settings" routerLinkActive="active" class="nav-item">
-        <i class="material-icons-outlined">settings</i> Configuración
+        <i class="material-icons-outlined">settings</i>
+        <span *ngIf="!isSidebarCollapsed">Configuración</span>
       </a>
     </nav>
 
     <div class="sidebar-footer">
       <button class="btn-logout" routerLink="/home">
-        <i class="material-icons-outlined">logout</i> Salir
+        <i class="material-icons-outlined">logout</i>
+        <span *ngIf="!isSidebarCollapsed">Salir</span>
       </button>
     </div>
   </aside>
@@ -43,8 +58,8 @@
       <div class="header">
         <h1>Gestión de Instructores (CRUD)</h1>
         <p>Desde aquí puedes modificar, actualizar y eliminar personal docente.</p>
-        <button class="btn-primary btn-new-docente" (click)="openCreateForm()">
-          <i class="material-icons">add</i> Nuevo Instructor
+        <button class="btn-new-docente" (click)="openCreateForm()">
+          <i class="material-icons-outlined">person_add</i> + Nuevo Instructor
         </button>
       </div>
 
@@ -61,7 +76,8 @@
               <div class="form-group col-12 student-photo-upload-group">
                 <label>Fotografía del Instructor</label>
                 <div class="edit-photo-container">
-                  <img *ngIf="selectedDocente.foto_url" [src]="'http://137.184.129.64:8000' + selectedDocente.foto_url" alt="Foto Docente" class="student-edit-avatar">
+                  <img *ngIf="selectedDocente.foto_url" [src]="apiUrl + selectedDocente.foto_url" alt="Foto Docente"
+                    class="student-edit-avatar">
                   <div *ngIf="!selectedDocente.foto_url" class="student-edit-avatar-placeholder">
                     <span class="material-icons-outlined">person</span>
                   </div>
@@ -69,7 +85,8 @@
                     <button type="button" class="btn-upload-photo">
                       <i class="material-icons-outlined">photo_camera</i> Seleccionar Foto
                     </button>
-                    <input type="file" (change)="onDocentePhotoSelected($event)" accept="image/*" capture="environment" aria-label="Seleccionar foto de perfil">
+                    <input type="file" (change)="onDocentePhotoSelected($event)" accept="image/*" capture="environment"
+                      aria-label="Seleccionar foto de perfil">
                     <span class="file-chosen-name" *ngIf="docentePhotoFileName">{{ docentePhotoFileName }}</span>
                   </div>
                 </div>
@@ -77,39 +94,52 @@
 
               <div class="form-group">
                 <label for="nombres">Nombres *</label>
-                <input type="text" id="nombres" [(ngModel)]="selectedDocente.nombres" name="nombres" class="form-control" required placeholder="Ej: Juan Carlos">
+                <input type="text" id="nombres" [(ngModel)]="selectedDocente.nombres" name="nombres"
+                  class="form-control" required placeholder="Ej: Juan Carlos">
               </div>
               <div class="form-group">
                 <label for="apellidos">Apellidos</label>
-                <input type="text" id="apellidos" [(ngModel)]="selectedDocente.apellidos" name="apellidos" class="form-control" placeholder="Ej: Pérez Tapia">
+                <input type="text" id="apellidos" [(ngModel)]="selectedDocente.apellidos" name="apellidos"
+                  class="form-control" placeholder="Ej: Pérez Tapia">
               </div>
               <div class="form-group">
                 <label for="ci">Cédula de Identidad (C.I.)</label>
-                <input type="text" id="ci" [(ngModel)]="selectedDocente.ci" name="ci" class="form-control" placeholder="Ej: 1234567">
+                <input type="text" id="ci" [(ngModel)]="selectedDocente.ci" name="ci" class="form-control"
+                  minlength="7" maxlength="8" placeholder="Ej: 1234567">
               </div>
               <div class="form-group">
                 <label for="correo_electronico">Correo Electrónico Personal</label>
-                <input type="email" id="correo_electronico" [(ngModel)]="selectedDocente.correo_electronico" name="correo_electronico" class="form-control" placeholder="personal@ejemplo.com">
+                <input type="email" id="correo_electronico" [(ngModel)]="selectedDocente.correo_electronico"
+                  name="correo_electronico" class="form-control" placeholder="personal@ejemplo.com">
               </div>
               <div class="form-group">
                 <label for="especialidad">Especialidad</label>
-                <input type="text" id="especialidad" [(ngModel)]="selectedDocente.especialidad" name="especialidad" class="form-control" placeholder="Ej: Inglés, Francés">
+                <input type="text" id="especialidad" [(ngModel)]="selectedDocente.especialidad" name="especialidad"
+                  class="form-control" placeholder="Ej: Inglés, Francés">
               </div>
               <div class="form-group">
                 <label for="telefono">Teléfono</label>
-                <input type="text" id="telefono" [(ngModel)]="selectedDocente.telefono" name="telefono" class="form-control" placeholder="Ej: +591 70000000">
+                <input type="text" id="telefono" [(ngModel)]="selectedDocente.telefono" name="telefono"
+                  class="form-control" placeholder="Ej: +591 70000000">
               </div>
               <div class="form-group">
                 <label for="tipo_contrato">Tipo de Contrato</label>
-                <select id="tipo_contrato" [(ngModel)]="selectedDocente.tipo_contrato" name="tipo_contrato" class="form-control">
+                <select id="tipo_contrato" [(ngModel)]="selectedDocente.tipo_contrato" name="tipo_contrato"
+                  class="form-control">
                   <option value="">Seleccionar...</option>
                   <option value="Ítem">Ítem</option>
                   <option value="Contrato">Contrato</option>
                 </select>
               </div>
+              <div class="form-group" *ngIf="selectedDocente.tipo_contrato === 'Ítem' || selectedDocente.tipo_contrato === 'Contrato'">
+                <label for="fecha_inicio_contrato">Fecha de Inicio de Contrato *</label>
+                <input type="date" id="fecha_inicio_contrato" [(ngModel)]="selectedDocente.fecha_inicio_contrato"
+                  name="fecha_inicio_contrato" class="form-control" required>
+              </div>
               <div class="form-group" *ngIf="selectedDocente.tipo_contrato === 'Contrato'">
-                <label for="fecha_contrato">Fecha de Contrato *</label>
-                <input type="date" id="fecha_contrato" [(ngModel)]="selectedDocente.fecha_contrato" name="fecha_contrato" class="form-control" required>
+                <label for="fecha_fin_contrato">Fecha de Fin de Contrato *</label>
+                <input type="date" id="fecha_fin_contrato" [(ngModel)]="selectedDocente.fecha_fin_contrato"
+                  name="fecha_fin_contrato" class="form-control" required>
               </div>
               <div class="form-group" *ngIf="isEditing">
                 <label for="estado">Estado</label>
@@ -133,15 +163,9 @@
         <div class="search-box">
           <div class="search-input-group">
             <i class="material-icons-outlined search-icon">search</i>
-            <input
-              type="text"
-              [(ngModel)]="searchTerm"
-              (input)="onSearchInput()"
-              (keyup.enter)="onSearch()"
-              placeholder="Buscar por nombre, correo o especialidad..."
-              class="search-input"
-              aria-label="Término de búsqueda"
-            >
+            <input type="text" [(ngModel)]="searchTerm" (input)="onSearchInput()" (keyup.enter)="onSearch()"
+              placeholder="Buscar por nombre, correo o especialidad..." class="search-input"
+              aria-label="Término de búsqueda">
           </div>
           <div class="search-filters">
             <button (click)="onSearch()" class="btn-search">BUSCAR</button>
@@ -152,19 +176,17 @@
         </div>
       </div>
 
-      <!-- Tabla de Docentes -->
-      <div class="table-card mt-4">
+      <!-- VISTA EN ESCRITORIO (Tabla) -->
+      <div class="table-card desktop-table-view mt-4">
         <div *ngIf="isLoading" class="loader">Cargando instructores...</div>
 
         <table *ngIf="!isLoading">
           <thead>
             <tr>
-              <th>ID</th>
               <th>Foto</th>
               <th>C.I.</th>
               <th>Nombre Completo</th>
-              <th>Correo Personal</th>
-              <th>Correo Institucional EIE</th>
+              <th>Celular</th>
               <th>Especialidad</th>
               <th>Contrato</th>
               <th>Estado</th>
@@ -172,61 +194,125 @@
             </tr>
           </thead>
           <tbody>
-             <tr *ngFor="let docente of filteredDocentes">
-               <td>{{ docente.id }}</td>
-               <td>
-                 <div class="avatar-container">
-                   <img *ngIf="docente.foto_url" [src]="'http://137.184.129.64:8000' + docente.foto_url" alt="Foto Instructor" class="student-avatar-circle">
-                   <div *ngIf="!docente.foto_url" class="student-avatar-placeholder">
-                     <span class="material-icons-outlined">person</span>
-                   </div>
-                 </div>
-               </td>
-               <td><strong>{{ docente.ci || 'N/A' }}</strong></td>
-              <td>{{ docente.nombres }} {{ docente.apellidos }}</td>
-              <td>{{ docente.correo_electronico || 'N/A' }}</td>
+            <tr *ngFor="let docente of filteredDocentes">
               <td>
-                <span class="badge rounded-pill bg-info text-dark email-badge" *ngIf="docente.user?.email">
-                  {{ docente.user.email }}
-                </span>
-                <span class="text-muted italic small" *ngIf="!docente.user?.email">
-                  Sin asignar
-                </span>
+                <div class="avatar-container">
+                  <img *ngIf="docente.foto_url" [src]="apiUrl + docente.foto_url" alt="Foto Instructor"
+                    class="student-avatar-circle">
+                  <div *ngIf="!docente.foto_url" class="student-avatar-placeholder">
+                    <span class="material-icons-outlined">person</span>
+                  </div>
+                </div>
               </td>
+              <td><strong>{{ docente.ci || 'N/A' }}</strong></td>
+              <td>{{ docente.nombres }} {{ docente.apellidos }}</td>
+              <td>{{ docente.telefono || 'N/A' }}</td>
               <td>{{ docente.especialidad || 'General' }}</td>
               <td>
                 <span *ngIf="docente.tipo_contrato">
-                  {{ docente.tipo_contrato }}
-                  <small *ngIf="docente.tipo_contrato === 'Contrato' && docente.fecha_contrato" class="text-muted d-block">
-                    ({{ docente.fecha_contrato }})
+                  <strong>{{ docente.tipo_contrato }}</strong>
+                  <small *ngIf="docente.fecha_inicio_contrato" class="text-muted d-block mt-1">
+                    Inicio: {{ docente.fecha_inicio_contrato }}
+                  </small>
+                  <small *ngIf="docente.tipo_contrato === 'Contrato' && docente.fecha_fin_contrato" class="text-muted d-block">
+                    Fin: {{ docente.fecha_fin_contrato }}
                   </small>
                 </span>
                 <span *ngIf="!docente.tipo_contrato" class="text-muted">N/A</span>
               </td>
               <td>
-                <span class="status-badge" [ngClass]="docente.estado === 'Activo' ? 'bg-success' : 'bg-danger text-white'">
+                <span class="status-badge"
+                  [ngClass]="docente.estado === 'Activo' ? 'bg-success' : 'bg-danger text-white'">
                   {{ docente.estado }}
                 </span>
               </td>
               <td>
                 <div class="actions">
-                  <button (click)="toggleStatus(docente)" class="btn-history" [title]="docente.estado === 'Activo' ? 'Desactivar Instructor' : 'Activar Instructor'">
+                  <button (click)="toggleStatus(docente)" class="btn-act btn-toggle-act"
+                    [title]="docente.estado === 'Activo' ? 'Desactivar Instructor' : 'Activar Instructor'">
                     <i class="material-icons-outlined">{{ docente.estado === 'Activo' ? 'toggle_on' : 'toggle_off' }}</i>
                   </button>
-                  <button (click)="editDocente(docente)" class="btn-edit" title="Modificar / Actualizar">
+                  <button (click)="editDocente(docente)" class="btn-act btn-edit-act" title="Modificar / Actualizar">
                     <i class="material-icons-outlined">edit</i>
                   </button>
-                  <button (click)="deleteDocente(docente.id)" class="btn-delete" title="Eliminar">
+                  <button (click)="deleteDocente(docente.id)" class="btn-act btn-delete-act" title="Eliminar">
                     <i class="material-icons-outlined">delete</i>
                   </button>
                 </div>
               </td>
             </tr>
             <tr *ngIf="filteredDocentes.length === 0">
-              <td colspan="9" class="text-center py-4 text-muted">No hay instructores registrados o que coincidan con la búsqueda.</td>
+              <td colspan="8" class="text-center py-4 text-muted">No hay instructores registrados o que coincidan con la búsqueda.</td>
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <!-- VISTA EN MÓVIL / APK (Tarjetas Adaptables) -->
+      <div class="mobile-cards-view mt-4" *ngIf="!isLoading">
+        <div *ngFor="let docente of filteredDocentes" class="docente-card-mobile"
+          [class.is-active]="docente.estado === 'Activo'"
+          [class.is-inactive]="docente.estado !== 'Activo'">
+
+          <div class="card-mobile-header">
+            <div class="card-mobile-user">
+              <img *ngIf="docente.foto_url" [src]="apiUrl + docente.foto_url" alt="Foto Docente" class="mobile-avatar">
+              <div *ngIf="!docente.foto_url" class="mobile-avatar-placeholder">
+                <i class="material-icons-outlined">person</i>
+              </div>
+              <div class="docente-mobile-name">
+                <span class="docente-fullname">{{ docente.nombres }} {{ docente.apellidos }}</span>
+                <span class="docente-ci-text">C.I.: {{ docente.ci || 'Sin C.I.' }}</span>
+              </div>
+            </div>
+            <span class="status-badge" [ngClass]="docente.estado === 'Activo' ? 'bg-success' : 'bg-danger text-white'">
+              {{ docente.estado }}
+            </span>
+          </div>
+
+          <div class="card-mobile-details">
+            <div class="mobile-detail-item">
+              <i class="material-icons-outlined">school</i>
+              <span><strong>Especialidad:</strong> {{ docente.especialidad || 'General' }}</span>
+            </div>
+            <div class="mobile-detail-item" *ngIf="docente.telefono">
+              <i class="material-icons-outlined">phone</i>
+              <span><strong>Teléfono:</strong> <a [href]="'tel:' + docente.telefono" class="mobile-contact-link">{{ docente.telefono }}</a></span>
+            </div>
+            <div class="mobile-detail-item" *ngIf="docente.correo_electronico">
+              <i class="material-icons-outlined">email</i>
+              <span><strong>Correo:</strong> <a [href]="'mailto:' + docente.correo_electronico" class="mobile-contact-link">{{ docente.correo_electronico }}</a></span>
+            </div>
+            <div class="mobile-detail-item" *ngIf="docente.tipo_contrato">
+              <i class="material-icons-outlined">badge</i>
+              <span>
+                <strong>Contrato:</strong> {{ docente.tipo_contrato }}
+                <span *ngIf="docente.fecha_inicio_contrato"> (Desde: {{ docente.fecha_inicio_contrato }})</span>
+                <span *ngIf="docente.tipo_contrato === 'Contrato' && docente.fecha_fin_contrato"> - Hasta: {{ docente.fecha_fin_contrato }}</span>
+              </span>
+            </div>
+          </div>
+
+          <div class="card-mobile-actions">
+            <button type="button" (click)="toggleStatus(docente)" class="btn-mobile-action btn-mobile-toggle"
+              [title]="docente.estado === 'Activo' ? 'Desactivar Instructor' : 'Activar Instructor'">
+              <i class="material-icons-outlined">{{ docente.estado === 'Activo' ? 'toggle_on' : 'toggle_off' }}</i>
+              <span>{{ docente.estado === 'Activo' ? 'Desactivar' : 'Activar' }}</span>
+            </button>
+            <button type="button" (click)="editDocente(docente)" class="btn-mobile-action btn-mobile-edit" title="Editar Instructor">
+              <i class="material-icons-outlined">edit</i>
+              <span>Editar</span>
+            </button>
+            <button type="button" (click)="deleteDocente(docente.id)" class="btn-mobile-action btn-mobile-delete" title="Eliminar Instructor">
+              <i class="material-icons-outlined">delete</i>
+              <span>Eliminar</span>
+            </button>
+          </div>
+        </div>
+
+        <div *ngIf="filteredDocentes.length === 0" class="text-center py-4 text-muted">
+          No hay instructores registrados o que coincidan con la búsqueda.
+        </div>
       </div>
     </div>
   </main>

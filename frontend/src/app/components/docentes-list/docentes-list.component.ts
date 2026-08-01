@@ -4,6 +4,7 @@ import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { DocenteService } from '../../services/docente.service';
 import { ImageCompressorService } from '../../services/image-compressor.service';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-docentes-list',
@@ -13,7 +14,13 @@ import { ImageCompressorService } from '../../services/image-compressor.service'
   styleUrls: ['./docentes-list.component.css']
 })
 export class DocentesListComponent implements OnInit {
+  apiUrl = environment.apiUrl;
   docentes: any[] = [];
+  isSidebarCollapsed = false;
+
+  toggleSidebar() {
+    this.isSidebarCollapsed = !this.isSidebarCollapsed;
+  }
   filteredDocentes: any[] = [];
   isLoading = true;
   selectedDocente: any = null;
@@ -99,7 +106,9 @@ export class DocentesListComponent implements OnInit {
       telefono: '',
       estado: 'Activo',
       tipo_contrato: '',
-      fecha_contrato: ''
+      fecha_contrato: '',
+      fecha_inicio_contrato: '',
+      fecha_fin_contrato: ''
     };
     this.showForm = true;
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -123,6 +132,8 @@ export class DocentesListComponent implements OnInit {
       estado: docente.estado,
       tipo_contrato: docente.tipo_contrato || '',
       fecha_contrato: docente.fecha_contrato || '',
+      fecha_inicio_contrato: docente.fecha_inicio_contrato || '',
+      fecha_fin_contrato: docente.fecha_fin_contrato || '',
       user_id: docente.user_id
     };
     this.showForm = true;
@@ -157,8 +168,12 @@ export class DocentesListComponent implements OnInit {
       if (this.selectedDocente.tipo_contrato) {
         formData.append('tipo_contrato', this.selectedDocente.tipo_contrato);
       }
-      if (this.selectedDocente.tipo_contrato === 'Contrato' && this.selectedDocente.fecha_contrato) {
-        formData.append('fecha_contrato', this.selectedDocente.fecha_contrato);
+      if (this.selectedDocente.fecha_inicio_contrato) {
+        formData.append('fecha_inicio_contrato', this.selectedDocente.fecha_inicio_contrato);
+      }
+      if (this.selectedDocente.tipo_contrato === 'Contrato' && this.selectedDocente.fecha_fin_contrato) {
+        formData.append('fecha_fin_contrato', this.selectedDocente.fecha_fin_contrato);
+        formData.append('fecha_contrato', this.selectedDocente.fecha_fin_contrato);
       }
       formData.append('estado', 'Activo');
 
@@ -176,7 +191,8 @@ export class DocentesListComponent implements OnInit {
           this.loadDocentes();
         },
         error: (err) => {
-          alert('Error al registrar instructor: ' + (err.error?.message || err.message));
+          const detail = err.error?.error || err.error?.message || err.message || 'Error desconocido';
+          alert('Error al registrar instructor: ' + detail);
         }
       });
     }
@@ -198,8 +214,12 @@ export class DocentesListComponent implements OnInit {
     if (this.selectedDocente.tipo_contrato) {
       formData.append('tipo_contrato', this.selectedDocente.tipo_contrato);
     }
-    if (this.selectedDocente.tipo_contrato === 'Contrato' && this.selectedDocente.fecha_contrato) {
-      formData.append('fecha_contrato', this.selectedDocente.fecha_contrato);
+    if (this.selectedDocente.fecha_inicio_contrato) {
+      formData.append('fecha_inicio_contrato', this.selectedDocente.fecha_inicio_contrato);
+    }
+    if (this.selectedDocente.tipo_contrato === 'Contrato' && this.selectedDocente.fecha_fin_contrato) {
+      formData.append('fecha_fin_contrato', this.selectedDocente.fecha_fin_contrato);
+      formData.append('fecha_contrato', this.selectedDocente.fecha_fin_contrato);
     }
 
     if (this.docentePhotoFile) {

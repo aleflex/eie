@@ -80,6 +80,25 @@
       <p>{{ errorMsg }}</p>
     </div>
 
+    <!-- Tarjeta de Ajuste Biométrico Estilo Banco para Instructores -->
+    <div class="biometric-card-docente mb-3 p-3 rounded-3 border no-print" style="background: #ffffff; border-color: #cbd5e1 !important; box-shadow: 0 2px 8px rgba(0,0,0,0.04);" *ngIf="!isLoading && !errorMsg">
+      <div class="d-flex align-items-center justify-content-between gap-3">
+        <div class="d-flex align-items-center gap-3">
+          <div style="background: #e0f2fe; color: #0284c7; min-width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+            <i class="material-icons-outlined" style="font-size: 22px;">fingerprint</i>
+          </div>
+          <div>
+            <strong style="font-size: 0.9rem; color: #0f172a; display: block;">Acceso Biométrico (Huella / Rostro)</strong>
+            <small style="font-size: 0.78rem; color: #64748b;" class="d-block">Activar inicio de sesión biométrico en este celular</small>
+          </div>
+        </div>
+        <div class="form-check form-switch m-0">
+          <input class="form-check-input" type="checkbox" id="biometricSwitchDocente" [checked]="biometricEnabled" (change)="toggleBiometric($event)" style="width: 44px; height: 22px; cursor: pointer;" aria-label="Activar acceso biométrico" title="Activar acceso biométrico">
+          <label class="form-check-label" for="biometricSwitchDocente"></label>
+        </div>
+      </div>
+    </div>
+
     <!-- Estadísticas -->
     <section class="stats-grid animate-fade-in" *ngIf="!isLoading && !errorMsg">
       <div class="stat-card">
@@ -199,12 +218,9 @@
       <div *ngIf="tabActivo === 'notas'" class="no-print">
         <div class="notas-toolbar">
           <div class="periodo-selector">
-            <label>Periodo:</label>
-            <select [(ngModel)]="periodoSeleccionado" class="form-select-sm" title="Seleccionar Periodo" aria-label="Seleccionar Periodo">
-              <option value="Parcial 1">Parcial 1</option>
-              <option value="Parcial 2">Parcial 2</option>
-              <option value="Parcial 3">Parcial 3</option>
-              <option value="Final">Final</option>
+            <label>Periodo / Examen:</label>
+            <select [(ngModel)]="periodoSeleccionado" (change)="onPeriodoChange()" class="form-select-sm" title="Seleccionar Periodo" aria-label="Seleccionar Periodo">
+              <option *ngFor="let p of getPeriodos()" [value]="p">{{ p }}</option>
             </select>
           </div>
           <button class="btn-save-all" (click)="guardarTodasLasNotas()" [disabled]="savingNotas">
@@ -235,8 +251,8 @@
                     class="nota-input"
                     [(ngModel)]="notasForm[insc.id + '_' + periodoSeleccionado]"
                     placeholder="—"
-                    [class.nota-aprobado]="getNotaValor(insc.id) >= 51"
-                    [class.nota-reprobado]="getNotaValor(insc.id) > 0 && getNotaValor(insc.id) < 51"
+                    [class.nota-aprobado]="getNotaValor(insc.id) >= 71"
+                    [class.nota-reprobado]="getNotaValor(insc.id) > 0 && getNotaValor(insc.id) < 71"
                   >
                 </td>
                 <td>

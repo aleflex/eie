@@ -7,7 +7,7 @@ services:
     container_name: eie-mysql
     restart: always
     environment:
-      MYSQL_DATABASE: eie_inscripciones
+      MYSQL_DATABASE: eie_db
       MYSQL_ROOT_PASSWORD: root
       MYSQL_ROOT_HOST: '%'
     ports:
@@ -33,15 +33,15 @@ services:
       - APP_ENV=production
       - APP_KEY=base64:kqhGiWhhoYvVoMAtxP7fVdpSCPts1Sqmhf79R91l42U=
       - APP_DEBUG=true
-      - APP_URL=http://137.184.129.64:8000
+      - APP_URL=https://eie-cochabamba.sytes.net
       - DB_CONNECTION=mysql
       - DB_HOST=db
       - DB_PORT=3306
-      - DB_DATABASE=eie_inscripciones
+      - DB_DATABASE=eie_db
       - DB_USERNAME=root
       - DB_PASSWORD=root
     volumes:
-      - ./backend/storage:/var/www/html/storage
+      - ./backend:/var/www/html
     depends_on:
       db:
         condition: service_healthy
@@ -60,3 +60,5 @@ services:
 
 volumes:
   mysql-data:
+    name: eie_mysql-data
+    external: true

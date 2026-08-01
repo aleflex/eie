@@ -6,7 +6,9 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { AuthService } from '../../services/auth.service';
 import { StudentService } from '../../services/student.service';
 import { InscriptionService } from '../../services/inscription.service';
+import { downloadFile } from '../../utils/file-downloader';
 import { ImageCompressorService } from '../../services/image-compressor.service';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-student-dashboard',
@@ -16,10 +18,17 @@ import { ImageCompressorService } from '../../services/image-compressor.service'
   styleUrl: './student-dashboard.component.css'
 })
 export class StudentDashboardComponent implements OnInit {
+  apiUrl = environment.apiUrl;
   user: any = null;
   student: any = null;
   isLoading: boolean = true;
   activeTab: string = 'profile'; // 'profile', 'history', 'documents'
+
+  // Mobile menu sidebar drawer
+  isMobileMenuOpen: boolean = false;
+  toggleMobileMenu() {
+    this.isMobileMenuOpen = !this.isMobileMenuOpen;
+  }
 
   // Digital Documents Upload
   studentDocuments: any[] = [];
@@ -60,11 +69,36 @@ export class StudentDashboardComponent implements OnInit {
     }
 
     this.user = this.authService.getUser();
+    if (this.user.rol === 'admin') { this.router.navigate(['/admin']); return; }
+    if (this.user.rol === 'docente') { this.router.navigate(['/docente-dashboard']); return; }
+
+    this.biometricEnabled = this.authService.isBiometricEnabled();
     if (this.user && this.user.estudiante_id) {
       this.loadStudentProfile(this.user.estudiante_id);
     } else {
       this.errorMessage = 'No se encontró un perfil de estudiante asociado a esta cuenta.';
       this.isLoading = false;
+    }
+  }
+
+  biometricEnabled: boolean = false;
+
+  async toggleBiometric(event: any) {
+    const isChecked = event.target.checked;
+    if (isChecked) {
+      const res = await this.authService.enableBiometricForCurrentDevice();
+      if (res.success) {
+        this.biometricEnabled = true;
+        alert(res.message);
+      } else {
+        this.biometricEnabled = false;
+        event.target.checked = false;
+        alert(res.message);
+      }
+    } else {
+      this.authService.disableBiometricForCurrentDevice();
+      this.biometricEnabled = false;
+      alert('Acceso biométrico (Huella/Rostro) desactivado en este celular.');
     }
   }
 
@@ -219,15 +253,10 @@ export class StudentDashboardComponent implements OnInit {
       return;
     }
 
-    const inscriptionId = this.student.inscripciones[0].id;
+    const inscriptionId = this.student.inscripciones[0].id_inscripcion || this.student.inscripciones[0].id;
     this.inscriptionService.downloadCertificate(inscriptionId).subscribe({
       next: (blob) => {
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `constancia_${this.student.ci}.pdf`;
-        link.click();
-        window.URL.revokeObjectURL(url);
+        downloadFile(blob, `constancia_${this.student.ci}.pdf`);
       },
       error: (err) => {
         console.error('Error generating PDF', err);
@@ -245,10 +274,25 @@ export class StudentDashboardComponent implements OnInit {
 
   previewDocument(doc: any) {
     this.activePreviewDoc = doc;
-    const url = 'http://137.184.129.64:8000/storage/documentos/' + doc.ruta_archivo;
+    const apiBase = (this.apiUrl || environment.apiUrl).replace(/\/api\/?$/, '');
+    let path = doc.ruta_archivo || doc.archivo || '';
+
+    let url = '';
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      url = path;
+    } else if (path.startsWith('/storage/documentos/')) {
+      url = apiBase + path;
+    } else if (path.startsWith('/storage/')) {
+      url = apiBase + path;
+    } else if (path.startsWith('storage/')) {
+      url = apiBase + '/' + path;
+    } else {
+      url = apiBase + '/storage/documentos/' + path.replace(/^\/+/, '');
+    }
+
     this.activePreviewUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
 
-    const ext = doc.ruta_archivo.split('.').pop().toLowerCase();
+    const ext = path.split('.').pop().toLowerCase();
     this.isPreviewPdf = ext === 'pdf';
     this.isPreviewImage = ['jpg', 'jpeg', 'png', 'gif'].includes(ext);
 
@@ -261,5 +305,28 @@ export class StudentDashboardComponent implements OnInit {
     this.activePreviewUrl = null;
     this.isPreviewPdf = false;
     this.isPreviewImage = false;
+  }
+
+  puedeSubirDocumentos(): boolean {
+    if (!this.student || !this.student.documentos_habilitados_hasta) {
+      return false;
+    }
+    const hasta = new Date(this.student.documentos_habilitados_hasta);
+    const ahora = new Date();
+    return ahora <= hasta;
+  }
+
+  obtenerFechaLimiteFormatted(): string {
+    if (!this.student || !this.student.documentos_habilitados_hasta) {
+      return '';
+    }
+    const date = new Date(this.student.documentos_habilitados_hasta);
+    return date.toLocaleString('es-BO', { 
+      day: '2-digit', 
+      month: '2-digit', 
+      year: 'numeric', 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
   }
 }

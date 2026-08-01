@@ -5,33 +5,42 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
-/**
- * Modelo Aula
- * Representa un aula o salón de clase en la institución.
- *
- * Atributos:
- * - nombre: Nombre o identificador del aula (Aula 101, Lab 1, etc.)
- * - capacidad: Número máximo de estudiantes que puede albergar
- */
 class Aula extends Model
 {
     use HasFactory;
 
     protected $table = 'aulas';
-    public $timestamps = true;  // Usa created_at/updated_at
+    protected $primaryKey = 'id_aula';
+    public $timestamps = false;
 
     protected $fillable = [
-        'nombre',           // Nombre o código del aula
-        'capacidad'         // Capacidad de personas
+        'nombre_aula',
+        'nombre',
+        'capacidad'
     ];
+
+    protected $appends = ['nombre', 'id'];
+
+    public function getIdAttribute()
+    {
+        return $this->id_aula;
+    }
+
+    public function getNombreAttribute()
+    {
+        return $this->nombre_aula;
+    }
+
+    public function setNombreAttribute($value)
+    {
+        $this->attributes['nombre_aula'] = $value;
+    }
 
     /**
      * Relación uno-a-muchos con Paralelo
-     * Un aula puede ser asignada a múltiples paralelos
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
     public function paralelos()
     {
-        return $this->hasMany(Paralelo::class);
+        return $this->hasMany(Paralelo::class, 'id_aula', 'id_aula');
     }
 }

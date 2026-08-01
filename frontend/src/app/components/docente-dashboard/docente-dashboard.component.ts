@@ -7,6 +7,7 @@ import { AuthService } from '../../services/auth.service';
 import { HttpClient } from '@angular/common/http';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-docente-dashboard',
@@ -16,7 +17,7 @@ import { catchError } from 'rxjs/operators';
   styleUrls: ['./docente-dashboard.component.css']
 })
 export class DocenteDashboardComponent implements OnInit {
-  private apiUrl = 'http://137.184.129.64:8000/api';
+  private apiUrl = environment.apiUrl + '/api';
 
   user: any = null;
   docente: any = null;
@@ -56,12 +57,35 @@ export class DocenteDashboardComponent implements OnInit {
     this.user = this.authService.getUser();
     if (!this.user) { this.router.navigate(['/login']); return; }
     if (this.user.rol === 'admin') { this.router.navigate(['/admin']); return; }
+    if (this.user.rol === 'estudiante') { this.router.navigate(['/student-dashboard']); return; }
+    this.biometricEnabled = this.authService.isBiometricEnabled();
     this.cargarMisParalelos();
+  }
+
+  biometricEnabled: boolean = false;
+
+  async toggleBiometric(event: any) {
+    const isChecked = event.target.checked;
+    if (isChecked) {
+      const res = await this.authService.enableBiometricForCurrentDevice();
+      if (res.success) {
+        this.biometricEnabled = true;
+        alert(res.message);
+      } else {
+        this.biometricEnabled = false;
+        event.target.checked = false;
+        alert(res.message);
+      }
+    } else {
+      this.authService.disableBiometricForCurrentDevice();
+      this.biometricEnabled = false;
+      alert('Acceso biométrico (Huella/Rostro) desactivado en este celular.');
+    }
   }
 
   cargarMisParalelos() {
     this.isLoading = true;
-    this.docenteService.getMisParalelos(this.user.id).subscribe({
+    this.docenteService.getMisParalelos(this.user.id || this.user.id_usuario).subscribe({
       next: (res) => {
         this.docente = res.docente;
         this.paralelos = res.paralelos || [];
@@ -79,6 +103,10 @@ export class DocenteDashboardComponent implements OnInit {
     this.paraleloActivo = paralelo;
     this.tabActivo = 'lista';
     this.resetForms();
+    const periodos = this.getPeriodos();
+    if (periodos.length > 0) {
+      this.periodoSeleccionado = periodos[0];
+    }
   }
 
   setTab(tab: 'lista' | 'notas' | 'asistencia') {
@@ -260,6 +288,25 @@ export class DocenteDashboardComponent implements OnInit {
         this.savingAsistencia = false;
       }
     });
+  }
+
+  getPeriodos(): string[] {
+    if (!this.paraleloActivo?.curso?.nivel) {
+      return ['Book 1', 'Book 2', 'Book 3', 'Book 4', 'Book 5', 'Book 6', 'Examen Final'];
+    }
+    const levelStr = this.paraleloActivo.curso.nivel;
+    const match = levelStr.match(/BOOK\s+(\d+)-(\d+)/i);
+    if (match) {
+      const start = parseInt(match[1], 10);
+      const end = parseInt(match[2], 10);
+      const books: string[] = [];
+      for (let i = start; i <= end; i++) {
+        books.push(`Book ${i}`);
+      }
+      books.push('Examen Final');
+      return books;
+    }
+    return ['Parcial 1', 'Parcial 2', 'Parcial 3', 'Final'];
   }
 
   imprimirLista() { window.print(); }

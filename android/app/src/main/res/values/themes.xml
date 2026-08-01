@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.EieGestion" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Primary brand color. -->
+        <item name="colorPrimary">#003B71</item>
+        <item name="colorPrimaryVariant">#004a99</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <!-- Secondary brand color. -->
+        <item name="colorSecondary">#F9B233</item>
+        <item name="colorOnSecondary">#1a1f26</item>
+        <!-- Status bar color. -->
+        <item name="android:statusBarColor">#003B71</item>
+    </style>
+</resources>

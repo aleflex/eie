@@ -1,84 +1,4 @@
-.dashboard-layout {
-  display: flex;
-  min-height: 100vh;
-  background-color: #f4f7f9;
-}
-
-/* Sidebar (Reutilizado del Dashboard) */
-.sidebar {
-  width: 260px;
-  background: var(--primary-color, #003b71);
-  color: white;
-  display: flex;
-  flex-direction: column;
-  transition: var(--transition, all 0.3s ease);
-}
-
-.sidebar-header {
-  padding: 2rem;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  font-weight: 900;
-  letter-spacing: 1px;
-}
-
-.sidebar-logo {
-  height: 40px;
-  border-radius: 5px;
-}
-
-.sidebar-nav {
-  flex: 1;
-  padding: 1rem;
-}
-
-.nav-item {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.8rem 1rem;
-  color: rgba(255, 255, 255, 0.7);
-  text-decoration: none;
-  border-radius: 10px;
-  margin-bottom: 0.5rem;
-  transition: var(--transition, all 0.3s ease);
-  font-size: 0.9rem;
-}
-
-.nav-item:hover, .nav-item.active {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
-}
-
-.nav-item i {
-  font-size: 1.2rem;
-}
-
-.sidebar-footer {
-  padding: 1rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.btn-logout {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0.8rem;
-  background: rgba(227, 30, 36, 0.2);
-  border: 1px solid rgba(227, 30, 36, 0.3);
-  color: #ff6b6b;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: var(--transition, all 0.3s ease);
-}
-
-.btn-logout:hover {
-  background: #E31E24;
-  color: white;
-}
+@import '../students/students.component.css';
 
 /* Main Content Area */
 .main-content {
@@ -424,7 +344,7 @@
   }
 }
 
-/* Responsive Overrides */
+/* Responsive Overrides (< 992px) */
 @media (max-width: 992px) {
   .settings-grid {
     grid-template-columns: 1fr;
@@ -435,12 +355,129 @@
     border-bottom: 1px solid #f1f5f9;
     flex-direction: row;
     overflow-x: auto;
-    padding: 1rem;
+    padding: 0.8rem 1rem;
+    gap: 0.6rem;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .settings-subnav::-webkit-scrollbar {
+    display: none;
   }
   
   .settings-subnav button {
     white-space: nowrap;
     width: auto;
+    flex: 0 0 auto;
+    padding: 0.6rem 1rem;
+  }
+}
+
+/* Mobile Specific Responsive Rules (< 768px) */
+@media (max-width: 768px) {
+  .main-content {
+    padding: 0.8rem;
+  }
+
+  .top-header {
+    flex-direction: column;
+    gap: 0.8rem;
+    margin-bottom: 1.2rem;
+  }
+
+  .top-header h1 {
+    font-size: 1.4rem;
+  }
+
+  .user-info-header {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .settings-card-wrapper {
+    border-radius: 12px;
+  }
+
+  .settings-pane-content {
+    padding: 1.2rem;
+  }
+
+  .pane-title {
+    font-size: 1.2rem;
+  }
+
+  .pane-description {
+    font-size: 0.82rem;
+    margin-bottom: 1.2rem;
+  }
+
+  /* 2x2 Grid Layout for mobile tabs so ALL 4 fit on screen */
+  .settings-subnav {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+    padding: 0.8rem;
+  }
+
+  .settings-subnav button {
+    width: 100%;
+    justify-content: center;
+    padding: 0.6rem 0.4rem;
+    border-radius: 10px;
+    gap: 0.4rem;
+    border: 1px solid #e2e8f0;
+  }
+
+  .settings-subnav button i {
+    font-size: 1.2rem;
+  }
+
+  .settings-subnav button .nav-label strong {
+    font-size: 0.78rem;
+    text-align: center;
+    white-space: normal;
+  }
+
+  .settings-subnav button .nav-label span {
+    display: none; /* Ocultar subtexto en móviles */
+  }
+
+  /* Form groups on mobile */
+  .form-control-premium {
+    font-size: 0.9rem;
+    padding: 0.7rem 0.8rem 0.7rem 2.5rem;
+  }
+
+  .toggle-card {
+    flex-direction: row;
+    align-items: center;
+    padding: 1rem;
+    gap: 0.8rem;
+  }
+
+  .toggle-info p {
+    max-width: 100%;
+    font-size: 0.75rem;
+  }
+
+  /* Profile uploader mobile */
+  .profile-photo-uploader {
+    flex-direction: column;
+    text-align: center;
+    padding: 1.2rem;
+    gap: 1rem;
+  }
+
+  .profile-photo-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .btn-save-premium {
+    width: 100%;
+    padding: 0.85rem;
+    font-size: 0.9rem;
   }
 }
 
@@ -530,3 +567,4 @@
 .profile-avatar-large-placeholder span {
   font-size: 40px;
 }
+

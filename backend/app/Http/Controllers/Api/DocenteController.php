@@ -30,34 +30,65 @@ class DocenteController extends Controller
         $request->validate([
             'nombres' => 'required|string|max:255',
             'apellidos' => 'nullable|string|max:255',
-            'correo_electronico' => 'nullable|string|email|max:255',
-            'ci' => 'nullable|string|max:20|unique:docentes,ci',
+            'correo_electronico' => 'nullable|string|email|max:255|unique:usuarios,correo_institucional',
+            'ci' => 'required|string|regex:/^[0-9]{7,8}$/|unique:usuarios,ci',
             'especialidad' => 'nullable|string|max:255',
             'telefono' => 'nullable|string|max:50',
             'tipo_contrato' => 'nullable|string|in:Contrato,Ítem',
             'fecha_contrato' => 'nullable|date',
+            'fecha_inicio_contrato' => 'nullable|date',
+            'fecha_fin_contrato' => 'nullable|date',
         ]);
 
         try {
             DB::beginTransaction();
 
-            // Crear el perfil del docente localmente (sin credenciales de ingreso iniciales)
-            $docente = Docente::create([
-                'user_id' => null,
+            // 1. Crear el usuario para el docente
+            $email = $request->correo_electronico ?: ('docente.' . $request->ci . '@eie.edu.bo');
+            $user = User::create([
+                'id_rol' => 2, // DOCENTE
+                'correo_institucional' => $email,
+                'password' => Hash::make($request->ci),
                 'nombres' => $request->nombres,
                 'apellidos' => $request->apellidos,
-                'correo_electronico' => $request->correo_electronico,
                 'ci' => $request->ci,
+                'estado' => 'ACTIVO',
+            ]);
+
+            // 2. Resolver id_tipo_contrato mediante catálogo 3NF
+            $idTipoContrato = null;
+            if ($request->filled('tipo_contrato')) {
+                $nombreTipo = $request->tipo_contrato === 'Ítem' ? 'Titular' : ($request->tipo_contrato === 'Contrato' ? 'Contratado' : $request->tipo_contrato);
+                $tipoContratoObj = \DB::table('tipos_contrato_docente')
+                    ->where('nombre_tipo_contrato', $nombreTipo)
+                    ->first();
+                if (!$tipoContratoObj) {
+                    $idTipoContrato = \DB::table('tipos_contrato_docente')->insertGetId([
+                        'nombre_tipo_contrato' => $nombreTipo,
+                        'created_at' => now(),
+                        'updated_at' => now()
+                    ]);
+                } else {
+                    $idTipoContrato = $tipoContratoObj->id_tipo_contrato;
+                }
+            }
+
+            $fechaContrato = $request->fecha_inicio_contrato ?: ($request->fecha_contrato ?: ($request->fecha_fin_contrato ?: null));
+
+            // 3. Crear el docente vinculado al usuario
+            $docente = Docente::create([
+                'id_usuario' => $user->id_usuario,
                 'especialidad' => $request->especialidad,
+                'id_tipo_contrato' => $idTipoContrato,
                 'telefono' => $request->telefono,
-                'tipo_contrato' => $request->tipo_contrato,
-                'fecha_contrato' => $request->tipo_contrato === 'Contrato' ? $request->fecha_contrato : null,
+                'fecha_contrato' => $fechaContrato,
+                'estado' => $request->estado ?? 'Activo',
             ]);
 
             if ($request->hasFile('foto')) {
-                $path = $request->file('foto')->store('docentes/' . ($docente->ci ?? $docente->id), 'public');
-                $docente->foto_url = '/storage/docentes/' . ($docente->ci ?? $docente->id) . '/' . basename($path);
-                $docente->save();
+                $path = $request->file('foto')->store('docentes/' . ($docente->ci ?? $docente->id_docente), 'public');
+                $user->foto_url = '/storage/docentes/' . ($docente->ci ?? $docente->id_docente) . '/' . basename($path);
+                $user->save();
             }
 
             DB::commit();
@@ -94,49 +125,87 @@ class DocenteController extends Controller
     public function update(Request $request, $id)
     {
         $docente = Docente::findOrFail($id);
+        $userId = $docente->id_usuario;
 
         // Validación con regla de unicidad exceptuando al docente actual
         $request->validate([
             'nombres' => 'required|string|max:255',
             'apellidos' => 'nullable|string|max:255',
-            'correo_electronico' => 'nullable|string|email|max:255',
-            'ci' => 'nullable|string|max:20|unique:docentes,ci,' . $docente->id,
+            'correo_electronico' => 'nullable|string|email|max:255|unique:usuarios,correo_institucional,' . ($userId ?: 0) . ',id_usuario',
+            'ci' => 'nullable|string|regex:/^[0-9]{7,8}$/|unique:usuarios,ci,' . ($userId ?: 0) . ',id_usuario',
             'especialidad' => 'nullable|string|max:255',
             'telefono' => 'nullable|string|max:50',
             'tipo_contrato' => 'nullable|string|in:Contrato,Ítem',
             'fecha_contrato' => 'nullable|date',
+            'fecha_inicio_contrato' => 'nullable|date',
+            'fecha_fin_contrato' => 'nullable|date',
         ]);
 
         try {
             DB::beginTransaction();
 
+            // 1. Actualizar o crear el usuario para el docente
+            if (!$userId) {
+                $email = $request->correo_electronico ?: ('docente.' . $request->ci . '@eie.edu.bo');
+                $user = User::create([
+                    'id_rol' => 2, // DOCENTE
+                    'correo_institucional' => $email,
+                    'password' => Hash::make($request->ci),
+                    'nombres' => $request->nombres,
+                    'apellidos' => $request->apellidos,
+                    'ci' => $request->ci,
+                    'estado' => 'ACTIVO',
+                ]);
+                $docente->id_usuario = $user->id_usuario;
+            } else {
+                $user = User::find($userId);
+                if ($user) {
+                    $user->update([
+                        'nombres' => $request->nombres,
+                        'apellidos' => $request->apellidos,
+                        'ci' => $request->ci,
+                        'correo_institucional' => $request->correo_electronico ?: $user->correo_institucional,
+                    ]);
+                }
+            }
+
+            // 2. Actualizar la tabla docentes con resolución 3NF
+            $idTipoContrato = $docente->id_tipo_contrato;
+            if ($request->filled('tipo_contrato')) {
+                $nombreTipo = $request->tipo_contrato === 'Ítem' ? 'Titular' : ($request->tipo_contrato === 'Contrato' ? 'Contratado' : $request->tipo_contrato);
+                $tipoContratoObj = \DB::table('tipos_contrato_docente')
+                    ->where('nombre_tipo_contrato', $nombreTipo)
+                    ->first();
+                if (!$tipoContratoObj) {
+                    $idTipoContrato = \DB::table('tipos_contrato_docente')->insertGetId([
+                        'nombre_tipo_contrato' => $nombreTipo,
+                        'created_at' => now(),
+                        'updated_at' => now()
+                    ]);
+                } else {
+                    $idTipoContrato = $tipoContratoObj->id_tipo_contrato;
+                }
+            }
+
+            $fechaContrato = $request->fecha_inicio_contrato ?: ($request->fecha_contrato ?: ($request->fecha_fin_contrato ?: $docente->fecha_contrato));
+
             $updateData = [
-                'nombres' => $request->nombres,
-                'apellidos' => $request->apellidos,
-                'correo_electronico' => $request->correo_electronico,
-                'ci' => $request->ci,
                 'especialidad' => $request->especialidad,
+                'id_tipo_contrato' => $idTipoContrato,
                 'telefono' => $request->telefono,
+                'fecha_contrato' => $fechaContrato,
                 'estado' => $request->estado ?? $docente->estado,
-                'tipo_contrato' => $request->tipo_contrato,
-                'fecha_contrato' => $request->tipo_contrato === 'Contrato' ? $request->fecha_contrato : null,
             ];
 
             if ($request->hasFile('foto')) {
-                $path = $request->file('foto')->store('docentes/' . ($docente->ci ?? $docente->id), 'public');
-                $updateData['foto_url'] = '/storage/docentes/' . ($docente->ci ?? $docente->id) . '/' . basename($path);
-            }
-
-            $docente->update($updateData);
-
-            // Si tiene una cuenta vinculada, mantener el nombre del usuario sincronizado
-            if ($docente->user_id) {
-                $user = $docente->user;
+                $path = $request->file('foto')->store('docentes/' . ($docente->ci ?? $docente->id_docente), 'public');
                 if ($user) {
-                    $user->name = $request->nombres . ' ' . ($request->apellidos ?? '');
+                    $user->foto_url = '/storage/docentes/' . ($docente->ci ?? $docente->id_docente) . '/' . basename($path);
                     $user->save();
                 }
             }
+
+            $docente->update($updateData);
 
             DB::commit();
 
@@ -163,6 +232,11 @@ class DocenteController extends Controller
         $docente->estado = $docente->estado === 'Activo' ? 'Inactivo' : 'Activo';
         $docente->save();
 
+        if ($docente->user) {
+            $docente->user->estado = $docente->estado === 'Activo' ? 'ACTIVO' : 'INACTIVO';
+            $docente->user->save();
+        }
+
         return response()->json([
             'message' => 'Estado actualizado a ' . $docente->estado,
             'docente' => $docente
@@ -181,7 +255,7 @@ class DocenteController extends Controller
             return response()->json(['message' => 'user_id requerido'], 422);
         }
 
-        $docente = Docente::where('user_id', $userId)->first();
+        $docente = Docente::where('id_usuario', $userId)->first();
 
         if (!$docente) {
             return response()->json(['message' => 'Docente no encontrado para este usuario'], 404);
@@ -212,8 +286,12 @@ class DocenteController extends Controller
             $user = $docente->user;
 
             DB::beginTransaction();
+            $docente->paralelos()->detach();
             $docente->delete();
-            $user->delete();
+
+            if ($user) {
+                $user->delete();
+            }
             DB::commit();
 
             return response()->json(['message' => 'Docente eliminado correctamente']);

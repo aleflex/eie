@@ -15,6 +15,7 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/logout', [AuthController::class, 'logout']);
 Route::post('/user/profile', [AuthController::class, 'updateProfile']);
+Route::post('/user/change-password', [AuthController::class, 'changePassword']);
 
 // Estudiantes (CRUD)
 Route::get('/estudiantes/buscar', [StudentController::class, 'search']);
@@ -81,3 +82,11 @@ Route::get('/accesos', [AccesoController::class, 'index']);
 Route::post('/accesos/asignar', [AccesoController::class, 'asignar']);
 Route::put('/accesos/actualizar/{userId}', [AccesoController::class, 'actualizar']);
 Route::delete('/accesos/desvincular/{userId}', [AccesoController::class, 'desvincular']);
+
+// Reportes y Estadísticas (EPIC 4: RF 18, RF 19, RF 20, RF 21)
+use App\Http\Controllers\Api\ReportController;
+Route::get('/reports/statistics-by-language', [ReportController::class, 'getLanguageStatistics']);
+Route::get('/reports/classroom-occupancy', [ReportController::class, 'getClassroomOccupancy']);
+Route::get('/reports/dashboard-summary', [ReportController::class, 'getDashboardSummary']);
+Route::get('/reports/export/excel', [ReportController::class, 'exportExcel']);
+Route::get('/reports/export/pdf', [ReportController::class, 'exportPdf']);

@@ -16,6 +16,18 @@ export class AdminDashboardComponent implements OnInit {
   isLoading: boolean = true;
   user: any = null;
 
+  // Control de la barra lateral (Sidebar)
+  isSidebarCollapsed: boolean = false;
+  isMobileMenuOpen: boolean = false;
+
+  toggleSidebar() {
+    this.isSidebarCollapsed = !this.isSidebarCollapsed;
+  }
+
+  toggleMobileMenu() {
+    this.isMobileMenuOpen = !this.isMobileMenuOpen;
+  }
+
   constructor(
     private inscriptionService: InscriptionService,
     private authService: AuthService,

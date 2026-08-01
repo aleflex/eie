@@ -12,36 +12,36 @@ class AuthController extends Controller
 {
     /**
      * Autentica al usuario en el sistema.
-     * Recibe el email y la contraseña, los valida, e inicia la sesión.
-     * También detecta si el usuario es Docente, Estudiante o Administrador.
-     * 
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
+     * Recibe el usuario/email y la contraseña, los valida, e inicia la sesión.
+     * Detecta si el usuario es Docente, Estudiante o Administrador.
      */
     public function login(Request $request)
     {
-        // Limpiar el email de espacios en blanco y convertir a minúsculas
-        if ($request->has('email')) {
-            $request->merge([
-                'email' => strtolower(trim($request->input('email')))
-            ]);
+        $loginInput = trim($request->input('usuario', $request->input('login', $request->input('email', ''))));
+        $password = $request->input('password');
+
+        if (empty($loginInput) || empty($password)) {
+            return response()->json([
+                'message' => 'Por favor ingrese su Nombre de Usuario y Contraseña.'
+            ], 422);
         }
 
-        $credentials = $request->validate([
-            'email' => 'required|email',
-            'password' => 'required',
-        ]);
+        // Buscar por usuario o por correo institucional
+        $user = User::where(function($q) use ($loginInput) {
+            $q->where('usuario', strtolower($loginInput))
+              ->orWhere('correo_institucional', strtolower($loginInput));
+        })->first();
 
-        if (Auth::attempt($credentials)) {
-            $user = Auth::user();
+        if ($user && Hash::check($password, $user->password)) {
+            // Iniciar sesión
+            Auth::login($user);
 
             // Verificar si el usuario tiene perfil de docente o estudiante
-            $docente = \App\Models\Docente::where('user_id', $user->id)->first();
-            $estudiante = \App\Models\Estudiante::where('user_id', $user->id)->first();
+            $docente = \App\Models\Docente::where('id_usuario', $user->id_usuario)->first();
+            $estudiante = \App\Models\Estudiante::where('id_usuario', $user->id_usuario)->first();
 
             $userData = $user->toArray();
             if ($docente) {
-                // Verificar si el contrato ha expirado (si es por Contrato y tiene fecha)
                 if ($docente->tipo_contrato === 'Contrato' && $docente->fecha_contrato) {
                     $fechaExpiracion = \Carbon\Carbon::parse($docente->fecha_contrato)->endOfDay();
                     if (now()->greaterThan($fechaExpiracion)) {
@@ -52,10 +52,10 @@ class AuthController extends Controller
                     }
                 }
 
-                $userData['docente_id'] = $docente->id;
+                $userData['docente_id'] = $docente->id_docente;
                 $userData['rol'] = 'docente';
             } elseif ($estudiante) {
-                $userData['estudiante_id'] = $estudiante->id;
+                $userData['estudiante_id'] = $estudiante->id_estudiante;
                 $userData['rol'] = 'estudiante';
             } else {
                 $userData['rol'] = 'admin';
@@ -63,6 +63,8 @@ class AuthController extends Controller
 
             $token = $user->createToken('auth_token')->plainTextToken;
             $userData['token'] = $token;
+            $userData['usuario'] = $user->usuario;
+            $userData['debe_cambiar_password'] = (bool) $user->debe_cambiar_password;
 
             return response()->json([
                 'message' => 'Login exitoso',
@@ -72,16 +74,36 @@ class AuthController extends Controller
         }
 
         return response()->json([
-            'message' => 'Credenciales inválidas'
+            'message' => 'Credenciales inválidas (usuario o contraseña incorrectos)'
         ], 401);
     }
 
     /**
+     * Permite a un usuario autenticado cambiar su contraseña obligatoriamente o voluntariamente.
+     */
+    public function changePassword(Request $request)
+    {
+        $request->validate([
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        $user = auth()->user() ?? User::find($request->input('user_id'));
+        if (!$user) {
+            return response()->json(['message' => 'Usuario no encontrado'], 404);
+        }
+
+        $user->password = Hash::make($request->password);
+        $user->debe_cambiar_password = false;
+        $user->save();
+
+        return response()->json([
+            'message' => 'Contraseña actualizada exitosamente. Ahora puede acceder a todas las funciones.',
+            'debe_cambiar_password' => false
+        ]);
+    }
+
+    /**
      * Cierra la sesión activa del usuario.
-     * Destruye el token de autenticación.
-     * 
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
      */
     public function logout(Request $request)
     {
@@ -90,24 +112,28 @@ class AuthController extends Controller
     }
 
     /**
-     * Registra un nuevo usuario en la base de datos (generalmente usado para Administradores).
-     * Hashea la contraseña antes de guardarla por seguridad.
-     * 
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
+     * Registra un nuevo usuario en la base de datos (Administradores).
      */
     public function register(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
+            'nombres' => 'required|string|max:255',
+            'apellidos' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:usuarios,correo_institucional',
             'password' => 'required|string|min:8',
         ]);
 
+        $username = User::generateUsername($validated['nombres'], $validated['apellidos']);
+
         $user = User::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
+            'id_rol' => 1, // ADMINISTRADOR
+            'correo_institucional' => strtolower($validated['email']),
+            'usuario' => $username,
             'password' => Hash::make($validated['password']),
+            'debe_cambiar_password' => true,
+            'estado' => 'ACTIVO',
+            'nombres' => $validated['nombres'],
+            'apellidos' => $validated['apellidos'],
         ]);
 
         return response()->json([
@@ -117,15 +143,10 @@ class AuthController extends Controller
     }
 
     /**
-     * Actualiza el perfil del usuario autenticado (nombre, email, contraseña, foto).
-     * Sube y almacena la foto de perfil en el servidor si se proporciona una.
-     * 
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
+     * Actualiza el perfil del usuario autenticado.
      */
     public function updateProfile(Request $request)
     {
-        // Obtener usuario autenticado o fallback al primer usuario (admin) para ambiente local
         $user = auth()->user() ?? User::first();
         if (!$user) {
             return response()->json(['message' => 'Usuario no encontrado'], 404);
@@ -133,27 +154,44 @@ class AuthController extends Controller
 
         $request->validate([
             'name' => 'sometimes|required|string|max:255',
-            'email' => 'sometimes|required|string|email|max:255|unique:users,email,' . $user->id,
+            'email' => 'sometimes|required|string|email|max:255|unique:usuarios,correo_institucional,' . $user->id_usuario . ',id_usuario',
             'password' => 'sometimes|nullable|string|min:8',
         ]);
 
         $data = [];
-        if ($request->has('name') && !empty($request->name)) {
-            $data['name'] = $request->name;
-        }
         if ($request->has('email') && !empty($request->email)) {
-            $data['email'] = $request->email;
+            $data['correo_institucional'] = strtolower($request->email);
         }
         if ($request->has('password') && !empty($request->password)) {
             $data['password'] = Hash::make($request->password);
+            $data['debe_cambiar_password'] = false;
+        }
+
+        if (!empty($data)) {
+            $user->update($data);
+        }
+
+        if ($request->has('name') && !empty($request->name)) {
+            if ($user->estudiante) {
+                $user->estudiante->nombres = $request->name;
+                $user->estudiante->save();
+            } elseif ($user->docente) {
+                $user->docente->nombres = $request->name;
+                $user->docente->save();
+            }
         }
 
         if ($request->hasFile('foto')) {
-            $path = $request->file('foto')->store('profiles/' . $user->id, 'public');
-            $data['foto_url'] = '/storage/profiles/' . $user->id . '/' . basename($path);
+            $path = $request->file('foto')->store('profiles/' . $user->id_usuario, 'public');
+            $fotoUrl = '/storage/profiles/' . $user->id_usuario . '/' . basename($path);
+            if ($user->estudiante) {
+                $user->estudiante->foto_4x4_url = $fotoUrl;
+                $user->estudiante->save();
+            } elseif ($user->docente) {
+                $user->docente->foto_url = $fotoUrl;
+                $user->docente->save();
+            }
         }
-
-        $user->update($data);
 
         return response()->json([
             'message' => 'Perfil actualizado exitosamente',

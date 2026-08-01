@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\Setting;
+use App\Models\Configuracion;
 use Illuminate\Database\Seeder;
 
 class SettingsTableSeeder extends Seeder
@@ -13,19 +13,19 @@ class SettingsTableSeeder extends Seeder
     public function run(): void
     {
         // 1. Calendario Académico
-        Setting::set('fecha_inicio_inscripcion', date('Y-m-d\T08:00'), 'string', 'academic');
-        Setting::set('fecha_fin_inscripcion', date('Y-m-d\T18:00', strtotime('+3 months')), 'string', 'academic');
+        Configuracion::set('fecha_inicio_inscripcion', date('Y-m-d\T08:00'), 'string', 'academic');
+        Configuracion::set('fecha_fin_inscripcion', date('Y-m-d\T18:00', strtotime('+3 months')), 'string', 'academic');
 
         // 2. Control de Archivos y Límites
-        Setting::set('limite_pdf_mb', 5, 'int', 'files');
-        Setting::set('comprimir_imagenes', true, 'bool', 'files');
+        Configuracion::set('limite_pdf_mb', 5, 'int', 'files');
+        Configuracion::set('comprimir_imagenes', true, 'bool', 'files');
 
         // 3. Datos Institucionales
-        Setting::set('nombre_institucion', 'Escuela de Idiomas del Ejército', 'string', 'institution');
-        Setting::set('nombre_director', 'Cnl. DAEN Juan Pérez López', 'string', 'institution');
-        Setting::set('grado_director', 'Coronel DAEN', 'string', 'institution');
+        Configuracion::set('nombre_institucion', 'Escuela de Idiomas del Ejército', 'string', 'institution');
+        Configuracion::set('nombre_director', 'Cnl. DAEN Juan Pérez López', 'string', 'institution');
+        Configuracion::set('grado_director', 'Coronel DAEN', 'string', 'institution');
 
         // 4. Parámetros Generales
-        Setting::set('cupo_defecto_paralelo', 25, 'int', 'general');
+        Configuracion::set('cupo_defecto_paralelo', 25, 'int', 'general');
     }
 }

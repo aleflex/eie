@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Setting;
+use App\Models\Configuracion;
 use Illuminate\Http\Request;
 
 class SettingController extends Controller
@@ -13,24 +13,23 @@ class SettingController extends Controller
      */
     public function index()
     {
-        $settings = Setting::all();
+        $settings = Configuracion::all();
         $response = [];
 
         foreach ($settings as $setting) {
-            $value = $setting->value;
+            $value = $setting->valor;
             
             // Castear el valor según su tipo
-            $castedValue = match ($setting->type) {
+            $castedValue = match ($setting->tipo) {
                 'int', 'integer' => (int) $value,
                 'bool', 'boolean' => filter_var($value, FILTER_VALIDATE_BOOLEAN),
                 'json' => json_decode($value, true),
                 default => $value,
             };
 
-            $response[$setting->key] = $castedValue;
+            $response[$setting->clave] = $castedValue;
         }
 
-        // Si la tabla está vacía, retornar un objeto vacío
         return response()->json($response);
     }
 
@@ -41,25 +40,25 @@ class SettingController extends Controller
     {
         $data = $request->all();
 
-        foreach ($data as $key => $value) {
+        foreach ($data as $clave => $value) {
             // Buscar la configuración existente para mantener el tipo y grupo original
-            $existing = Setting::where('key', $key)->first();
+            $existing = Configuracion::where('clave', $clave)->first();
             
-            $type = $existing ? $existing->type : 'string';
-            $group = $existing ? $existing->group : 'general';
+            $tipo = $existing ? $existing->tipo : 'string';
+            $grupo = $existing ? $existing->grupo : 'general';
 
             // Si es un booleano o número detectado, y no tiene configuración previa
             if (!$existing) {
                 if (is_bool($value)) {
-                    $type = 'bool';
+                    $tipo = 'bool';
                 } elseif (is_numeric($value)) {
-                    $type = 'int';
+                    $tipo = 'int';
                 } elseif (is_array($value)) {
-                    $type = 'json';
+                    $tipo = 'json';
                 }
             }
 
-            Setting::set($key, $value, $type, $group);
+            Configuracion::set($clave, $value, $tipo, $grupo);
         }
 
         return response()->json([

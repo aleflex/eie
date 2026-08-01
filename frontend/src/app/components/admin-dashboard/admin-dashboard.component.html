@@ -1,38 +1,56 @@
 <div class="dashboard-layout">
   <!-- Barra Lateral -->
-  <aside class="sidebar">
+  <aside class="sidebar" [class.collapsed]="isSidebarCollapsed" [class.mobile-open]="isMobileMenuOpen">
     <div class="sidebar-header">
       <img src="assets/imagenes/logo.jpg" alt="Logo EIE" class="sidebar-logo">
-      <span>EIE PANEL</span>
+      <span *ngIf="!isSidebarCollapsed">EIE PANEL</span>
+      <button type="button" class="mobile-hamburger-btn" (click)="toggleMobileMenu()" aria-label="Abrir menú mobile">
+        <i class="material-icons-outlined">{{ isMobileMenuOpen ? 'close' : 'menu' }}</i>
+      </button>
+      <button type="button" class="btn-toggle-sidebar" (click)="toggleSidebar()" [title]="isSidebarCollapsed ? 'Expandir menú' : 'Contraer menú'">
+        <i class="material-icons-outlined">{{ isSidebarCollapsed ? 'chevron_right' : 'chevron_left' }}</i>
+      </button>
     </div>
 
     <nav class="sidebar-nav">
       <a routerLink="/admin" routerLinkActive="active" class="nav-item">
-        <i class="material-icons-outlined">dashboard</i> Panel Principal
+        <i class="material-icons-outlined">dashboard</i>
+        <span *ngIf="!isSidebarCollapsed">Panel Principal</span>
       </a>
       <a routerLink="/students" routerLinkActive="active" class="nav-item">
-        <i class="material-icons-outlined">people</i> Estudiantes
+        <i class="material-icons-outlined">people</i>
+        <span *ngIf="!isSidebarCollapsed">Estudiantes</span>
       </a>
       <a routerLink="/courses" routerLinkActive="active" class="nav-item">
-        <i class="material-icons-outlined">school</i> Cursos
+        <i class="material-icons-outlined">school</i>
+        <span *ngIf="!isSidebarCollapsed">Cursos</span>
       </a>
       <a routerLink="/docentes-list" routerLinkActive="active" class="nav-item">
-        <i class="material-icons-outlined">person</i> Instructores
+        <i class="material-icons-outlined">person</i>
+        <span *ngIf="!isSidebarCollapsed">Instructores</span>
       </a>
       <a routerLink="/paralelos" routerLinkActive="active" class="nav-item">
-        <i class="material-icons-outlined">class</i> Paralelos
+        <i class="material-icons-outlined">class</i>
+        <span *ngIf="!isSidebarCollapsed">Paralelos</span>
+      </a>
+      <a routerLink="/reports" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">bar_chart</i>
+        <span *ngIf="!isSidebarCollapsed">Reportes y Estadísticas</span>
       </a>
       <a routerLink="/accesos" routerLinkActive="active" class="nav-item">
-        <i class="material-icons-outlined">vpn_key</i> Credenciales / Accesos
+        <i class="material-icons-outlined">vpn_key</i>
+        <span *ngIf="!isSidebarCollapsed">Credenciales / Accesos</span>
       </a>
       <a routerLink="/settings" routerLinkActive="active" class="nav-item">
-        <i class="material-icons-outlined">settings</i> Configuración
+        <i class="material-icons-outlined">settings</i>
+        <span *ngIf="!isSidebarCollapsed">Configuración</span>
       </a>
     </nav>
 
     <div class="sidebar-footer">
       <button (click)="onLogout()" class="btn-logout">
-        <i class="material-icons-outlined">logout</i> Salir
+        <i class="material-icons-outlined">logout</i>
+        <span *ngIf="!isSidebarCollapsed">Salir</span>
       </button>
     </div>
   </aside>
@@ -98,7 +116,8 @@
         <p>Cargando información...</p>
       </div>
 
-      <div class="table-responsive" *ngIf="!isLoading">
+      <!-- Vista de Tabla para Escritorio/Tablets -->
+      <div class="table-responsive d-none d-md-block" *ngIf="!isLoading">
         <table class="table table-hover align-middle">
           <thead class="table-light">
             <tr>
@@ -142,6 +161,35 @@
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <!-- Vista de Tarjetas para Celulares -->
+      <div class="mobile-cards-list d-block d-md-none" *ngIf="!isLoading">
+        <div class="mobile-card" *ngFor="let inscripcion of inscripciones">
+          <div class="mobile-card-row header-row">
+            <span class="mobile-card-name">{{ inscripcion.estudiante?.nombres }} {{ inscripcion.estudiante?.apellidos }}</span>
+            <span class="badge rounded-pill"
+                  [ngClass]="{
+                    'bg-success': inscripcion.estado === 'activo',
+                    'bg-warning text-dark': inscripcion.estado === 'pendiente',
+                    'bg-danger': inscripcion.estado === 'retirado',
+                    'bg-primary': inscripcion.estado === 'finalizado'
+                  }">
+              {{ inscripcion.estado === 'activo' ? 'Habilitado' :
+                 inscripcion.estado === 'pendiente' ? 'Pendiente' :
+                 inscripcion.estado }}
+            </span>
+          </div>
+          <div class="mobile-card-details">
+            <p><strong>C.I.:</strong> {{ inscripcion.estudiante?.ci }}</p>
+            <p><strong>Correo:</strong> {{ inscripcion.estudiante?.correo_electronico || 'N/A' }}</p>
+            <p><strong>Curso / Idioma:</strong> {{ inscripcion.curso?.idioma }} ({{ inscripcion.curso?.nivel }})</p>
+            <p><strong>Fecha Registro:</strong> {{ inscripcion.fecha_registro | date:'mediumDate' }}</p>
+          </div>
+        </div>
+        <div *ngIf="inscripciones.length === 0" class="text-center py-4 text-muted">
+          No hay inscripciones registradas.
+        </div>
       </div>
     </section>
 

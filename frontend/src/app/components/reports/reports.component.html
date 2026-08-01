@@ -1,0 +1,332 @@
+<div class="dashboard-layout">
+  <!-- Barra Lateral Principal -->
+  <aside class="sidebar" [class.collapsed]="isSidebarCollapsed" [class.mobile-open]="isMobileMenuOpen">
+    <div class="sidebar-header">
+      <img src="assets/imagenes/logo.jpg" alt="Logo EIE" class="sidebar-logo">
+      <span *ngIf="!isSidebarCollapsed">EIE PANEL</span>
+      <button type="button" class="mobile-hamburger-btn" (click)="toggleMobileMenu()" aria-label="Abrir menú mobile">
+        <i class="material-icons-outlined">{{ isMobileMenuOpen ? 'close' : 'menu' }}</i>
+      </button>
+      <button type="button" class="btn-toggle-sidebar" (click)="toggleSidebar()" [title]="isSidebarCollapsed ? 'Expandir menú' : 'Contraer menú'">
+        <i class="material-icons-outlined">{{ isSidebarCollapsed ? 'chevron_right' : 'chevron_left' }}</i>
+      </button>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a routerLink="/admin" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">dashboard</i>
+        <span *ngIf="!isSidebarCollapsed">Panel Principal</span>
+      </a>
+      <a routerLink="/students" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">people</i>
+        <span *ngIf="!isSidebarCollapsed">Estudiantes</span>
+      </a>
+      <a routerLink="/courses" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">school</i>
+        <span *ngIf="!isSidebarCollapsed">Cursos</span>
+      </a>
+      <a routerLink="/docentes-list" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">person</i>
+        <span *ngIf="!isSidebarCollapsed">Instructores</span>
+      </a>
+      <a routerLink="/paralelos" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">class</i>
+        <span *ngIf="!isSidebarCollapsed">Paralelos</span>
+      </a>
+      <a routerLink="/reports" routerLinkActive="active" class="nav-item active">
+        <i class="material-icons-outlined">bar_chart</i>
+        <span *ngIf="!isSidebarCollapsed">Reportes y Estadísticas</span>
+      </a>
+      <a routerLink="/accesos" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">vpn_key</i>
+        <span *ngIf="!isSidebarCollapsed">Credenciales / Accesos</span>
+      </a>
+      <a routerLink="/settings" routerLinkActive="active" class="nav-item">
+        <i class="material-icons-outlined">settings</i>
+        <span *ngIf="!isSidebarCollapsed">Configuración</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button class="btn-logout" routerLink="/home">
+        <i class="material-icons-outlined">logout</i>
+        <span *ngIf="!isSidebarCollapsed">Salir</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Contenido Principal de Reportes -->
+  <main class="main-content">
+    <header class="top-header">
+      <div class="header-left">
+        <h1>Reportes & Dashboards Estadísticos</h1>
+        <p>Estadísticas por idioma, ocupación de aulas y centralizadores académicos.</p>
+      </div>
+
+      <div class="header-actions">
+        <button class="btn btn-outline-primary btn-filter-toggle" (click)="toggleFilterSidebar()">
+          <i class="material-icons-outlined">filter_list</i>
+          Filtros Multi-criterio
+        </button>
+
+        <!-- Botones de Exportación Blob (RF 20 - HU 20) -->
+        <button class="btn btn-outline-success" (click)="exportExcel()" [disabled]="isDownloadingExcel">
+          <i class="material-icons-outlined" *ngIf="!isDownloadingExcel">table_view</i>
+          <span class="spinner-border spinner-border-sm" *ngIf="isDownloadingExcel"></span>
+          Exportar Excel
+        </button>
+
+        <button class="btn btn-primary btn-export-pdf" (click)="exportPdf()" [disabled]="isDownloadingPdf">
+          <i class="material-icons-outlined" *ngIf="!isDownloadingPdf">picture_as_pdf</i>
+          <span class="spinner-border spinner-border-sm" *ngIf="isDownloadingPdf"></span>
+          Exportar PDF
+        </button>
+      </div>
+    </header>
+
+    <!-- Panel Lateral de Filtros Colapsable (RF 21 - HU 21) -->
+    <div class="filter-panel animate-fade-in" *ngIf="isFilterSidebarOpen">
+      <div class="filter-panel-header">
+        <h5><i class="material-icons-outlined">tune</i> Filtrado Multi-criterio Avanzado</h5>
+        <button type="button" class="btn-close" (click)="toggleFilterSidebar()"></button>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-md-3">
+          <label class="form-label">Idioma</label>
+          <select class="form-select" [(ngModel)]="filters.id_idioma" (change)="onFilterChange()">
+            <option value="">Todos los Idiomas</option>
+            <option *ngFor="let item of idiomasList" [value]="item.id">{{ item.nombre }}</option>
+          </select>
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Nivel</label>
+          <select class="form-select" [(ngModel)]="filters.id_nivel" (change)="onFilterChange()">
+            <option value="">Todos los Niveles</option>
+            <option *ngFor="let item of nivelesList" [value]="item.id">{{ item.nombre }}</option>
+          </select>
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Paralelo</label>
+          <select class="form-select" [(ngModel)]="filters.id_paralelo" (change)="onFilterChange()">
+            <option value="">Todos los Paralelos</option>
+            <option *ngFor="let item of paralelosList" [value]="item.id_paralelo">{{ item.nombre_paralelo }}</option>
+          </select>
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Estado Inscripción</label>
+          <select class="form-select" [(ngModel)]="filters.estado" (change)="onFilterChange()">
+            <option value="">Todos los Estados</option>
+            <option value="activo">Habilitado / Activo</option>
+            <option value="pendiente">Pendiente</option>
+            <option value="retirado">Retirado</option>
+          </select>
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Fecha Registro Desde</label>
+          <input type="date" class="form-control" [(ngModel)]="filters.fecha_desde" (change)="onFilterChange()">
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Fecha Registro Hasta</label>
+          <input type="date" class="form-control" [(ngModel)]="filters.fecha_hasta" (change)="onFilterChange()">
+        </div>
+
+        <div class="col-md-6 d-flex align-items-end gap-2">
+          <button class="btn btn-secondary w-100" (click)="resetFilters()">
+            <i class="material-icons-outlined">restart_alt</i> Limpiar Filtros
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPIs Numéricos (RF 18 - HU 18 - T3) -->
+    <section class="stats-grid animate-fade-in">
+      <div class="stat-card">
+        <div class="stat-icon blue">
+          <i class="material-icons-outlined">people</i>
+        </div>
+        <div class="stat-info">
+          <h3>{{ summaryData.total_inscritos }}</h3>
+          <p>Total Inscritos</p>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon gold">
+          <i class="material-icons-outlined">translate</i>
+        </div>
+        <div class="stat-info">
+          <h3>{{ summaryData.idioma_top }}</h3>
+          <p>Idioma Más Demandado</p>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon green">
+          <i class="material-icons-outlined">meeting_room</i>
+        </div>
+        <div class="stat-info">
+          <h3>{{ summaryData.ocupacion_promedio }}%</h3>
+          <p>Ocupación Promedio Aulas</p>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon teal">
+          <i class="material-icons-outlined">verified</i>
+        </div>
+        <div class="stat-info">
+          <h3>{{ summaryData.porcentaje_habilitados }}%</h3>
+          <p>% Habilitados Oficiales</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Gráficos de Dashboards (RF 19 - HU 19 - T3) -->
+    <section class="charts-grid animate-fade-in delay-1">
+      <!-- Gráfico 1: Torta (Doughnut) de Idiomas -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <h2><i class="material-icons-outlined">pie_chart</i> Distribución por Idioma (RF 18)</h2>
+          <p>Proporción y total de estudiantes por cada idioma</p>
+        </div>
+        <div class="chart-body">
+          <canvas #languageCanvas width="480" height="240"></canvas>
+        </div>
+      </div>
+
+      <!-- Gráfico 2: Barras de Ocupación de Aulas -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <h2><i class="material-icons-outlined">bar_chart</i> Porcentaje de Ocupación de Aulas (RF 19)</h2>
+          <p>Capacidad asignada vs. estudiantes inscritos por aula/paralelo</p>
+        </div>
+        <div class="chart-body">
+          <canvas #classroomCanvas width="480" height="240"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tablas Resumen de Ocupación y Estadísticas -->
+    <section class="table-container animate-fade-in delay-2 mt-4">
+      <div class="table-header">
+        <h2>Detalle de Ocupación por Aula y Paralelo</h2>
+        <p>Capacidad total, inscritos actuales y estado de vacantes.</p>
+      </div>
+
+      <!-- Vista de Tabla para Escritorio -->
+      <div class="table-responsive desktop-table-view">
+        <table class="table table-hover align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>Aula</th>
+              <th>Curso / Idioma</th>
+              <th>Paralelo</th>
+              <th>Capacidad</th>
+              <th>Inscritos Actuales</th>
+              <th>% Ocupación</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of classroomStats">
+              <td><strong>{{ item.aula }}</strong></td>
+              <td>{{ item.curso }}</td>
+              <td>{{ item.nombre_paralelo }}</td>
+              <td>{{ item.capacidad }} asientos</td>
+              <td><strong>{{ item.inscritos }}</strong></td>
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <div class="progress flex-grow-1" style="height: 8px;">
+                    <div class="progress-bar"
+                         [ngClass]="{
+                           'bg-danger': item.porcentaje_ocupacion >= 90,
+                           'bg-warning': item.porcentaje_ocupacion >= 70 && item.porcentaje_ocupacion < 90,
+                           'bg-success': item.porcentaje_ocupacion < 70
+                         }"
+                         [style.width.%]="item.porcentaje_ocupacion">
+                    </div>
+                  </div>
+                  <small class="fw-bold">{{ item.porcentaje_ocupacion }}%</small>
+                </div>
+              </td>
+              <td>
+                <span class="badge rounded-pill"
+                      [ngClass]="{
+                        'bg-danger': item.estado_ocupacion === 'Lleno',
+                        'bg-warning text-dark': item.estado_ocupacion === 'Alta',
+                        'bg-info text-dark': item.estado_ocupacion === 'Media',
+                        'bg-success': item.estado_ocupacion === 'Baja'
+                      }">
+                  {{ item.estado_ocupacion }}
+                </span>
+              </td>
+            </tr>
+            <tr *ngIf="classroomStats.length === 0">
+              <td colspan="7" class="text-center py-4 text-muted">No se encontraron aulas con los filtros aplicados.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Vista de Tarjetas Responsivas para Celulares y APK -->
+      <div class="mobile-reports-cards">
+        <div *ngIf="classroomStats.length === 0" class="text-center py-4 text-muted report-card-item">
+          No se encontraron aulas con los filtros aplicados.
+        </div>
+
+        <div *ngFor="let item of classroomStats" class="report-card-item">
+          <div class="report-card-top">
+            <span class="report-card-title"><i class="material-icons-outlined">meeting_room</i> {{ item.aula }}</span>
+            <span class="badge rounded-pill"
+                  [ngClass]="{
+                    'bg-danger': item.estado_ocupacion === 'Lleno',
+                    'bg-warning text-dark': item.estado_ocupacion === 'Alta',
+                    'bg-info text-dark': item.estado_ocupacion === 'Media',
+                    'bg-success': item.estado_ocupacion === 'Baja'
+                  }">
+              {{ item.estado_ocupacion }}
+            </span>
+          </div>
+
+          <div class="report-card-row">
+            <span class="report-card-label">Curso / Idioma:</span>
+            <span class="report-card-val">{{ item.curso }}</span>
+          </div>
+
+          <div class="report-card-row">
+            <span class="report-card-label">Paralelo:</span>
+            <span class="report-card-val">{{ item.nombre_paralelo }}</span>
+          </div>
+
+          <div class="report-card-row">
+            <span class="report-card-label">Inscritos / Capacidad:</span>
+            <span class="report-card-val">{{ item.inscritos }} / {{ item.capacidad }} asientos</span>
+          </div>
+
+          <div class="mt-2">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <span class="report-card-label">Porcentaje de Ocupación:</span>
+              <span class="fw-bold small">{{ item.porcentaje_ocupacion }}%</span>
+            </div>
+            <div class="progress" style="height: 8px;">
+              <div class="progress-bar"
+                   [ngClass]="{
+                     'bg-danger': item.porcentaje_ocupacion >= 90,
+                     'bg-warning': item.porcentaje_ocupacion >= 70 && item.porcentaje_ocupacion < 90,
+                     'bg-success': item.porcentaje_ocupacion < 70
+                   }"
+                   [style.width.%]="item.porcentaje_ocupacion">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>

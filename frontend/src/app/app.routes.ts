@@ -13,6 +13,7 @@ import { DocenteDashboardComponent } from './components/docente-dashboard/docent
 import { SettingsComponent } from './components/settings/settings.component';
 import { AccesosComponent } from './components/accesos/accesos.component';
 import { StudentDashboardComponent } from './components/student-dashboard/student-dashboard.component';
+import { ReportsComponent } from './components/reports/reports.component';
 
 /**
  * Configuración de Rutas de la Aplicación
@@ -29,6 +30,7 @@ import { StudentDashboardComponent } from './components/student-dashboard/studen
  * - 'courses': Gestión de cursos/paralelos
  * - 'docentes-list': Listado de docentes
  * - 'paralelos': Gestión de paralelos
+ * - 'reports': Reportes y Estadísticas
  * - 'docente-dashboard': Panel del docente
  * - 'settings': Configuración del sistema
  * - 'accesos': Gestión de accesos y credenciales
@@ -37,6 +39,7 @@ import { StudentDashboardComponent } from './components/student-dashboard/studen
 export const routes: Routes = [
     // Ruta por defecto - Página de inicio
     { path: '', component: HomeComponent },
+    { path: 'home', redirectTo: '', pathMatch: 'full' },
 
     // Rutas públicas
     { path: 'inscripcion', component: InscriptionComponent },  // Inscripción de estudiantes
@@ -48,6 +51,7 @@ export const routes: Routes = [
     { path: 'courses', component: CoursesComponent },          // Gestión de cursos
     { path: 'docentes-list', component: DocentesListComponent }, // Listado de docentes
     { path: 'paralelos', component: ParalelosComponent },      // Gestión de paralelos
+    { path: 'reports', component: ReportsComponent },          // Reportes y Estadísticas
     { path: 'settings', component: SettingsComponent },        // Configuración
     { path: 'accesos', component: AccesosComponent },          // Control de accesos
 
