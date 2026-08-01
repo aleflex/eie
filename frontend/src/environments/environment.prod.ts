@@ -9,7 +9,12 @@ const getApiUrl = () => {
   if (typeof window !== 'undefined') {
     const customUrl = localStorage.getItem('custom_api_url');
     if (customUrl) {
-      return customUrl;
+      // Ignorar custom_api_url insegura (http://) si la web fue cargada en HTTPS (ej. Vercel)
+      if (window.location.protocol === 'https:' && customUrl.startsWith('http://')) {
+        console.warn('⚠️ Se ignoró custom_api_url (HTTP) guardada en localStorage porque la página web se cargó sobre HTTPS.');
+      } else {
+        return customUrl;
+      }
     }
 
     // Si se definió una URL de Backend API explícita
