@@ -47,7 +47,9 @@ RUN mkdir -p /var/www/html/storage/framework/views \
     && chown -R www-data:www-data /var/www/html \
     && chmod -R 777 /var/www/html/storage /var/www/html/bootstrap/cache
 
-# Puerto expuesto por Apache
+# Permisos de ejecución para el entrypoint y arranque de Apache
+RUN chmod +x /var/www/html/entrypoint.sh || true
+
 EXPOSE 80
 
-CMD ["sh", "-c", "sed -i \"s/80/${PORT:-80}/g\" /etc/apache2/ports.conf /etc/apache2/sites-available/*.conf && apache2-foreground"]
+ENTRYPOINT ["/var/www/html/entrypoint.sh"]
