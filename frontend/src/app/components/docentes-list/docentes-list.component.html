@@ -76,7 +76,7 @@
               <div class="form-group col-12 student-photo-upload-group">
                 <label>Fotografía del Instructor</label>
                 <div class="edit-photo-container">
-                  <img *ngIf="selectedDocente.foto_url" [src]="apiUrl + selectedDocente.foto_url" alt="Foto Docente"
+                  <img *ngIf="selectedDocente.foto_url" [src]="getPhotoUrl(selectedDocente.foto_url)" (error)="onImageError($event)" alt="Foto Docente"
                     class="student-edit-avatar">
                   <div *ngIf="!selectedDocente.foto_url" class="student-edit-avatar-placeholder">
                     <span class="material-icons-outlined">person</span>
@@ -212,7 +212,7 @@
             <tr *ngFor="let docente of filteredDocentes">
               <td>
                 <div class="avatar-container">
-                  <img *ngIf="docente.foto_url" [src]="apiUrl + docente.foto_url" alt="Foto Instructor"
+                  <img *ngIf="docente.foto_url" [src]="getPhotoUrl(docente.foto_url)" (error)="onImageError($event)" alt="Foto Instructor"
                     class="student-avatar-circle">
                   <div *ngIf="!docente.foto_url" class="student-avatar-placeholder">
                     <span class="material-icons-outlined">person</span>
@@ -271,7 +271,7 @@
 
           <div class="card-mobile-header">
             <div class="card-mobile-user">
-              <img *ngIf="docente.foto_url" [src]="apiUrl + docente.foto_url" alt="Foto Docente" class="mobile-avatar">
+              <img *ngIf="docente.foto_url" [src]="getPhotoUrl(docente.foto_url)" (error)="onImageError($event)" alt="Foto Docente" class="mobile-avatar">
               <div *ngIf="!docente.foto_url" class="mobile-avatar-placeholder">
                 <i class="material-icons-outlined">person</i>
               </div>

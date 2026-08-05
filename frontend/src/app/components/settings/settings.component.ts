@@ -116,6 +116,17 @@ export class SettingsComponent implements OnInit {
     }
   }
 
+  getPhotoUrl(url: string | null | undefined): string {
+    if (!url) {
+      return '';
+    }
+    if (url.startsWith('data:') || url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+    const apiBase = this.apiUrl.replace(/\/api\/?$/, '');
+    return apiBase + (url.startsWith('/') ? '' : '/') + url;
+  }
+
   /**
    * Pide al servidor las configuraciones actuales del sistema (fechas, tamaños de archivos)
    * y las guarda en la variable local `settings` para mostrarlas en pantalla.

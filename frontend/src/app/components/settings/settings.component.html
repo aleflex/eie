@@ -69,7 +69,7 @@
             <span class="user-role">Administrador</span>
           </div>
           <div class="user-header-avatar">
-            <img *ngIf="user?.foto_url" [src]="apiUrl + user.foto_url" alt="Avatar" class="avatar-small">
+            <img *ngIf="user?.foto_url" [src]="getPhotoUrl(user?.foto_url)" (error)="onImageError($event)" alt="Avatar" class="avatar-small">
             <div *ngIf="!user?.foto_url" class="avatar-small-placeholder">
               <span class="material-icons-outlined">person</span>
             </div>
@@ -104,7 +104,7 @@
               <span>Apertura y cierre de inscripciones</span>
             </div>
           </button>
-          
+
           <button [class.active]="activeTab === 'files'" (click)="activeTab = 'files'">
             <i class="material-icons-outlined text-files">cloud_upload</i>
             <div class="nav-label">
@@ -112,7 +112,7 @@
               <span>Límites y reglas de archivos</span>
             </div>
           </button>
-          
+
           <button [class.active]="activeTab === 'institution'" (click)="activeTab = 'institution'">
             <i class="material-icons-outlined text-inst">account_balance</i>
             <div class="nav-label">
@@ -136,7 +136,7 @@
           <div *ngIf="activeTab === 'academic'" class="settings-pane animate-fade-in">
             <h2 class="pane-title">📅 Periodo de Inscripción y Matrículas</h2>
             <p class="pane-description">Configura el rango de fechas exactas durante las cuales el portal web estará habilitado para inscripciones de alumnos nuevos y regulares.</p>
-            
+
             <div class="row g-4">
               <div class="col-md-6">
                 <div class="form-group-premium">
@@ -163,7 +163,7 @@
           <div *ngIf="activeTab === 'files'" class="settings-pane animate-fade-in">
             <h2 class="pane-title">📁 Control de Expediente Digital</h2>
             <p class="pane-description">Regula el peso máximo y compresión de los archivos cargados por los estudiantes desde la web o la cámara de sus teléfonos inteligentes.</p>
-            
+
             <div class="row g-4">
               <div class="col-md-6">
                 <div class="form-group-premium">
@@ -175,7 +175,7 @@
                   <small class="form-help">Recomendado: 5MB para prevenir saturación de almacenamiento.</small>
                 </div>
               </div>
-              
+
               <div class="col-md-6">
                 <div class="form-group-premium">
                   <label for="cupo_defecto">Cupo por paralelo predeterminado</label>
@@ -206,7 +206,7 @@
           <div *ngIf="activeTab === 'institution'" class="settings-pane animate-fade-in">
             <h2 class="pane-title">🏛️ Datos y Firmas Oficiales</h2>
             <p class="pane-description">Configura la información institucional que se imprimirá dinámicamente en los certificados oficiales y constancias académicas generadas por el sistema.</p>
-            
+
             <div class="row g-4">
               <div class="col-12">
                 <div class="form-group-premium">
@@ -244,12 +244,12 @@
           <div *ngIf="activeTab === 'profile'" class="settings-pane animate-fade-in">
             <h2 class="pane-title">👤 Configuración de Mi Perfil</h2>
             <p class="pane-description">Actualiza tu fotografía de perfil, nombre visible y credenciales de acceso al sistema.</p>
-            
+
             <div class="profile-edit-section">
               <!-- Foto de perfil premium -->
               <div class="profile-photo-uploader">
                 <div class="profile-avatar-large-container">
-                  <img *ngIf="user?.foto_url" [src]="apiUrl + user.foto_url" alt="Foto Perfil" class="profile-avatar-large">
+                  <img *ngIf="user?.foto_url" [src]="getPhotoUrl(user?.foto_url)" (error)="onImageError($event)" alt="Foto Perfil" class="profile-avatar-large">
                   <div *ngIf="!user?.foto_url" class="profile-avatar-large-placeholder">
                     <span class="material-icons-outlined">person</span>
                   </div>

@@ -279,4 +279,21 @@ export class DocentesListComponent implements OnInit {
       });
     }
   }
+
+  onImageError(event: any) {
+    if (event && event.target && !event.target.src?.includes('default-avatar.svg')) {
+      event.target.src = 'assets/default-avatar.svg';
+    }
+  }
+
+  getPhotoUrl(url: string | null | undefined): string {
+    if (!url) {
+      return '';
+    }
+    if (url.startsWith('data:') || url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+    const apiBase = this.apiUrl.replace(/\/api\/?$/, '');
+    return apiBase + (url.startsWith('/') ? '' : '/') + url;
+  }
 }
