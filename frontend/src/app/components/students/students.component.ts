@@ -254,6 +254,21 @@ export class StudentsComponent implements OnInit {
     this.adminPhotoFile = null;
     this.adminPhotoFileName = '';
 
+    // Auto-separar CI antiguo que incluye departamento (ej: '6190284 LP' -> ci='6190284', expedido='LP')
+    if (this.selectedStudent.ci && /^[0-9]{7,8}\s+[A-Za-z]{2}$/.test((this.selectedStudent.ci + '').trim())) {
+      const ciParts = (this.selectedStudent.ci + '').trim().split(/\s+/);
+      this.selectedStudent.ci = ciParts[0];
+      if (!this.selectedStudent.expedido) {
+        this.selectedStudent.expedido = ciParts[1].toUpperCase();
+      }
+    }
+
+    // Auto-separar CI Tutor antiguo que incluye departamento
+    if (this.selectedStudent.ci_tutor && /^[0-9]{7,8}\s+[A-Za-z]{2}$/.test((this.selectedStudent.ci_tutor + '').trim())) {
+      const tutorParts = (this.selectedStudent.ci_tutor + '').trim().split(/\s+/);
+      this.selectedStudent.ci_tutor = tutorParts[0];
+    }
+
     if (this.selectedStudent.carnet_militar) {
       if (this.selectedStudent.carnet_militar.includes('-')) {
         const parts = this.selectedStudent.carnet_militar.split('-');
@@ -313,8 +328,9 @@ export class StudentsComponent implements OnInit {
 
     if (this.selectedStudent.ci) {
       const cleanCi = (this.selectedStudent.ci + '').trim();
-      if (!/^[0-9]{7,8}$/.test(cleanCi)) {
-        alert('El C.I. del estudiante debe contener estrictamente 7 u 8 dígitos numéricos.');
+      // Permitir formato puro (7-8 dígitos) o formato antiguo (dígitos + espacio + depto)
+      if (!/^[0-9]{7,8}(\s*[A-Za-z]{2})?$/.test(cleanCi)) {
+        alert('El C.I. del estudiante debe contener 7 u 8 dígitos numéricos.');
         return;
       }
     }

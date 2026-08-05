@@ -104,9 +104,9 @@
                   class="form-control">
               </div>
               <div class="form-group">
-                <label for="ci">Cédula de Identidad (CI - Solo 7 u 8 dígitos)</label>
+                <label for="ci">Cédula de Identidad (CI - 7 u 8 dígitos)</label>
                 <input type="text" id="ci" [(ngModel)]="selectedStudent.ci" name="ci" class="form-control"
-                  (keypress)="onlyNumbers($event)" minlength="7" maxlength="8" pattern="[0-9]{7,8}" placeholder="7 u 8 dígitos sin letras">
+                  (keypress)="onlyNumbers($event)" minlength="7" maxlength="8" placeholder="7 u 8 dígitos numéricos">
               </div>
               <div class="form-group">
                 <label for="expedido">Lugar de Expedición (CI)</label>
