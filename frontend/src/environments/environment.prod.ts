@@ -3,7 +3,7 @@
  * Coloca aquí la URL de tu servidor backend en la nube si tienes una (Ej: https://eie-backend.com o URL Ngrok).
  * Si está vacío '', se conectará automáticamente a tu servidor Laravel (IP Local / Localhost).
  */
-const DOMINIO_SERVIDOR_BACKEND: string = ''; // Localhost / Docker local
+const DOMINIO_SERVIDOR_BACKEND: string = 'https://eie-cochabamba.sytes.net'; // Servidor Backend HTTPS de producción
 
 const getApiUrl = () => {
   if (typeof window !== 'undefined') {
@@ -11,7 +11,8 @@ const getApiUrl = () => {
     if (customUrl) {
       // Ignorar custom_api_url insegura (http://) si la web fue cargada en HTTPS (ej. Vercel)
       if (window.location.protocol === 'https:' && customUrl.startsWith('http://')) {
-        console.warn('⚠️ Se ignoró custom_api_url (HTTP) guardada en localStorage porque la página web se cargó sobre HTTPS.');
+        console.warn('⚠️ Se eliminó custom_api_url insegura (HTTP) de localStorage porque la página está en HTTPS.');
+        localStorage.removeItem('custom_api_url');
       } else {
         return customUrl;
       }

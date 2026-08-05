@@ -11,7 +11,8 @@ const getApiUrl = () => {
     if (customUrl) {
       // Ignorar custom_api_url insegura (http://) si la web fue cargada en HTTPS (ej. Vercel)
       if (window.location.protocol === 'https:' && customUrl.startsWith('http://')) {
-        console.warn('⚠️ Se ignoró custom_api_url (HTTP) guardada en localStorage porque la página web se cargó sobre HTTPS.');
+        console.warn('⚠️ Se eliminó custom_api_url insegura (HTTP) de localStorage porque la página está en HTTPS.');
+        localStorage.removeItem('custom_api_url');
       } else {
         return customUrl;
       }

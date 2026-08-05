@@ -55,15 +55,15 @@ export class LoginComponent implements OnInit {
     this.isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) 
       || (window as any).Capacitor !== undefined;
     
-    // Verificar si el sensor biométrico del celular Android está disponible
-    try {
-      const result = await NativeBiometric.isAvailable();
-      if (result.isAvailable) {
-        this.biometricsAvailable = true;
-      }
-    } catch (e) {
-      if (window.PublicKeyCredential || (window as any).Capacitor) {
-        this.biometricsAvailable = true;
+    // Verificar si el sensor biométrico del celular Android está disponible (Solo en APK Nativa)
+    if ((window as any).Capacitor && (window as any).Capacitor.isNativePlatform()) {
+      try {
+        const result = await NativeBiometric.isAvailable();
+        if (result.isAvailable) {
+          this.biometricsAvailable = true;
+        }
+      } catch (e) {
+        console.log('Biometría no disponible en este dispositivo nativo.');
       }
     }
 
