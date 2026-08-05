@@ -35,6 +35,7 @@ RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local
 WORKDIR /var/www/html
 COPY . /var/www/html
 RUN if [ -d "/var/www/html/backend" ]; then cp -rn /var/www/html/backend/* /var/www/html/; fi
+RUN if [ -f "/var/www/html/backend/.env" ]; then cp /var/www/html/backend/.env /var/www/html/.env; fi
 
 # Instalar dependencias de PHP vía Composer
 RUN composer install --no-interaction --no-dev --optimize-autoloader
