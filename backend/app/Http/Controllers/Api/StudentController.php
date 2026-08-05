@@ -214,18 +214,25 @@ class StudentController extends Controller
             $user = $estudiante->user;
 
             \Illuminate\Support\Facades\DB::transaction(function () use ($estudiante, $user) {
-                // Dar de baja sus inscripciones en lugar de borralas
-                $estudiante->inscripciones()->update(['estado' => 'Retirado']);
-                // Desactivar cuenta de usuario vinculada
+                // Eliminar inscripciones, documentos, contactos y responsables vinculados
+                $estudiante->inscripciones()->delete();
+                $estudiante->documentos()->delete();
+                \Illuminate\Support\Facades\DB::table('contactos_emergencia')->where('id_estudiante', $estudiante->id_estudiante)->delete();
+                \Illuminate\Support\Facades\DB::table('estudiante_responsable')->where('id_estudiante', $estudiante->id_estudiante)->delete();
+                
+                // Eliminar estudiante
+                $estudiante->delete();
+
+                // Eliminar usuario si existe
                 if ($user) {
-                    $user->update(['estado' => 'INACTIVO']);
+                    $user->delete();
                 }
             });
 
-            return response()->json(['message' => 'Estudiante dado de baja y desactivado con éxito.']);
+            return response()->json(['message' => 'Estudiante y usuario eliminados permanentemente con éxito.']);
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Error al dar de baja al estudiante.',
+                'message' => 'Error al eliminar el estudiante.',
                 'error' => $e->getMessage()
             ], 500);
         }
