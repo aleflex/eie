@@ -160,7 +160,12 @@ class StudentController extends Controller
             $estudiante->nombre_padres = $request->input('nombre_padres');
         }
         if ($request->has('ci_tutor')) {
-            $estudiante->ci_tutor = $request->input('ci_tutor');
+            $ciTutor = trim($request->input('ci_tutor'));
+            // Permitir formato puro (7-8 dígitos) o formato antiguo (dígitos + espacio + depto)
+            if ($ciTutor !== '' && !preg_match('/^[0-9]{7,8}(\s*[A-Za-z]{2})?$/', $ciTutor)) {
+                return response()->json(['message' => 'El C.I. del tutor debe contener 7 u 8 dígitos numéricos.'], 422);
+            }
+            $estudiante->ci_tutor = $ciTutor;
         }
         if ($request->has('contacto_emergencia')) {
             $estudiante->contacto_emergencia = $request->input('contacto_emergencia');

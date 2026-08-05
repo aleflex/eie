@@ -155,6 +155,14 @@ export class DocentesListComponent implements OnInit {
   saveDocente() {
     if (!this.selectedDocente) return;
 
+    if (this.selectedDocente.ci) {
+      const cleanCi = (this.selectedDocente.ci + '').trim();
+      if (!/^[0-9]{7,8}$/.test(cleanCi)) {
+        alert('El C.I. del instructor debe contener estrictamente 7 u 8 dígitos numéricos.');
+        return;
+      }
+    }
+
     if (this.isEditing) {
       this.updateDocente();
     } else {

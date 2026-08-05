@@ -282,9 +282,9 @@
                   class="form-control">
               </div>
               <div class="form-group">
-                <label for="ci_tutor">C.I. del Tutor</label>
+                <label for="ci_tutor">C.I. del Tutor (7 u 8 dígitos)</label>
                 <input type="text" id="ci_tutor" [(ngModel)]="selectedStudent.ci_tutor" name="ci_tutor"
-                  class="form-control">
+                  maxlength="12" placeholder="Ej: 2981048 o 2981048 LP" class="form-control">
               </div>
               <div class="form-group">
                 <label for="hermanos_inscritos">Hermanos Inscritos</label>

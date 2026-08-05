@@ -311,6 +311,23 @@ export class StudentsComponent implements OnInit {
   updateStudent() {
     if (!this.selectedStudent || this.quotaError) return;
 
+    if (this.selectedStudent.ci) {
+      const cleanCi = (this.selectedStudent.ci + '').trim();
+      if (!/^[0-9]{7,8}$/.test(cleanCi)) {
+        alert('El C.I. del estudiante debe contener estrictamente 7 u 8 dígitos numéricos.');
+        return;
+      }
+    }
+
+    if (this.selectedStudent.ci_tutor) {
+      const cleanCiTutor = (this.selectedStudent.ci_tutor + '').trim();
+      // Permitir formato puro (7-8 dígitos) o formato antiguo (dígitos + espacio + depto)
+      if (cleanCiTutor !== '' && !/^[0-9]{7,8}(\s*[A-Za-z]{2})?$/.test(cleanCiTutor)) {
+        alert('El C.I. del tutor debe contener 7 u 8 dígitos numéricos.');
+        return;
+      }
+    }
+
     const formData = new FormData();
     Object.keys(this.selectedStudent).forEach(key => {
       if (key !== 'user' && key !== 'inscripciones' && this.selectedStudent[key] !== null && this.selectedStudent[key] !== undefined) {
