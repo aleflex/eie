@@ -9,7 +9,10 @@ use App\Http\Controllers\Api\DocumentController;
 use App\Http\Controllers\Api\SettingController;
 use App\Http\Controllers\Api\AccesoController;
 
-// Autenticación
+// Ping de salud para Railway / Render
+Route::get('/ping', function () {
+    return response()->json(['status' => 'ok', 'time' => now()]);
+});
 
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);

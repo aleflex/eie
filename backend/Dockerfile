@@ -46,4 +46,4 @@ RUN chown -R www-data:www-data /var/www/html \
 # Puerto expuesto por Apache
 EXPOSE 80
 
-CMD ["apache2-foreground"]
+CMD ["sh", "-c", "sed -i \"s/80/${PORT:-80}/g\" /etc/apache2/ports.conf /etc/apache2/sites-available/*.conf && apache2-foreground"]

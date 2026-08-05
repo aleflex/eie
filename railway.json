@@ -5,8 +5,7 @@
     "dockerfilePath": "backend/Dockerfile"
   },
   "deploy": {
-    "startCommand": "apache2-foreground",
-    "healthcheckPath": "/",
+    "healthcheckPath": "/api/ping",
     "healthcheckTimeout": 100
   }
 }
