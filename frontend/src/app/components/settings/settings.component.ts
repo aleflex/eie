@@ -110,6 +110,12 @@ export class SettingsComponent implements OnInit {
     }
   }
 
+  onImageError(event: any) {
+    if (event && event.target && !event.target.src?.includes('default-avatar.svg')) {
+      event.target.src = 'assets/default-avatar.svg';
+    }
+  }
+
   /**
    * Pide al servidor las configuraciones actuales del sistema (fechas, tamaños de archivos)
    * y las guarda en la variable local `settings` para mostrarlas en pantalla.

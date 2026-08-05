@@ -76,7 +76,7 @@
               <div class="form-group col-12 student-photo-upload-group">
                 <label>Fotografía de Perfil (4x4)</label>
                 <div class="edit-photo-container">
-                  <img *ngIf="selectedStudent.foto_4x4_url" [src]="apiBase + selectedStudent.foto_4x4_url" (error)="onImageError($event)"
+                  <img *ngIf="selectedStudent.foto_4x4_url" [src]="getPhotoUrl(selectedStudent.foto_4x4_url)" (error)="onImageError($event)"
                     alt="Foto Actual" class="student-edit-avatar">
                   <div *ngIf="!selectedStudent.foto_4x4_url" class="student-edit-avatar-placeholder">
                     <span class="material-icons-outlined">person</span>
@@ -405,7 +405,7 @@
                 </td>
                 <td>
                   <div class="avatar-container">
-                    <img *ngIf="student.foto_4x4_url" [src]="apiBase + student.foto_4x4_url" (error)="onImageError($event)" alt="Foto 4x4"
+                    <img *ngIf="student.foto_4x4_url" [src]="getPhotoUrl(student.foto_4x4_url)" (error)="onImageError($event)" alt="Foto 4x4"
                       class="student-avatar-circle">
                     <div *ngIf="!student.foto_4x4_url" class="student-avatar-placeholder">
                       <span class="material-icons-outlined">person</span>
@@ -586,7 +586,7 @@
           <div class="mobile-card-header">
             <div class="mobile-card-identity">
               <div class="avatar-container">
-                <img *ngIf="student.foto_4x4_url" [src]="apiBase + student.foto_4x4_url" (error)="onImageError($event)" alt="Foto 4x4" class="student-avatar-circle">
+                <img *ngIf="student.foto_4x4_url" [src]="getPhotoUrl(student.foto_4x4_url)" (error)="onImageError($event)" alt="Foto 4x4" class="student-avatar-circle">
                 <div *ngIf="!student.foto_4x4_url" class="student-avatar-placeholder">
                   <span class="material-icons-outlined">person</span>
                 </div>

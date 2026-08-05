@@ -190,6 +190,9 @@ class AuthController extends Controller
             } elseif ($user->docente) {
                 $user->docente->foto_url = $fotoUrl;
                 $user->docente->save();
+            } else {
+                $user->foto_url = $fotoUrl;
+                $user->save();
             }
         }
 

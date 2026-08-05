@@ -663,7 +663,20 @@ export class StudentsComponent implements OnInit {
   }
 
   onImageError(event: any) {
-    event.target.src = 'assets/default-avatar.png';
+    if (event && event.target && !event.target.src?.includes('default-avatar.svg')) {
+      event.target.src = 'assets/default-avatar.svg';
+    }
+  }
+
+  getPhotoUrl(url: string | null): string {
+    if (!url) {
+      return '';
+    }
+    if (url.startsWith('data:') || url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+    const apiBase = this.apiBase || environment.apiUrl.replace(/\/api\/?$/, '');
+    return apiBase + (url.startsWith('/') ? '' : '/') + url;
   }
 }
 
