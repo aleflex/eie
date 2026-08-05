@@ -39,9 +39,13 @@ RUN if [ -d "/var/www/html/backend" ]; then cp -rn /var/www/html/backend/* /var/
 # Instalar dependencias de PHP vía Composer
 RUN composer install --no-interaction --no-dev --optimize-autoloader
 
-# Establecer permisos correctos para Laravel
-RUN chown -R www-data:www-data /var/www/html \
-    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
+# Crear carpetas de almacenamiento y establecer permisos en el contenedor
+RUN mkdir -p /var/www/html/storage/framework/views \
+    && mkdir -p /var/www/html/storage/framework/sessions \
+    && mkdir -p /var/www/html/storage/framework/cache \
+    && mkdir -p /var/www/html/bootstrap/cache \
+    && chown -R www-data:www-data /var/www/html \
+    && chmod -R 777 /var/www/html/storage /var/www/html/bootstrap/cache
 
 # Puerto expuesto por Apache
 EXPOSE 80
