@@ -1,4 +1,15 @@
 <div class="dashboard-layout">
+  <!-- Topbar visible solo en móviles -->
+  <div class="mobile-top-bar d-lg-none">
+    <div class="mobile-top-left">
+      <img src="assets/imagenes/logo.jpg" alt="Logo EIE" class="mobile-logo">
+      <span class="mobile-brand">EIE PORTAL</span>
+    </div>
+    <button type="button" class="mobile-toggle-btn" (click)="toggleMobileMenu()" aria-label="Abrir navegación">
+      <i class="material-icons-outlined">menu</i>
+    </button>
+  </div>
+
   <!-- Backdrop para menú móvil -->
   <div class="mobile-menu-backdrop" *ngIf="isMobileMenuOpen" (click)="toggleMobileMenu()"></div>
 
@@ -7,7 +18,7 @@
     <div class="sidebar-header">
       <img src="assets/imagenes/logo.jpg" alt="Logo EIE" class="sidebar-logo">
       <span>EIE PORTAL</span>
-      <button type="button" class="mobile-hamburger-btn d-lg-none" (click)="toggleMobileMenu()" aria-label="Cerrar menú mobile" style="background: rgba(255,255,255,0.2); border: none; color: white; cursor: pointer; padding: 0.3rem 0.6rem; margin-left: auto; border-radius: 8px; font-weight: bold; font-size: 1.1rem; display: flex; align-items: center; justify-content: center;">
+      <button type="button" class="mobile-hamburger-btn d-lg-none" (click)="toggleMobileMenu()" aria-label="Cerrar menú mobile">
         ✕
       </button>
     </div>
