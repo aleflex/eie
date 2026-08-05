@@ -25,11 +25,16 @@ ENV APACHE_DOCUMENT_ROOT /var/www/html/public
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
 
+# Permitir ejecutar Composer como superusuario en contenedor Docker
+ENV COMPOSER_ALLOW_SUPERUSER=1
+
 # Instalar Composer mediante curl directamente
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
-# Copiar el código del backend al contenedor
+# Copiar el código del backend al contenedor (soporta build desde raíz o desde subcarpeta backend)
+WORKDIR /var/www/html
 COPY . /var/www/html
+RUN if [ -d "/var/www/html/backend" ]; then cp -rn /var/www/html/backend/* /var/www/html/; fi
 
 # Instalar dependencias de PHP vía Composer
 RUN composer install --no-interaction --no-dev --optimize-autoloader
