@@ -154,6 +154,7 @@ class DocenteController extends Controller
                     'nombres' => $request->nombres,
                     'apellidos' => $request->apellidos,
                     'ci' => $request->ci,
+                    'expedido' => $request->expedido,
                     'estado' => 'ACTIVO',
                 ]);
                 $docente->id_usuario = $user->id_usuario;
@@ -164,6 +165,7 @@ class DocenteController extends Controller
                         'nombres' => $request->nombres,
                         'apellidos' => $request->apellidos,
                         'ci' => $request->ci,
+                        'expedido' => $request->expedido,
                         'correo_institucional' => $request->correo_electronico ?: $user->correo_institucional,
                     ]);
                 }
@@ -194,6 +196,7 @@ class DocenteController extends Controller
                 'id_tipo_contrato' => $idTipoContrato,
                 'telefono' => $request->telefono,
                 'fecha_contrato' => $fechaContrato,
+                'expedido' => $request->expedido,
                 'estado' => $request->estado ?? $docente->estado,
             ];
 

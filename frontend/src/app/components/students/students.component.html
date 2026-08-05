@@ -104,8 +104,24 @@
                   class="form-control">
               </div>
               <div class="form-group">
-                <label for="ci">CI</label>
-                <input type="text" id="ci" [(ngModel)]="selectedStudent.ci" name="ci" class="form-control" minlength="7" maxlength="8">
+                <label for="ci">Cédula de Identidad (CI - Solo 7 u 8 dígitos)</label>
+                <input type="text" id="ci" [(ngModel)]="selectedStudent.ci" name="ci" class="form-control"
+                  (keypress)="onlyNumbers($event)" minlength="7" maxlength="8" pattern="[0-9]{7,8}" placeholder="7 u 8 dígitos sin letras">
+              </div>
+              <div class="form-group">
+                <label for="expedido">Lugar de Expedición (CI)</label>
+                <select id="expedido" [(ngModel)]="selectedStudent.expedido" name="expedido" class="form-control">
+                  <option value="">Seleccione Departamento...</option>
+                  <option value="LP">La Paz (LP)</option>
+                  <option value="CB">Cochabamba (CB)</option>
+                  <option value="SC">Santa Cruz (SC)</option>
+                  <option value="OR">Oruro (OR)</option>
+                  <option value="PT">Potosí (PT)</option>
+                  <option value="TJ">Tarija (TJ)</option>
+                  <option value="CH">Chuquisaca (CH)</option>
+                  <option value="BE">Beni (BE)</option>
+                  <option value="PD">Pando (PD)</option>
+                </select>
               </div>
               <div class="form-group">
                 <label for="tipo_usuario">Tipo de Usuario</label>
@@ -127,7 +143,7 @@
               <div class="form-group">
                 <label for="fecha_nacimiento">Fecha de Nacimiento</label>
                 <input type="date" id="fecha_nacimiento" [(ngModel)]="selectedStudent.fecha_nacimiento"
-                  name="fecha_nacimiento" class="form-control">
+                  (change)="autoGenerateCossmil()" name="fecha_nacimiento" class="form-control">
               </div>
               <div class="form-group">
                 <label for="estado_civil">Estado Civil</label>
@@ -227,15 +243,36 @@
                 <input type="text" id="arma_especialidad" [(ngModel)]="selectedStudent.arma_especialidad"
                   name="arma_especialidad" class="form-control">
               </div>
+
+              <!-- Carnet Militar (Matrícula + Serie) -->
               <div class="form-group" *ngIf="selectedStudent.tipo_usuario === 'militar' || selectedStudent.tipo_usuario === 'emi'">
-                <label for="carnet_militar">Carnet Militar</label>
-                <input type="text" id="carnet_militar" [(ngModel)]="selectedStudent.carnet_militar"
-                  name="carnet_militar" class="form-control">
+                <label for="carnet_militar_num">Carnet Militar (Matrícula: 6 a 8 dígitos)</label>
+                <input type="text" id="carnet_militar_num" [(ngModel)]="carnetMilitarNum" name="carnet_militar_num"
+                  (keypress)="onlyNumbers($event)" (input)="updateCarnetMilitarFull()" minlength="6" maxlength="8"
+                  class="form-control" placeholder="Ej. 1234567">
               </div>
-              <div class="form-group" *ngIf="selectedStudent.tipo_usuario === 'hijo_militar' || selectedStudent.tipo_usuario === 'emi'">
-                <label for="carnet_cossmil">Carnet COSSMIL</label>
+              <div class="form-group" *ngIf="selectedStudent.tipo_usuario === 'militar' || selectedStudent.tipo_usuario === 'emi'">
+                <label for="carnet_militar_serie">Serie de Libreta Militar</label>
+                <select id="carnet_militar_serie" [(ngModel)]="carnetMilitarSerie" name="carnet_militar_serie"
+                  (change)="updateCarnetMilitarFull()" class="form-control">
+                  <option value="">Sin Serie / Regular</option>
+                  <option value="A">Serie A (Servicio Regular)</option>
+                  <option value="R">Serie R (Redención)</option>
+                  <option value="O">Serie O (Auxiliares)</option>
+                  <option value="B">Serie B (Especial)</option>
+                </select>
+              </div>
+
+              <!-- Carnet COSSMIL -->
+              <div class="form-group" *ngIf="selectedStudent.tipo_usuario === 'hijo_militar' || selectedStudent.tipo_usuario === 'militar' || selectedStudent.tipo_usuario === 'emi'">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <label for="carnet_cossmil">Carnet COSSMIL (9 Caracteres)</label>
+                  <button type="button" (click)="autoGenerateCossmil()" style="background: none; border: none; color: #0284c7; font-size: 0.78rem; font-weight: 700; cursor: pointer;">
+                    ✨ Autogenerar
+                  </button>
+                </div>
                 <input type="text" id="carnet_cossmil" [(ngModel)]="selectedStudent.carnet_cossmil"
-                  name="carnet_cossmil" class="form-control">
+                  name="carnet_cossmil" class="form-control" maxlength="9" placeholder="Ej: 900114VMO (AAMMDD + Iniciales)" style="text-transform: uppercase;">
               </div>
 
               <!-- Datos de Padres y Tutor (Visibles para todos) -->

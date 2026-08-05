@@ -103,9 +103,24 @@
                   class="form-control" placeholder="Ej: Pérez Tapia">
               </div>
               <div class="form-group">
-                <label for="ci">Cédula de Identidad (C.I.)</label>
+                <label for="ci">Cédula de Identidad (CI - Solo 7 u 8 dígitos) *</label>
                 <input type="text" id="ci" [(ngModel)]="selectedDocente.ci" name="ci" class="form-control"
-                  minlength="7" maxlength="8" placeholder="Ej: 1234567">
+                  (keypress)="onlyNumbers($event)" minlength="7" maxlength="8" pattern="[0-9]{7,8}" placeholder="Ej: 1234567" required>
+              </div>
+              <div class="form-group">
+                <label for="expedido">Lugar de Expedición (CI) *</label>
+                <select id="expedido" [(ngModel)]="selectedDocente.expedido" name="expedido" class="form-control">
+                  <option value="">Seleccione Departamento...</option>
+                  <option value="LP">La Paz (LP)</option>
+                  <option value="CB">Cochabamba (CB)</option>
+                  <option value="SC">Santa Cruz (SC)</option>
+                  <option value="OR">Oruro (OR)</option>
+                  <option value="PT">Potosí (PT)</option>
+                  <option value="TJ">Tarija (TJ)</option>
+                  <option value="CH">Chuquisaca (CH)</option>
+                  <option value="BE">Beni (BE)</option>
+                  <option value="PD">Pando (PD)</option>
+                </select>
               </div>
               <div class="form-group">
                 <label for="correo_electronico">Correo Electrónico Personal</label>

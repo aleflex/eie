@@ -77,6 +77,7 @@ class InscriptionController extends Controller
                         'nombres' => $request->nombres,
                         'apellidos' => $request->apellidos,
                         'ci' => $request->ci,
+                        'expedido' => $request->expedido,
                         'estado' => 'ACTIVO',
                     ]);
                 }
@@ -92,6 +93,7 @@ class InscriptionController extends Controller
                     'nombres' => $request->nombres,
                     'apellidos' => $request->apellidos,
                     'ci' => $request->ci,
+                    'expedido' => $request->expedido,
                     'estado' => 'ACTIVO',
                 ]);
             }
@@ -120,6 +122,7 @@ class InscriptionController extends Controller
                 'lugar_nacimiento' => $request->lugarNacimiento,
                 'carnet_militar' => $request->carnetMilitar,
                 'carnet_cossmil' => $request->carnetCossmil,
+                'expedido' => $request->expedido,
                 'celular' => $celularCompleto,
                 'domicilio' => $request->domicilio,
                 'anio_egreso_bachiller' => $request->anioBachiller,

@@ -121,14 +121,33 @@
               <small *ngIf="f['apellidos'].errors['pattern']">Debe ingresar sus dos apellidos (Paterno y Materno).</small>
             </div>
           </div>
-          <div class="col-md-4 form-group">
+          <div class="col-md-3 form-group">
             <label for="ci">Cédula de Identidad *</label>
             <input type="text" id="ci" formControlName="ci" class="form-control"
                    (keypress)="onlyNumbers($event)" minlength="7" maxlength="8"
-                   [class.is-invalid]="(isSubmitted || f['ci'].touched) && f['ci'].errors" placeholder="Número de CI">
+                   [class.is-invalid]="(isSubmitted || f['ci'].touched) && f['ci'].errors" placeholder="7 u 8 dígitos">
             <div *ngIf="(isSubmitted || f['ci'].touched) && f['ci'].errors" class="error-msg">
               <small *ngIf="f['ci'].errors['required']">El CI es obligatorio.</small>
               <small *ngIf="f['ci'].errors['pattern']">Debe ser solo números y tener entre 7 y 8 dígitos.</small>
+            </div>
+          </div>
+          <div class="col-md-3 form-group">
+            <label for="expedido">Lugar de Expedición *</label>
+            <select id="expedido" formControlName="expedido" class="form-control"
+                    [class.is-invalid]="(isSubmitted || f['expedido'].touched) && f['expedido'].errors">
+              <option value="">Seleccione Departamento...</option>
+              <option value="LP">La Paz (LP)</option>
+              <option value="CB">Cochabamba (CB)</option>
+              <option value="SC">Santa Cruz (SC)</option>
+              <option value="OR">Oruro (OR)</option>
+              <option value="PT">Potosí (PT)</option>
+              <option value="TJ">Tarija (TJ)</option>
+              <option value="CH">Chuquisaca (CH)</option>
+              <option value="BE">Beni (BE)</option>
+              <option value="PD">Pando (PD)</option>
+            </select>
+            <div *ngIf="(isSubmitted || f['expedido'].touched) && f['expedido'].errors" class="error-msg">
+              <small *ngIf="f['expedido'].errors['required']">El lugar de expedición es obligatorio.</small>
             </div>
           </div>
         </div>
@@ -221,13 +240,28 @@
             <label for="armaEspecialidad">Arma/Especialidad</label>
             <input type="text" id="armaEspecialidad" formControlName="armaEspecialidad" class="form-control" placeholder="Ej. Infantería / Com.">
           </div>
-          <div class="col-md-3 form-group">
+          <div class="col-md-2 form-group">
             <label for="carnetMilitar">Carnet Militar (Nro.)</label>
-            <input type="text" id="carnetMilitar" formControlName="carnetMilitar" class="form-control" (keypress)="onlyNumbers($event)" placeholder="Ej. 12345">
+            <input type="text" id="carnetMilitar" formControlName="carnetMilitar" class="form-control" (keypress)="onlyNumbers($event)" minlength="6" maxlength="8" placeholder="6 a 8 dígitos">
           </div>
-          <div class="col-md-3 form-group">
-            <label for="carnetCossmil">Carnet Cossmil (Nro.)</label>
-            <input type="text" id="carnetCossmil" formControlName="carnetCossmil" class="form-control" (keypress)="onlyNumbers($event)" placeholder="Ej. 12345">
+          <div class="col-md-2 form-group">
+            <label for="carnetMilitarSerie">Serie Libreta</label>
+            <select id="carnetMilitarSerie" formControlName="carnetMilitarSerie" class="form-control">
+              <option value="">Sin Serie</option>
+              <option value="A">Serie A</option>
+              <option value="R">Serie R</option>
+              <option value="O">Serie O</option>
+              <option value="B">Serie B</option>
+            </select>
+          </div>
+          <div class="col-md-2 form-group">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <label for="carnetCossmil">Carnet COSSMIL</label>
+              <button type="button" (click)="autoGenerateCossmil()" style="background: none; border: none; color: #0284c7; font-size: 0.72rem; font-weight: 700; cursor: pointer;">
+                ✨ Sugerir
+              </button>
+            </div>
+            <input type="text" id="carnetCossmil" formControlName="carnetCossmil" class="form-control" maxlength="9" placeholder="900114VMO" style="text-transform: uppercase;">
           </div>
         </div>
 

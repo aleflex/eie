@@ -21,6 +21,13 @@ export class DocentesListComponent implements OnInit {
   toggleSidebar() {
     this.isSidebarCollapsed = !this.isSidebarCollapsed;
   }
+
+  onlyNumbers(event: KeyboardEvent) {
+    const charCode = event.which ? event.which : event.keyCode;
+    if (charCode > 31 && (charCode < 48 || charCode > 57)) {
+      event.preventDefault();
+    }
+  }
   filteredDocentes: any[] = [];
   isLoading = true;
   selectedDocente: any = null;

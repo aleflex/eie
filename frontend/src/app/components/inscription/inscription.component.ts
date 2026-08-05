@@ -119,6 +119,38 @@ export class InscriptionComponent implements OnInit {
   /**
    * Inicializa el formulario reactivo con todos sus campos y reglas de validación (obligatorio, longitud, etc.).
    */
+  autoGenerateCossmil() {
+    const fecha = this.inscriptionForm.get('fechaNacimiento')?.value;
+    const nombres = (this.inscriptionForm.get('nombres')?.value || '').trim();
+    const apellidosStr = (this.inscriptionForm.get('apellidos')?.value || '').trim();
+    const apellidos = apellidosStr ? apellidosStr.split(/\s+/) : [];
+
+    let numPart = '';
+    if (fecha) {
+      const parts = fecha.split('-');
+      if (parts.length === 3) {
+        numPart = parts[0].substring(2, 4) + parts[1] + parts[2];
+      }
+    }
+
+    let letPart = '';
+    if (apellidos.length > 0 && apellidos[0]) {
+      letPart += apellidos[0].charAt(0).toUpperCase();
+    }
+    if (apellidos.length > 1 && apellidos[1]) {
+      letPart += apellidos[1].charAt(0).toUpperCase();
+    } else if (apellidos.length > 0 && apellidos[0].length > 1) {
+      letPart += apellidos[0].charAt(1).toUpperCase();
+    }
+    if (nombres.length > 0) {
+      letPart += nombres.charAt(0).toUpperCase();
+    }
+
+    if (numPart || letPart) {
+      this.inscriptionForm.get('carnetCossmil')?.patchValue((numPart + letPart).toUpperCase(), { emitEvent: false });
+    }
+  }
+
   initForm() {
     this.inscriptionForm = this.fb.group({
       userType: ['normal', Validators.required],
@@ -129,7 +161,9 @@ export class InscriptionComponent implements OnInit {
       lugarNacimiento: ['', Validators.required],
       fechaNacimiento: ['', Validators.required],
       ci: ['', [Validators.required, Validators.pattern(/^[0-9]{7,8}$/)]],
+      expedido: ['', Validators.required],
       carnetMilitar: [''],
+      carnetMilitarSerie: [''],
       carnetCossmil: [''],
       estadoCivil: ['', Validators.required],
       grupoSanguineo: ['', Validators.required],
@@ -163,14 +197,18 @@ export class InscriptionComponent implements OnInit {
    * para calcular valores automáticamente o cambiar las reglas de validación.
    */
   setupFormSubscriptions() {
-    // 1. Calcular edad automáticamente desde la fecha de nacimiento
+    // 1. Calcular edad automáticamente desde la fecha de nacimiento y autogenerar Cossmil
     this.inscriptionForm.get('fechaNacimiento')?.valueChanges.subscribe(value => {
       if (value) {
         const age = this.calculateAge(value);
         this.inscriptionForm.get('edad')?.patchValue(age, { emitEvent: false });
         this.inscriptionForm.get('edad')?.markAsTouched();
+        this.autoGenerateCossmil();
       }
     });
+
+    this.inscriptionForm.get('nombres')?.valueChanges.subscribe(() => this.autoGenerateCossmil());
+    this.inscriptionForm.get('apellidos')?.valueChanges.subscribe(() => this.autoGenerateCossmil());
 
     // 2. Limpiar campos militares si se selecciona tipo de usuario civil o hijo de militar, o limpiar padres si es militar
     this.inscriptionForm.get('userType')?.valueChanges.subscribe(type => {

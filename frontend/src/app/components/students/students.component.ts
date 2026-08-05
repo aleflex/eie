@@ -193,11 +193,80 @@ export class StudentsComponent implements OnInit {
     });
   }
 
+  carnetMilitarNum: string = '';
+  carnetMilitarSerie: string = '';
+
+  onlyNumbers(event: KeyboardEvent) {
+    const charCode = event.which ? event.which : event.keyCode;
+    if (charCode > 31 && (charCode < 48 || charCode > 57)) {
+      event.preventDefault();
+    }
+  }
+
+  updateCarnetMilitarFull() {
+    if (!this.selectedStudent) return;
+    const num = (this.carnetMilitarNum || '').trim();
+    const serie = (this.carnetMilitarSerie || '').trim();
+    if (num && serie) {
+      this.selectedStudent.carnet_militar = `${num}-${serie}`;
+    } else if (num) {
+      this.selectedStudent.carnet_militar = num;
+    } else {
+      this.selectedStudent.carnet_militar = '';
+    }
+  }
+
+  autoGenerateCossmil() {
+    if (!this.selectedStudent) return;
+    const fecha = this.selectedStudent.fecha_nacimiento;
+    const nombres = (this.selectedStudent.nombres || '').trim();
+    const apellidos = (this.selectedStudent.apellidos || '').trim().split(/\s+/);
+
+    let numPart = '';
+    if (fecha) {
+      const parts = fecha.split('-');
+      if (parts.length === 3) {
+        numPart = parts[0].substring(2, 4) + parts[1] + parts[2];
+      }
+    }
+
+    let letPart = '';
+    if (apellidos.length > 0 && apellidos[0]) {
+      letPart += apellidos[0].charAt(0).toUpperCase();
+    }
+    if (apellidos.length > 1 && apellidos[1]) {
+      letPart += apellidos[1].charAt(0).toUpperCase();
+    } else if (apellidos.length > 0 && apellidos[0].length > 1) {
+      letPart += apellidos[0].charAt(1).toUpperCase();
+    }
+    if (nombres.length > 0) {
+      letPart += nombres.charAt(0).toUpperCase();
+    }
+
+    if (numPart || letPart) {
+      this.selectedStudent.carnet_cossmil = (numPart + letPart).toUpperCase();
+    }
+  }
+
   editStudent(student: any) {
     this.selectedStudent = { ...student };
     this.quotaError = null;
     this.adminPhotoFile = null;
     this.adminPhotoFileName = '';
+
+    if (this.selectedStudent.carnet_militar) {
+      if (this.selectedStudent.carnet_militar.includes('-')) {
+        const parts = this.selectedStudent.carnet_militar.split('-');
+        this.carnetMilitarNum = parts[0];
+        this.carnetMilitarSerie = parts[1];
+      } else {
+        this.carnetMilitarNum = this.selectedStudent.carnet_militar;
+        this.carnetMilitarSerie = '';
+      }
+    } else {
+      this.carnetMilitarNum = '';
+      this.carnetMilitarSerie = '';
+    }
 
     if (this.selectedStudent.documentos_habilitados_hasta) {
       this.selectedStudent.documentos_habilitados_hasta = this.selectedStudent.documentos_habilitados_hasta.replace(' ', 'T').substring(0, 16);

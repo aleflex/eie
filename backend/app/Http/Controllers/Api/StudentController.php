@@ -120,6 +120,10 @@ class StudentController extends Controller
             if ($request->has('ci')) {
                 $userData['ci'] = $request->input('ci');
             }
+            if ($request->has('expedido')) {
+                $userData['expedido'] = $request->input('expedido');
+                $estudiante->expedido = $request->input('expedido');
+            }
             if ($request->has('correo_electronico')) {
                 $userData['correo_institucional'] = $request->input('correo_electronico');
             }
