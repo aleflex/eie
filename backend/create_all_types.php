@@ -9,7 +9,7 @@ use App\Models\Estudiante;
 try {
     // 1. Hijo de Militar
     Estudiante::updateOrCreate(
-        ['ci' => '111222'],
+        ['carnet_identidad' => '111222'],
         [
             'tipo_usuario' => 'hijo_militar',
             'nombres' => 'Carlos',
@@ -24,7 +24,7 @@ try {
 
     // 2. Estudiante EMI
     Estudiante::updateOrCreate(
-        ['ci' => '333444'],
+        ['carnet_identidad' => '333444'],
         [
             'tipo_usuario' => 'emi',
             'nombres' => 'Maria',
@@ -38,7 +38,7 @@ try {
 
     // 3. Civil Normal
     Estudiante::updateOrCreate(
-        ['ci' => '555666'],
+        ['carnet_identidad' => '555666'],
         [
             'tipo_usuario' => 'normal',
             'nombres' => 'Pedro',

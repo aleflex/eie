@@ -3,7 +3,7 @@
  * Coloca aquí la URL de tu servidor backend en la nube si tienes una (Ej: https://eie-backend.com o URL Ngrok).
  * Si está vacío '', se conectará automáticamente a tu servidor Laravel (IP Local / Localhost).
  */
-const DOMINIO_SERVIDOR_BACKEND: string = 'https://eie-cochabamba.sytes.net'; // Servidor Backend HTTPS de producción
+const DOMINIO_SERVIDOR_BACKEND: string = ''; // Localhost / Docker local
 
 const getApiUrl = () => {
   if (typeof window !== 'undefined') {
