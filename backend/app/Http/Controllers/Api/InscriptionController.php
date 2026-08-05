@@ -436,4 +436,37 @@ class InscriptionController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Asignación directa de curso a un estudiante existente (desde panel admin)
+     */
+    public function adminAssign(Request $request)
+    {
+        $request->validate([
+            'id_estudiante' => 'required|exists:estudiantes,id_estudiante',
+            'id_curso' => 'required|exists:cursos,id_curso',
+            'id_paralelo' => 'nullable|exists:paralelos,id_paralelo',
+            'estado' => 'nullable|string',
+        ]);
+
+        try {
+            $inscripcion = Inscripcion::create([
+                'id_estudiante' => $request->id_estudiante,
+                'id_curso' => $request->id_curso,
+                'id_paralelo' => $request->id_paralelo,
+                'estado' => $request->estado ?? 'activo',
+                'fecha_registro' => $request->fecha_registro ?? now()->toDateString(),
+            ]);
+
+            return response()->json([
+                'message' => 'Curso asignado al estudiante correctamente.',
+                'inscripcion' => $inscripcion
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al asignar curso al estudiante.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

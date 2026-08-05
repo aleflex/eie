@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -93,7 +94,8 @@ export class StudentsComponent implements OnInit {
     private inscriptionService: InscriptionService,
     private paraleloService: ParaleloService,
     private sanitizer: DomSanitizer,
-    private imageCompressor: ImageCompressorService
+    private imageCompressor: ImageCompressorService,
+    private http: HttpClient
   ) {}
 
   ngOnInit() {
@@ -361,6 +363,7 @@ export class StudentsComponent implements OnInit {
         this.adminPhotoFileName = '';
 
         if (this.selectedStudent.inscripcion_id) {
+          // Actualizar inscripción existente
           const insData = {
             estado: this.selectedStudent.estado_inscripcion,
             curso_id: this.selectedStudent.curso_id,
@@ -374,6 +377,24 @@ export class StudentsComponent implements OnInit {
               this.loadCourses();
             },
             error: (err: any) => alert('Error al actualizar inscripción: ' + (err.error?.message || err.message))
+          });
+        } else if (this.selectedStudent.curso_id) {
+          // Crear nueva inscripción para estudiante sin curso asignado
+          const newInsData = {
+            id_estudiante: this.selectedStudent.id,
+            id_curso: this.selectedStudent.curso_id,
+            id_paralelo: this.selectedStudent.paralelo_id || null,
+            estado: this.selectedStudent.estado_inscripcion || 'activo',
+            fecha_registro: new Date().toISOString().split('T')[0]
+          };
+          this.http.post(`${environment.apiUrl}/api/inscripciones/admin-assign`, newInsData).subscribe({
+            next: () => {
+              alert('Estudiante actualizado y curso asignado correctamente');
+              this.selectedStudent = null;
+              this.loadStudents();
+              this.loadCourses();
+            },
+            error: (err: any) => alert('Error al asignar curso: ' + (err.error?.message || err.message))
           });
         } else {
           alert('Estudiante actualizado correctamente');

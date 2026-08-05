@@ -32,6 +32,7 @@ Route::apiResource('cursos', CourseController::class);
 // Inscripciones
 Route::get('/inscripciones', [InscriptionController::class, 'index']);
 Route::post('/inscripciones', [InscriptionController::class, 'store']);
+Route::post('/inscripciones/admin-assign', [InscriptionController::class, 'adminAssign']);
 Route::put('/inscripciones/{id}', [InscriptionController::class, 'update']);
 Route::delete('/inscripciones/{id}', [InscriptionController::class, 'destroy']);
 
