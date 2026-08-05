@@ -311,38 +311,6 @@
     flex-direction: column;
   }
 
-  .sidebar {
-    position: fixed !important;
-    top: 0 !important;
-    left: -350px !important;
-    bottom: 0 !important;
-    width: 280px !important;
-    height: 100vh !important;
-    max-height: 100vh !important;
-    z-index: 10050 !important;
-    background: #003b71 !important;
-    transition: left 0.3s ease-in-out !important;
-    box-shadow: 5px 0 25px rgba(0, 0, 0, 0.4) !important;
-    display: flex !important;
-    flex-direction: column !important;
-  }
-
-  .sidebar.mobile-open {
-    left: 0 !important;
-    display: flex !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    z-index: 10050 !important;
-  }
-
-  .mobile-menu-backdrop {
-    position: fixed !important;
-    inset: 0 !important;
-    background: rgba(0, 0, 0, 0.6) !important;
-    z-index: 10040 !important;
-    backdrop-filter: blur(4px) !important;
-  }
-
   .main-content {
     padding: 1rem 0.6rem !important;
     width: 100% !important;

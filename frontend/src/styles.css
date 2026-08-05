@@ -170,41 +170,31 @@ html {
   /* Contenedor Principal en Móvil */
   .dashboard-layout {
     flex-direction: column !important;
-  }  /* Sidebar Móvil Off-Canvas Drawer */
+  }  /* Transformar Sidebar en un Top Nav Premium y Colapsable */
   .sidebar {
-    position: fixed !important;
-    top: 0 !important;
-    left: -300px !important;
-    bottom: 0 !important;
-    width: 280px !important;
-    height: 100vh !important;
-    min-height: 100vh !important;
-    max-height: 100vh !important;
-    z-index: 10050 !important;
-    background: var(--primary-color, #003b71) !important;
-    box-shadow: 5px 0 25px rgba(0, 0, 0, 0.4) !important;
-    transition: left 0.3s ease-in-out !important;
-    overflow-y: auto !important;
-    padding: 1.5rem !important;
-    display: flex !important;
+    width: 100% !important;
+    min-height: auto !important;
     flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    padding: 0 1.5rem !important;
+    position: sticky !important;
+    top: 0;
+    left: 0 !important;
+    z-index: 1000 !important;
+    background: var(--primary-color, #003b71) !important;
+    border-bottom: 3px solid var(--secondary-color, #f9b233) !important;
+    box-shadow: 0 4px 10px rgba(0, 59, 113, 0.15);
+    max-height: 60px !important;
+    overflow: hidden !important;
+    transition: max-height 0.3s ease-in-out !important;
   }
 
   .sidebar.mobile-open {
-    left: 0 !important;
+    max-height: 100vh !important;
+    overflow-y: auto !important;
     visibility: visible !important;
     opacity: 1 !important;
-  }
-
-  .mobile-menu-backdrop {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    background: rgba(0, 0, 0, 0.6) !important;
-    z-index: 10040 !important;
-    backdrop-filter: blur(4px) !important;
   }
 
   .sidebar-header {
@@ -223,6 +213,7 @@ html {
   .sidebar-header span {
     font-size: 1.1rem !important;
     font-weight: 800 !important;
+    color: white !important;
   }
 
   /* Hamburger Menu Button */
@@ -230,14 +221,19 @@ html {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    background: rgba(239, 68, 68, 0.2) !important;
-    border: 1px solid rgba(239, 68, 68, 0.4) !important;
-    color: #f87171 !important;
-    border-radius: 8px !important;
-    padding: 0.3rem 0.6rem !important;
-    font-weight: bold !important;
-    font-size: 1.1rem !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    color: white !important;
+    width: 44px !important;
+    height: 44px !important;
     cursor: pointer !important;
+    outline: none !important;
+  }
+  
+  .mobile-hamburger-btn i {
+    font-size: 28px !important;
+    color: white !important;
   }
 
   .btn-toggle-sidebar {

@@ -1,14 +1,11 @@
 <div class="dashboard-layout">
-  <!-- Backdrop para menú móvil -->
-  <div class="mobile-menu-backdrop" *ngIf="isMobileMenuOpen" (click)="toggleMobileMenu()"></div>
-
   <!-- Barra Lateral -->
   <aside class="sidebar" [class.mobile-open]="isMobileMenuOpen">
     <div class="sidebar-header">
       <img src="assets/imagenes/logo.jpg" alt="Logo EIE" class="sidebar-logo">
       <span>EIE PORTAL</span>
-      <button type="button" class="mobile-hamburger-btn d-lg-none" (click)="toggleMobileMenu()" aria-label="Cerrar menú mobile">
-        ✕
+      <button type="button" class="mobile-hamburger-btn d-lg-none" (click)="toggleMobileMenu()" aria-label="Abrir menú mobile">
+        <i class="material-icons-outlined">{{ isMobileMenuOpen ? 'close' : 'menu' }}</i>
       </button>
     </div>
 
@@ -35,9 +32,6 @@
   <main class="main-content">
     <header class="top-header">
       <div class="d-flex align-items-center gap-2">
-        <button type="button" class="mobile-menu-trigger d-lg-none" (click)="toggleMobileMenu()" aria-label="Abrir navegación" style="background: #003b71; border: none; color: white; padding: 0.6rem 0.8rem; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
-          <i class="material-icons-outlined" style="font-size: 24px; color: white;">menu</i>
-        </button>
         <div class="header-left">
           <h1 style="margin: 0; font-size: 1.5rem; font-weight: 800; color: #003b71;">Portal del Estudiante</h1>
           <p style="margin: 0; font-size: 0.85rem; color: #64748b;">Consulta tus calificaciones, descarga constancias y administra tus documentos oficiales.</p>
