@@ -256,6 +256,14 @@ export class StudentsComponent implements OnInit {
     this.adminPhotoFile = null;
     this.adminPhotoFileName = '';
 
+    // Cargar nombres, apellidos, ci, expedido desde el objeto user si no están directamente
+    if (this.selectedStudent.user) {
+      if (!this.selectedStudent.nombres) this.selectedStudent.nombres = this.selectedStudent.user.nombres || '';
+      if (!this.selectedStudent.apellidos) this.selectedStudent.apellidos = this.selectedStudent.user.apellidos || '';
+      if (!this.selectedStudent.ci) this.selectedStudent.ci = this.selectedStudent.user.ci || '';
+      if (!this.selectedStudent.expedido) this.selectedStudent.expedido = this.selectedStudent.user.expedido || '';
+    }
+
     // Auto-separar CI antiguo que incluye departamento (ej: '6190284 LP' -> ci='6190284', expedido='LP')
     if (this.selectedStudent.ci && /^[0-9]{7,8}\s+[A-Za-z]{2}$/.test((this.selectedStudent.ci + '').trim())) {
       const ciParts = (this.selectedStudent.ci + '').trim().split(/\s+/);
@@ -348,8 +356,19 @@ export class StudentsComponent implements OnInit {
 
     const formData = new FormData();
     Object.keys(this.selectedStudent).forEach(key => {
-      if (key !== 'user' && key !== 'inscripciones' && this.selectedStudent[key] !== null && this.selectedStudent[key] !== undefined) {
-        formData.append(key, this.selectedStudent[key]);
+      const val = this.selectedStudent[key];
+      if (
+        key !== 'user' &&
+        key !== 'inscripciones' &&
+        key !== 'gradoRel' &&
+        key !== 'armaRel' &&
+        key !== 'grado' &&
+        key !== 'arma' &&
+        val !== null &&
+        val !== undefined &&
+        typeof val !== 'object'
+      ) {
+        formData.append(key, val);
       }
     });
 

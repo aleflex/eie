@@ -180,9 +180,17 @@ class StudentController extends Controller
             'estado_civil', 'grupo_sanguineo', 'grado_academico',
             'arma_especialidad', 'nombre_padres', 'ci_tutor',
             'contacto_emergencia', 'estado_inscripcion', 'curso_id',
-            'paralelo_id', 'inscripcion_id', 'foto', 'user', 'inscripciones'
+            'paralelo_id', 'inscripcion_id', 'foto', 'user', 'inscripciones',
+            'grado', 'arma', 'gradoRel', 'armaRel', 'id', '_method', 'expedido'
         ];
         $fillData = array_diff_key($data, array_flip($nonDbFields));
+
+        // Eliminar también cualquier valor tipo array u objeto no relacional
+        foreach ($fillData as $k => $v) {
+            if (is_array($v) || is_object($v)) {
+                unset($fillData[$k]);
+            }
+        }
 
         $estudiante->fill($fillData);
         $estudiante->save();
