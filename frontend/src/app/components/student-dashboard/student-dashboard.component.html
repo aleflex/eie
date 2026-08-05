@@ -44,8 +44,8 @@
             <span class="user-role">Estudiante EIE</span>
           </div>
           <div class="user-header-avatar">
-            <img *ngIf="student?.foto_4x4_url" [src]="apiUrl + student.foto_4x4_url" alt="Avatar" class="avatar-small">
-            <div *ngIf="!student?.foto_4x4_url" class="avatar-small-placeholder">
+            <img *ngIf="student?.foto_4x4_url" [src]="apiUrl + student.foto_4x4_url" (error)="onImgError($event)" alt="Avatar" class="avatar-small">
+            <div [style.display]="student?.foto_4x4_url ? 'none' : 'flex'" class="avatar-small-placeholder">
               <span class="material-icons-outlined">person</span>
             </div>
           </div>
@@ -75,8 +75,8 @@
           <!-- Lado Izquierdo: Foto 4x4 y Datos Rápidos -->
           <div class="profile-card-side">
             <div class="profile-avatar-large-container">
-              <img *ngIf="student.foto_4x4_url" [src]="apiUrl + student.foto_4x4_url" alt="Foto 4x4" class="profile-avatar-large">
-              <div *ngIf="!student.foto_4x4_url" class="profile-avatar-large-placeholder">
+              <img *ngIf="student.foto_4x4_url" [src]="apiUrl + student.foto_4x4_url" (error)="onImgError($event)" alt="Foto 4x4" class="profile-avatar-large">
+              <div [style.display]="student?.foto_4x4_url ? 'none' : 'flex'" class="profile-avatar-large-placeholder">
                 <span class="material-icons-outlined">person</span>
               </div>
             </div>

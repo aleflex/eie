@@ -10,10 +10,19 @@ a2enmod mpm_prefork || true
 php /var/www/html/artisan config:clear || true
 php /var/www/html/artisan route:clear || true
 
-# Asegurar permisos de almacenamiento
-mkdir -p /var/www/html/storage/logs /var/www/html/storage/framework/views /var/www/html/storage/framework/sessions /var/www/html/storage/framework/cache /var/www/html/bootstrap/cache
-chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
-chmod -R 777 /var/www/html/storage /var/www/html/bootstrap/cache
+# Asegurar directorios de almacenamiento y link de storage
+mkdir -p /var/www/html/storage/logs \
+         /var/www/html/storage/framework/views \
+         /var/www/html/storage/framework/sessions \
+         /var/www/html/storage/framework/cache \
+         /var/www/html/storage/app/public/fotos \
+         /var/www/html/storage/app/public/documentos \
+         /var/www/html/bootstrap/cache
+
+php /var/www/html/artisan storage:link --force || true
+
+chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache || true
+chmod -R 777 /var/www/html/storage /var/www/html/bootstrap/cache || true
 
 PORT="${PORT:-80}"
 echo "Iniciando Apache en el puerto: ${PORT}"

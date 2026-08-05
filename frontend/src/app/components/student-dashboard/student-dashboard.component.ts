@@ -30,6 +30,15 @@ export class StudentDashboardComponent implements OnInit {
     this.isMobileMenuOpen = !this.isMobileMenuOpen;
   }
 
+  onImgError(event: any) {
+    if (event && event.target) {
+      event.target.style.display = 'none';
+      if (event.target.nextElementSibling) {
+        event.target.nextElementSibling.style.display = 'flex';
+      }
+    }
+  }
+
   // Digital Documents Upload
   studentDocuments: any[] = [];
   docsLoading: boolean = false;
