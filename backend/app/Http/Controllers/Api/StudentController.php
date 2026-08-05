@@ -136,11 +136,21 @@ class StudentController extends Controller
             }
         }
 
-        // 2. Si hay un archivo de foto, guardarlo
+        // 2. Si hay un archivo de foto o Base64, guardarlo
         $ci = $request->input('ci', $estudiante->ci ?? 'foto');
         if ($request->hasFile('foto')) {
-            $path = $request->file('foto')->store('fotos/' . $ci, 'public');
-            $data['foto_4x4_url'] = '/storage/fotos/' . $ci . '/' . basename($path);
+            $file = $request->file('foto');
+            $mime = $file->getClientMimeType() ?: 'image/jpeg';
+            $base64 = base64_encode(file_get_contents($file->getRealPath()));
+            $dataUri = 'data:' . $mime . ';base64,' . $base64;
+            $estudiante->foto_4x4_url = $dataUri;
+            $data['foto_4x4_url'] = $dataUri;
+            try {
+                $file->store('fotos/' . $ci, 'public');
+            } catch (\Exception $e) {}
+        } elseif ($request->has('foto') && is_string($request->input('foto')) && str_starts_with($request->input('foto'), 'data:image')) {
+            $estudiante->foto_4x4_url = $request->input('foto');
+            $data['foto_4x4_url'] = $request->input('foto');
         }
 
         // 3. Mapear explícitamente mutadores

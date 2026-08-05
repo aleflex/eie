@@ -281,13 +281,24 @@ export class StudentDashboardComponent implements OnInit {
     });
   }
 
+  getPhotoUrl(url: string | null): string {
+    if (!url) return '';
+    if (url.startsWith('data:') || url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+    const apiBase = (this.apiUrl || environment.apiUrl).replace(/\/api\/?$/, '');
+    return apiBase + (url.startsWith('/') ? '' : '/') + url;
+  }
+
   previewDocument(doc: any) {
     this.activePreviewDoc = doc;
     const apiBase = (this.apiUrl || environment.apiUrl).replace(/\/api\/?$/, '');
     let path = doc.ruta_archivo || doc.archivo || '';
 
     let url = '';
-    if (path.startsWith('http://') || path.startsWith('https://')) {
+    if (path.startsWith('data:')) {
+      url = path;
+    } else if (path.startsWith('http://') || path.startsWith('https://')) {
       url = path;
     } else if (path.startsWith('/storage/documentos/')) {
       url = apiBase + path;
@@ -301,9 +312,12 @@ export class StudentDashboardComponent implements OnInit {
 
     this.activePreviewUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
 
+    const isDataPdf = path.startsWith('data:application/pdf');
+    const isDataImg = path.startsWith('data:image');
     const ext = path.split('.').pop().toLowerCase();
-    this.isPreviewPdf = ext === 'pdf';
-    this.isPreviewImage = ['jpg', 'jpeg', 'png', 'gif'].includes(ext);
+
+    this.isPreviewPdf = isDataPdf || ext === 'pdf';
+    this.isPreviewImage = isDataImg || ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext);
 
     this.showPreviewModal = true;
   }

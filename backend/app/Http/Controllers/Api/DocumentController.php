@@ -58,9 +58,15 @@ class DocumentController extends Controller
 
             // Generar un nombre único para el archivo
             $fileName = time() . '_' . $file->getClientOriginalName();
+            $mime = $file->getClientMimeType() ?: $file->getMimeType() ?: 'application/pdf';
+            $base64 = base64_encode(file_get_contents($file->getRealPath()));
+            $dataUri = 'data:' . $mime . ';base64,' . $base64;
             
-            // Guardar en el disco 'documentos' (storage/app/public/documentos)
-            $path = $file->storeAs('estudiantes/' . $estudianteId, $fileName, 'documentos');
+            // Guardar en el disco de respaldo (storage/app/public/documentos)
+            $path = '';
+            try {
+                $path = $file->storeAs('estudiantes/' . $estudianteId, $fileName, 'documentos');
+            } catch (\Exception $e) {}
 
             // Buscar tipo documento en catalogo
             $tipoDoc = \DB::table('tipos_documentos')
@@ -75,12 +81,12 @@ class DocumentController extends Controller
 
             $idTipoDoc = $tipoDoc ? $tipoDoc->id_tipo_documento : 1;
 
-            // Crear el registro en la base de datos
+            // Crear el registro en la base de datos con almacenamiento permanente en la nube
             $documento = Documento::create([
                 'id_estudiante' => $estudianteId,
                 'tipo_documento' => $request->tipo_documento,
                 'nombre_archivo' => $fileName,
-                'ruta_archivo' => '/storage/documentos/' . $path,
+                'ruta_archivo' => $dataUri,
             ]);
 
             return response()->json([
