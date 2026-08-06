@@ -161,7 +161,7 @@ class ReportController extends Controller
             ->filterMultiCriteria($filters)
             ->get();
 
-        $fileName = 'Relacion_Nominal_EIE_' . date('Ymd_His') . '.xlsx';
+        $fileName = 'Relacion_Nominal_EIE_' . date('Ymd_His') . '.xls';
 
         $headers = [
             'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
