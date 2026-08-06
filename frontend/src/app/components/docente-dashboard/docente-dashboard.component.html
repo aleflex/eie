@@ -146,9 +146,16 @@
         </button>
 
         <div class="tab-header-right d-flex gap-2">
-          <button class="btn-print no-print" (click)="exportarExcelNominal()" [disabled]="isDownloadingExcel" style="background-color: #198754; color: #ffffff;">
-            <i class="material-icons-outlined">table_view</i> {{ isDownloadingExcel ? 'Exportando...' : 'Exportar Excel' }}
+          <!-- Botón de Excel para Notas -->
+          <button *ngIf="tabActivo === 'notas'" class="btn-print no-print" (click)="exportarExcelNotas()" [disabled]="isDownloadingExcel" style="background-color: #198754; color: #ffffff;">
+            <i class="material-icons-outlined">table_view</i> {{ isDownloadingExcel ? 'Exportando...' : 'Exportar Excel Notas' }}
           </button>
+          
+          <!-- Botón de Excel para Asistencias -->
+          <button *ngIf="tabActivo === 'asistencia'" class="btn-print no-print" (click)="exportarExcelAsistencias()" [disabled]="isDownloadingExcel" style="background-color: #198754; color: #ffffff;">
+            <i class="material-icons-outlined">table_view</i> {{ isDownloadingExcel ? 'Exportando...' : 'Exportar Excel Asistencias' }}
+          </button>
+
           <button class="btn-print no-print" (click)="imprimirLista()">
             <i class="material-icons-outlined">print</i> Generar PDF
           </button>

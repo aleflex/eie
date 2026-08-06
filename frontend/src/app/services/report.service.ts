@@ -72,6 +72,16 @@ export class ReportService {
   }
 
   /**
+   * Descarga de Planilla de Calificaciones / Notas para Docentes (.xls)
+   */
+  downloadNotasExcel(filters?: any): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/export/notas-excel`, {
+      params: this.buildParams(filters),
+      responseType: 'blob'
+    });
+  }
+
+  /**
    * RF 20 - HU 20: Descarga en formato PDF Oficial (Blob)
    */
   downloadPdf(filters?: any): Observable<Blob> {

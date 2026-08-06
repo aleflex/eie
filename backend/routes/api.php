@@ -94,4 +94,5 @@ Route::get('/reports/classroom-occupancy', [ReportController::class, 'getClassro
 Route::get('/reports/dashboard-summary', [ReportController::class, 'getDashboardSummary']);
 Route::get('/reports/export/excel', [ReportController::class, 'exportExcel']);
 Route::get('/reports/export/nominal-excel', [ReportController::class, 'exportNominalExcel']);
+Route::get('/reports/export/notas-excel', [ReportController::class, 'exportNotasExcel']);
 Route::get('/reports/export/pdf', [ReportController::class, 'exportPdf']);

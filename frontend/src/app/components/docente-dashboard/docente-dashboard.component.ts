@@ -314,20 +314,38 @@ export class DocenteDashboardComponent implements OnInit {
     return ['Parcial 1', 'Parcial 2', 'Parcial 3', 'Final'];
   }
 
-  exportarExcelNominal() {
+  exportarExcelAsistencias() {
     if (!this.paraleloActivo) return;
     this.isDownloadingExcel = true;
     const filters = { id_paralelo: this.paraleloActivo.id };
     this.reportService.downloadNominalExcel(filters).subscribe({
       next: (blob: Blob) => {
         this.isDownloadingExcel = false;
-        const filename = `Relacion_Nominal_${this.paraleloActivo.nombre || 'Paralelo'}_${new Date().toISOString().slice(0,10)}.xls`;
+        const filename = `Planilla_Asistencias_${this.paraleloActivo.nombre || 'Paralelo'}_${new Date().toISOString().slice(0,10)}.xls`;
         downloadFile(blob, filename);
       },
       error: (err: any) => {
-        console.error('Error exportando Relación Nominal', err);
+        console.error('Error exportando asistencias', err);
         this.isDownloadingExcel = false;
-        alert('No se pudo generar la relación nominal en Excel');
+        alert('No se pudo generar el reporte de asistencias en Excel');
+      }
+    });
+  }
+
+  exportarExcelNotas() {
+    if (!this.paraleloActivo) return;
+    this.isDownloadingExcel = true;
+    const filters = { id_paralelo: this.paraleloActivo.id };
+    this.reportService.downloadNotasExcel(filters).subscribe({
+      next: (blob: Blob) => {
+        this.isDownloadingExcel = false;
+        const filename = `Planilla_Calificaciones_${this.paraleloActivo.nombre || 'Paralelo'}_${new Date().toISOString().slice(0,10)}.xls`;
+        downloadFile(blob, filename);
+      },
+      error: (err: any) => {
+        console.error('Error exportando calificaciones', err);
+        this.isDownloadingExcel = false;
+        alert('No se pudo generar la planilla de calificaciones en Excel');
       }
     });
   }
