@@ -17,7 +17,18 @@ return [
     |
     */
 
-    'default' => env('DB_CONNECTION', 'mysql'),
+    'default' => (function() {
+        $requestedConn = env('DB_CONNECTION');
+        if ($requestedConn) {
+            return $requestedConn;
+        }
+        $mysqlHost = env('DB_HOST', 'mysql-1be5550e-alejandrokaviraya3-5905.a.aivencloud.com');
+        $resolvedIp = @gethostbyname($mysqlHost);
+        if ($resolvedIp && $resolvedIp !== $mysqlHost && filter_var($resolvedIp, FILTER_VALIDATE_IP)) {
+            return 'mysql';
+        }
+        return 'sqlite';
+    })(),
 
     /*
     |--------------------------------------------------------------------------
