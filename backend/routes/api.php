@@ -97,3 +97,38 @@ Route::get('/reports/export/nominal-excel', [ReportController::class, 'exportNom
 Route::get('/reports/export/notas-excel', [ReportController::class, 'exportNotasExcel']);
 Route::get('/reports/export/pdf', [ReportController::class, 'exportPdf']);
 Route::get('/reports/export/docente-pdf', [ReportController::class, 'exportDocentePdf']);
+
+// Ruta de imágenes /storage/ en API para responder siempre HTTP 200 OK
+Route::get('/storage/{path}', function ($path) {
+    $fullPath = storage_path('app/public/' . $path);
+    if (!\Illuminate\Support\Facades\File::exists($fullPath)) {
+        $fullPath = storage_path('app/' . $path);
+    }
+    if (!\Illuminate\Support\Facades\File::exists($fullPath)) {
+        $fullPath = public_path('storage/' . $path);
+    }
+    
+    if (\Illuminate\Support\Facades\File::exists($fullPath) && !\Illuminate\Support\Facades\File::isDirectory($fullPath)) {
+        $file = \Illuminate\Support\Facades\File::get($fullPath);
+        $type = \Illuminate\Support\Facades\File::mimeType($fullPath) ?: 'image/jpeg';
+
+        return \Illuminate\Support\Facades\Response::make($file, 200, [
+            'Content-Type' => $type,
+            'Cache-Control' => 'public, max-age=86400',
+            'Access-Control-Allow-Origin' => '*',
+        ]);
+    }
+
+    // Avatar SVG elegante de reserva (HTTP 200 OK)
+    $svgAvatar = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+        <rect width="120" height="120" rx="60" fill="#1e3a8a"/>
+        <path d="M60 25 C45 25 35 37 35 52 C35 67 45 77 60 77 C75 77 85 67 85 52 C85 37 75 25 60 25 Z" fill="#ffffff"/>
+        <path d="M22 102 C22 82 38 74 60 74 C82 74 98 82 98 102 Z" fill="#ffffff"/>
+    </svg>';
+
+    return \Illuminate\Support\Facades\Response::make($svgAvatar, 200, [
+        'Content-Type' => 'image/svg+xml',
+        'Cache-Control' => 'no-cache, private',
+        'Access-Control-Allow-Origin' => '*',
+    ]);
+})->where('path', '.*');
