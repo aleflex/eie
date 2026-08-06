@@ -271,7 +271,9 @@ class DocenteController extends Controller
                 'horarios',
                 'inscripciones.estudiante'
             ])
-            ->get();
+            ->get()
+            ->unique('id_paralelo')
+            ->values();
 
         return response()->json([
             'docente' => $docente->load('user'),

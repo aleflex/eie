@@ -93,7 +93,14 @@ export class DocenteDashboardComponent implements OnInit {
     this.docenteService.getMisParalelos(this.user.id || this.user.id_usuario).subscribe({
       next: (res) => {
         this.docente = res.docente;
-        this.paralelos = res.paralelos || [];
+        const rawParalelos = res.paralelos || [];
+        const seen = new Set();
+        this.paralelos = rawParalelos.filter((p: any) => {
+          const key = p.id || p.id_paralelo;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
         this.isLoading = false;
         if (this.paralelos.length > 0) this.seleccionarParalelo(this.paralelos[0]);
       },
