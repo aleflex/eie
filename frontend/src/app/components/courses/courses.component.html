@@ -1,9 +1,12 @@
 <div class="dashboard-layout">
   <!-- Barra Lateral -->
-  <aside class="sidebar" [class.collapsed]="isSidebarCollapsed">
+  <aside class="sidebar" [class.collapsed]="isSidebarCollapsed" [class.mobile-open]="isMobileMenuOpen">
     <div class="sidebar-header">
       <img src="assets/imagenes/logo.jpg" alt="Logo EIE" class="sidebar-logo">
       <span *ngIf="!isSidebarCollapsed">EIE PANEL</span>
+      <button type="button" class="mobile-hamburger-btn" (click)="toggleMobileMenu()" aria-label="Toggle menú mobile">
+        <i class="material-icons-outlined">{{ isMobileMenuOpen ? 'close' : 'menu' }}</i>
+      </button>
       <button type="button" class="btn-toggle-sidebar" (click)="toggleSidebar()" [title]="isSidebarCollapsed ? 'Expandir menú' : 'Contraer menú'">
         <i class="material-icons-outlined">{{ isSidebarCollapsed ? 'menu' : 'chevron_left' }}</i>
       </button>

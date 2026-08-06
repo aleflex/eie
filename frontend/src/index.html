@@ -41,17 +41,21 @@
     });
     observer.observe(document.body, { childList: true, subtree: true });
 
-    // Global click listener to toggle mobile-open class on sidebar
+    // Global click listener to toggle mobile-open class on sidebar and update menu icon to X (close)
     document.addEventListener('click', (e) => {
       const btn = e.target.closest('.mobile-hamburger-btn');
       if (btn) {
         const sidebar = document.querySelector('.sidebar');
         if (sidebar) {
-          sidebar.classList.toggle('mobile-open');
-          const icon = btn.querySelector('i');
-          if (icon) {
-            icon.textContent = sidebar.classList.contains('mobile-open') ? 'close' : 'menu';
-          }
+          const isOpen = sidebar.classList.toggle('mobile-open');
+          const icons = document.querySelectorAll('.mobile-hamburger-btn i, .mobile-hamburger-btn span');
+          icons.forEach(el => {
+            if (el.tagName === 'SPAN' && (el.textContent === '☰' || el.textContent === '✕')) {
+              el.textContent = isOpen ? '✕' : '☰';
+            } else {
+              el.textContent = isOpen ? 'close' : 'menu';
+            }
+          });
         }
       }
       
@@ -60,8 +64,14 @@
         const sidebar = document.querySelector('.sidebar');
         if (sidebar) {
           sidebar.classList.remove('mobile-open');
-          const hamburger = document.querySelector('.mobile-hamburger-btn i');
-          if (hamburger) hamburger.textContent = 'menu';
+          const icons = document.querySelectorAll('.mobile-hamburger-btn i, .mobile-hamburger-btn span');
+          icons.forEach(el => {
+            if (el.tagName === 'SPAN' && (el.textContent === '☰' || el.textContent === '✕')) {
+              el.textContent = '☰';
+            } else {
+              el.textContent = 'menu';
+            }
+          });
         }
       }
     });

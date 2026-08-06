@@ -17,9 +17,14 @@ export class DocentesListComponent implements OnInit {
   apiUrl = environment.apiUrl;
   docentes: any[] = [];
   isSidebarCollapsed = false;
+  isMobileMenuOpen = false;
 
   toggleSidebar() {
     this.isSidebarCollapsed = !this.isSidebarCollapsed;
+  }
+
+  toggleMobileMenu() {
+    this.isMobileMenuOpen = !this.isMobileMenuOpen;
   }
 
   onlyNumbers(event: KeyboardEvent) {

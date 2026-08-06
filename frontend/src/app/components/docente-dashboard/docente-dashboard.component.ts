@@ -25,7 +25,12 @@ export class DocenteDashboardComponent implements OnInit {
   docente: any = null;
   paralelos: any[] = [];
   paraleloActivo: any = null;
+  isMobileMenuOpen = false;
   isLoading = true;
+
+  toggleMobileMenu() {
+    this.isMobileMenuOpen = !this.isMobileMenuOpen;
+  }
   errorMsg = '';
   today = new Date();
 

@@ -20,9 +20,14 @@ export class ParalelosComponent implements OnInit {
   docentes: any[] = [];
   horarios: any[] = [];
   isSidebarCollapsed = false;
+  isMobileMenuOpen = false;
 
   toggleSidebar() {
     this.isSidebarCollapsed = !this.isSidebarCollapsed;
+  }
+
+  toggleMobileMenu() {
+    this.isMobileMenuOpen = !this.isMobileMenuOpen;
   }
   
   isLoading = true;

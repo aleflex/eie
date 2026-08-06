@@ -1,9 +1,12 @@
 <div class="dashboard-layout">
   <!-- Barra Lateral -->
-  <aside class="sidebar">
+  <aside class="sidebar" [class.mobile-open]="isMobileMenuOpen">
     <div class="sidebar-header">
       <img src="assets/imagenes/logo.jpg" alt="Logo EIE" class="sidebar-logo">
       <span>EIE PANEL</span>
+      <button type="button" class="mobile-hamburger-btn" (click)="toggleMobileMenu()" aria-label="Toggle menú mobile">
+        <i class="material-icons-outlined">{{ isMobileMenuOpen ? 'close' : 'menu' }}</i>
+      </button>
     </div>
 
     <div class="docente-profile" *ngIf="docente">

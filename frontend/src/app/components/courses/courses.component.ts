@@ -14,9 +14,14 @@ import { RouterModule } from '@angular/router';
 export class CoursesComponent implements OnInit {
   courses: Course[] = [];
   isSidebarCollapsed = false;
+  isMobileMenuOpen = false;
 
   toggleSidebar() {
     this.isSidebarCollapsed = !this.isSidebarCollapsed;
+  }
+
+  toggleMobileMenu() {
+    this.isMobileMenuOpen = !this.isMobileMenuOpen;
   }
   
   // Paginación y Filtros
