@@ -65,10 +65,11 @@ class DocumentController extends Controller
             // Intentar subir a Supabase Storage
             $supabaseUrl = \App\Services\SupabaseStorageService::uploadFile($fileBinary, $remotePath, $mime);
 
-            $finalPath = $supabaseUrl;
-            if (!$finalPath) {
-                // Fallback Base64 Data URI en Aiven MySQL DB
-                $finalPath = 'data:' . $mime . ';base64,' . base64_encode($fileBinary);
+            if ($supabaseUrl) {
+                $finalPath = $supabaseUrl;
+            } else {
+                $path = $file->storeAs('estudiantes/' . $estudianteId, $fileName, 'documentos');
+                $finalPath = '/storage/documentos/' . $path;
             }
 
             // Buscar tipo documento en catalogo

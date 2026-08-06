@@ -137,7 +137,7 @@ class StudentController extends Controller
             }
         }
 
-        // 2. Si hay un archivo de foto o Base64, guardarlo en Supabase Storage
+        // 2. Si hay un archivo de foto, guardarlo en Supabase Storage
         $ci = $request->input('ci', $estudiante->ci ?? 'foto');
         if ($request->hasFile('foto')) {
             $file = $request->file('foto');
@@ -146,17 +146,19 @@ class StudentController extends Controller
             $fileName = time() . '_' . preg_replace('/[^a-zA-Z0-9\._-]/', '_', $file->getClientOriginalName());
             $remotePath = 'fotos/' . $ci . '/' . $fileName;
 
+            // Intentar subir a Supabase Storage
             $supabaseUrl = \App\Services\SupabaseStorageService::uploadFile($fileBinary, $remotePath, $mime);
 
             if ($supabaseUrl) {
-                $estudiante->foto_4x4_url = $supabaseUrl;
-                $data['foto_4x4_url'] = $supabaseUrl;
+                $photoUrl = $supabaseUrl;
             } else {
-                $dataUri = 'data:' . $mime . ';base64,' . base64_encode($fileBinary);
-                $estudiante->foto_4x4_url = $dataUri;
-                $data['foto_4x4_url'] = $dataUri;
+                $path = $file->store('fotos/' . $ci, 'public');
+                $photoUrl = '/storage/' . $path;
             }
-        } elseif ($request->has('foto') && is_string($request->input('foto')) && (str_starts_with($request->input('foto'), 'http') || str_starts_with($request->input('foto'), 'data:image'))) {
+
+            $estudiante->foto_4x4_url = $photoUrl;
+            $data['foto_4x4_url'] = $photoUrl;
+        } elseif ($request->has('foto') && is_string($request->input('foto')) && str_starts_with($request->input('foto'), 'http')) {
             $estudiante->foto_4x4_url = $request->input('foto');
             $data['foto_4x4_url'] = $request->input('foto');
         }
