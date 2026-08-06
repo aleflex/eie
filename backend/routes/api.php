@@ -99,13 +99,13 @@ Route::get('/reports/export/pdf', [ReportController::class, 'exportPdf']);
 Route::get('/reports/export/docente-pdf', [ReportController::class, 'exportDocentePdf']);
 
 // Ruta de imágenes /storage/ en API para responder siempre HTTP 200 OK
-Route::get('/storage/{path}', function ($path) {
-    $fullPath = storage_path('app/public/' . $path);
+Route::get('/storage/{p1}/{p2}/{filename}', function ($p1, $p2, $filename) {
+    $fullPath = storage_path("app/public/$p1/$p2/$filename");
     if (!\Illuminate\Support\Facades\File::exists($fullPath)) {
-        $fullPath = storage_path('app/' . $path);
+        $fullPath = storage_path("app/$p1/$p2/$filename");
     }
     if (!\Illuminate\Support\Facades\File::exists($fullPath)) {
-        $fullPath = public_path('storage/' . $path);
+        $fullPath = public_path("storage/$p1/$p2/$filename");
     }
     
     if (\Illuminate\Support\Facades\File::exists($fullPath) && !\Illuminate\Support\Facades\File::isDirectory($fullPath)) {
@@ -131,4 +131,4 @@ Route::get('/storage/{path}', function ($path) {
         'Cache-Control' => 'no-cache, private',
         'Access-Control-Allow-Origin' => '*',
     ]);
-})->where('path', '.*');
+});
