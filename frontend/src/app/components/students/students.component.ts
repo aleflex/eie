@@ -364,6 +364,7 @@ export class StudentsComponent implements OnInit {
         key !== 'armaRel' &&
         key !== 'grado' &&
         key !== 'arma' &&
+        key !== 'foto_4x4_url' &&
         val !== null &&
         val !== undefined &&
         typeof val !== 'object'
