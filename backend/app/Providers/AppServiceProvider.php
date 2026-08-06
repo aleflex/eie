@@ -22,13 +22,16 @@ class AppServiceProvider extends ServiceProvider
         if (config('database.default') === 'sqlite') {
             $sqlitePath = database_path('database.sqlite');
             if (!file_exists($sqlitePath)) {
+                @mkdir(dirname($sqlitePath), 0777, true);
                 @touch($sqlitePath);
-                try {
+            }
+            try {
+                if (!\Illuminate\Support\Facades\Schema::hasTable('inscripciones')) {
                     \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
                     \Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
-                } catch (\Throwable $e) {
-                    \Log::error('SQLite auto-migration failed: ' . $e->getMessage());
                 }
+            } catch (\Throwable $e) {
+                \Log::error('SQLite auto-migration failed: ' . $e->getMessage());
             }
         }
     }
