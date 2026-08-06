@@ -48,7 +48,18 @@ return [
         'sqlite' => [
             'driver' => 'sqlite',
             'url' => env('DB_URL'),
-            'database' => database_path('database.sqlite'),
+            'database' => (function() {
+                $path = database_path('database.sqlite');
+                if (!file_exists($path)) {
+                    @mkdir(dirname($path), 0777, true);
+                    @touch($path);
+                    try {
+                        \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+                        \Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
+                    } catch (\Throwable $e) {}
+                }
+                return $path;
+            })(),
             'prefix' => '',
             'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
             'busy_timeout' => null,
