@@ -76,7 +76,7 @@ export class SettingsComponent implements OnInit {
       this.router.navigate(['/login']);
       return;
     }
-    
+
     this.user = this.authService.getUser();
     if (this.user) {
       this.profileData.name = this.user.name || '';
@@ -111,8 +111,11 @@ export class SettingsComponent implements OnInit {
   }
 
   onImageError(event: any) {
-    if (event && event.target && !event.target.src?.includes('default-avatar.svg')) {
-      event.target.src = 'assets/default-avatar.svg';
+    if (event && event.target) {
+      const src = event.target.src || '';
+      if (!src.includes('default-avatar.svg') && !src.includes('default-avatar.png')) {
+        event.target.src = '/assets/default-avatar.svg';
+      }
     }
   }
 
@@ -161,7 +164,7 @@ export class SettingsComponent implements OnInit {
         this.settings = { ...this.settings, ...response.settings };
         this.successMessage = '¡Configuraciones guardadas y aplicadas con éxito!';
         this.isSaving = false;
-        
+
         // Limpiar mensaje de éxito tras 4 segundos
         setTimeout(() => {
           this.successMessage = '';

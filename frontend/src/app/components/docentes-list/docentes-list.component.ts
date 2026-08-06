@@ -281,8 +281,11 @@ export class DocentesListComponent implements OnInit {
   }
 
   onImageError(event: any) {
-    if (event && event.target && !event.target.src?.includes('default-avatar.svg')) {
-      event.target.src = 'assets/default-avatar.svg';
+    if (event && event.target) {
+      const src = event.target.src || '';
+      if (!src.includes('default-avatar.svg') && !src.includes('default-avatar.png')) {
+        event.target.src = '/assets/default-avatar.svg';
+      }
     }
   }
 

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Estudiante;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class StudentController extends Controller
 {
@@ -136,19 +137,26 @@ class StudentController extends Controller
             }
         }
 
-        // 2. Si hay un archivo de foto o Base64, guardarlo
+        // 2. Si hay un archivo de foto o Base64, guardarlo en Supabase Storage
         $ci = $request->input('ci', $estudiante->ci ?? 'foto');
         if ($request->hasFile('foto')) {
             $file = $request->file('foto');
             $mime = $file->getClientMimeType() ?: 'image/jpeg';
-            $base64 = base64_encode(file_get_contents($file->getRealPath()));
-            $dataUri = 'data:' . $mime . ';base64,' . $base64;
-            $estudiante->foto_4x4_url = $dataUri;
-            $data['foto_4x4_url'] = $dataUri;
-            try {
-                $file->store('fotos/' . $ci, 'public');
-            } catch (\Exception $e) {}
-        } elseif ($request->has('foto') && is_string($request->input('foto')) && str_starts_with($request->input('foto'), 'data:image')) {
+            $fileBinary = file_get_contents($file->getRealPath());
+            $fileName = time() . '_' . preg_replace('/[^a-zA-Z0-9\._-]/', '_', $file->getClientOriginalName());
+            $remotePath = 'fotos/' . $ci . '/' . $fileName;
+
+            $supabaseUrl = \App\Services\SupabaseStorageService::uploadFile($fileBinary, $remotePath, $mime);
+
+            if ($supabaseUrl) {
+                $estudiante->foto_4x4_url = $supabaseUrl;
+                $data['foto_4x4_url'] = $supabaseUrl;
+            } else {
+                $dataUri = 'data:' . $mime . ';base64,' . base64_encode($fileBinary);
+                $estudiante->foto_4x4_url = $dataUri;
+                $data['foto_4x4_url'] = $dataUri;
+            }
+        } elseif ($request->has('foto') && is_string($request->input('foto')) && (str_starts_with($request->input('foto'), 'http') || str_starts_with($request->input('foto'), 'data:image'))) {
             $estudiante->foto_4x4_url = $request->input('foto');
             $data['foto_4x4_url'] = $request->input('foto');
         }
@@ -246,5 +254,31 @@ class StudentController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    private function storeBase64Photo(string $dataUri, string $storagePath, string $prefix = 'foto'): string
+    {
+        if (!preg_match('/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/', $dataUri, $matches)) {
+            return '';
+        }
+
+        $mime = $matches[1];
+        $base64 = $matches[2];
+        $decoded = base64_decode($base64);
+        if ($decoded === false) {
+            return '';
+        }
+
+        $extension = explode('/', $mime)[1] ?? 'jpg';
+        if ($extension === 'jpeg') {
+            $extension = 'jpg';
+        }
+
+        $filename = $prefix . '_' . time() . '.' . $extension;
+        $relativePath = trim($storagePath, '/') . '/' . $filename;
+
+        Storage::disk('public')->put($relativePath, $decoded);
+
+        return '/storage/' . $relativePath;
     }
 }

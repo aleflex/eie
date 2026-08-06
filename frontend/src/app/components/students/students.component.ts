@@ -53,7 +53,7 @@ export class StudentsComponent implements OnInit {
   isRowExpanded(studentId: number): boolean {
     return this.expandedStudentIds.has(studentId);
   }
-  
+
   // Variables para Historial Académico
   showHistoryModal: boolean = false;
   academicHistory: any = null;
@@ -296,7 +296,7 @@ export class StudentsComponent implements OnInit {
     if (this.selectedStudent.documentos_habilitados_hasta) {
       this.selectedStudent.documentos_habilitados_hasta = this.selectedStudent.documentos_habilitados_hasta.replace(' ', 'T').substring(0, 16);
     }
-    
+
     if (student.inscripciones && student.inscripciones.length > 0) {
       const ins = student.inscripciones[0];
       this.selectedStudent.inscripcion_id = ins.id_inscripcion || ins.id;
@@ -663,8 +663,11 @@ export class StudentsComponent implements OnInit {
   }
 
   onImageError(event: any) {
-    if (event && event.target && !event.target.src?.includes('default-avatar.svg')) {
-      event.target.src = 'assets/default-avatar.svg';
+    if (event && event.target) {
+      const src = event.target.src || '';
+      if (!src.includes('default-avatar.svg') && !src.includes('default-avatar.png')) {
+        event.target.src = '/assets/default-avatar.svg';
+      }
     }
   }
 

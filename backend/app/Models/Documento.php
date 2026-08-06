@@ -14,7 +14,9 @@ class Documento extends Model
         'tipo_documento',
         'nombre_archivo',
         'ruta_archivo',
-        'archivo'
+        'archivo',
+        'extension',
+        'peso'
     ];
 
     protected $appends = ['archivo'];

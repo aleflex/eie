@@ -57,22 +57,25 @@ class DocumentController extends Controller
             }
 
             // Generar un nombre único para el archivo
-            $fileName = time() . '_' . $file->getClientOriginalName();
+            $fileName = time() . '_' . preg_replace('/[^a-zA-Z0-9\._-]/', '_', $file->getClientOriginalName());
             $mime = $file->getClientMimeType() ?: $file->getMimeType() ?: 'application/pdf';
-            $base64 = base64_encode(file_get_contents($file->getRealPath()));
-            $dataUri = 'data:' . $mime . ';base64,' . $base64;
-            
-            // Guardar en el disco de respaldo (storage/app/public/documentos)
-            $path = '';
-            try {
-                $path = $file->storeAs('estudiantes/' . $estudianteId, $fileName, 'documentos');
-            } catch (\Exception $e) {}
+            $fileBinary = file_get_contents($file->getRealPath());
+            $remotePath = 'documentos/estudiantes/' . $estudianteId . '/' . $fileName;
+
+            // Intentar subir a Supabase Storage
+            $supabaseUrl = \App\Services\SupabaseStorageService::uploadFile($fileBinary, $remotePath, $mime);
+
+            $finalPath = $supabaseUrl;
+            if (!$finalPath) {
+                // Fallback Base64 Data URI en Aiven MySQL DB
+                $finalPath = 'data:' . $mime . ';base64,' . base64_encode($fileBinary);
+            }
 
             // Buscar tipo documento en catalogo
             $tipoDoc = \DB::table('tipos_documentos')
                 ->where('nombre_tipo_documento', $request->tipo_documento)
                 ->first();
-            
+
             if (!$tipoDoc) {
                 $tipoDoc = \DB::table('tipos_documentos')
                     ->whereRaw('LOWER(nombre_tipo_documento) = ?', [strtolower($request->tipo_documento)])
@@ -81,12 +84,12 @@ class DocumentController extends Controller
 
             $idTipoDoc = $tipoDoc ? $tipoDoc->id_tipo_documento : 1;
 
-            // Crear el registro en la base de datos con almacenamiento permanente en la nube
+            // Crear el registro en la base de datos con la URL de Supabase Storage
             $documento = Documento::create([
                 'id_estudiante' => $estudianteId,
                 'tipo_documento' => $request->tipo_documento,
                 'nombre_archivo' => $fileName,
-                'ruta_archivo' => $dataUri,
+                'ruta_archivo' => $finalPath,
             ]);
 
             return response()->json([
@@ -111,10 +114,12 @@ class DocumentController extends Controller
         }
 
         try {
-            // Eliminar el archivo físico
-            $filePath = str_replace('/storage/documentos/', '', $documento->archivo);
-            Storage::disk('documentos')->delete($filePath);
-            
+            // Eliminar el archivo físico si existe una ruta de almacenamiento válida
+            $filePath = str_replace('/storage/documentos/', '', $documento->ruta_archivo);
+            if ($filePath && !str_contains($documento->ruta_archivo, 'data:')) {
+                Storage::disk('documentos')->delete($filePath);
+            }
+
             // Eliminar el registro de la base de datos
             $documento->delete();
 
