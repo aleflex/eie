@@ -675,11 +675,12 @@ export class StudentsComponent implements OnInit {
     if (!url) {
       return '';
     }
-    if (url.startsWith('data:') || url.startsWith('http://') || url.startsWith('https://')) {
-      return url;
+    const cleanUrl = url.trim().replace(/[\r\n\s]+/g, '');
+    if (cleanUrl.startsWith('data:') || cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) {
+      return cleanUrl;
     }
     const apiBase = this.apiBase || environment.apiUrl.replace(/\/api\/?$/, '');
-    return apiBase + (url.startsWith('/') ? '' : '/') + url;
+    return apiBase + (cleanUrl.startsWith('/') ? '' : '/') + cleanUrl;
   }
 }
 

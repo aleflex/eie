@@ -283,11 +283,12 @@ export class StudentDashboardComponent implements OnInit {
 
   getPhotoUrl(url: string | null): string {
     if (!url) return '';
-    if (url.startsWith('data:') || url.startsWith('http://') || url.startsWith('https://')) {
-      return url;
+    const cleanUrl = url.trim().replace(/[\r\n\s]+/g, '');
+    if (cleanUrl.startsWith('data:') || cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) {
+      return cleanUrl;
     }
     const apiBase = (this.apiUrl || environment.apiUrl).replace(/\/api\/?$/, '');
-    return apiBase + (url.startsWith('/') ? '' : '/') + url;
+    return apiBase + (cleanUrl.startsWith('/') ? '' : '/') + cleanUrl;
   }
 
   previewDocument(doc: any) {
