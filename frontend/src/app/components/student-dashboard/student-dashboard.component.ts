@@ -245,10 +245,16 @@ export class StudentDashboardComponent implements OnInit {
     });
   }
 
-  removeDocument(id: number) {
+  removeDocument(doc: any) {
+    const docId = typeof doc === 'object' ? (doc.id_documento || doc.id_expediente || doc.id) : doc;
+    if (!docId) {
+      alert('No se pudo identificar el código único del documento.');
+      return;
+    }
+
     if (!confirm('¿Estás seguro de eliminar este documento de tu expediente?')) return;
 
-    this.studentService.deleteDocument(id).subscribe({
+    this.studentService.deleteDocument(docId).subscribe({
       next: () => {
         this.loadStudentDocuments();
       },
