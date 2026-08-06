@@ -686,8 +686,14 @@ export class StudentsComponent implements OnInit {
     if (cleanUrl.startsWith('data:') || cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) {
       return cleanUrl;
     }
-    const apiBase = this.apiBase || environment.apiUrl.replace(/\/api\/?$/, '');
-    return apiBase + (cleanUrl.startsWith('/') ? '' : '/') + cleanUrl;
+    const apiUrl = environment.apiUrl.replace(/\/+$/, '');
+    if (cleanUrl.startsWith('/storage/')) {
+      return apiUrl + cleanUrl;
+    }
+    if (cleanUrl.startsWith('storage/')) {
+      return apiUrl + '/' + cleanUrl;
+    }
+    return apiUrl + '/storage/' + cleanUrl.replace(/^\/+/, '');
   }
 }
 
