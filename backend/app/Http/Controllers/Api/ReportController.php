@@ -151,9 +151,169 @@ class ReportController extends Controller
     }
 
     /**
-     * RF 20 - HU 20: Exportación a Excel (.xlsx)
+     * RF 20 - HU 20: Exportación de REPORTES Y ESTADÍSTICAS a Excel (.xls)
+     * Usado en el módulo "Reportes & Dashboards Estadísticos"
      */
     public function exportExcel(Request $request)
+    {
+        $filters = $request->only(['id_idioma', 'id_nivel', 'id_curso', 'id_paralelo', 'estado', 'fecha_desde', 'fecha_hasta']);
+
+        $summary = $this->getDashboardSummary($request)->getData(true);
+        $langStats = $this->getLanguageStatistics($request)->getData(true);
+        $occStats = $this->getClassroomOccupancy($request)->getData(true);
+        
+        $inscripciones = Inscripcion::with(['estudiante.user', 'curso.idioma', 'curso.nivelRel', 'paralelo'])
+            ->filterMultiCriteria($filters)
+            ->get();
+
+        $fileName = 'Reportes_Estadisticos_EIE_' . date('Ymd_His') . '.xls';
+
+        $headers = [
+            'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"$fileName\"",
+            'Pragma' => 'no-cache',
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires' => '0'
+        ];
+
+        $callback = function () use ($summary, $langStats, $occStats, $inscripciones) {
+            echo '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
+            echo '<head><meta charset="UTF-8">';
+            echo '<!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Reportes Estadisticos</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->';
+            echo '<style>';
+            echo 'table { border-collapse: collapse; font-family: Arial, sans-serif; font-size: 10px; margin-bottom: 20px; }';
+            echo 'th, td { border: 1px solid #cbd5e0; padding: 5px 8px; text-align: center; vertical-align: middle; }';
+            echo 'th { background-color: #003B71; color: #ffffff; font-weight: bold; font-size: 9.5px; }';
+            echo '.header-title { font-weight: bold; font-size: 13px; color: #003B71; border: none; text-align: center; }';
+            echo '.section-title { font-weight: bold; font-size: 11px; background-color: #e2e8f0; color: #003B71; text-align: left; padding: 6px; }';
+            echo '.left { text-align: left; }';
+            echo '.kpi-val { font-weight: bold; font-size: 11px; color: #003B71; }';
+            echo '</style>';
+            echo '</head><body>';
+
+            echo '<table>';
+            echo '<tr><td colspan="7" class="header-title">ESCUELA DE IDIOMAS DEL EJÉRCITO</td></tr>';
+            echo '<tr><td colspan="7" class="header-title">REPORTES Y ESTADÍSTICAS GENERALES DE GESTIÓN ACADÉMICA</td></tr>';
+            echo '<tr><td colspan="7" class="header-title">FILIAL COCHABAMBA - BOLIVIA (' . date('d/m/Y') . ')</td></tr>';
+            echo '<tr><td colspan="7">&nbsp;</td></tr>';
+
+            // TABLA 1: KPIs RESUMEN
+            echo '<tr><th colspan="7" class="section-title">1. INDICADORES CLAVE DE RENDIMIENTO (KPIs)</th></tr>';
+            echo '<tr>';
+            echo '<th>Total Inscritos</th>';
+            echo '<th>Estudiantes Habilitados</th>';
+            echo '<th>Pendientes</th>';
+            echo '<th>Retirados</th>';
+            echo '<th>% Habilitados</th>';
+            echo '<th>Idioma de Mayor Demanda</th>';
+            echo '<th>Ocupación Promedio de Aulas</th>';
+            echo '</tr>';
+
+            echo '<tr>';
+            echo '<td class="kpi-val">' . ($summary['total_inscritos'] ?? 0) . '</td>';
+            echo '<td class="kpi-val">' . ($summary['habilitados'] ?? 0) . '</td>';
+            echo '<td class="kpi-val">' . ($summary['pendientes'] ?? 0) . '</td>';
+            echo '<td class="kpi-val">' . ($summary['retirados'] ?? 0) . '</td>';
+            echo '<td class="kpi-val">' . ($summary['porcentaje_habilitados'] ?? 0) . '%</td>';
+            echo '<td class="kpi-val">' . htmlspecialchars($summary['idioma_top'] ?? 'N/A') . '</td>';
+            echo '<td class="kpi-val">' . ($summary['ocupacion_promedio'] ?? 0) . '%</td>';
+            echo '</tr>';
+            echo '</table><br>';
+
+            // TABLA 2: ESTADÍSTICAS POR IDIOMA
+            echo '<table>';
+            echo '<tr><th colspan="3" class="section-title">2. DISTRIBUCIÓN DE MATRÍCULAS POR IDIOMA</th></tr>';
+            echo '<tr>';
+            echo '<th style="width: 40%;">Idioma</th>';
+            echo '<th style="width: 30%;">Total Estudiantes</th>';
+            echo '<th style="width: 30%;">Porcentaje (%)</th>';
+            echo '</tr>';
+
+            $langList = $langStats['estadisticas'] ?? [];
+            if (count($langList) > 0) {
+                foreach ($langList as $l) {
+                    echo '<tr>';
+                    echo '<td class="left"><strong>' . htmlspecialchars($l['idioma'] ?? 'N/A') . '</strong></td>';
+                    echo '<td>' . ($l['total_estudiantes'] ?? 0) . '</td>';
+                    echo '<td>' . ($l['porcentaje'] ?? 0) . '%</td>';
+                    echo '</tr>';
+                }
+            } else {
+                echo '<tr><td colspan="3">Sin registros estadísticos por idioma</td></tr>';
+            }
+            echo '</table><br>';
+
+            // TABLA 3: OCUPACIÓN DE AULAS
+            echo '<table>';
+            echo '<tr><th colspan="6" class="section-title">3. PORCENTAJE DE OCUPACIÓN DE AULAS Y PARALELOS</th></tr>';
+            echo '<tr>';
+            echo '<th>Paralelo</th>';
+            echo '<th>Curso / Nivel</th>';
+            echo '<th>Aula Asignada</th>';
+            echo '<th>Capacidad</th>';
+            echo '<th>Estudiantes Inscritos</th>';
+            echo '<th>% Ocupación</th>';
+            echo '</tr>';
+
+            $aulaList = $occStats['aulas'] ?? [];
+            if (count($aulaList) > 0) {
+                foreach ($aulaList as $a) {
+                    echo '<tr>';
+                    echo '<td class="left"><strong>' . htmlspecialchars($a['nombre_paralelo'] ?? 'N/A') . '</strong></td>';
+                    echo '<td class="left">' . htmlspecialchars($a['curso'] ?? 'N/A') . '</td>';
+                    echo '<td>' . htmlspecialchars($a['aula'] ?? 'Sin Aula') . '</td>';
+                    echo '<td>' . ($a['capacidad'] ?? 0) . '</td>';
+                    echo '<td>' . ($a['inscritos'] ?? 0) . '</td>';
+                    echo '<td>' . ($a['porcentaje_ocupacion'] ?? 0) . '%</td>';
+                    echo '</tr>';
+                }
+            } else {
+                echo '<tr><td colspan="6">Sin datos de ocupación de aulas</td></tr>';
+            }
+            echo '</table><br>';
+
+            // TABLA 4: DETALLE GENERAL DE MATRÍCULAS
+            echo '<table>';
+            echo '<tr><th colspan="7" class="section-title">4. DETALLE DE MATRÍCULAS FILTRADAS</th></tr>';
+            echo '<tr>';
+            echo '<th>Nro</th>';
+            echo '<th>C.I.</th>';
+            echo '<th>Apellidos y Nombres</th>';
+            echo '<th>Idioma</th>';
+            echo '<th>Nivel</th>';
+            echo '<th>Paralelo</th>';
+            echo '<th>Estado</th>';
+            echo '</tr>';
+
+            $idx = 1;
+            foreach ($inscripciones as $insc) {
+                $est = $insc->estudiante;
+                $cur = $insc->curso;
+                $idm = $cur ? $cur->idioma : null;
+                $par = $insc->paralelo;
+
+                echo '<tr>';
+                echo '<td>' . $idx++ . '</td>';
+                echo '<td>' . htmlspecialchars($est->ci ?? 'N/A') . '</td>';
+                echo '<td class="left">' . htmlspecialchars(strtoupper(($est->apellidos ?? '') . ' ' . ($est->nombres ?? ''))) . '</td>';
+                echo '<td>' . htmlspecialchars($idm->nombre_idioma ?? $idm->nombre ?? 'N/A') . '</td>';
+                echo '<td>' . htmlspecialchars($cur->nivel ?? 'N/A') . '</td>';
+                echo '<td>' . htmlspecialchars($par->nombre_paralelo ?? $par->nombre ?? 'N/A') . '</td>';
+                echo '<td>' . htmlspecialchars(strtoupper($insc->estado ?? 'CONFIRMADO')) . '</td>';
+                echo '</tr>';
+            }
+            echo '</table>';
+
+            echo '</body></html>';
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * EXPORTACIÓN DE RELACIÓN NOMINAL (LISTA DE ALUMNOS) PARA EL MÓDULO DE DOCENTES (.xls)
+     */
+    public function exportNominalExcel(Request $request)
     {
         $filters = $request->only(['id_idioma', 'id_nivel', 'id_curso', 'id_paralelo', 'estado', 'fecha_desde', 'fecha_hasta']);
 
@@ -252,61 +412,52 @@ class ReportController extends Controller
                 // 4 LAB
                 for ($l = 1; $l <= 4; $l++) { echo '<td></td>'; }
 
-                $notasAvg = $insc->notas->count() > 0 ? round($insc->notas->avg('puntaje')) : 100;
-                echo '<td><b>' . $notasAvg . '</b></td>';
-                echo '<td>100</td>';
-                echo '<td>100</td>';
-                echo '<td></td>';
+                echo '<td></td>'; // PROM
+                echo '<td></td>'; // PART
+                echo '<td></td>'; // OP
+                echo '<td></td>'; // OBS
                 echo '</tr>';
             }
 
             echo '<tr><td colspan="31" style="border:none;">&nbsp;</td></tr>';
-            echo '<tr><td colspan="31" class="left" style="border:none;"><b>NOMBRE DEL DOCENTE:</b> __________________________________________________</td></tr>';
-            echo '<tr><td colspan="31" class="left" style="border:none;"><b>NOMBRE DE EC:</b> ______________________________________________________</td></tr>';
-            echo '<tr><td colspan="31" class="left" style="border:none;"><b>OBSERVACIONES:</b> ____________________________________________________</td></tr>';
+            echo '<tr><td colspan="15" class="left" style="border:none; font-weight:bold;">NOMBRE DEL DOCENTE: ___________________________</td><td colspan="16" class="left" style="border:none; font-weight:bold;">OBSERVACIONES:</td></tr>';
+            echo '<tr><td colspan="15" class="left" style="border:none; font-weight:bold;">NOMBRE DE EC: ___________________________</td><td colspan="16" class="left" style="border:none;">________________________________________</td></tr>';
             echo '<tr><td colspan="31" style="border:none;">&nbsp;</td></tr>';
+            
+            // GLOSARIO
+            echo '<tr><td colspan="10" class="left" style="font-weight:bold; background-color:#ffffff;">A - ASISTIO A CLASE</td><td colspan="21" style="border:none;"></td></tr>';
+            echo '<tr><td colspan="10" class="left" style="font-weight:bold; background-color:#ffffff;">. - NO ASISTIO A CLASE</td><td colspan="21" style="border:none;"></td></tr>';
+            echo '<tr><td colspan="10" class="left" style="font-weight:bold; background-color:#ffffff;">L - LICENCIA</td><td colspan="21" style="border:none;"></td></tr>';
+            echo '<tr><td colspan="10" class="left" style="font-weight:bold; background-color:#ffffff;">S - ASISTIO SIN CAMARA</td><td colspan="21" style="border:none;"></td></tr>';
 
-            // Glosario
-            echo '<tr>';
-            echo '<td colspan="8" class="left" style="border: 1px solid #000; font-size: 8.5px; font-weight: bold; background: #ffffff;">';
-            echo 'GLOSARIO:<br>';
-            echo 'A &nbsp;&nbsp;&nbsp;&nbsp;- ASISTIO A CLASE<br>';
-            echo '. &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- NO ASISTIO A CLASE<br>';
-            echo 'L &nbsp;&nbsp;&nbsp;&nbsp;- LICENCIA<br>';
-            echo 'S &nbsp;&nbsp;&nbsp;&nbsp;- ASISTIO SIN CAMARA';
-            echo '</td>';
-            echo '</tr>';
-
-            echo '</table>';
-            echo '</body></html>';
+            echo '</table></body></html>';
         };
 
         return response()->stream($callback, 200, $headers);
     }
 
     /**
-     * RF 20 - HU 20: Exportación a PDF Oficial
+     * RF 20 - HU 20: Exportación a PDF de reportes estadísticos
      */
     public function exportPdf(Request $request)
     {
         $filters = $request->only(['id_idioma', 'id_nivel', 'id_curso', 'id_paralelo', 'estado', 'fecha_desde', 'fecha_hasta']);
 
-        $inscripciones = Inscripcion::with(['estudiante.user', 'curso.idioma', 'curso.nivelRel', 'paralelo', 'notas', 'asistencias'])
+        $summary = $this->getDashboardSummary($request)->getData(true);
+        $langStats = $this->getLanguageStatistics($request)->getData(true);
+        $occStats = $this->getClassroomOccupancy($request)->getData(true);
+        $inscripciones = Inscripcion::with(['estudiante.user', 'curso.idioma', 'curso.nivelRel', 'paralelo'])
             ->filterMultiCriteria($filters)
             ->get();
 
-        $data = [
-            'titulo' => 'REPORTE Y CENTRALIZADOR ACADÉMICO OFICIAL',
-            'institucion' => 'ESCUELA DE IDIOMAS DEL EJÉRCITO',
-            'departamento' => 'Cochabamba - Bolivia',
-            'fecha' => date('d/m/Y H:i'),
-            'total_registros' => $inscripciones->count(),
-            'inscripciones' => $inscripciones
-        ];
+        $pdf = Pdf::loadView('pdf.reportes', [
+            'summary' => $summary,
+            'langStats' => $langStats,
+            'occStats' => $occStats,
+            'inscripciones' => $inscripciones,
+            'fecha' => date('d/m/Y')
+        ]);
 
-        $pdf = Pdf::loadView('pdf.reporte_oficial', $data);
-        $pdf->setPaper('letter', 'landscape');
-
-        return $pdf->download('Reporte_Centralizador_EIE_' . date('Ymd_His') . '.pdf');
+        return $pdf->download('Reporte_Estadistico_EIE_' . date('Ymd') . '.pdf');
     }
 }

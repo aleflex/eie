@@ -52,10 +52,20 @@ export class ReportService {
   }
 
   /**
-   * RF 20 - HU 20: Descarga en formato Excel / CSV (Blob)
+   * RF 20 - HU 20: Descarga de Reportes Estadísticos en Excel (.xls)
    */
   downloadExcel(filters?: any): Observable<Blob> {
     return this.http.get(`${this.apiUrl}/export/excel`, {
+      params: this.buildParams(filters),
+      responseType: 'blob'
+    });
+  }
+
+  /**
+   * Descarga de Relación Nominal de Alumnos para Docentes (.xls)
+   */
+  downloadNominalExcel(filters?: any): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/export/nominal-excel`, {
       params: this.buildParams(filters),
       responseType: 'blob'
     });

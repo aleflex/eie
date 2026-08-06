@@ -8,6 +8,8 @@ import { HttpClient } from '@angular/common/http';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
+import { ReportService } from '../../services/report.service';
+import { downloadFile } from '../../utils/file-downloader';
 
 @Component({
   selector: 'app-docente-dashboard',
@@ -46,11 +48,14 @@ export class DocenteDashboardComponent implements OnInit {
   asistenciaMsg = '';
   asistenciaError = false;
 
+  isDownloadingExcel = false;
+
   constructor(
     private docenteService: DocenteService,
     private authService: AuthService,
     private router: Router,
-    private http: HttpClient
+    private http: HttpClient,
+    private reportService: ReportService
   ) {}
 
   ngOnInit(): void {
@@ -307,6 +312,24 @@ export class DocenteDashboardComponent implements OnInit {
       return books;
     }
     return ['Parcial 1', 'Parcial 2', 'Parcial 3', 'Final'];
+  }
+
+  exportarExcelNominal() {
+    if (!this.paraleloActivo) return;
+    this.isDownloadingExcel = true;
+    const filters = { id_paralelo: this.paraleloActivo.id };
+    this.reportService.downloadNominalExcel(filters).subscribe({
+      next: (blob: Blob) => {
+        this.isDownloadingExcel = false;
+        const filename = `Relacion_Nominal_${this.paraleloActivo.nombre || 'Paralelo'}_${new Date().toISOString().slice(0,10)}.xls`;
+        downloadFile(blob, filename);
+      },
+      error: (err: any) => {
+        console.error('Error exportando Relación Nominal', err);
+        this.isDownloadingExcel = false;
+        alert('No se pudo generar la relación nominal en Excel');
+      }
+    });
   }
 
   imprimirLista() { window.print(); }
