@@ -589,4 +589,39 @@ class ReportController extends Controller
 
         return $pdf->download('Reporte_Estadistico_EIE_' . date('Ymd') . '.pdf');
     }
+
+    /**
+     * EXPORTACIÓN DE NÓMINA EN PDF PARA MÓDULO DOCENTES CON FORMATO INSTITUCIONAL MILITAR
+     */
+    public function exportDocentePdf(Request $request)
+    {
+        $idParalelo = $request->input('id_paralelo');
+        $filters = $request->only(['id_idioma', 'id_nivel', 'id_curso', 'id_paralelo', 'estado']);
+
+        $paralelo = Paralelo::with(['curso.idioma', 'aula'])->find($idParalelo);
+        if (!$paralelo && !empty($filters['id_paralelo'])) {
+            $paralelo = Paralelo::with(['curso.idioma', 'aula'])->find($filters['id_paralelo']);
+        }
+
+        $inscripciones = Inscripcion::with(['estudiante.user', 'curso.idioma', 'paralelo'])
+            ->when($idParalelo, function($q) use ($idParalelo) {
+                $q->where('id_paralelo', $idParalelo);
+            })
+            ->filterMultiCriteria($filters)
+            ->get();
+
+        $curso = $paralelo ? $paralelo->curso : ($inscripciones->first() ? $inscripciones->first()->curso : null);
+
+        $pdf = Pdf::loadView('pdf.lista_docente', [
+            'paralelo' => $paralelo ?: (object)['nombre_paralelo' => 'A'],
+            'curso' => $curso ?: (object)['nivel' => 'NIVEL I'],
+            'inscripciones' => $inscripciones,
+            'fecha' => date('d/m/Y')
+        ]);
+
+        $pdf->setPaper('letter', 'portrait');
+
+        $nombreParalelo = $paralelo ? ($paralelo->nombre_paralelo ?: $paralelo->nombre) : 'Paralelo';
+        return $pdf->download('Nomina_Alumnos_' . $nombreParalelo . '_' . date('Ymd') . '.pdf');
+    }
 }

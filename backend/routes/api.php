@@ -96,3 +96,4 @@ Route::get('/reports/export/excel', [ReportController::class, 'exportExcel']);
 Route::get('/reports/export/nominal-excel', [ReportController::class, 'exportNominalExcel']);
 Route::get('/reports/export/notas-excel', [ReportController::class, 'exportNotasExcel']);
 Route::get('/reports/export/pdf', [ReportController::class, 'exportPdf']);
+Route::get('/reports/export/docente-pdf', [ReportController::class, 'exportDocentePdf']);

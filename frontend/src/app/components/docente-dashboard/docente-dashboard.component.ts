@@ -357,7 +357,28 @@ export class DocenteDashboardComponent implements OnInit {
     });
   }
 
-  imprimirLista() { window.print(); }
+  isDownloadingPdf = false;
+
+  imprimirLista() {
+    if (!this.paraleloActivo) {
+      window.print();
+      return;
+    }
+    this.isDownloadingPdf = true;
+    const filters = { id_paralelo: this.paraleloActivo.id };
+    this.reportService.downloadDocentePdf(filters).subscribe({
+      next: (blob: Blob) => {
+        this.isDownloadingPdf = false;
+        const filename = `Nomina_Alumnos_${this.paraleloActivo.nombre || 'Paralelo'}_${new Date().toISOString().slice(0,10)}.pdf`;
+        downloadFile(blob, filename);
+      },
+      error: (err: any) => {
+        console.error('Error generando PDF de nómina docente', err);
+        this.isDownloadingPdf = false;
+        window.print();
+      }
+    });
+  }
 
   onLogout() {
     this.authService.logout().subscribe(() => this.router.navigate(['/login']));

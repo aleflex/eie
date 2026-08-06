@@ -90,4 +90,14 @@ export class ReportService {
       responseType: 'blob'
     });
   }
+
+  /**
+   * Descarga de Nómina de Alumnos para Docentes en PDF con Formato Militar (.pdf)
+   */
+  downloadDocentePdf(filters?: any): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/export/docente-pdf`, {
+      params: this.buildParams(filters),
+      responseType: 'blob'
+    });
+  }
 }

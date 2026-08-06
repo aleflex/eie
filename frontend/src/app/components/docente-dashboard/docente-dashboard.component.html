@@ -156,8 +156,8 @@
             <i class="material-icons-outlined">table_view</i> {{ isDownloadingExcel ? 'Exportando...' : 'Exportar Excel Asistencias' }}
           </button>
 
-          <button class="btn-print no-print" (click)="imprimirLista()">
-            <i class="material-icons-outlined">print</i> Generar PDF
+          <button class="btn-print no-print" (click)="imprimirLista()" [disabled]="isDownloadingPdf">
+            <i class="material-icons-outlined">print</i> {{ isDownloadingPdf ? 'Generando PDF...' : 'Generar PDF' }}
           </button>
         </div>
       </div>
