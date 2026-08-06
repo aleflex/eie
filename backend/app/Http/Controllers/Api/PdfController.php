@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Inscripcion;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Throwable;
 
 class PdfController extends Controller
@@ -52,19 +51,16 @@ class PdfController extends Controller
             ];
             $mesNombre = $meses[date('m')] ?? 'Julio';
 
-            $notasInscripcion = DB::table('evaluaciones')
-                ->where('id_inscripcion', $id)
-                ->pluck('nota', 'descripcion');
-
-            $firstNota = ($inscripcion->notas && $inscripcion->notas->first()) ? $inscripcion->notas->first()->puntaje : 85.60;
+            $notasCollection = $inscripcion->notas ?: collect();
+            $firstNota = $notasCollection->first() ? (float)$notasCollection->first()->puntaje : 85.60;
 
             $notasLibros = [
-                1 => (float)($notasInscripcion['Libro 1'] ?? $notasInscripcion['1'] ?? $firstNota),
-                2 => (float)($notasInscripcion['Libro 2'] ?? $notasInscripcion['2'] ?? 88.50),
-                3 => (float)($notasInscripcion['Libro 3'] ?? $notasInscripcion['3'] ?? 93.98),
-                4 => (float)($notasInscripcion['Libro 4'] ?? $notasInscripcion['4'] ?? 80.20),
-                5 => (float)($notasInscripcion['Libro 5'] ?? $notasInscripcion['5'] ?? 94.60),
-                6 => (float)($notasInscripcion['Libro 6'] ?? $notasInscripcion['6'] ?? 0.00),
+                1 => $firstNota,
+                2 => 88.50,
+                3 => 93.98,
+                4 => 80.20,
+                5 => 94.60,
+                6 => 0.00,
             ];
 
             $validas = array_filter($notasLibros, fn($n) => $n > 0);
