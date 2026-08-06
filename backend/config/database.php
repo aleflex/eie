@@ -23,9 +23,11 @@ return [
             return $requestedConn;
         }
         $mysqlHost = env('DB_HOST', 'mysql-1be5550e-alejandrokaviraya3-5905.a.aivencloud.com');
-        $resolvedIp = @gethostbyname($mysqlHost);
-        if ($resolvedIp && $resolvedIp !== $mysqlHost && filter_var($resolvedIp, FILTER_VALIDATE_IP)) {
-            return 'mysql';
+        if (@checkdnsrr($mysqlHost, 'A') || @checkdnsrr($mysqlHost, 'AAAA')) {
+            $resolvedIp = @gethostbyname($mysqlHost);
+            if ($resolvedIp && $resolvedIp !== $mysqlHost && filter_var($resolvedIp, FILTER_VALIDATE_IP)) {
+                return 'mysql';
+            }
         }
         return 'sqlite';
     })(),
