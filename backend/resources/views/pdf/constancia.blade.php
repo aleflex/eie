@@ -136,16 +136,16 @@
         </tr>
     </table>
 
-    <div class="title">REPORTE GENERAL DE NOTAS {{ strtoupper($curso->nivel ?? 'NIVEL 1') }}</div>
+    <div class="title">REPORTE GENERAL DE NOTAS {{ strtoupper($curso->nivel ?? 'NIVEL I') }}</div>
 
     <div class="student-box">
-        Matrícula : {{ $estudiante->ci }} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Apellidos y Nombres : ESTUDIANTE- {{ mb_strtoupper($estudiante->apellidos . ' ' . $estudiante->nombres, 'UTF-8') }} Curso de : {{ strtoupper($curso->idioma ?? 'INGLÉS') }}
+        Matrícula : {{ $estudiante->ci }} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Apellidos y Nombres : {{ mb_strtoupper(trim($estudiante->apellidos . ' ' . $estudiante->nombres), 'UTF-8') }} &nbsp;&nbsp;&nbsp;&nbsp; Curso de : {{ strtoupper($curso->idioma ?? 'INGLÉS') }}
     </div>
 
     <table class="table-notes">
         <thead>
             <tr>
-                <th colspan="3">{{ strtoupper($curso->nivel ?? 'Nivel I') }}</th>
+                <th colspan="3">{{ strtoupper($curso->nivel ?? 'NIVEL I (BOOK 1-6)') }}</th>
             </tr>
             <tr>
                 <th style="width: 33%;">Gestión</th>
@@ -156,7 +156,7 @@
         <tbody>
             @for ($i = 1; $i <= 6; $i++)
                 @php
-                    $val = isset($notasLibros[$i]) ? $notasLibros[$i] : 0;
+                    $val = isset($notasLibros[$i]) ? (float)$notasLibros[$i] : 0;
                     $notaFormatted = number_format($val, 2, ',', '.');
                 @endphp
                 <tr>
@@ -172,30 +172,30 @@
         <table style="width: 100%; font-size: 9.5px; border-collapse: collapse;">
             <tr>
                 <td>Promedio Libros</td>
-                <td style="text-align: right;">{{ number_format($promedioLibros ?? 73.81, 2, ',', '.') }}</td>
+                <td style="text-align: right;">{{ number_format($promedioLibros ?? 0.00, 2, ',', '.') }}</td>
             </tr>
             <tr>
                 <td>80%</td>
-                <td style="text-align: right;">{{ number_format($promedio80 ?? 59.05, 2, ',', '.') }}</td>
+                <td style="text-align: right;">{{ number_format($promedio80 ?? 0.00, 2, ',', '.') }}</td>
             </tr>
             <tr>
                 <td>Examen de Nivel</td>
-                <td style="text-align: right;">{{ number_format($examenNivel ?? 90.00, 2, ',', '.') }}</td>
+                <td style="text-align: right;">{{ number_format($examenNivel ?? 0.00, 2, ',', '.') }}</td>
             </tr>
             <tr>
                 <td>20%</td>
-                <td style="text-align: right;">{{ number_format($examen20 ?? 18.00, 2, ',', '.') }}</td>
+                <td style="text-align: right;">{{ number_format($examen20 ?? 0.00, 2, ',', '.') }}</td>
             </tr>
             <tr style="border-top: 1.5px solid #000;">
                 <td>Promedio Nivel</td>
-                <td style="text-align: right;">{{ number_format($promedioNivel ?? 77.05, 2, ',', '.') }}</td>
+                <td style="text-align: right;">{{ number_format($promedioNivel ?? 0.00, 2, ',', '.') }}</td>
             </tr>
         </table>
     </div>
 
     <div class="final-box">
         Promedio Gral de Fin de Gestión<br>
-        <span style="font-size: 11.5px;">{{ number_format($promedioGral ?? 77.05, 2, ',', '.') }}</span>
+        <span style="font-size: 11.5px;">{{ number_format($promedioGral ?? 0.00, 2, ',', '.') }}</span>
     </div>
 
     <div class="note-text">

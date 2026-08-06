@@ -29,8 +29,8 @@ class PdfController extends Controller
 
             $estudianteData = (object)[
                 'id_estudiante' => $est->id_estudiante ?? $est->id ?? $id,
-                'nombres' => $est->nombres ?? $usr->nombres ?? 'ESTUDIANTE',
-                'apellidos' => $est->apellidos ?? $usr->apellidos ?? 'EIE',
+                'nombres' => $est->nombres ?? $usr->nombres ?? '',
+                'apellidos' => $est->apellidos ?? $usr->apellidos ?? '',
                 'ci' => $est->ci ?? $usr->ci ?? (string)$id,
                 'grado_academico' => $est->grado_academico ?? '',
                 'arma_especialidad' => $est->arma_especialidad ?? '',
@@ -40,7 +40,7 @@ class PdfController extends Controller
 
             $cursoData = (object)[
                 'idioma' => $idm->nombre_idioma ?? $idm->nombre ?? 'INGLÉS',
-                'nivel' => $cur->nivel ?? 'NIVEL 1',
+                'nivel' => $cur->nivel ?? 'NIVEL I (BOOK 1-6)',
                 'modalidad' => $cur->modalidad ?? 'PRESENCIAL',
             ];
 
@@ -52,24 +52,49 @@ class PdfController extends Controller
             $mesNombre = $meses[date('m')] ?? 'Julio';
 
             $notasCollection = $inscripcion->notas ?: collect();
-            $firstNota = $notasCollection->first() ? (float)$notasCollection->first()->puntaje : 85.60;
 
             $notasLibros = [
-                1 => $firstNota,
-                2 => 88.50,
-                3 => 93.98,
-                4 => 80.20,
-                5 => 94.60,
+                1 => 0.00,
+                2 => 0.00,
+                3 => 0.00,
+                4 => 0.00,
+                5 => 0.00,
                 6 => 0.00,
             ];
+            $examenNivel = 0.00;
+
+            foreach ($notasCollection as $n) {
+                $val = (float)($n->nota ?? $n->puntaje ?? 0);
+                $periodo = strtolower(trim($n->periodo ?? $n->descripcion ?? ''));
+
+                if (str_contains($periodo, 'examen') || str_contains($periodo, 'nivel')) {
+                    $examenNivel = $val;
+                } elseif (preg_match('/(\d+)/', $periodo, $matches)) {
+                    $numLibro = (int)$matches[1];
+                    if ($numLibro >= 1 && $numLibro <= 6) {
+                        $notasLibros[$numLibro] = $val;
+                    }
+                }
+            }
+
+            // Si hay notas pero no por periodos especificos, mapear secuencialmente
+            if (array_sum($notasLibros) == 0 && $notasCollection->count() > 0) {
+                $idx = 1;
+                foreach ($notasCollection as $n) {
+                    if ($idx <= 6) {
+                        $notasLibros[$idx] = (float)($n->nota ?? $n->puntaje ?? 0);
+                        $idx++;
+                    }
+                }
+            }
 
             $validas = array_filter($notasLibros, fn($n) => $n > 0);
-            $promedioLibros = count($validas) > 0 ? round(array_sum($validas) / count($validas), 2) : 73.81;
+            $promedioLibros = count($validas) > 0 ? round(array_sum($validas) / count($validas), 2) : 0.00;
+
             $promedio80 = round($promedioLibros * 0.8, 2);
-            $examenNivel = 90.00;
             $examen20 = round($examenNivel * 0.2, 2);
             $promedioNivel = round($promedio80 + $examen20, 2);
-            $promedioGral = $promedioNivel;
+            $promedioGral = $promedioNivel > 0 ? $promedioNivel : $promedioLibros;
 
             $data = [
                 'estudiante' => $estudianteData,
