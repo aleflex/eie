@@ -2,98 +2,83 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Reporte General de Notas</title>
+    <title>Contrato y Constancia de Inscripción</title>
     <style>
         @page {
-            margin: 1.2cm 1.8cm;
+            margin: 1.5cm 2cm;
         }
         body {
-            font-family: 'Courier', 'Times New Roman', 'Arial', sans-serif;
-            font-size: 10px;
-            color: #000;
-            line-height: 1.3;
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-size: 11px;
+            color: #1a202c;
+            line-height: 1.4;
         }
         .header-table {
             width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 12px;
+            border-bottom: 2px solid #003B71;
+            padding-bottom: 8px;
+            margin-bottom: 15px;
         }
-        .header-left {
-            font-weight: bold;
-            font-size: 9.5px;
+        .header-title {
             text-align: center;
-            line-height: 1.2;
         }
-        .header-right {
-            text-align: right;
-            font-weight: bold;
-            font-size: 9.5px;
-            vertical-align: top;
+        .header-title h1 {
+            font-size: 15px;
+            color: #003B71;
+            margin: 0 0 3px 0;
+            text-transform: uppercase;
         }
-        .title {
+        .header-title h2 {
+            font-size: 11px;
+            color: #4a5568;
+            margin: 0;
+            font-weight: normal;
+        }
+        .doc-title {
             text-align: center;
             font-size: 13px;
             font-weight: bold;
+            color: #003B71;
             margin: 12px 0;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            border-top: 1px dashed #cbd5e0;
+            border-bottom: 1px dashed #cbd5e0;
+            padding: 5px 0;
         }
-        .student-box {
-            border: 1.5px solid #000;
-            border-radius: 10px;
-            padding: 6px 10px;
-            font-size: 9.5px;
+        .section-box {
+            border: 1px solid #cbd5e0;
+            border-radius: 6px;
+            padding: 8px 12px;
             margin-bottom: 12px;
-            font-weight: bold;
+            background-color: #ffffff;
         }
-        .table-notes {
+        .section-header {
+            font-size: 10.5px;
+            font-weight: bold;
+            color: #003B71;
+            text-transform: uppercase;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 3px;
+            margin-bottom: 6px;
+        }
+        .info-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 0px;
         }
-        .table-notes th, .table-notes td {
-            border: 1px solid #000;
-            padding: 4px 6px;
-            text-align: center;
+        .info-table td {
+            padding: 3px 4px;
             font-size: 9.5px;
+            vertical-align: top;
         }
-        .table-notes th {
-            background-color: #f2f2f2;
+        .label {
             font-weight: bold;
+            color: #4a5568;
+            width: 32%;
         }
-        .summary-box {
-            border: 1.5px solid #000;
-            border-top: none;
-            border-radius: 0 0 10px 10px;
-            padding: 6px 10px;
-            font-size: 9.5px;
-            font-weight: bold;
-            margin-bottom: 15px;
-        }
-        .final-box {
-            border: 1.5px solid #000;
-            border-radius: 8px;
-            text-align: center;
-            padding: 6px;
-            font-weight: bold;
-            margin-bottom: 15px;
-            font-size: 10.5px;
-        }
-        .note-text {
-            font-size: 8.5px;
-            font-weight: bold;
-            float: left;
-            width: 60%;
-        }
-        .date-text {
-            font-size: 9.5px;
-            font-weight: bold;
-            float: right;
-            text-align: right;
-            width: 38%;
-        }
-        .clear {
-            clear: both;
+        .value {
+            color: #1a202c;
+            width: 68%;
         }
         .signatures-table {
             width: 100%;
@@ -103,19 +88,30 @@
         .signatures-table td {
             text-align: center;
             vertical-align: bottom;
-            font-size: 8.5px;
+            font-size: 9px;
             font-weight: bold;
-            padding: 0 5px;
+            padding: 0 15px;
         }
-        .qr-section {
-            margin-top: 15px;
+        .sig-line {
+            border-top: 1px solid #4a5568;
+            padding-top: 4px;
+        }
+        .qr-container {
             float: left;
-            border: 1.5px solid #000;
-            padding: 4px 8px;
+            margin-top: 10px;
+            border: 1px solid #003B71;
+            padding: 5px 8px;
+            border-radius: 5px;
+            text-align: center;
+            font-size: 7.5px;
+            font-weight: bold;
+            color: #003B71;
+        }
+        .footer {
+            margin-top: 25px;
             text-align: center;
             font-size: 8px;
-            font-weight: bold;
-            border-radius: 6px;
+            color: #718096;
         }
     </style>
 </head>
@@ -123,112 +119,124 @@
 
     <table class="header-table">
         <tr>
-            <td class="header-left" style="width: 55%;">
-                FACULTAD DE CIENCIAS Y ARTES MILITARES TERRESTRES<br>
-                "GRAL. DIV. JOSÉ MIGUEL LANZA"<br>
-                ESCUELA DE IDIOMAS DEL EJÉRCITO<br>
-                <u>BOLIVIA</u>
+            <td style="width: 20%; text-align: left; vertical-align: middle;">
+                <strong style="color: #003B71; font-size: 11px;">EIE BOLIVIA</strong>
             </td>
-            <td class="header-right" style="width: 45%;">
-                SECCIÓN ACADÉMICA<br>
-                SubSecc. Evaluación y Estadística
+            <td class="header-title" style="width: 60%;">
+                <h1>ESCUELA DE IDIOMAS DEL EJÉRCITO</h1>
+                <h2>FILIAL COCHABAMBA - BOLIVIA</h2>
+            </td>
+            <td style="width: 20%; text-align: right; font-size: 8.5px; color: #4a5568; vertical-align: middle;">
+                <strong>Fecha:</strong> {{ date('d/m/Y') }}
             </td>
         </tr>
     </table>
 
-    <div class="title">REPORTE GENERAL DE NOTAS {{ strtoupper($curso->nivel ?? 'NIVEL I') }}</div>
+    <div class="doc-title">CONTRATO Y CONSTANCIA DE INSCRIPCIÓN</div>
 
-    <div class="student-box">
-        Matrícula : {{ $estudiante->ci }} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Apellidos y Nombres : {{ mb_strtoupper(trim($estudiante->apellidos . ' ' . $estudiante->nombres), 'UTF-8') }} &nbsp;&nbsp;&nbsp;&nbsp; Curso de : {{ strtoupper($curso->idioma ?? 'INGLÉS') }}
-    </div>
-
-    <table class="table-notes">
-        <thead>
+    <!-- DATOS PERSONALES DEL ESTUDIANTE -->
+    <div class="section-box">
+        <div class="section-header">1. DATOS PERSONALES DEL ESTUDIANTE</div>
+        <table class="info-table">
             <tr>
-                <th colspan="3">{{ strtoupper($curso->nivel ?? 'NIVEL I (BOOK 1-6)') }}</th>
+                <td class="label">Cédula de Identidad / C.I.:</td>
+                <td class="value"><strong>{{ $estudiante->ci }}</strong></td>
             </tr>
             <tr>
-                <th style="width: 33%;">Gestión</th>
-                <th style="width: 33%;">Libros-</th>
-                <th style="width: 34%;">Notas</th>
-            </tr>
-        </thead>
-        <tbody>
-            @for ($i = 1; $i <= 6; $i++)
-                @php
-                    $val = isset($notasLibros[$i]) ? (float)$notasLibros[$i] : 0;
-                    $notaFormatted = number_format($val, 2, ',', '.');
-                @endphp
-                <tr>
-                    <td>{{ date('Y') }}</td>
-                    <td>{{ $i }}</td>
-                    <td style="{{ $val == 0 ? 'color: red;' : '' }}">{{ $notaFormatted }}</td>
-                </tr>
-            @endfor
-        </tbody>
-    </table>
-
-    <div class="summary-box">
-        <table style="width: 100%; font-size: 9.5px; border-collapse: collapse;">
-            <tr>
-                <td>Promedio Libros</td>
-                <td style="text-align: right;">{{ number_format($promedioLibros ?? 0.00, 2, ',', '.') }}</td>
+                <td class="label">Apellidos y Nombres:</td>
+                <td class="value"><strong>{{ mb_strtoupper(trim($estudiante->apellidos . ' ' . $estudiante->nombres), 'UTF-8') }}</strong></td>
             </tr>
             <tr>
-                <td>80%</td>
-                <td style="text-align: right;">{{ number_format($promedio80 ?? 0.00, 2, ',', '.') }}</td>
+                <td class="label">Grado / Ocupación:</td>
+                <td class="value">{{ $estudiante->grado_academico ?: 'ESTUDIANTE' }}</td>
             </tr>
             <tr>
-                <td>Examen de Nivel</td>
-                <td style="text-align: right;">{{ number_format($examenNivel ?? 0.00, 2, ',', '.') }}</td>
+                <td class="label">Teléfono / Celular:</td>
+                <td class="value">{{ $estudiante->celular ?: 'N/A' }}</td>
             </tr>
             <tr>
-                <td>20%</td>
-                <td style="text-align: right;">{{ number_format($examen20 ?? 0.00, 2, ',', '.') }}</td>
-            </tr>
-            <tr style="border-top: 1.5px solid #000;">
-                <td>Promedio Nivel</td>
-                <td style="text-align: right;">{{ number_format($promedioNivel ?? 0.00, 2, ',', '.') }}</td>
+                <td class="label">Domicilio:</td>
+                <td class="value">{{ $estudiante->domicilio ?: 'N/A' }}</td>
             </tr>
         </table>
     </div>
 
-    <div class="final-box">
-        Promedio Gral de Fin de Gestión<br>
-        <span style="font-size: 11.5px;">{{ number_format($promedioGral ?? 0.00, 2, ',', '.') }}</span>
+    <!-- DATOS DE LOS PADRES / TUTOR -->
+    <div class="section-box">
+        <div class="section-header">2. DATOS DE LOS PADRES / TUTOR / EMERGENCIA</div>
+        <table class="info-table">
+            <tr>
+                <td class="label">Nombre de los Padres / Tutor:</td>
+                <td class="value"><strong>{{ $estudiante->nombre_padres ?: 'N/A' }}</strong></td>
+            </tr>
+            <tr>
+                <td class="label">Contacto de Emergencia:</td>
+                <td class="value">{{ $estudiante->contacto_emergencia ?: $estudiante->celular ?: 'N/A' }}</td>
+            </tr>
+        </table>
     </div>
 
-    <div class="note-text">
-        NOTA: El presente certificado de notas, no refleja la conclusión de sus estudios.
+    <!-- DATOS DEL CURSO E INSCRIPCIÓN -->
+    <div class="section-box">
+        <div class="section-header">3. DATOS DEL CURSO Y HORARIO</div>
+        <table class="info-table">
+            <tr>
+                <td class="label">Idioma Registrado:</td>
+                <td class="value"><strong>{{ strtoupper($curso->idioma ?? 'INGLÉS') }}</strong></td>
+            </tr>
+            <tr>
+                <td class="label">Nivel de Estudio:</td>
+                <td class="value"><strong>{{ strtoupper($curso->nivel ?? 'NIVEL 1') }}</strong></td>
+            </tr>
+            <tr>
+                <td class="label">Paralelo Asignado:</td>
+                <td class="value">{{ strtoupper($paralelo->nombre ?? 'A') }}</td>
+            </tr>
+            <tr>
+                <td class="label">Horario de Clases:</td>
+                <td class="value"><strong>{{ $curso->horario ?: ($paralelo->horario ?: '08:00 - 12:00 / Turno Regular') }}</strong></td>
+            </tr>
+            <tr>
+                <td class="label">Modalidad:</td>
+                <td class="value">{{ strtoupper($curso->modalidad ?? 'PRESENCIAL') }}</td>
+            </tr>
+            <tr>
+                <td class="label">Fecha de Inscripción:</td>
+                <td class="value">{{ $inscripcion->fecha_registro ?: date('Y-m-d') }}</td>
+            </tr>
+            <tr>
+                <td class="label">Estado de Inscripción:</td>
+                <td class="value"><span style="color: #03543f; font-weight: bold;">{{ strtoupper($inscripcion->estado ?: 'CONFIRMADO') }}</span></td>
+            </tr>
+        </table>
     </div>
-    <div class="date-text">
-        {{ date('d') }} de {{ $mesNombre }} de {{ date('Y') }}.
-    </div>
-    <div class="clear"></div>
 
     <table class="signatures-table">
         <tr>
-            <td style="width: 35%;">
-                Tte. Inf. Nerling Delgadillo Arce<br>
-                <strong>JEFE DE LA SUB SECCION ACADEMICA</strong>
+            <td style="width: 45%;">
+                <div class="sig-line">
+                    FIRMA DEL ESTUDIANTE / TUTOR<br>
+                    C.I. {{ $estudiante->ci }}
+                </div>
             </td>
-            <td style="width: 30%;">
-                Vo.Bo.<br><br>
-                My. DIM. Vaneza Mercedes Barrientos Fernández<br>
-                <strong>JEFE DE ESTUDIOS DE LA EIE. FILIAL COCHABAMBA</strong>
-            </td>
-            <td style="width: 35%;">
-                Cap. Inf. Luis Gerardo Thellaeche Borda<br>
-                <strong>JEFE DE LA SECCION ACADEMICA</strong>
+            <td style="width: 10%;"></td>
+            <td style="width: 45%;">
+                <div class="sig-line">
+                    SELLO Y FIRMA DE RECEPCIÓN<br>
+                    ESCUELA DE IDIOMAS DEL EJÉRCITO
+                </div>
             </td>
         </tr>
     </table>
 
-    <div class="qr-section">
-        <div style="font-size: 10px; font-weight: bold; border-bottom: 1px solid #000; margin-bottom: 3px;">CÓDIGO QR</div>
-        EIE-BOLIVIA<br>
-        DOCUMENTO OFICIAL<br>
+    <div class="qr-container">
+        CÓDIGO DE VERIFICACIÓN<br>
+        EIE-INSCRIPCIÓN-{{ $inscripcion->id_inscripcion ?: '1' }}<br>
         CI: {{ $estudiante->ci }}
+    </div>
+
+    <div class="footer" style="clear: both; padding-top: 15px;">
+        Documento Oficial de Registro de Inscripción emitido por el Sistema de Gestión Académica EIE. Cochabamba, Bolivia.
     </div>
 
 </body>
