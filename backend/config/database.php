@@ -48,13 +48,7 @@ return [
         'sqlite' => [
             'driver' => 'sqlite',
             'url' => env('DB_URL'),
-            'database' => (function() {
-                $dbEnv = env('DB_DATABASE');
-                if ($dbEnv && (str_ends_with($dbEnv, '.sqlite') || file_exists($dbEnv))) {
-                    return $dbEnv;
-                }
-                return database_path('database.sqlite');
-            })(),
+            'database' => database_path('database.sqlite'),
             'prefix' => '',
             'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
             'busy_timeout' => null,
