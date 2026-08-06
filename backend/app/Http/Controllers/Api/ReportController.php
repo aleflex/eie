@@ -161,7 +161,7 @@ class ReportController extends Controller
             ->filterMultiCriteria($filters)
             ->get();
 
-        $fileName = 'Reporte_Centralizador_EIE_' . date('Ymd_His') . '.xlsx';
+        $fileName = 'Relacion_Nominal_EIE_' . date('Ymd_His') . '.xlsx';
 
         $headers = [
             'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
@@ -174,69 +174,108 @@ class ReportController extends Controller
         $callback = function () use ($inscripciones) {
             echo '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
             echo '<head><meta charset="UTF-8">';
-            echo '<!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Centralizador EIE</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->';
+            echo '<!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Relacion Nominal</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->';
             echo '<style>';
-            echo 'table { border-collapse: collapse; font-family: Arial, sans-serif; font-size: 11px; }';
-            echo 'th { background-color: #003B71; color: #ffffff; font-weight: bold; text-align: center; border: 1px solid #002d57; padding: 8px; }';
-            echo 'td { border: 1px solid #d1d5db; padding: 6px; }';
-            echo '.title { font-size: 16px; font-weight: bold; color: #003B71; text-align: center; }';
-            echo '.subtitle { font-size: 12px; color: #4b5563; text-align: center; }';
-            echo '.num { text-align: center; }';
+            echo 'table { border-collapse: collapse; font-family: Arial, sans-serif; font-size: 9px; }';
+            echo 'th, td { border: 1px solid #000; padding: 3px 4px; text-align: center; vertical-align: middle; }';
+            echo 'th { background-color: #ffffff; color: #000; font-weight: bold; font-size: 8.5px; }';
+            echo '.header-title { font-weight: bold; font-size: 10.5px; border: none; text-align: center; }';
+            echo '.left { text-align: left; }';
             echo '</style>';
             echo '</head><body>';
 
             echo '<table>';
-            echo '<tr><td colspan="12" class="title">ESCUELA DE IDIOMAS DEL EJÉRCITO - COCHABAMBA</td></tr>';
-            echo '<tr><td colspan="12" class="subtitle">REPORTES Y CENTRALIZADOR ACADÉMICO OFICIAL</td></tr>';
-            echo '<tr><td colspan="12"><b>Fecha de Emisión:</b> ' . date('d/m/Y H:i:s') . '</td></tr>';
-            echo '<tr><td colspan="12"></td></tr>';
+            echo '<tr><td colspan="31" class="header-title">DEPARTAMENTO VI - EDUCACIÓN</td></tr>';
+            echo '<tr><td colspan="31" class="header-title">ESCUELA DE IDIOMAS DEL EJÉRCITO</td></tr>';
+            echo '<tr><td colspan="31" class="header-title"><u>BOLIVIA</u></td></tr>';
+            echo '<tr><td colspan="31" class="header-title">&nbsp;</td></tr>';
+            echo '<tr><td colspan="31" class="header-title">RELACION NOMINAL DEL PERSONAL DE ALUMNOS</td></tr>';
+            echo '<tr><td colspan="31" class="header-title">DEL CURSO: CGEC1108A26I FILIAL: COCHABAMBA BOOK: NIVEL 1</td></tr>';
+            echo '<tr><td colspan="31" class="header-title">&nbsp;</td></tr>';
 
+            // Column Header 1
             echo '<tr>';
-            echo '<th>Nº</th>';
-            echo '<th>ESTUDIANTE</th>';
-            echo '<th>C.I.</th>';
-            echo '<th>IDIOMA</th>';
-            echo '<th>NIVEL</th>';
-            echo '<th>PARALELO</th>';
-            echo '<th>TUTOR / PADRES</th>';
-            echo '<th>CELULAR EMERGENCIA</th>';
-            echo '<th>FECHA REGISTRO</th>';
-            echo '<th>PROMEDIO NOTAS</th>';
-            echo '<th>ASISTENCIA (%)</th>';
-            echo '<th>ESTADO</th>';
+            echo '<th rowspan="2">Nro</th>';
+            echo '<th rowspan="2">Grado</th>';
+            echo '<th colspan="2">APELLIDOS</th>';
+            echo '<th rowspan="2">Nombres</th>';
+            echo '<th colspan="14">ASISTENCIA</th>';
+            echo '<th colspan="4">HW</th>';
+            echo '<th colspan="4">EE</th>';
+            echo '<th colspan="4">LAB</th>';
+            echo '<th rowspan="2">PROM<br>100</th>';
+            echo '<th rowspan="2">PART<br>100</th>';
+            echo '<th rowspan="2">OP<br>100</th>';
+            echo '<th rowspan="2">OBS</th>';
+            echo '</tr>';
+
+            // Column Header 2
+            echo '<tr>';
+            echo '<th>Ap. Paterno</th>';
+            echo '<th>Ap. Materno</th>';
+            for ($a = 1; $a <= 14; $a++) {
+                echo '<th>' . sprintf('%02d', $a) . '</th>';
+            }
+            for ($h = 1; $h <= 4; $h++) { echo '<th>' . $h . '</th>'; }
+            for ($e = 1; $e <= 4; $e++) { echo '<th>' . $e . '</th>'; }
+            for ($l = 1; $l <= 4; $l++) { echo '<th>' . $l . '</th>'; }
             echo '</tr>';
 
             $i = 1;
             foreach ($inscripciones as $insc) {
-                $estudiante = $insc->estudiante;
-                $nombreCompleto = $estudiante ? trim(($estudiante->nombres ?? '') . ' ' . ($estudiante->apellidos ?? '')) : 'N/A';
-                $ci = $estudiante ? ($estudiante->ci ?? 'N/A') : 'N/A';
-                $idioma = $insc->curso ? ($insc->curso->idioma ? ($insc->curso->idioma->nombre_idioma ?? $insc->curso->idioma->nombre) : 'N/A') : 'N/A';
-                $nivel = $insc->curso ? ($insc->curso->nivel ?? 'N/A') : 'N/A';
-                $paralelo = $insc->paralelo ? ($insc->paralelo->nombre_paralelo ?? 'N/A') : 'N/A';
-                $tutor = $estudiante ? ($estudiante->nombre_padres ?? 'N/A') : 'N/A';
-                $emergencia = $estudiante ? ($estudiante->contacto_emergencia ?? $estudiante->celular ?? 'N/A') : 'N/A';
+                $est = $insc->estudiante;
+                $paterno = 'N/A';
+                $materno = '-';
+                $nombres = 'N/A';
+                $grado = $est ? ($est->grado_academico ?: 'SR') : 'SR';
 
-                $notasAvg = $insc->notas->count() > 0 ? round($insc->notas->avg('puntaje'), 1) : 0;
-                $totalAsist = $insc->asistencias->count();
-                $presentes = $insc->asistencias->where('estado', 'presente')->count();
-                $asistenciaPct = $totalAsist > 0 ? round(($presentes / $totalAsist) * 100, 1) : 100;
+                if ($est) {
+                    $parts = explode(' ', trim($est->apellidos ?? ''));
+                    $paterno = $parts[0] ?? 'N/A';
+                    $materno = count($parts) > 1 ? implode(' ', array_slice($parts, 1)) : '-';
+                    $nombres = $est->nombres ?? 'N/A';
+                }
 
                 echo '<tr>';
-                echo '<td class="num">' . $i++ . '</td>';
-                echo '<td>' . htmlspecialchars(mb_strtoupper($nombreCompleto, 'UTF-8')) . '</td>';
-                echo '<td>' . htmlspecialchars($ci) . '</td>';
-                echo '<td>' . htmlspecialchars($idioma) . '</td>';
-                echo '<td>' . htmlspecialchars($nivel) . '</td>';
-                echo '<td>' . htmlspecialchars($paralelo) . '</td>';
-                echo '<td>' . htmlspecialchars($tutor) . '</td>';
-                echo '<td>' . htmlspecialchars($emergencia) . '</td>';
-                echo '<td class="num">' . htmlspecialchars($insc->fecha_registro) . '</td>';
-                echo '<td class="num"><b>' . ($notasAvg > 0 ? $notasAvg : '-') . '</b></td>';
-                echo '<td class="num">' . $asistenciaPct . '%</td>';
-                echo '<td class="num"><b>' . strtoupper($insc->estado) . '</b></td>';
+                echo '<td>' . $i++ . '</td>';
+                echo '<td>' . htmlspecialchars(strtoupper($grado)) . '</td>';
+                echo '<td class="left">' . htmlspecialchars(strtoupper($paterno)) . '</td>';
+                echo '<td class="left">' . htmlspecialchars(strtoupper($materno)) . '</td>';
+                echo '<td class="left">' . htmlspecialchars(strtoupper($nombres)) . '</td>';
+
+                // 14 cols asistencia
+                for ($a = 1; $a <= 14; $a++) { echo '<td></td>'; }
+                // 4 HW
+                for ($h = 1; $h <= 4; $h++) { echo '<td></td>'; }
+                // 4 EE
+                for ($e = 1; $e <= 4; $e++) { echo '<td></td>'; }
+                // 4 LAB
+                for ($l = 1; $l <= 4; $l++) { echo '<td></td>'; }
+
+                $notasAvg = $insc->notas->count() > 0 ? round($insc->notas->avg('puntaje')) : 100;
+                echo '<td><b>' . $notasAvg . '</b></td>';
+                echo '<td>100</td>';
+                echo '<td>100</td>';
+                echo '<td></td>';
                 echo '</tr>';
             }
+
+            echo '<tr><td colspan="31" style="border:none;">&nbsp;</td></tr>';
+            echo '<tr><td colspan="31" class="left" style="border:none;"><b>NOMBRE DEL DOCENTE:</b> __________________________________________________</td></tr>';
+            echo '<tr><td colspan="31" class="left" style="border:none;"><b>NOMBRE DE EC:</b> ______________________________________________________</td></tr>';
+            echo '<tr><td colspan="31" class="left" style="border:none;"><b>OBSERVACIONES:</b> ____________________________________________________</td></tr>';
+            echo '<tr><td colspan="31" style="border:none;">&nbsp;</td></tr>';
+
+            // Glosario
+            echo '<tr>';
+            echo '<td colspan="8" class="left" style="border: 1px solid #000; font-size: 8.5px; font-weight: bold; background: #ffffff;">';
+            echo 'GLOSARIO:<br>';
+            echo 'A &nbsp;&nbsp;&nbsp;&nbsp;- ASISTIO A CLASE<br>';
+            echo '. &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- NO ASISTIO A CLASE<br>';
+            echo 'L &nbsp;&nbsp;&nbsp;&nbsp;- LICENCIA<br>';
+            echo 'S &nbsp;&nbsp;&nbsp;&nbsp;- ASISTIO SIN CAMARA';
+            echo '</td>';
+            echo '</tr>';
 
             echo '</table>';
             echo '</body></html>';

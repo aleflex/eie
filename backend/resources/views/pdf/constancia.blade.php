@@ -2,17 +2,25 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Constancia de Estudios - EIE</title>
+    <title>Reporte General de Notas</title>
     <style>
         @page {
-            margin: 2cm;
+            margin: 1.2cm 1.8cm;
         }
         body {
-            font-family: 'Helvetica', 'Arial', sans-serif;
-            line-height: 1.6;
-            color: #333;
+            font-family: 'Courier', 'Times New Roman', 'Arial', sans-serif;
+            font-size: 10px;
+            color: #000;
+            line-height: 1.3;
         }
-        .header {
+        .header-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 12px;
+        }
+        .header-left {
+            font-weight: bold;
+            font-size: 9.5px;
             text-align: center;
             margin-bottom: 30px;
             border-bottom: 2px solid #1a237e;
