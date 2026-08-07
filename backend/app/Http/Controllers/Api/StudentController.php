@@ -152,8 +152,8 @@ class StudentController extends Controller
             if ($supabaseUrl) {
                 $photoUrl = $supabaseUrl;
             } else {
-                // Respaldar foto como Data URI en MySQL para que NUNCA se borre
-                $photoUrl = 'data:' . $mime . ';base64,' . base64_encode($fileBinary);
+                $path = $file->store('fotos/' . $ci, 'public');
+                $photoUrl = '/storage/' . $path;
             }
 
             $estudiante->foto_4x4_url = $photoUrl;
