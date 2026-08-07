@@ -64,7 +64,18 @@ export class ParalelosComponent implements OnInit {
     this.isLoading = true;
     this.paraleloService.getParalelos().subscribe({
       next: (data) => {
-        this.paralelos = data;
+        this.paralelos = (data || []).map((p: any) => {
+          if (p.docentes && Array.isArray(p.docentes)) {
+            const seen = new Set();
+            p.docentes = p.docentes.filter((d: any) => {
+              const key = d.id_docente || d.id;
+              if (seen.has(key)) return false;
+              seen.add(key);
+              return true;
+            });
+          }
+          return p;
+        });
         this.isLoading = false;
       },
       error: () => this.isLoading = false

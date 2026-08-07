@@ -27,7 +27,13 @@ class ParaleloController extends Controller
      */
     public function index()
     {
-        return Paralelo::with(['curso', 'aula', 'docentes.user', 'horarios'])->get();
+        $paralelos = Paralelo::with(['curso', 'aula', 'docentes.user', 'horarios'])->get();
+        foreach ($paralelos as $p) {
+            if ($p->relationLoaded('docentes')) {
+                $p->setRelation('docentes', $p->docentes->unique('id_docente')->values());
+            }
+        }
+        return response()->json($paralelos);
     }
 
     /**
