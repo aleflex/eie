@@ -152,13 +152,13 @@ class StudentController extends Controller
             if ($supabaseUrl) {
                 $photoUrl = $supabaseUrl;
             } else {
-                $path = $file->store('fotos/' . $ci, 'public');
-                $photoUrl = '/storage/' . $path;
+                // Respaldar foto como Data URI en MySQL para que NUNCA se borre
+                $photoUrl = 'data:' . $mime . ';base64,' . base64_encode($fileBinary);
             }
 
             $estudiante->foto_4x4_url = $photoUrl;
             $data['foto_4x4_url'] = $photoUrl;
-        } elseif ($request->has('foto') && is_string($request->input('foto')) && str_starts_with($request->input('foto'), 'http')) {
+        } elseif ($request->has('foto') && is_string($request->input('foto')) && (str_starts_with($request->input('foto'), 'http') || str_starts_with($request->input('foto'), 'data:'))) {
             $estudiante->foto_4x4_url = $request->input('foto');
             $data['foto_4x4_url'] = $request->input('foto');
         }

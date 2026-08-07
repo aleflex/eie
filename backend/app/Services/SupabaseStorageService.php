@@ -12,12 +12,35 @@ class SupabaseStorageService
     protected static $bucket = 'eie-storage';
 
     /**
-     * Sube un archivo binario o Base64 a Supabase Storage y retorna la URL pública.
-     * Si falla o el bucket no existe aún, retorna NULL para activar el fallback.
+     * Intenta asegurar que el bucket público exista en Supabase.
+     */
+    protected static function ensureBucketExists()
+    {
+        try {
+            $bucketUrl = rtrim(self::$supabaseUrl, '/') . '/storage/v1/bucket';
+            Http::withHeaders([
+                'apikey' => self::$anonKey,
+                'Authorization' => 'Bearer ' . self::$anonKey,
+                'Content-Type' => 'application/json'
+            ])->post($bucketUrl, [
+                'id' => self::$bucket,
+                'name' => self::$bucket,
+                'public' => true
+            ]);
+        } catch (\Exception $e) {
+            // Silencioso si falla
+        }
+    }
+
+    /**
+     * Sube un archivo binario a Supabase Storage y retorna la URL pública.
+     * Si falla, retorna NULL para activar el fallback permanente en BD.
      */
     public static function uploadFile($fileBinary, $remotePath, $mimeType = 'application/octet-stream')
     {
         try {
+            self::ensureBucketExists();
+
             $uploadUrl = rtrim(self::$supabaseUrl, '/') . '/storage/v1/object/' . self::$bucket . '/' . ltrim($remotePath, '/');
 
             $response = Http::withHeaders([

@@ -119,16 +119,5 @@ Route::get('/storage/{p1}/{p2}/{filename}', function ($p1, $p2, $filename) {
         ]);
     }
 
-    // Avatar SVG elegante de reserva (HTTP 200 OK)
-    $svgAvatar = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
-        <rect width="120" height="120" rx="60" fill="#1e3a8a"/>
-        <path d="M60 25 C45 25 35 37 35 52 C35 67 45 77 60 77 C75 77 85 67 85 52 C85 37 75 25 60 25 Z" fill="#ffffff"/>
-        <path d="M22 102 C22 82 38 74 60 74 C82 74 98 82 98 102 Z" fill="#ffffff"/>
-    </svg>';
-
-    return \Illuminate\Support\Facades\Response::make($svgAvatar, 200, [
-        'Content-Type' => 'image/svg+xml',
-        'Cache-Control' => 'no-cache, private',
-        'Access-Control-Allow-Origin' => '*',
-    ]);
+    abort(404, 'Archivo no encontrado');
 });

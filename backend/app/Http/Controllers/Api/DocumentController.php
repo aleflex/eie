@@ -68,8 +68,8 @@ class DocumentController extends Controller
             if ($supabaseUrl) {
                 $finalPath = $supabaseUrl;
             } else {
-                $path = $file->storeAs('estudiantes/' . $estudianteId, $fileName, 'documentos');
-                $finalPath = '/storage/documentos/' . $path;
+                // Respaldar documento como Data URI en MySQL para que NUNCA se borre
+                $finalPath = 'data:' . $mime . ';base64,' . base64_encode($fileBinary);
             }
 
             // Buscar tipo documento en catalogo
