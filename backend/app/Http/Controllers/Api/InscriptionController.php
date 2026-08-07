@@ -137,12 +137,23 @@ class InscriptionController extends Controller
 
             // 5. Procesar Archivo de Foto
             if ($request->hasFile('foto')) {
-                $path = $request->file('foto')->store('fotos/' . $request->ci, 'public');
-                $estudiante->foto_4x4_url = '/storage/fotos/' . $request->ci . '/' . basename($path);
+                $file = $request->file('foto');
+                $mime = $file->getClientMimeType() ?: 'image/jpeg';
+                $fileBinary = file_get_contents($file->getRealPath());
+                $fileName = time() . '_' . preg_replace('/[^a-zA-Z0-9\._-]/', '_', $file->getClientOriginalName());
+                $remotePath = 'fotos/' . $request->ci . '/' . $fileName;
+
+                $supabaseUrl = \App\Services\SupabaseStorageService::uploadFile($fileBinary, $remotePath, $mime);
+                if ($supabaseUrl) {
+                    $estudiante->foto_4x4_url = $supabaseUrl;
+                } else {
+                    $path = $file->store('fotos/' . $request->ci, 'public');
+                    $estudiante->foto_4x4_url = '/storage/' . $path;
+                }
                 $estudiante->save();
             }
 
-            // 6. Procesar y almacenar los demás documentos en la tabla 'documentos_estudiante'
+            // 6. Procesar y almacenar los demás documentos en Supabase Storage
             $filesToProcess = [
                 'carnet' => 'FOTOCOPIA CI',
                 'titulo' => 'TITULO DE BACHILLER',
@@ -157,16 +168,19 @@ class InscriptionController extends Controller
             foreach ($filesToProcess as $fileKey => $docTypeName) {
                 if ($request->hasFile($fileKey)) {
                     $file = $request->file($fileKey);
-                    $fileName = time() . '_' . $file->getClientOriginalName();
-                    
-                    // Guardar en el disco 'documentos'
-                    $path = $file->storeAs('estudiantes/' . $estudiante->id_estudiante, $fileName, 'documentos');
+                    $mime = $file->getClientMimeType() ?: $file->getMimeType() ?: 'application/pdf';
+                    $fileBinary = file_get_contents($file->getRealPath());
+                    $fileName = time() . '_' . preg_replace('/[^a-zA-Z0-9\._-]/', '_', $file->getClientOriginalName());
+                    $remotePath = 'documentos/estudiantes/' . $estudiante->id_estudiante . '/' . $fileName;
+
+                    $supabaseUrl = \App\Services\SupabaseStorageService::uploadFile($fileBinary, $remotePath, $mime);
+                    $finalPath = $supabaseUrl ?: ('/storage/documentos/' . $file->storeAs('estudiantes/' . $estudiante->id_estudiante, $fileName, 'documentos'));
 
                     \App\Models\Documento::create([
                         'id_estudiante' => $estudiante->id_estudiante,
                         'tipo_documento' => $docTypeName,
                         'nombre_archivo' => $fileName,
-                        'ruta_archivo' => '/storage/documentos/' . $path
+                        'ruta_archivo' => $finalPath
                     ]);
                 }
             }
