@@ -20,6 +20,14 @@
     </div>
 
     <nav class="sidebar-nav">
+      <button class="nav-item paralelo-nav-btn mb-2" [class.active]="tabActivo === 'perfil'" (click)="setTab('perfil'); isMobileMenuOpen = false" style="border-left-color: #2563eb;">
+        <i class="material-icons-outlined">person</i>
+        <div class="paralelo-nav-info">
+          <span class="paralelo-nombre">Mi Perfil</span>
+          <span class="paralelo-curso">Información Personal</span>
+        </div>
+      </button>
+
       <p class="nav-section-title">MIS PARALELOS</p>
       <button
         *ngFor="let paralelo of paralelos"
@@ -102,8 +110,71 @@
       </div>
     </div>
 
+    <!-- ======================== SECCIÓN: MI PERFIL / INFORMACIÓN PERSONAL ======================== -->
+    <section class="profile-section animate-fade-in" *ngIf="tabActivo === 'perfil' && !isLoading">
+      <div class="card border-0 shadow-sm rounded-4 p-4 mb-4" style="background: #ffffff; border-radius: 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.06);">
+        <div class="d-flex align-items-center gap-4 flex-wrap pb-3 border-bottom mb-4">
+          <div class="profile-avatar-large" style="width: 80px; height: 80px; background: #1e3a8a; color: #ffffff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 36px; font-weight: bold;">
+            <i class="material-icons-outlined" style="font-size: 48px;">person</i>
+          </div>
+          <div>
+            <h2 class="m-0 font-weight-bold" style="color: #0f172a; font-size: 1.5rem;">{{ docente?.user?.name || user?.name || 'Instructor EIE' }}</h2>
+            <span class="badge bg-primary px-3 py-2 mt-2" style="font-size: 0.85rem; background-color: #2563eb !important;">Instructor / Docente de Idiomas</span>
+          </div>
+        </div>
+
+        <h4 class="mb-3" style="color: #1e3a8a; font-weight: 600;"><i class="material-icons-outlined align-middle me-1">badge</i> Información Personal y Académica</h4>
+        <div class="row g-3" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px;">
+          <div class="p-3 rounded-3" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px;">
+            <small class="text-muted d-block" style="color: #64748b; font-size: 0.8rem;">Nombres y Apellidos</small>
+            <strong style="color: #1e293b; font-size: 0.95rem;">{{ docente?.user?.name || user?.name || '—' }}</strong>
+          </div>
+          <div class="p-3 rounded-3" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px;">
+            <small class="text-muted d-block" style="color: #64748b; font-size: 0.8rem;">Carnet de Identidad (C.I.)</small>
+            <strong style="color: #1e293b; font-size: 0.95rem;">{{ docente?.user?.ci || user?.ci || '—' }} {{ docente?.user?.expedido || '' }}</strong>
+          </div>
+          <div class="p-3 rounded-3" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px;">
+            <small class="text-muted d-block" style="color: #64748b; font-size: 0.8rem;">Correo Institucional</small>
+            <strong style="color: #1e293b; font-size: 0.95rem;">{{ docente?.user?.correo_institucional || docente?.user?.email || user?.email || '—' }}</strong>
+          </div>
+          <div class="p-3 rounded-3" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px;">
+            <small class="text-muted d-block" style="color: #64748b; font-size: 0.8rem;">Celular / Teléfono</small>
+            <strong style="color: #1e293b; font-size: 0.95rem;">{{ docente?.celular || '—' }}</strong>
+          </div>
+          <div class="p-3 rounded-3" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px;">
+            <small class="text-muted d-block" style="color: #64748b; font-size: 0.8rem;">Especialidad / Materia</small>
+            <strong style="color: #1e293b; font-size: 0.95rem;">{{ docente?.especialidad || 'Idiomas EIE' }}</strong>
+          </div>
+          <div class="p-3 rounded-3" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px;">
+            <small class="text-muted d-block" style="color: #64748b; font-size: 0.8rem;">Estado de Contrato</small>
+            <strong [style.color]="contratoPorVencer ? '#dc2626' : '#16a34a'" style="font-size: 0.95rem;">
+              {{ contratoPorVencer ? 'Por Vencer (' + (docente?.fecha_contrato | date:'dd/MM/yyyy') + ')' : 'VIGENTE' }}
+            </strong>
+          </div>
+        </div>
+
+        <!-- Tarjeta de Ajuste Biométrico (Huella / Rostro) -->
+        <div class="mt-4 p-3 rounded-3 border" style="background: #f0f9ff; border-color: #bae6fd !important; border-radius: 12px; margin-top: 24px;">
+          <div class="d-flex align-items-center justify-content-between gap-3" style="display: flex; align-items: center; justify-content: space-between;">
+            <div class="d-flex align-items-center gap-3" style="display: flex; align-items: center; gap: 12px;">
+              <div style="background: #0284c7; color: #ffffff; width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                <i class="material-icons-outlined" style="font-size: 24px;">fingerprint</i>
+              </div>
+              <div>
+                <strong style="font-size: 1rem; color: #0c4a6e; display: block;">Acceso Biométrico (Huella / Rostro)</strong>
+                <small style="font-size: 0.82rem; color: #0369a1;">Habilitar o deshabilitar inicio de sesión biométrico en este dispositivo celular</small>
+              </div>
+            </div>
+            <div class="form-check form-switch m-0">
+              <input class="form-check-input" type="checkbox" id="biometricSwitchDocenteProfile" [checked]="biometricEnabled" (change)="toggleBiometric($event)" style="width: 46px; height: 23px; cursor: pointer;" aria-label="Activar acceso biométrico" title="Activar acceso biométrico">
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- Estadísticas -->
-    <section class="stats-grid animate-fade-in" *ngIf="!isLoading && !errorMsg">
+    <section class="stats-grid animate-fade-in" *ngIf="!isLoading && !errorMsg && tabActivo !== 'perfil'">
       <div class="stat-card">
         <div class="stat-icon blue">
           <i class="material-icons-outlined">class</i>
@@ -134,7 +205,7 @@
     </section>
 
     <!-- Panel con tabs -->
-    <section class="table-container animate-fade-in delay-1" *ngIf="!isLoading && paraleloActivo">
+    <section class="table-container animate-fade-in delay-1" *ngIf="!isLoading && paraleloActivo && tabActivo !== 'perfil'">
 
       <!-- Tabs de navegación -->
       <div class="tabs-header">
@@ -165,10 +236,11 @@
         </div>
       </div>
 
-      <!-- Info del paralelo -->
-      <div class="paralelo-meta no-print">
+      <!-- Información del Paralelo Seleccionado -->
+      <div class="paralelo-info-banner">
+        <h2>{{ paraleloActivo.nombre }}</h2>
         <span class="meta-badge">
-          <i class="material-icons-outlined">school</i>
+          <i class="material-icons-outlined">translate</i>
           {{ paraleloActivo.curso?.idioma }} — {{ paraleloActivo.curso?.nivel }}
         </span>
         <span class="meta-badge" *ngIf="paraleloActivo.aula">
@@ -196,6 +268,7 @@
                 <th>Teléfono</th>
                 <th>Correo Electrónico</th>
                 <th>Estado</th>
+                <th class="no-print">Documentación</th>
               </tr>
             </thead>
             <tbody>
@@ -212,6 +285,11 @@
                     [class.estado-retirado]="insc.estado === 'retirado'">
                     {{ insc.estado === 'activo' ? 'Habilitado' : insc.estado === 'pendiente' ? 'Pendiente' : insc.estado }}
                   </span>
+                </td>
+                <td class="no-print">
+                  <button type="button" class="btn btn-sm btn-outline-primary py-1 px-2" (click)="habilitarDocumentosEstudiante(insc.estudiante?.id_estudiante || insc.estudiante?.id)" title="Habilitar subida de documentos digitales al estudiante" style="font-size: 0.8rem; border-color: #2563eb; color: #2563eb;">
+                    <i class="material-icons-outlined align-middle" style="font-size: 15px;">lock_open</i> Habilitar Documentos
+                  </button>
                 </td>
               </tr>
             </tbody>

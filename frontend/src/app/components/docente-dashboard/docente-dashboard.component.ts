@@ -35,7 +35,7 @@ export class DocenteDashboardComponent implements OnInit {
   today = new Date();
 
   // Tabs
-  tabActivo: 'lista' | 'notas' | 'asistencia' = 'lista';
+  tabActivo: 'perfil' | 'lista' | 'notas' | 'asistencia' = 'perfil';
 
   // Notas
   periodoSeleccionado = 'Parcial 1';
@@ -126,13 +126,62 @@ export class DocenteDashboardComponent implements OnInit {
     }
   }
 
-  setTab(tab: 'lista' | 'notas' | 'asistencia') {
+  setTab(tab: 'perfil' | 'lista' | 'notas' | 'asistencia') {
     this.tabActivo = tab;
     this.notasMsg = '';
     this.asistenciaMsg = '';
 
     if (tab === 'notas') this.cargarNotasDelPeriodo();
     if (tab === 'asistencia') this.cargarAsistenciaDelDia();
+  }
+
+  habilitarDocumentosEstudiante(estudianteId: number) {
+    const horas = prompt('¿Por cuántas horas desea habilitar la subida de documentos al estudiante? (ej. 24, 48)', '24');
+    if (!horas) return;
+    const numHoras = parseInt(horas, 10);
+    if (isNaN(numHoras) || numHoras <= 0) {
+      alert('Por favor ingrese un número válido de horas.');
+      return;
+    }
+
+    const fechaLimite = new Date();
+    fechaLimite.setHours(fechaLimite.getHours() + numHoras);
+    const fechaStr = fechaLimite.toISOString().slice(0, 19).replace('T', ' ');
+
+    this.http.put(`${this.apiUrl}/students/${estudianteId}`, {
+      documentos_habilitados_hasta: fechaStr
+    }).subscribe({
+      next: () => {
+        alert(`Subida de documentos habilitada exitosamente por ${numHoras} horas (hasta ${fechaLimite.toLocaleString('es-BO')}).`);
+        this.cargarMisParalelos();
+      },
+      error: (err) => {
+        alert('Error al habilitar documentos: ' + (err.error?.message || err.message));
+      }
+    });
+  }
+
+  getPhotoUrl(url: string | null): string {
+    if (!url) return '';
+    const cleanUrl = url.trim().replace(/[\r\n\s]+/g, '');
+    if (cleanUrl.startsWith('data:')) {
+      if (!cleanUrl.includes(';base64,') || cleanUrl.length < 50) return '';
+      return cleanUrl;
+    }
+    if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) return cleanUrl;
+    const apiBase = environment.apiUrl.replace(/\/+$/, '');
+    if (cleanUrl.startsWith('/storage/')) return apiBase + cleanUrl;
+    if (cleanUrl.startsWith('storage/')) return apiBase + '/' + cleanUrl;
+    return apiBase + '/storage/' + cleanUrl.replace(/^\/+/, '');
+  }
+
+  onImgError(event: any) {
+    if (event && event.target) {
+      event.target.style.display = 'none';
+      if (event.target.nextElementSibling) {
+        event.target.nextElementSibling.style.display = 'flex';
+      }
+    }
   }
 
   resetForms() {
