@@ -683,7 +683,13 @@ export class StudentsComponent implements OnInit {
       return '';
     }
     const cleanUrl = url.trim().replace(/[\r\n\s]+/g, '');
-    if (cleanUrl.startsWith('data:') || cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) {
+    if (cleanUrl.startsWith('data:')) {
+      if (!cleanUrl.includes(';base64,') || cleanUrl.length < 50) {
+        return '';
+      }
+      return cleanUrl;
+    }
+    if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) {
       return cleanUrl;
     }
     const apiUrl = environment.apiUrl.replace(/\/+$/, '');
