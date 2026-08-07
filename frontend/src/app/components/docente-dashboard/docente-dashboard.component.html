@@ -239,7 +239,9 @@
         <div class="table-header-info print-title">
           <h2><i class="material-icons-outlined">group</i> Lista — {{ paraleloActivo.nombre }}</h2>
         </div>
-        <div class="table-responsive">
+
+        <!-- Vista Tabla para Escritorio -->
+        <div class="table-responsive desktop-table-view">
           <table *ngIf="estudiantesActivos.length > 0">
             <thead>
               <tr>
@@ -280,6 +282,48 @@
             <p>No hay estudiantes inscritos en este paralelo.</p>
           </div>
         </div>
+
+        <!-- Vista Tarjetas para Android / Celulares -->
+        <div class="mobile-cards-view">
+          <div *ngFor="let insc of estudiantesActivos; let i = index" class="mobile-student-card">
+            <div class="mobile-student-header">
+              <div class="mobile-student-name">
+                <span class="badge bg-secondary me-1">#{{ i + 1 }}</span>
+                <strong>{{ insc.estudiante?.nombres }} {{ insc.estudiante?.apellidos }}</strong>
+              </div>
+              <span class="estado-badge"
+                [class.estado-activo]="insc.estado === 'activo'"
+                [class.estado-pendiente]="insc.estado === 'pendiente'"
+                [class.estado-retirado]="insc.estado === 'retirado'">
+                {{ insc.estado === 'activo' ? 'Habilitado' : insc.estado }}
+              </span>
+            </div>
+            <div class="mobile-student-body">
+              <div class="mobile-info-row">
+                <span><i class="material-icons-outlined" style="font-size: 16px;">badge</i> C.I.:</span>
+                <strong>{{ insc.estudiante?.ci }}</strong>
+              </div>
+              <div class="mobile-info-row">
+                <span><i class="material-icons-outlined" style="font-size: 16px;">phone</i> Teléfono:</span>
+                <strong>{{ insc.estudiante?.celular || '—' }}</strong>
+              </div>
+              <div class="mobile-info-row">
+                <span><i class="material-icons-outlined" style="font-size: 16px;">email</i> Correo:</span>
+                <strong class="text-truncate" style="max-width: 180px;">{{ insc.estudiante?.correo_electronico || '—' }}</strong>
+              </div>
+              <div class="mt-2 no-print">
+                <button type="button" class="btn btn-sm btn-outline-primary w-100 py-1" (click)="habilitarDocumentosEstudiante(insc.estudiante?.id_estudiante || insc.estudiante?.id)">
+                  <i class="material-icons-outlined align-middle" style="font-size: 15px;">lock_open</i> Habilitar Documentos
+                </button>
+              </div>
+            </div>
+          </div>
+          <div *ngIf="estudiantesActivos.length === 0" class="empty-state">
+            <i class="material-icons-outlined">person_off</i>
+            <p>No hay estudiantes inscritos en este paralelo.</p>
+          </div>
+        </div>
+
         <div class="lista-footer print-only">
           <p>Instituto de Idiomas EIE — Lista generada el {{ today | date:'fullDate' }}</p>
           <p>Firma del Instructor: ______________________________</p>
@@ -301,7 +345,8 @@
           </button>
         </div>
 
-        <div class="table-responsive">
+        <!-- Vista Tabla para Escritorio -->
+        <div class="table-responsive desktop-table-view">
           <table *ngIf="estudiantesActivos.length > 0">
             <thead>
               <tr>
@@ -340,6 +385,38 @@
           </table>
         </div>
 
+        <!-- Vista Tarjetas para Móviles -->
+        <div class="mobile-cards-view">
+          <div *ngFor="let insc of estudiantesActivos; let i = index" class="mobile-student-card">
+            <div class="mobile-student-header">
+              <strong>#{{ i + 1 }} {{ insc.estudiante?.nombres }} {{ insc.estudiante?.apellidos }}</strong>
+              <small class="text-muted">C.I.: {{ insc.estudiante?.ci }}</small>
+            </div>
+            <div class="mobile-student-body">
+              <div class="mb-2">
+                <label class="form-label small fw-bold mb-1">Nota (0 - 100):</label>
+                <input
+                  type="number" min="0" max="100" step="0.5"
+                  class="form-control form-control-sm nota-input"
+                  [(ngModel)]="notasForm[insc.id + '_' + periodoSeleccionado]"
+                  placeholder="Ej: 85"
+                  [class.nota-aprobado]="getNotaValor(insc.id) >= 71"
+                  [class.nota-reprobado]="getNotaValor(insc.id) > 0 && getNotaValor(insc.id) < 71"
+                >
+              </div>
+              <div>
+                <label class="form-label small fw-bold mb-1">Observación:</label>
+                <input
+                  type="text"
+                  class="form-control form-control-sm"
+                  [(ngModel)]="observacionesForm[insc.id + '_' + periodoSeleccionado]"
+                  placeholder="Opcional..."
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div *ngIf="notasMsg" class="save-msg" [class.save-error]="notasError">
           <i class="material-icons-outlined">{{ notasError ? 'error' : 'check_circle' }}</i>
           {{ notasMsg }}
@@ -360,7 +437,8 @@
           </button>
         </div>
 
-        <div class="table-responsive">
+        <!-- Vista Tabla para Escritorio -->
+        <div class="table-responsive desktop-table-view">
           <table *ngIf="estudiantesActivos.length > 0">
             <thead>
               <tr>
@@ -400,6 +478,35 @@
               </tr>
             </tbody>
           </table>
+        </div>
+
+        <!-- Vista Tarjetas para Móviles -->
+        <div class="mobile-cards-view">
+          <div *ngFor="let insc of estudiantesActivos; let i = index" class="mobile-student-card">
+            <div class="mobile-student-header">
+              <strong>#{{ i + 1 }} {{ insc.estudiante?.nombres }} {{ insc.estudiante?.apellidos }}</strong>
+              <small class="text-muted">C.I.: {{ insc.estudiante?.ci }}</small>
+            </div>
+            <div class="mobile-student-body">
+              <div class="asistencia-btns mb-2" style="display: flex; gap: 4px;">
+                <button class="btn-asistencia presente flex-fill py-1"
+                  [class.selected]="asistenciaForm[insc.id] === 'presente'"
+                  (click)="setAsistencia(insc.id, 'presente')">Presente (P)</button>
+                <button class="btn-asistencia ausente flex-fill py-1"
+                  [class.selected]="asistenciaForm[insc.id] === 'ausente'"
+                  (click)="setAsistencia(insc.id, 'ausente')">Ausente (A)</button>
+                <button class="btn-asistencia tardanza flex-fill py-1"
+                  [class.selected]="asistenciaForm[insc.id] === 'tardanza'"
+                  (click)="setAsistencia(insc.id, 'tardanza')">Tardanza (T)</button>
+                <button class="btn-asistencia justificado flex-fill py-1"
+                  [class.selected]="asistenciaForm[insc.id] === 'justificado'"
+                  (click)="setAsistencia(insc.id, 'justificado')">Justificado (J)</button>
+              </div>
+              <input type="text" class="form-control form-control-sm"
+                [(ngModel)]="observacionAsistenciaForm[insc.id]"
+                placeholder="Observación opcional...">
+            </div>
+          </div>
         </div>
 
         <div class="asistencia-legend">

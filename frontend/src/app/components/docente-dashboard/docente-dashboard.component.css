@@ -529,6 +529,91 @@
 }
 
 /* =========================================
+   ESTILOS MÓVILES (ANDROID / APK / CELULARES)
+   ========================================= */
+.mobile-cards-view {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .desktop-table-view {
+    display: none !important;
+  }
+
+  .mobile-cards-view {
+    display: flex !important;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 1rem;
+  }
+
+  .mobile-student-card {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 12px;
+    padding: 14px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  }
+
+  .mobile-student-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 8px;
+    margin-bottom: 10px;
+  }
+
+  .mobile-student-name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #0f172a;
+    font-size: 0.95rem;
+  }
+
+  .mobile-student-body {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 0.88rem;
+  }
+
+  .mobile-info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #475569;
+  }
+
+  .tabs-header {
+    flex-direction: row;
+    overflow-x: auto;
+    white-space: nowrap;
+    padding-bottom: 6px;
+    gap: 6px;
+  }
+
+  .tab-btn {
+    padding: 0.5rem 0.8rem;
+    font-size: 0.82rem;
+    flex-shrink: 0;
+  }
+
+  .tab-header-right {
+    width: 100%;
+    margin-left: 0;
+    margin-top: 8px;
+    display: flex;
+    justify-content: stretch;
+  }
+
+  .tab-header-right button {
+    flex: 1;
+  }
+}
+
+/* =========================================
    ESTILOS DE IMPRESIÓN
    ========================================= */
 .print-only {
