@@ -1,7 +1,7 @@
 /**
  * Configuración del Servidor Backend API (Laravel).
  */
-const DOMINIO_SERVIDOR_BACKEND: string = 'https://eie-production.up.railway.app';
+const DOMINIO_SERVIDOR_BACKEND: string = 'https://eie-backend-9n36.onrender.com';
 
 const getApiUrl = () => {
   if (typeof window !== 'undefined') {
@@ -13,7 +13,11 @@ const getApiUrl = () => {
 
     try {
       const custom = localStorage.getItem('custom_api_url');
-      if (custom) return custom;
+      if (custom && custom.includes('railway.app')) {
+        localStorage.removeItem('custom_api_url');
+      } else if (custom) {
+        return custom;
+      }
     } catch (e) {}
   }
   return DOMINIO_SERVIDOR_BACKEND;

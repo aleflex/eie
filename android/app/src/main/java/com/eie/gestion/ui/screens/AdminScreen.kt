@@ -25,9 +25,14 @@ import com.eie.gestion.ui.theme.EmiBlue
 import com.eie.gestion.ui.theme.EmiYellow
 import com.eie.gestion.ui.theme.SuccessGreen
 import com.eie.gestion.ui.theme.TextMuted
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import kotlinx.coroutines.launch
 
-@OptIn(Material3Api::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdminScreen(
     repository: AppRepository,
@@ -36,6 +41,7 @@ fun AdminScreen(
     var selectedTab by remember { mutableStateOf(0) }
     val tabTitles = listOf("Estudiantes", "Inscripciones")
     val coroutineScope = rememberCoroutineScope()
+    val lifecycleOwner = LocalLifecycleOwner.current
 
     // Estados de datos
     var estudiantes by remember { mutableStateOf<List<Estudiante>>(emptyList()) }
@@ -90,10 +96,27 @@ fun AdminScreen(
         }
     }
 
-    // Cargar inicial
-    LaunchedEffect(Unit) {
-        loadEstudiantes()
-        loadInscripciones()
+    // Cargar automáticamente al reanudar la APK (Lifecycle ON_RESUME)
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                loadEstudiantes()
+                loadInscripciones()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
+    // Cargar automáticamente al cambiar de pestaña
+    LaunchedEffect(selectedTab) {
+        if (selectedTab == 0) {
+            loadEstudiantes()
+        } else {
+            loadInscripciones()
+        }
     }
 
     Scaffold(
@@ -709,7 +732,7 @@ fun InscripcionItemCard(inscripcion: Inscripcion) {
     }
 }
 
-@OptIn(Material3Api::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StudentFormDialog(
     estudiante: Estudiante?,
@@ -829,7 +852,7 @@ fun StudentFormDialog(
     )
 }
 
-@OptIn(Material3Api::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InscriptionFormDialog(
     estudiantes: List<Estudiante>,

@@ -11,14 +11,19 @@ class SupabaseStorageService
     protected static $anonKey = 'sb_publishable_te0VbMYKOOy_6rzDX8Nu9g_YrvMQzIO';
     protected static $bucket = 'eie-storage';
 
+    protected static $bucketChecked = false;
+
     /**
      * Intenta asegurar que el bucket público exista en Supabase.
      */
     protected static function ensureBucketExists()
     {
+        if (self::$bucketChecked) {
+            return;
+        }
         try {
             $bucketUrl = rtrim(self::$supabaseUrl, '/') . '/storage/v1/bucket';
-            Http::withHeaders([
+            Http::timeout(3)->withHeaders([
                 'apikey' => self::$anonKey,
                 'Authorization' => 'Bearer ' . self::$anonKey,
                 'Content-Type' => 'application/json'
@@ -27,6 +32,7 @@ class SupabaseStorageService
                 'name' => self::$bucket,
                 'public' => true
             ]);
+            self::$bucketChecked = true;
         } catch (\Exception $e) {
             // Silencioso si falla
         }
@@ -43,7 +49,7 @@ class SupabaseStorageService
 
             $uploadUrl = rtrim(self::$supabaseUrl, '/') . '/storage/v1/object/' . self::$bucket . '/' . ltrim($remotePath, '/');
 
-            $response = Http::withHeaders([
+            $response = Http::timeout(4)->withHeaders([
                 'apikey' => self::$anonKey,
                 'Authorization' => 'Bearer ' . self::$anonKey,
                 'Content-Type' => $mimeType,

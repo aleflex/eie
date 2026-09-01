@@ -13,42 +13,42 @@
     </div>
 
     <nav class="sidebar-nav">
-      <a routerLink="/admin" routerLinkActive="active" class="nav-item">
+      <a routerLink="/admin" routerLinkActive="active" class="nav-item" (click)="closeMobileMenu()">
         <i class="material-icons-outlined">dashboard</i>
         <span *ngIf="!isSidebarCollapsed">Panel Principal</span>
       </a>
-      <a routerLink="/students" routerLinkActive="active" class="nav-item">
+      <a routerLink="/students" routerLinkActive="active" class="nav-item" (click)="closeMobileMenu()">
         <i class="material-icons-outlined">people</i>
         <span *ngIf="!isSidebarCollapsed">Estudiantes</span>
       </a>
-      <a routerLink="/courses" routerLinkActive="active" class="nav-item">
+      <a routerLink="/courses" routerLinkActive="active" class="nav-item" (click)="closeMobileMenu()">
         <i class="material-icons-outlined">school</i>
         <span *ngIf="!isSidebarCollapsed">Cursos</span>
       </a>
-      <a routerLink="/docentes-list" routerLinkActive="active" class="nav-item">
+      <a routerLink="/docentes-list" routerLinkActive="active" class="nav-item" (click)="closeMobileMenu()">
         <i class="material-icons-outlined">person</i>
         <span *ngIf="!isSidebarCollapsed">Instructores</span>
       </a>
-      <a routerLink="/paralelos" routerLinkActive="active" class="nav-item">
+      <a routerLink="/paralelos" routerLinkActive="active" class="nav-item" (click)="closeMobileMenu()">
         <i class="material-icons-outlined">class</i>
         <span *ngIf="!isSidebarCollapsed">Paralelos</span>
       </a>
-      <a routerLink="/reports" routerLinkActive="active" class="nav-item active">
+      <a routerLink="/reports" routerLinkActive="active" class="nav-item active" (click)="closeMobileMenu()">
         <i class="material-icons-outlined">bar_chart</i>
         <span *ngIf="!isSidebarCollapsed">Reportes y Estadísticas</span>
       </a>
-      <a routerLink="/accesos" routerLinkActive="active" class="nav-item">
+      <a routerLink="/accesos" routerLinkActive="active" class="nav-item" (click)="closeMobileMenu()">
         <i class="material-icons-outlined">vpn_key</i>
         <span *ngIf="!isSidebarCollapsed">Credenciales / Accesos</span>
       </a>
-      <a routerLink="/settings" routerLinkActive="active" class="nav-item">
+      <a routerLink="/settings" routerLinkActive="active" class="nav-item" (click)="closeMobileMenu()">
         <i class="material-icons-outlined">settings</i>
         <span *ngIf="!isSidebarCollapsed">Configuración</span>
       </a>
     </nav>
 
     <div class="sidebar-footer">
-      <button class="btn-logout" routerLink="/home">
+      <button class="btn-logout" routerLink="/home" (click)="closeMobileMenu()">
         <i class="material-icons-outlined">logout</i>
         <span *ngIf="!isSidebarCollapsed">Salir</span>
       </button>
@@ -144,7 +144,7 @@
       </div>
     </div>
 
-    <!-- KPIs Numéricos (RF 18 - HU 18 - T3) -->
+    <!-- KPIs Numéricos de Estado y Notas (RF 18 - HU 18 - T3) -->
     <section class="stats-grid animate-fade-in">
       <div class="stat-card">
         <div class="stat-icon blue">
@@ -152,37 +152,57 @@
         </div>
         <div class="stat-info">
           <h3>{{ summaryData.total_inscritos }}</h3>
-          <p>Total Inscritos</p>
-        </div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-icon gold">
-          <i class="material-icons-outlined">translate</i>
-        </div>
-        <div class="stat-info">
-          <h3>{{ summaryData.idioma_top }}</h3>
-          <p>Idioma Más Demandado</p>
+          <p>Total Registrados</p>
         </div>
       </div>
 
       <div class="stat-card">
         <div class="stat-icon green">
-          <i class="material-icons-outlined">meeting_room</i>
+          <i class="material-icons-outlined">check_circle</i>
         </div>
         <div class="stat-info">
-          <h3>{{ summaryData.ocupacion_promedio }}%</h3>
-          <p>Ocupación Promedio Aulas</p>
+          <h3>{{ summaryData.habilitados }}</h3>
+          <p>Estudiantes Activados</p>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon gold">
+          <i class="material-icons-outlined">hourglass_top</i>
+        </div>
+        <div class="stat-info">
+          <h3>{{ summaryData.pendientes }}</h3>
+          <p>Por Activar / Pendientes</p>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon red" style="background-color: #fee2e2; color: #dc2626;">
+          <i class="material-icons-outlined">person_remove</i>
+        </div>
+        <div class="stat-info">
+          <h3>{{ summaryData.retirados }}</h3>
+          <p>De Baja / Retirados</p>
         </div>
       </div>
 
       <div class="stat-card">
         <div class="stat-icon teal">
-          <i class="material-icons-outlined">verified</i>
+          <i class="material-icons-outlined">grade</i>
         </div>
         <div class="stat-info">
-          <h3>{{ summaryData.porcentaje_habilitados }}%</h3>
-          <p>% Habilitados Oficiales</p>
+          <h3>{{ summaryData.promedio_notas || '0' }} / 100</h3>
+          <p>Promedio General Notas</p>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon blue">
+          <i class="material-icons-outlined">meeting_room</i>
+        </div>
+        <div class="stat-info">
+          <h3>{{ summaryData.ocupacion_promedio }}%</h3>
+          <p>Ocupación Promedio Aulas</p>
         </div>
       </div>
     </section>
@@ -212,11 +232,13 @@
       </div>
     </section>
 
-    <!-- Tablas Resumen de Ocupación y Estadísticas -->
+    <!-- Tablas Resumen de Ocupación y Estadísticas con Detalle de Estudiantes y Notas -->
     <section class="table-container animate-fade-in delay-2 mt-4">
-      <div class="table-header">
-        <h2>Detalle de Ocupación por Aula y Paralelo</h2>
-        <p>Capacidad total, inscritos actuales y estado de vacantes.</p>
+      <div class="table-header d-flex justify-content-between align-items-center">
+        <div>
+          <h2>Detalle de Ocupación por Aula, Paralelo, Estudiantes y Notas</h2>
+          <p>Capacidad total, estudiantes asignados y sus calificaciones registradas.</p>
+        </div>
       </div>
 
       <!-- Vista de Tabla para Escritorio -->
@@ -228,47 +250,115 @@
               <th>Curso / Idioma</th>
               <th>Paralelo</th>
               <th>Capacidad</th>
-              <th>Inscritos Actuales</th>
+              <th>Inscritos</th>
               <th>% Ocupación</th>
               <th>Estado</th>
+              <th>Acción</th>
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let item of classroomStats">
-              <td><strong>{{ item.aula }}</strong></td>
-              <td>{{ item.curso }}</td>
-              <td>{{ item.nombre_paralelo }}</td>
-              <td>{{ item.capacidad }} asientos</td>
-              <td><strong>{{ item.inscritos }}</strong></td>
-              <td>
-                <div class="d-flex align-items-center gap-2">
-                  <div class="progress flex-grow-1" style="height: 8px;">
-                    <div class="progress-bar"
-                         [ngClass]="{
-                           'bg-danger': item.porcentaje_ocupacion >= 90,
-                           'bg-warning': item.porcentaje_ocupacion >= 70 && item.porcentaje_ocupacion < 90,
-                           'bg-success': item.porcentaje_ocupacion < 70
-                         }"
-                         [style.width.%]="item.porcentaje_ocupacion">
+            <ng-container *ngFor="let item of classroomStats">
+              <tr>
+                <td><strong>{{ item.aula }}</strong></td>
+                <td>{{ item.curso }}</td>
+                <td>{{ item.nombre_paralelo }}</td>
+                <td>{{ item.capacidad }} asientos</td>
+                <td><strong>{{ item.inscritos }}</strong></td>
+                <td>
+                  <div class="d-flex align-items-center gap-2">
+                    <div class="progress flex-grow-1" style="height: 8px;">
+                      <div class="progress-bar"
+                           [ngClass]="{
+                             'bg-danger': item.porcentaje_ocupacion >= 90,
+                             'bg-warning': item.porcentaje_ocupacion >= 70 && item.porcentaje_ocupacion < 90,
+                             'bg-success': item.porcentaje_ocupacion < 70
+                           }"
+                           [style.width.%]="item.porcentaje_ocupacion">
+                      </div>
+                    </div>
+                    <small class="fw-bold">{{ item.porcentaje_ocupacion }}%</small>
+                  </div>
+                </td>
+                <td>
+                  <span class="badge rounded-pill"
+                        [ngClass]="{
+                          'bg-danger': item.estado_ocupacion === 'Lleno',
+                          'bg-warning text-dark': item.estado_ocupacion === 'Alta',
+                          'bg-info text-dark': item.estado_ocupacion === 'Media',
+                          'bg-success': item.estado_ocupacion === 'Baja'
+                        }">
+                    {{ item.estado_ocupacion }}
+                  </span>
+                </td>
+                <td>
+                  <button class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1" (click)="toggleParaleloExpand(item.id_paralelo)">
+                    <i class="material-icons-outlined">{{ expandedParaleloId === item.id_paralelo ? 'expand_less' : 'groups' }}</i>
+                    {{ expandedParaleloId === item.id_paralelo ? 'Ocultar' : 'Ver Estudiantes (' + (item.estudiantes?.length || 0) + ')' }}
+                  </button>
+                </td>
+              </tr>
+
+              <!-- Desglose de Estudiantes y Notas por Aula/Paralelo (Fila Expandible) -->
+              <tr *ngIf="expandedParaleloId === item.id_paralelo">
+                <td colspan="8" class="bg-light p-3">
+                  <div class="p-3 bg-white rounded shadow-sm border">
+                    <h6 class="fw-bold text-primary mb-3">
+                      <i class="material-icons-outlined align-middle me-1">people_alt</i>
+                      Lista de Estudiantes Asignados a {{ item.aula }} - Paralelo {{ item.nombre_paralelo }}
+                    </h6>
+                    <div class="table-responsive" *ngIf="item.estudiantes && item.estudiantes.length > 0">
+                      <table class="table table-bordered table-sm align-middle mb-0">
+                        <thead class="table-secondary">
+                          <tr>
+                            <th>Estudiante</th>
+                            <th>C.I.</th>
+                            <th>Estado</th>
+                            <th>Notas Registradas</th>
+                            <th>Promedio Final</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr *ngFor="let est of item.estudiantes">
+                            <td><strong>{{ est.nombre_completo }}</strong></td>
+                            <td>{{ est.ci }}</td>
+                            <td>
+                              <span class="badge" [ngClass]="{
+                                'bg-success': est.estado === 'Activo',
+                                'bg-warning text-dark': est.estado === 'Pendiente',
+                                'bg-danger': est.estado === 'Retirado'
+                              }">
+                                {{ est.estado }}
+                              </span>
+                            </td>
+                            <td>
+                              <ng-container *ngIf="est.notas && est.notas.length > 0; else noNotasTbl">
+                                <span class="badge bg-light text-dark me-1 border" *ngFor="let n of est.notas">
+                                  {{ n }} pts
+                                </span>
+                              </ng-container>
+                              <ng-template #noNotasTbl>
+                                <span class="text-muted small">Sin notas</span>
+                              </ng-template>
+                            </td>
+                            <td>
+                              <strong [ngClass]="{'text-success': est.promedio >= 51, 'text-danger': est.promedio < 51 && est.promedio !== 'Sin Notas'}">
+                                {{ est.promedio }} {{ est.promedio !== 'Sin Notas' ? 'pts' : '' }}
+                              </strong>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                    <div *ngIf="!item.estudiantes || item.estudiantes.length === 0" class="text-muted text-center py-2">
+                      No hay estudiantes asignados activamente a este paralelo.
                     </div>
                   </div>
-                  <small class="fw-bold">{{ item.porcentaje_ocupacion }}%</small>
-                </div>
-              </td>
-              <td>
-                <span class="badge rounded-pill"
-                      [ngClass]="{
-                        'bg-danger': item.estado_ocupacion === 'Lleno',
-                        'bg-warning text-dark': item.estado_ocupacion === 'Alta',
-                        'bg-info text-dark': item.estado_ocupacion === 'Media',
-                        'bg-success': item.estado_ocupacion === 'Baja'
-                      }">
-                  {{ item.estado_ocupacion }}
-                </span>
-              </td>
-            </tr>
+                </td>
+              </tr>
+            </ng-container>
+
             <tr *ngIf="classroomStats.length === 0">
-              <td colspan="7" class="text-center py-4 text-muted">No se encontraron aulas con los filtros aplicados.</td>
+              <td colspan="8" class="text-center py-4 text-muted">No se encontraron aulas con los filtros aplicados.</td>
             </tr>
           </tbody>
         </table>
@@ -309,7 +399,7 @@
             <span class="report-card-val">{{ item.inscritos }} / {{ item.capacidad }} asientos</span>
           </div>
 
-          <div class="mt-2">
+          <div class="mt-2 mb-2">
             <div class="d-flex justify-content-between align-items-center mb-1">
               <span class="report-card-label">Porcentaje de Ocupación:</span>
               <span class="fw-bold small">{{ item.porcentaje_ocupacion }}%</span>
@@ -323,6 +413,28 @@
                    }"
                    [style.width.%]="item.porcentaje_ocupacion">
               </div>
+            </div>
+          </div>
+
+          <button class="btn btn-sm btn-outline-primary w-100 mt-2 d-flex align-items-center justify-content-center gap-1" (click)="toggleParaleloExpand(item.id_paralelo)">
+            <i class="material-icons-outlined">{{ expandedParaleloId === item.id_paralelo ? 'expand_less' : 'groups' }}</i>
+            {{ expandedParaleloId === item.id_paralelo ? 'Ocultar Estudiantes' : 'Ver Estudiantes y Notas (' + (item.estudiantes?.length || 0) + ')' }}
+          </button>
+
+          <!-- Detalle de Estudiantes en móvil -->
+          <div *ngIf="expandedParaleloId === item.id_paralelo" class="mt-3 p-2 bg-light rounded border">
+            <h6 class="fw-bold text-primary small mb-2"><i class="material-icons-outlined align-middle">groups</i> Estudiantes y Notas:</h6>
+            <div *ngIf="item.estudiantes && item.estudiantes.length > 0">
+              <div *ngFor="let est of item.estudiantes" class="p-2 mb-2 bg-white rounded border text-start small">
+                <div class="fw-bold">{{ est.nombre_completo }}</div>
+                <div class="text-muted">CI: {{ est.ci }} | Estado: <span class="badge bg-secondary">{{ est.estado }}</span></div>
+                <div class="mt-1">
+                  Promedio: <strong>{{ est.promedio }} {{ est.promedio !== 'Sin Notas' ? 'pts' : '' }}</strong>
+                </div>
+              </div>
+            </div>
+            <div *ngIf="!item.estudiantes || item.estudiantes.length === 0" class="text-muted small text-center">
+              Sin estudiantes asignados
             </div>
           </div>
         </div>

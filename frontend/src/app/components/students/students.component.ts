@@ -42,6 +42,10 @@ export class StudentsComponent implements OnInit {
     this.isMobileMenuOpen = !this.isMobileMenuOpen;
   }
 
+  closeMobileMenu() {
+    this.isMobileMenuOpen = false;
+  }
+
   toggleRow(studentId: number) {
     if (this.expandedStudentIds.has(studentId)) {
       this.expandedStudentIds.delete(studentId);

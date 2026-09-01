@@ -36,6 +36,10 @@ export class ReportsComponent implements OnInit, AfterViewInit {
     this.isMobileMenuOpen = !this.isMobileMenuOpen;
   }
 
+  closeMobileMenu() {
+    this.isMobileMenuOpen = false;
+  }
+
   // Control del panel lateral de filtros colapsable (RF 21)
   isFilterSidebarOpen: boolean = false;
 
@@ -75,6 +79,7 @@ export class ReportsComponent implements OnInit, AfterViewInit {
     habilitados: 0,
     pendientes: 0,
     retirados: 0,
+    promedio_notas: 0,
     porcentaje_habilitados: 0,
     idioma_top: 'N/A',
     ocupacion_promedio: 0
@@ -85,6 +90,17 @@ export class ReportsComponent implements OnInit, AfterViewInit {
 
   // Datos de Ocupación de Aulas
   classroomStats: any[] = [];
+
+  // Control de expansión de estudiantes por Paralelo/Aula
+  expandedParaleloId: number | null = null;
+
+  toggleParaleloExpand(id_paralelo: number) {
+    if (this.expandedParaleloId === id_paralelo) {
+      this.expandedParaleloId = null;
+    } else {
+      this.expandedParaleloId = id_paralelo;
+    }
+  }
 
   constructor(
     private reportService: ReportService,

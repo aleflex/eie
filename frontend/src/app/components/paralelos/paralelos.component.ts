@@ -29,6 +29,10 @@ export class ParalelosComponent implements OnInit {
   toggleMobileMenu() {
     this.isMobileMenuOpen = !this.isMobileMenuOpen;
   }
+
+  closeMobileMenu() {
+    this.isMobileMenuOpen = false;
+  }
   
   isLoading = true;
   showForm = false;

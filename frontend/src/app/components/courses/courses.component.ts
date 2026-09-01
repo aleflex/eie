@@ -23,6 +23,10 @@ export class CoursesComponent implements OnInit {
   toggleMobileMenu() {
     this.isMobileMenuOpen = !this.isMobileMenuOpen;
   }
+
+  closeMobileMenu() {
+    this.isMobileMenuOpen = false;
+  }
   
   // Paginación y Filtros
   pagedCourses: Course[] = [];

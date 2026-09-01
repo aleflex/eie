@@ -636,6 +636,42 @@
             <small class="text-muted mt-1">Formatos: Imagen (JPG, PNG).</small>
           </div>
 
+          <!-- Carnet COSSMIL (Solo para militares e hijos de militar) -->
+          <div class="col-md-6 form-group mt-3 animate-fade-in" *ngIf="userType === 'militar' || userType === 'hijo_militar'">
+            <label class="field-label-drop">Carnet COSSMIL *</label>
+            <div class="custom-dropzone"
+                 [class.has-file]="fileNames['carnetCossmil']"
+                 [class.is-invalid]="(isSubmitted || inscriptionForm.get('archivos.carnetCossmil')?.touched) && inscriptionForm.get('archivos.carnetCossmil')?.invalid">
+              <input id="file_carnetCossmil" type="file" (change)="onFileSelected($event, 'carnetCossmil')" class="real-file-input" accept="image/*,application/pdf" title="Subir Carnet COSSMIL" aria-label="Subir Carnet COSSMIL">
+
+              <div class="dropzone-content" *ngIf="!fileNames['carnetCossmil']">
+                <i class="material-icons cloud-icon">military_tech</i>
+                <span class="upload-title">Seleccionar Documento</span>
+                <span class="upload-subtitle">Foto o PDF de tu Carnet COSSMIL</span>
+              </div>
+
+              <div class="dropzone-preview animate-fade-in" *ngIf="fileNames['carnetCossmil']">
+                <i class="material-icons file-icon text-success-icon">badge</i>
+                <div class="file-details">
+                  <span class="file-name">{{ fileNames['carnetCossmil'] }}</span>
+                  <span class="file-status">Documento cargado correctamente</span>
+                </div>
+                <button type="button" class="btn-remove-file" (click)="removeFile('carnetCossmil')" title="Quitar carnet COSSMIL">
+                  <i class="material-icons">close</i>
+                </button>
+              </div>
+            </div>
+            <!-- Advertencia Inteligente de Coherencia -->
+            <div *ngIf="fileWarnings['carnetCossmil']" class="warning-msg mt-2 animate-fade-in">
+              <i class="material-icons align-middle text-warning-icon">warning</i>
+              <small class="align-middle ml-1">{{ fileWarnings['carnetCossmil'] }}</small>
+            </div>
+            <div *ngIf="(isSubmitted || inscriptionForm.get('archivos.carnetCossmil')?.touched) && inscriptionForm.get('archivos.carnetCossmil')?.invalid" class="error-msg">
+              <small>El Carnet COSSMIL es obligatorio.</small>
+            </div>
+            <small class="text-muted mt-1">Formatos: Imagen o PDF.</small>
+          </div>
+
           <!-- Credencial o Factura EMI (Solo para estudiantes EMI) -->
           <div class="col-md-6 form-group mt-3 animate-fade-in" *ngIf="userType === 'emi'">
             <label class="field-label-drop">Credencial EMI o Factura de Mensualidad *</label>

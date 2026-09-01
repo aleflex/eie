@@ -40,7 +40,8 @@ export class InscriptionComponent implements OnInit {
     nacimiento: '',
     deposito: '',
     foto: '',
-    credencialEmi: ''
+    credencialEmi: '',
+    carnetCossmil: ''
   };
 
   // Warnings for mismatching filenames (Soft Warning - Option A)
@@ -50,7 +51,8 @@ export class InscriptionComponent implements OnInit {
     nacimiento: '',
     deposito: '',
     foto: '',
-    credencialEmi: ''
+    credencialEmi: '',
+    carnetCossmil: ''
   };
 
   constructor(
@@ -187,7 +189,8 @@ export class InscriptionComponent implements OnInit {
         nacimiento: [null, Validators.required],
         deposito: [null, Validators.required],
         foto: [null, Validators.required],
-        credencialEmi: [null]
+        credencialEmi: [null],
+        carnetCossmil: [null]
       })
     });
   }
@@ -214,6 +217,7 @@ export class InscriptionComponent implements OnInit {
     this.inscriptionForm.get('userType')?.valueChanges.subscribe(type => {
       const nombrePadresCtrl = this.inscriptionForm.get('nombrePadres');
       const ciTutorCtrl = this.inscriptionForm.get('ciTutor');
+      const carnetCossmilFileCtrl = this.inscriptionForm.get('archivos.carnetCossmil');
 
       if (type !== 'militar') {
         this.inscriptionForm.patchValue({
@@ -231,9 +235,20 @@ export class InscriptionComponent implements OnInit {
         nombrePadresCtrl?.clearValidators();
         ciTutorCtrl?.clearValidators();
       }
-      
+
+      // Carnet COSSMIL es obligatorio para militar e hijo_militar
+      if (type === 'militar' || type === 'hijo_militar') {
+        carnetCossmilFileCtrl?.setValidators([Validators.required]);
+        this.fileNames['carnetCossmil'] = '';
+      } else {
+        carnetCossmilFileCtrl?.clearValidators();
+        carnetCossmilFileCtrl?.reset(null);
+        this.fileNames['carnetCossmil'] = '';
+      }
+
       nombrePadresCtrl?.updateValueAndValidity({ emitEvent: false });
       ciTutorCtrl?.updateValueAndValidity({ emitEvent: false });
+      carnetCossmilFileCtrl?.updateValueAndValidity({ emitEvent: false });
     });
   }
 

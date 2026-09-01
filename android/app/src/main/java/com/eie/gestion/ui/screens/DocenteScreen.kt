@@ -29,8 +29,9 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import androidx.compose.material3.ExperimentalMaterial3Api
 
-@OptIn(Material3Api::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DocenteScreen(
     userId: Int,
@@ -291,7 +292,7 @@ fun DocenteScreen(
     }
 }
 
-@OptIn(Material3Api::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DocenteNotaDialog(
     inscripcion: Inscripcion,
@@ -398,7 +399,7 @@ fun DocenteNotaDialog(
     )
 }
 
-@OptIn(Material3Api::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DocenteAsistenciaDialog(
     inscripcion: Inscripcion,

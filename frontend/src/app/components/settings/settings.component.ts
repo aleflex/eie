@@ -34,6 +34,10 @@ export class SettingsComponent implements OnInit {
     this.isMobileMenuOpen = !this.isMobileMenuOpen;
   }
 
+  closeMobileMenu() {
+    this.isMobileMenuOpen = false;
+  }
+
   // Datos para Mi Perfil
   profileData: any = {
     name: '',

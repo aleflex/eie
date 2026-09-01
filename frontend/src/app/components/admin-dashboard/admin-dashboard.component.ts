@@ -28,6 +28,10 @@ export class AdminDashboardComponent implements OnInit {
     this.isMobileMenuOpen = !this.isMobileMenuOpen;
   }
 
+  closeMobileMenu() {
+    this.isMobileMenuOpen = false;
+  }
+
   constructor(
     private inscriptionService: InscriptionService,
     private authService: AuthService,

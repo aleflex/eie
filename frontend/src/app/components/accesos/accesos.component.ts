@@ -30,6 +30,10 @@ export class AccesosComponent implements OnInit {
     this.isMobileMenuOpen = !this.isMobileMenuOpen;
   }
 
+  closeMobileMenu() {
+    this.isMobileMenuOpen = false;
+  }
+
   // Filtros
   searchTerm: string = '';
   activeTab: string = 'todos'; // 'todos', 'docente', 'estudiante', 'admin'

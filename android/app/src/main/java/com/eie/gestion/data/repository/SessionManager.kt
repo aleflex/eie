@@ -17,8 +17,8 @@ class SessionManager(context: Context) {
         private const val KEY_ESTUDIANTE_ID = "estudiante_id"
         private const val KEY_API_URL = "api_url"
         
-        // Host especial de Android para apuntar al localhost del PC que hospeda el emulador
-        private const val DEFAULT_API_URL = "http://10.0.2.2:8000/"
+        // URL del Servidor Backend en la nube (Render.com)
+        private const val DEFAULT_API_URL = "https://eie-backend-9n36.onrender.com/api/"
     }
 
     fun saveAuthToken(token: String) {

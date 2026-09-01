@@ -31,6 +31,10 @@ export class DocenteDashboardComponent implements OnInit {
   toggleMobileMenu() {
     this.isMobileMenuOpen = !this.isMobileMenuOpen;
   }
+
+  closeMobileMenu() {
+    this.isMobileMenuOpen = false;
+  }
   errorMsg = '';
   today = new Date();
 

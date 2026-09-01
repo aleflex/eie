@@ -27,7 +27,9 @@ import com.eie.gestion.ui.theme.SuccessGreen
 import com.eie.gestion.ui.theme.TextMuted
 import kotlinx.coroutines.launch
 
-@OptIn(Material3Api::class)
+import androidx.compose.material3.ExperimentalMaterial3Api
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StudentScreen(
     estudianteId: Int,

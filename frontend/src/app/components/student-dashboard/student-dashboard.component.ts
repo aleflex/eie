@@ -30,6 +30,10 @@ export class StudentDashboardComponent implements OnInit {
     this.isMobileMenuOpen = !this.isMobileMenuOpen;
   }
 
+  closeMobileMenu() {
+    this.isMobileMenuOpen = false;
+  }
+
   onImgError(event: any) {
     if (event && event.target) {
       event.target.style.display = 'none';

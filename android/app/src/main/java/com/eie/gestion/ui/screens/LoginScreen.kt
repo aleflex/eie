@@ -31,7 +31,9 @@ import com.eie.gestion.ui.theme.EmiBlue
 import com.eie.gestion.ui.theme.EmiYellow
 import kotlinx.coroutines.launch
 
-@OptIn(Material3Api::class)
+import androidx.compose.material3.ExperimentalMaterial3Api
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
     sessionManager: SessionManager,
@@ -180,7 +182,7 @@ fun LoginScreen(
                                         sessionManager.saveUserRole(user.rol ?: "admin")
                                         sessionManager.saveUserId(user.idUsuario)
                                         sessionManager.saveUserEmail(user.correoInstitucional)
-                                        sessionManager.saveUserName(user.name ?: "")
+                                        sessionManager.saveUserName("${user.nombres ?: ""} ${user.apellidos ?: ""}".trim())
                                         user.docenteId?.let { sessionManager.saveDocenteId(it) }
                                         user.estudianteId?.let { sessionManager.saveEstudianteId(it) }
 
@@ -199,8 +201,7 @@ fun LoginScreen(
                         .fillMaxWidth()
                         .height(50.dp),
                     shape = RoundedCornerShape(8.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = EmiBlue),
-                    disabledContainerColor = Color.Gray,
+                    colors = ButtonDefaults.buttonColors(containerColor = EmiBlue, disabledContainerColor = Color.Gray),
                     enabled = !isLoading
                 ) {
                     if (isLoading) {

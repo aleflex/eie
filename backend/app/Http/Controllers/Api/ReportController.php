@@ -19,98 +19,141 @@ class ReportController extends Controller
      */
     public function getLanguageStatistics(Request $request)
     {
-        $filters = $request->only(['id_idioma', 'id_nivel', 'id_curso', 'id_paralelo', 'estado', 'fecha_desde', 'fecha_hasta']);
+        try {
+            $filters = $request->only(['id_idioma', 'id_nivel', 'id_curso', 'id_paralelo', 'estado', 'fecha_desde', 'fecha_hasta']);
 
-        $query = DB::table('inscripciones')
-            ->join('cursos', 'inscripciones.id_curso', '=', 'cursos.id_curso')
-            ->join('idiomas', 'cursos.id_idioma', '=', 'idiomas.id_idioma');
+            $query = DB::table('inscripciones')
+                ->join('cursos', 'inscripciones.id_curso', '=', 'cursos.id_curso')
+                ->join('idiomas', 'cursos.id_idioma', '=', 'idiomas.id_idioma');
 
-        if (!empty($filters['id_idioma'])) {
-            $query->where('cursos.id_idioma', $filters['id_idioma']);
-        }
-        if (!empty($filters['id_nivel'])) {
-            $query->where('cursos.id_nivel', $filters['id_nivel']);
-        }
-        if (!empty($filters['id_curso'])) {
-            $query->where('inscripciones.id_curso', $filters['id_curso']);
-        }
-        if (!empty($filters['id_paralelo'])) {
-            $query->where('inscripciones.id_paralelo', $filters['id_paralelo']);
-        }
-        if (!empty($filters['estado'])) {
-            $query->where('inscripciones.estado', strtolower($filters['estado']));
-        }
-        if (!empty($filters['fecha_desde'])) {
-            $query->whereDate('inscripciones.fecha_registro', '>=', $filters['fecha_desde']);
-        }
-        if (!empty($filters['fecha_hasta'])) {
-            $query->whereDate('inscripciones.fecha_registro', '<=', $filters['fecha_hasta']);
-        }
+            if (!empty($filters['id_idioma'])) {
+                $query->where('cursos.id_idioma', $filters['id_idioma']);
+            }
+            if (!empty($filters['id_nivel'])) {
+                $query->where('cursos.id_nivel', $filters['id_nivel']);
+            }
+            if (!empty($filters['id_curso'])) {
+                $query->where('inscripciones.id_curso', $filters['id_curso']);
+            }
+            if (!empty($filters['id_paralelo'])) {
+                $query->where('inscripciones.id_paralelo', $filters['id_paralelo']);
+            }
+            if (!empty($filters['estado'])) {
+                $query->where('inscripciones.estado', strtolower($filters['estado']));
+            }
+            if (!empty($filters['fecha_desde'])) {
+                $query->whereDate('inscripciones.fecha_registro', '>=', $filters['fecha_desde']);
+            }
+            if (!empty($filters['fecha_hasta'])) {
+                $query->whereDate('inscripciones.fecha_registro', '<=', $filters['fecha_hasta']);
+            }
 
-        $stats = $query->select(
-            'idiomas.id_idioma',
-            'idiomas.nombre_idioma as idioma',
-            DB::raw('COUNT(inscripciones.id_inscripcion) as total_estudiantes')
-        )
-        ->groupBy('idiomas.id_idioma', 'idiomas.nombre_idioma')
-        ->orderByDesc('total_estudiantes')
-        ->get();
+            $stats = $query->select(
+                'idiomas.id_idioma',
+                'idiomas.nombre_idioma as idioma',
+                DB::raw('COUNT(inscripciones.id_inscripcion) as total_estudiantes')
+            )
+            ->groupBy('idiomas.id_idioma', 'idiomas.nombre_idioma')
+            ->orderByDesc('total_estudiantes')
+            ->get();
 
-        $totalGeneral = $stats->sum('total_estudiantes');
+            $totalGeneral = $stats->sum('total_estudiantes');
 
-        $result = $stats->map(function ($item) use ($totalGeneral) {
-            return [
-                'id_idioma' => $item->id_idioma,
-                'idioma' => $item->idioma,
-                'total_estudiantes' => (int) $item->total_estudiantes,
-                'porcentaje' => $totalGeneral > 0 ? round(($item->total_estudiantes / $totalGeneral) * 100, 1) : 0
-            ];
-        });
+            $result = $stats->map(function ($item) use ($totalGeneral) {
+                return [
+                    'id_idioma' => $item->id_idioma,
+                    'idioma' => $item->idioma,
+                    'total_estudiantes' => (int) $item->total_estudiantes,
+                    'porcentaje' => $totalGeneral > 0 ? round(($item->total_estudiantes / $totalGeneral) * 100, 1) : 0
+                ];
+            });
 
-        return response()->json([
-            'total_general' => $totalGeneral,
-            'estadisticas' => $result
-        ]);
+            return response()->json([
+                'total_general' => $totalGeneral,
+                'estadisticas' => $result
+            ]);
+        } catch (\Exception $e) {
+            \Log::error("Error en getLanguageStatistics: " . $e->getMessage());
+            return response()->json([
+                'total_general' => 0,
+                'estadisticas' => []
+            ]);
+        }
     }
 
     /**
-     * RF 19 - HU 19: Porcentajes de ocupación de aulas
+     * RF 19 - HU 19: Porcentajes de ocupación de aulas y detalle de estudiantes con notas
      */
     public function getClassroomOccupancy(Request $request)
     {
-        $filters = $request->only(['id_idioma', 'id_nivel', 'id_curso', 'id_paralelo', 'estado', 'fecha_desde', 'fecha_hasta']);
+        try {
+            $filters = $request->only(['id_idioma', 'id_nivel', 'id_curso', 'id_paralelo', 'estado', 'fecha_desde', 'fecha_hasta']);
 
-        $paralelos = Paralelo::with(['aula', 'curso.idioma', 'curso.nivelRel', 'inscripciones' => function ($q) use ($filters) {
-            $q->filterMultiCriteria($filters);
-        }])->get();
+            $paralelos = Paralelo::with([
+                'aula',
+                'curso.idioma',
+                'curso.nivelRel',
+                'inscripciones' => function ($q) use ($filters) {
+                    $q->filterMultiCriteria($filters);
+                },
+                'inscripciones.estudiante.user',
+                'inscripciones.notas'
+            ])->get();
 
-        $ocupacion = $paralelos->map(function ($paralelo) {
-            $capacidad = $paralelo->aula ? ($paralelo->aula->capacidad ?: 30) : 30;
-            $inscritosCount = $paralelo->inscripciones->count();
-            $porcentaje = $capacidad > 0 ? round(($inscritosCount / $capacidad) * 100, 1) : 0;
+            $ocupacion = $paralelos->map(function ($paralelo) {
+                $capacidad = $paralelo->aula ? ($paralelo->aula->capacidad ?: 30) : 30;
+                $inscritosCount = $paralelo->inscripciones ? $paralelo->inscripciones->count() : 0;
+                $porcentaje = $capacidad > 0 ? round(($inscritosCount / $capacidad) * 100, 1) : 0;
 
-            return [
-                'id_paralelo' => $paralelo->id_paralelo,
-                'nombre_paralelo' => $paralelo->nombre_paralelo,
-                'curso' => $paralelo->curso ? $paralelo->curso->nombre_curso : 'N/A',
-                'aula' => $paralelo->aula ? ($paralelo->aula->nombre_aula ?: $paralelo->aula->nombre) : 'Sin Aula',
-                'capacidad' => $capacidad,
-                'inscritos' => $inscritosCount,
-                'porcentaje_ocupacion' => min($porcentaje, 100),
-                'estado_ocupacion' => $porcentaje >= 100 ? 'Lleno' : ($porcentaje >= 75 ? 'Alta' : ($porcentaje >= 40 ? 'Media' : 'Baja'))
-            ];
-        });
+                $estudiantesDetalle = ($paralelo->inscripciones ?? collect())->map(function ($ins) {
+                    $est = $ins->estudiante ?? null;
+                    $user = $est ? ($est->user ?? null) : null;
+                    $notas = ($ins->relationLoaded('notas') && $ins->notas) ? $ins->notas->pluck('nota')->toArray() : [];
+                    $prom = count($notas) > 0 ? round(array_sum($notas) / count($notas), 1) : null;
 
-        $totalCapacidad = $ocupacion->sum('capacidad');
-        $totalInscritos = $ocupacion->sum('inscritos');
-        $promedioOcupacion = $totalCapacidad > 0 ? round(($totalInscritos / $totalCapacidad) * 100, 1) : 0;
+                    return [
+                        'id_inscripcion' => $ins->id_inscripcion,
+                        'id_estudiante' => $ins->id_estudiante,
+                        'nombre_completo' => $user ? trim(($user->nombres ?? '') . ' ' . ($user->apellidos ?? '')) : 'Estudiante N/A',
+                        'ci' => $user->ci ?? 'N/A',
+                        'estado' => ucfirst($ins->estado ?? 'pendiente'),
+                        'notas' => $notas,
+                        'promedio' => $prom !== null ? $prom : 'Sin Notas'
+                    ];
+                })->values();
 
-        return response()->json([
-            'total_capacidad' => $totalCapacidad,
-            'total_inscritos' => $totalInscritos,
-            'promedio_ocupacion' => $promedioOcupacion,
-            'aulas' => $ocupacion
-        ]);
+                return [
+                    'id_paralelo' => $paralelo->id_paralelo,
+                    'nombre_paralelo' => $paralelo->nombre_paralelo,
+                    'curso' => $paralelo->curso ? $paralelo->curso->nombre_curso : 'N/A',
+                    'aula' => $paralelo->aula ? ($paralelo->aula->nombre_aula ?: $paralelo->aula->nombre) : 'Sin Aula',
+                    'capacidad' => $capacidad,
+                    'inscritos' => $inscritosCount,
+                    'porcentaje_ocupacion' => min($porcentaje, 100),
+                    'estado_ocupacion' => $porcentaje >= 100 ? 'Lleno' : ($porcentaje >= 75 ? 'Alta' : ($porcentaje >= 40 ? 'Media' : 'Baja')),
+                    'estudiantes' => $estudiantesDetalle
+                ];
+            });
+
+            $totalCapacidad = $ocupacion->sum('capacidad');
+            $totalInscritos = $ocupacion->sum('inscritos');
+            $promedioOcupacion = $totalCapacidad > 0 ? round(($totalInscritos / $totalCapacidad) * 100, 1) : 0;
+
+            return response()->json([
+                'total_capacidad' => $totalCapacidad,
+                'total_inscritos' => $totalInscritos,
+                'promedio_ocupacion' => $promedioOcupacion,
+                'aulas' => $ocupacion
+            ]);
+        } catch (\Exception $e) {
+            \Log::error("Error en getClassroomOccupancy: " . $e->getMessage());
+            return response()->json([
+                'total_capacidad' => 0,
+                'total_inscritos' => 0,
+                'promedio_ocupacion' => 0,
+                'aulas' => []
+            ]);
+        }
     }
 
     /**
@@ -118,36 +161,64 @@ class ReportController extends Controller
      */
     public function getDashboardSummary(Request $request)
     {
-        $filters = $request->only(['id_idioma', 'id_nivel', 'id_curso', 'id_paralelo', 'estado', 'fecha_desde', 'fecha_hasta']);
+        try {
+            $filters = $request->only(['id_idioma', 'id_nivel', 'id_curso', 'id_paralelo', 'estado', 'fecha_desde', 'fecha_hasta']);
 
-        $inscripcionesQuery = Inscripcion::query()->filterMultiCriteria($filters);
+            $inscripcionesQuery = Inscripcion::query()->filterMultiCriteria($filters);
 
-        $totalInscritos = (clone $inscripcionesQuery)->count();
-        $totalHabilitados = (clone $inscripcionesQuery)->where('estado', 'activo')->count();
-        $totalPendientes = (clone $inscripcionesQuery)->where('estado', 'pendiente')->count();
-        $totalRetirados = (clone $inscripcionesQuery)->where('estado', 'retirado')->count();
+            $totalInscritos = (clone $inscripcionesQuery)->count();
+            $totalHabilitados = (clone $inscripcionesQuery)->where('estado', 'activo')->count();
+            $totalPendientes = (clone $inscripcionesQuery)->where('estado', 'pendiente')->count();
+            $totalRetirados = (clone $inscripcionesQuery)->where('estado', 'retirado')->count();
 
-        // Idioma con mayor demanda
-        $topLanguage = DB::table('inscripciones')
-            ->join('cursos', 'inscripciones.id_curso', '=', 'cursos.id_curso')
-            ->join('idiomas', 'cursos.id_idioma', '=', 'idiomas.id_idioma')
-            ->select('idiomas.nombre_idioma', DB::raw('COUNT(inscripciones.id_inscripcion) as total'))
-            ->groupBy('idiomas.id_idioma', 'idiomas.nombre_idioma')
-            ->orderByDesc('total')
-            ->first();
+            // Promedio general de notas
+            $promedioNotas = 0;
+            try {
+                $idsInscripciones = (clone $inscripcionesQuery)->pluck('id_inscripcion');
+                if (count($idsInscripciones) > 0) {
+                    $promedioNotas = DB::table('notas')
+                        ->whereIn('id_inscripcion', $idsInscripciones)
+                        ->avg('nota');
+                }
+            } catch (\Exception $ne) {
+                $promedioNotas = 0;
+            }
 
-        // Ocupación general de aulas
-        $occupancyRes = $this->getClassroomOccupancy($request)->getData(true);
+            // Idioma con mayor demanda
+            $topLanguage = DB::table('inscripciones')
+                ->join('cursos', 'inscripciones.id_curso', '=', 'cursos.id_curso')
+                ->join('idiomas', 'cursos.id_idioma', '=', 'idiomas.id_idioma')
+                ->select('idiomas.nombre_idioma', DB::raw('COUNT(inscripciones.id_inscripcion) as total'))
+                ->groupBy('idiomas.id_idioma', 'idiomas.nombre_idioma')
+                ->orderByDesc('total')
+                ->first();
 
-        return response()->json([
-            'total_inscritos' => $totalInscritos,
-            'habilitados' => $totalHabilitados,
-            'pendientes' => $totalPendientes,
-            'retirados' => $totalRetirados,
-            'porcentaje_habilitados' => $totalInscritos > 0 ? round(($totalHabilitados / $totalInscritos) * 100, 1) : 0,
-            'idioma_top' => $topLanguage ? $topLanguage->nombre_idioma : 'N/A',
-            'ocupacion_promedio' => $occupancyRes['promedio_ocupacion'] ?? 0
-        ]);
+            // Ocupación general de aulas
+            $occupancyRes = $this->getClassroomOccupancy($request)->getData(true);
+
+            return response()->json([
+                'total_inscritos' => $totalInscritos,
+                'habilitados' => $totalHabilitados,
+                'pendientes' => $totalPendientes,
+                'retirados' => $totalRetirados,
+                'promedio_notas' => $promedioNotas ? round($promedioNotas, 1) : 0,
+                'porcentaje_habilitados' => $totalInscritos > 0 ? round(($totalHabilitados / $totalInscritos) * 100, 1) : 0,
+                'idioma_top' => $topLanguage ? $topLanguage->nombre_idioma : 'N/A',
+                'ocupacion_promedio' => $occupancyRes['promedio_ocupacion'] ?? 0
+            ]);
+        } catch (\Exception $e) {
+            \Log::error("Error en getDashboardSummary: " . $e->getMessage());
+            return response()->json([
+                'total_inscritos' => 0,
+                'habilitados' => 0,
+                'pendientes' => 0,
+                'retirados' => 0,
+                'promedio_notas' => 0,
+                'porcentaje_habilitados' => 0,
+                'idioma_top' => 'N/A',
+                'ocupacion_promedio' => 0
+            ]);
+        }
     }
 
     /**
