@@ -7,10 +7,16 @@ import { environment } from './environments/environment';
 bootstrapApplication(AppComponent, appConfig)
   .catch((err) => console.error(err));
 
-// Registrar Service Worker solo en web produccion, NO en app nativa Capacitor
-const isNative = typeof window !== 'undefined' && ((window as any).Capacitor || (window as any).cordova);
-if (!isNative && environment.production && 'serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/ngsw-worker.js', { scope: '/' })
-    .then(registration => console.log('✅ SW registered:', registration))
-    .catch(err => console.error('❌ SW registration failed:', err));
+// Desregistrar Service Worker y limpiar cachés antiguas del navegador
+if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(registrations => {
+    for (const registration of registrations) {
+      registration.unregister();
+    }
+  });
+  if ('caches' in window) {
+    caches.keys().then(keys => {
+      keys.forEach(key => caches.delete(key));
+    });
+  }
 }
