@@ -3,11 +3,11 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://eie-production.up.railway.app/api/:path*"
+      "destination": "https://eie-backend-9n36.onrender.com/api/:path*"
     },
     {
       "source": "/storage/:path*",
-      "destination": "https://eie-production.up.railway.app/storage/:path*"
+      "destination": "https://eie-backend-9n36.onrender.com/storage/:path*"
     },
     {
       "source": "/((?!.*\\.).*)",
