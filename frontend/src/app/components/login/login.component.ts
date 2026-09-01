@@ -48,6 +48,10 @@ export class LoginComponent implements OnInit {
   ) {}
 
   async ngOnInit() {
+    const custom = localStorage.getItem('custom_api_url');
+    if (custom && custom.includes('railway.app')) {
+      localStorage.removeItem('custom_api_url');
+    }
     this.customApiUrl = localStorage.getItem('custom_api_url') || '';
     this.currentApiUrl = environment.apiUrl;
 
@@ -119,6 +123,11 @@ export class LoginComponent implements OnInit {
    */
   iniciarSesion() {
     this.mensajeError = '';
+    const custom = localStorage.getItem('custom_api_url');
+    if (custom && custom.includes('railway.app')) {
+      localStorage.removeItem('custom_api_url');
+    }
+    this.currentApiUrl = environment.apiUrl;
     const payload = {
       usuario: (this.credenciales.usuario || '').trim().toLowerCase(),
       password: this.credenciales.password
