@@ -14,10 +14,13 @@ import { environment } from '../../environments/environment';
 export class AuthService {
   private get apiUrl(): string {
     const customUrl = localStorage.getItem('custom_api_url');
-    if (customUrl) {
-      return `${customUrl}/api`;
+    if (customUrl && customUrl.includes('railway.app')) {
+      localStorage.removeItem('custom_api_url');
+    } else if (customUrl) {
+      return customUrl.endsWith('/api') ? customUrl : `${customUrl}/api`;
     }
-    return `${environment.apiUrl}/api`;
+    const envUrl = environment.apiUrl;
+    return envUrl.endsWith('/api') ? envUrl : `${envUrl}/api`;
   }
 
   constructor(private http: HttpClient) { }
