@@ -41,6 +41,10 @@
         <i class="material-icons-outlined">vpn_key</i>
         <span *ngIf="!isSidebarCollapsed">Credenciales / Accesos</span>
       </a>
+      <a *ngIf="canAccess('settings')" routerLink="/settings" [queryParams]="{tab: 'roles'}" class="nav-item" (click)="closeMobileMenu()">
+        <i class="material-icons-outlined">security</i>
+        <span *ngIf="!isSidebarCollapsed">Roles y Permisos</span>
+      </a>
       <a *ngIf="canAccess('settings')" routerLink="/settings" routerLinkActive="active" class="nav-item" (click)="closeMobileMenu()">
         <i class="material-icons-outlined">settings</i>
         <span *ngIf="!isSidebarCollapsed">Configuración</span>
