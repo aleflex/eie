@@ -375,4 +375,15 @@ export class StudentDashboardComponent implements OnInit {
       minute: '2-digit' 
     });
   }
+
+  formatDocSize(peso: any): string {
+    if (peso === null || peso === undefined || isNaN(Number(peso)) || Number(peso) <= 0) {
+      return 'Archivo adjunto';
+    }
+    const bytes = Number(peso);
+    if (bytes >= 1048576) {
+      return (bytes / 1048576).toFixed(1) + ' MB';
+    }
+    return (bytes / 1024).toFixed(1) + ' KB';
+  }
 }

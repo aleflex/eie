@@ -387,3 +387,143 @@
     font-size: 0.88rem;
   }
 }
+
+/* ========================================================
+   ESTILOS RESPONSIVOS PARA EL EXPEDIENTE DE DOCUMENTOS
+   ======================================================== */
+.docs-table-wrap {
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+}
+
+.docs-table-wrap table {
+  table-layout: fixed;
+  width: 100%;
+  margin-bottom: 0;
+}
+
+.badge-doc-type {
+  display: inline-block;
+  background: rgba(0, 51, 102, 0.08);
+  color: var(--primary-color, #003366);
+  font-weight: 800;
+  font-size: 0.78rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 51, 102, 0.15);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.doc-filename-desktop {
+  display: flex;
+  align-items: center;
+  font-size: 0.85rem;
+  color: #334155;
+  overflow: hidden;
+}
+
+.doc-filename-desktop span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Vista Móvil de Documentos (< 768px) */
+.docs-mobile-cards-view {
+  display: none;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.doc-mobile-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.doc-mobile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.doc-mobile-size {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+}
+
+.doc-mobile-filename {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: #1e293b;
+  font-weight: 500;
+  word-break: break-all;
+}
+
+.doc-mobile-filename .doc-file-icon {
+  font-size: 20px;
+  color: #0284c7;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.doc-mobile-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.3rem;
+  border-top: 1px dashed #e2e8f0;
+  padding-top: 0.7rem;
+}
+
+.btn-doc-mob-view, .btn-doc-mob-del {
+  flex: 1;
+  height: 42px;
+  border-radius: 8px;
+  border: none;
+  font-weight: 700;
+  font-size: 0.82rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+
+.btn-doc-mob-view:active, .btn-doc-mob-del:active {
+  transform: scale(0.96);
+}
+
+.btn-doc-mob-view {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.btn-doc-mob-del {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+@media (max-width: 768px) {
+  .docs-desktop-view {
+    display: none !important;
+  }
+
+  .docs-mobile-cards-view {
+    display: flex !important;
+  }
+}

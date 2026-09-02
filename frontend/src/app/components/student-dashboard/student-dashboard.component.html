@@ -311,33 +311,65 @@
             No tienes documentos oficiales subidos en este expediente digital todavía.
           </div>
 
-          <table class="table table-hover align-middle border bg-white" *ngIf="!docsLoading && studentDocuments.length > 0">
-            <thead class="bg-light">
-              <tr>
-                <th class="ps-3">Tipo de Documento</th>
-                <th>Nombre del Archivo</th>
-                <th>Tamaño</th>
-                <th class="text-center" style="width: 150px;">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let doc of studentDocuments">
-                <td class="ps-3"><strong>{{ doc.tipo_documento }}</strong></td>
-                <td>{{ doc.nombre_archivo }}</td>
-                <td><small class="text-muted">{{ (doc.peso / 1024).toFixed(1) }} KB</small></td>
-                <td class="text-center">
-                  <div class="d-flex justify-content-center gap-2">
-                    <button (click)="previewDocument(doc)" class="btn btn-sm btn-outline-primary py-1 px-2" title="Ver Documento">
-                      <i class="material-icons-outlined doc-action-icon" style="font-size: 18px;">visibility</i>
-                    </button>
-                    <button (click)="removeDocument(doc)" class="btn btn-sm btn-outline-danger py-1 px-2" title="Eliminar">
-                      <i class="material-icons-outlined doc-action-icon" style="font-size: 18px;">delete</i>
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <!-- VISTA DE TABLA PARA ESCRITORIO (>= 768px) -->
+          <div class="docs-desktop-view" *ngIf="!docsLoading && studentDocuments.length > 0">
+            <div class="table-responsive docs-table-wrap">
+              <table class="table table-hover align-middle border bg-white mb-0">
+                <thead class="bg-light">
+                  <tr>
+                    <th class="ps-3" style="width: 25%;">Tipo de Documento</th>
+                    <th style="width: 45%;">Nombre del Archivo</th>
+                    <th style="width: 15%;">Tamaño</th>
+                    <th class="text-center" style="width: 15%;">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let doc of studentDocuments">
+                    <td class="ps-3"><span class="badge-doc-type">{{ doc.tipo_documento }}</span></td>
+                    <td>
+                      <div class="doc-filename-desktop" [title]="doc.nombre_archivo">
+                        <i class="material-icons-outlined align-middle me-1 text-muted">description</i>
+                        <span>{{ doc.nombre_archivo }}</span>
+                      </div>
+                    </td>
+                    <td><small class="text-muted font-monospace">{{ formatDocSize(doc.peso) }}</small></td>
+                    <td class="text-center">
+                      <div class="d-flex justify-content-center gap-2">
+                        <button (click)="previewDocument(doc)" class="btn btn-sm btn-outline-primary py-1 px-2" title="Ver Documento">
+                          <i class="material-icons-outlined doc-action-icon" style="font-size: 18px;">visibility</i>
+                        </button>
+                        <button (click)="removeDocument(doc)" class="btn btn-sm btn-outline-danger py-1 px-2" title="Eliminar">
+                          <i class="material-icons-outlined doc-action-icon" style="font-size: 18px;">delete</i>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- VISTA DE TARJETAS PARA CELULAR (< 768px) -->
+          <div class="docs-mobile-cards-view" *ngIf="!docsLoading && studentDocuments.length > 0">
+            <div class="doc-mobile-card animate-fade-in" *ngFor="let doc of studentDocuments">
+              <div class="doc-mobile-header">
+                <span class="badge-doc-type">{{ doc.tipo_documento }}</span>
+                <span class="doc-mobile-size">{{ formatDocSize(doc.peso) }}</span>
+              </div>
+              <div class="doc-mobile-filename">
+                <i class="material-icons-outlined doc-file-icon">description</i>
+                <span>{{ doc.nombre_archivo }}</span>
+              </div>
+              <div class="doc-mobile-actions">
+                <button (click)="previewDocument(doc)" class="btn-doc-mob-view">
+                  <i class="material-icons-outlined">visibility</i> Ver
+                </button>
+                <button (click)="removeDocument(doc)" class="btn-doc-mob-del">
+                  <i class="material-icons-outlined">delete</i> Eliminar
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

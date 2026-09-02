@@ -805,27 +805,29 @@
   </div>
 
   <!-- MODAL DE DOCUMENTACIÓN DIGITAL -->
-
-  <div class="modal-backdrop" *ngIf="showDocumentsModal"></div>
+  <div class="modal-backdrop" *ngIf="showDocumentsModal" (click)="closeDocumentsModal()"></div>
   <div class="modal" [class.show]="showDocumentsModal" [style.display]="showDocumentsModal ? 'block' : 'none'"
     tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered">
-      <div class="modal-content border-0 shadow-lg">
-        <div class="modal-header bg-dark text-white">
-          <h5 class="modal-title">
-            <i class="material-icons-outlined align-middle">folder_shared</i>
-            Expediente Digital: {{ currentStudentForDocs?.nombres }} {{ currentStudentForDocs?.apellidos }}
+      <div class="modal-content border-0 shadow-lg expediente-modal-content">
+        <div class="modal-header bg-dark text-white expediente-modal-header">
+          <h5 class="modal-title d-flex align-items-center gap-2 m-0">
+            <i class="material-icons-outlined">folder_shared</i>
+            <span>Expediente Digital: {{ currentStudentForDocs?.nombres }} {{ currentStudentForDocs?.apellidos }}</span>
           </h5>
           <button type="button" class="btn-close btn-close-white" (click)="closeDocumentsModal()"
             aria-label="Cerrar"></button>
         </div>
-        <div class="modal-body py-4">
+        <div class="modal-body py-4 expediente-modal-body">
 
-          <!-- Formulario de Subida -->
+          <!-- Formulario de Subida Responsivo -->
           <div class="upload-section mb-4 p-3 bg-light rounded-3 border">
-            <h6 class="fw-bold mb-3">Subir Nuevo Documento (.pdf, .jpg, .png)</h6>
-            <div class="row g-2">
-              <div class="col-md-5">
+            <h6 class="fw-bold mb-3 d-flex align-items-center gap-2 text-primary">
+              <i class="material-icons-outlined">cloud_upload</i> Subir Nuevo Documento (.pdf, .jpg, .png)
+            </h6>
+            <div class="docs-upload-grid">
+              <div class="upload-field-type">
+                <label class="form-label-small">Tipo de Documento</label>
                 <select [(ngModel)]="docType" class="form-select" aria-label="Tipo de documento">
                   <option value="Carnet de Identidad">Carnet de Identidad</option>
                   <option value="Título de Bachiller">Título de Bachiller</option>
@@ -834,13 +836,16 @@
                   <option value="Otro">Otro</option>
                 </select>
               </div>
-              <div class="col-md-5">
+              <div class="upload-field-file">
+                <label class="form-label-small">Seleccionar Archivo</label>
                 <input type="file" (change)="onFileSelected($event)" class="form-control" accept=".pdf,.jpg,.jpeg,.png"
                   aria-label="Seleccionar archivo para subir">
               </div>
-              <div class="col-md-2">
-                <button (click)="uploadFile()" [disabled]="!selectedFile || uploading" class="btn btn-primary w-100">
-                  <span *ngIf="!uploading">SUBIR</span>
+              <div class="upload-field-btn">
+                <button (click)="uploadFile()" [disabled]="!selectedFile || uploading" class="btn btn-primary w-100 btn-upload-doc">
+                  <span *ngIf="!uploading" class="d-flex align-items-center justify-content-center gap-1">
+                    <i class="material-icons-outlined">upload</i> SUBIR
+                  </span>
                   <span *ngIf="uploading">...</span>
                 </button>
               </div>
@@ -849,52 +854,89 @@
             <div *ngIf="docWarning" class="warning-msg-admin mt-2 animate-fade-in">
               <small class="text-warning-msg">⚠️ {{ docWarning }}</small>
             </div>
-            <small class="text-muted mt-2 d-block">* Tamaño máximo: 5MB</small>
+            <small class="text-muted mt-2 d-block">* Tamaño máximo por archivo: 5MB</small>
           </div>
 
           <!-- Lista de Documentos -->
           <div class="documents-list">
-            <h6 class="fw-bold mb-3">Documentos Cargados</h6>
-            <div *ngIf="docsLoading" class="text-center py-3">
+            <h6 class="fw-bold mb-3 d-flex align-items-center gap-2">
+              <i class="material-icons-outlined text-secondary">inventory_2</i> Documentos Cargados
+            </h6>
+            <div *ngIf="docsLoading" class="text-center py-4">
               <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+              <p class="text-muted small mt-2">Cargando expediente...</p>
             </div>
 
-            <div *ngIf="!docsLoading && studentDocuments.length === 0" class="text-center py-3 text-muted italic">
-              No hay documentos cargados en este expediente.
+            <div *ngIf="!docsLoading && studentDocuments.length === 0" class="text-center py-4 text-muted italic bg-light rounded-3 border">
+              <i class="material-icons-outlined d-block mb-1 text-muted" style="font-size: 32px;">folder_open</i>
+              No hay documentos cargados en este expediente digital todavía.
             </div>
 
-            <table class="table table-hover align-middle border" *ngIf="!docsLoading && studentDocuments.length > 0">
-              <thead class="bg-light">
-                <tr>
-                  <th>Tipo</th>
-                  <th>Nombre Archivo</th>
-                  <th>Tamaño</th>
-                  <th class="text-center">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let doc of studentDocuments">
-                  <td><strong>{{ doc.tipo_documento }}</strong></td>
-                  <td>{{ doc.nombre_archivo }}</td>
-                  <td><small>{{ (doc.peso / 1024).toFixed(1) }} KB</small></td>
-                  <td class="text-center">
-                    <div class="d-flex justify-content-center gap-2">
-                      <button (click)="previewDocument(doc)" class="btn btn-sm btn-outline-primary"
-                        title="Ver Documento">
-                        <i class="material-icons-outlined doc-action-icon">visibility</i>
-                      </button>
-                      <button (click)="removeDocument(doc)" class="btn btn-sm btn-outline-danger" title="Eliminar">
-                        <i class="material-icons-outlined doc-action-icon">delete</i>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+            <!-- VISTA DE TABLA PARA ESCRITORIO (>= 768px) -->
+            <div class="docs-desktop-view" *ngIf="!docsLoading && studentDocuments.length > 0">
+              <div class="table-responsive docs-table-wrap">
+                <table class="table table-hover align-middle border mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th style="width: 25%;">Tipo</th>
+                      <th style="width: 45%;">Nombre Archivo</th>
+                      <th style="width: 15%;">Tamaño</th>
+                      <th style="width: 15%;" class="text-center">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let doc of studentDocuments">
+                      <td><span class="badge-doc-type">{{ doc.tipo_documento }}</span></td>
+                      <td>
+                        <div class="doc-filename-desktop" [title]="doc.nombre_archivo">
+                          <i class="material-icons-outlined align-middle me-1 text-muted">description</i>
+                          <span>{{ doc.nombre_archivo }}</span>
+                        </div>
+                      </td>
+                      <td><small class="text-muted font-monospace">{{ formatDocSize(doc.peso) }}</small></td>
+                      <td class="text-center">
+                        <div class="d-flex justify-content-center gap-2">
+                          <button (click)="previewDocument(doc)" class="btn btn-sm btn-outline-primary"
+                            title="Ver Documento">
+                            <i class="material-icons-outlined doc-action-icon">visibility</i>
+                          </button>
+                          <button (click)="removeDocument(doc)" class="btn btn-sm btn-outline-danger" title="Eliminar">
+                            <i class="material-icons-outlined doc-action-icon">delete</i>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- VISTA DE TARJETAS PARA CELULAR (< 768px) -->
+            <div class="docs-mobile-cards-view" *ngIf="!docsLoading && studentDocuments.length > 0">
+              <div class="doc-mobile-card animate-fade-in" *ngFor="let doc of studentDocuments">
+                <div class="doc-mobile-header">
+                  <span class="badge-doc-type">{{ doc.tipo_documento }}</span>
+                  <span class="doc-mobile-size">{{ formatDocSize(doc.peso) }}</span>
+                </div>
+                <div class="doc-mobile-filename">
+                  <i class="material-icons-outlined doc-file-icon">description</i>
+                  <span>{{ doc.nombre_archivo }}</span>
+                </div>
+                <div class="doc-mobile-actions">
+                  <button (click)="previewDocument(doc)" class="btn-doc-mob-view">
+                    <i class="material-icons-outlined">visibility</i> Ver
+                  </button>
+                  <button (click)="removeDocument(doc)" class="btn-doc-mob-del">
+                    <i class="material-icons-outlined">delete</i> Eliminar
+                  </button>
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" (click)="closeDocumentsModal()">CERRAR EXPEDIENTE</button>
+        <div class="modal-footer expediente-modal-footer">
+          <button type="button" class="btn btn-secondary w-100-mobile" (click)="closeDocumentsModal()">CERRAR EXPEDIENTE</button>
         </div>
       </div>
     </div>
