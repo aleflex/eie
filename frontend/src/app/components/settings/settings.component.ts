@@ -316,16 +316,33 @@ export class SettingsComponent implements OnInit {
       this.rolesPermisos[roleId] = {};
     }
     this.modulosSistema.forEach(m => {
-      if (this.rolesPermisos[roleId][m.key] === undefined) {
+      const existing = this.rolesPermisos[roleId][m.key];
+      if (existing === undefined || existing === null) {
         if (roleId === 1) {
-          this.rolesPermisos[roleId][m.key] = true;
+          this.rolesPermisos[roleId][m.key] = { ver: true, crear: true, editar: true, eliminar: true };
         } else if (roleId === 4) {
-          this.rolesPermisos[roleId][m.key] = ['admin', 'students', 'courses', 'docentes-list', 'paralelos', 'reports'].includes(m.key);
+          const ok = ['admin', 'students', 'courses', 'docentes-list', 'paralelos', 'reports'].includes(m.key);
+          this.rolesPermisos[roleId][m.key] = { ver: ok, crear: ok, editar: ok, eliminar: ok && m.key !== 'docentes-list' };
         } else if (roleId === 5) {
-          this.rolesPermisos[roleId][m.key] = ['admin', 'students', 'courses', 'reports'].includes(m.key);
+          const ok = ['admin', 'students', 'courses', 'reports'].includes(m.key);
+          this.rolesPermisos[roleId][m.key] = { ver: ok, crear: ok && m.key === 'students', editar: ok && m.key === 'students', eliminar: false };
         } else {
-          this.rolesPermisos[roleId][m.key] = false;
+          this.rolesPermisos[roleId][m.key] = { ver: false, crear: false, editar: false, eliminar: false };
         }
+      } else if (typeof existing === 'boolean') {
+        this.rolesPermisos[roleId][m.key] = {
+          ver: existing,
+          crear: existing && roleId !== 5,
+          editar: existing && roleId !== 5,
+          eliminar: existing && roleId === 1
+        };
+      } else {
+        this.rolesPermisos[roleId][m.key] = {
+          ver: existing.ver !== false,
+          crear: !!existing.crear,
+          editar: !!existing.editar,
+          eliminar: !!existing.eliminar
+        };
       }
     });
   }
@@ -344,10 +361,48 @@ export class SettingsComponent implements OnInit {
     this.ensureRolePermisosStructure(roleId);
   }
 
-  togglePermission(moduleKey: string) {
-    if (this.selectedRoleId === 1) return; // Administrador General siempre tiene acceso total
+  isModuleEnabled(roleId: number, moduleKey: string): boolean {
+    const p = this.rolesPermisos[roleId]?.[moduleKey];
+    if (!p) return false;
+    if (typeof p === 'boolean') return p;
+    return !!p.ver || !!p.crear || !!p.editar || !!p.eliminar;
+  }
+
+  toggleModule(moduleKey: string) {
+    if (this.selectedRoleId === 1) return;
     this.ensureRolePermisosStructure(this.selectedRoleId);
-    this.rolesPermisos[this.selectedRoleId][moduleKey] = !this.rolesPermisos[this.selectedRoleId][moduleKey];
+    const curr = this.isModuleEnabled(this.selectedRoleId, moduleKey);
+    const nextVal = !curr;
+    this.rolesPermisos[this.selectedRoleId][moduleKey] = {
+      ver: nextVal,
+      crear: nextVal,
+      editar: nextVal,
+      eliminar: nextVal
+    };
+  }
+
+  isActionAllowed(roleId: number, moduleKey: string, action: string): boolean {
+    if (roleId === 1) return true;
+    const p = this.rolesPermisos[roleId]?.[moduleKey];
+    if (!p) return false;
+    if (typeof p === 'boolean') return p;
+    return p[action] === true;
+  }
+
+  toggleAction(moduleKey: string, action: string, event?: Event) {
+    if (event) event.stopPropagation();
+    if (this.selectedRoleId === 1) return;
+    this.ensureRolePermisosStructure(this.selectedRoleId);
+    const p = this.rolesPermisos[this.selectedRoleId][moduleKey];
+    p[action] = !p[action];
+    if ((action === 'crear' || action === 'editar' || action === 'eliminar') && p[action]) {
+      p.ver = true;
+    }
+    if (action === 'ver' && !p.ver) {
+      p.crear = false;
+      p.editar = false;
+      p.eliminar = false;
+    }
   }
 
   savePermissions() {

@@ -81,7 +81,14 @@ export class RoleService {
    * Verifica si un rol específico tiene acceso a un módulo dado.
    */
   hasAccessToModule(idRol: number, moduleKey: string): boolean {
-    if (idRol === 1) return true; // Administrador General siempre tiene acceso total
+    return this.hasActionPermission(idRol, moduleKey, 'ver');
+  }
+
+  /**
+   * Verifica si un rol específico tiene permiso para una acción concreta en un módulo (ver, crear, editar, eliminar).
+   */
+  hasActionPermission(idRol: number, moduleKey: string, action: string = 'ver'): boolean {
+    if (idRol === 1) return true; // Administrador General siempre tiene acceso total a todo
 
     if (!this.cachedPermisos) {
       const stored = localStorage.getItem('eie_roles_permisos');
@@ -93,15 +100,30 @@ export class RoleService {
     }
 
     if (this.cachedPermisos && this.cachedPermisos[idRol]) {
-      return this.cachedPermisos[idRol][moduleKey] === true;
+      const modPerm = this.cachedPermisos[idRol][moduleKey];
+      if (modPerm === true) return true; // Acceso total si está en formato booleano simple
+      if (modPerm === false || modPerm === null || modPerm === undefined) return false;
+      if (typeof modPerm === 'object') {
+        if (action === 'ver') {
+          return modPerm.ver === true || modPerm.crear === true || modPerm.editar === true;
+        }
+        return modPerm[action] === true;
+      }
     }
 
     // Valores por defecto
     if (idRol === 4) { // Jefe de Unidad
-      return ['admin', 'students', 'courses', 'docentes-list', 'paralelos', 'reports'].includes(moduleKey);
+      const allowed = ['admin', 'students', 'courses', 'docentes-list', 'paralelos', 'reports'].includes(moduleKey);
+      if (!allowed) return false;
+      if (action === 'eliminar' && ['docentes-list'].includes(moduleKey)) return false;
+      return true;
     }
     if (idRol === 5) { // Secretaría
-      return ['admin', 'students', 'courses', 'reports'].includes(moduleKey);
+      const allowed = ['admin', 'students', 'courses', 'reports'].includes(moduleKey);
+      if (!allowed) return false;
+      if (action === 'eliminar') return false; // Secretaría no elimina registros por defecto
+      if (action === 'crear' || action === 'editar') return ['students'].includes(moduleKey);
+      return action === 'ver';
     }
 
     return false;

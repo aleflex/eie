@@ -409,23 +409,31 @@
                 </div>
               </div>
 
-              <!-- Lista de Módulos con Checkboxes Interactivos -->
+              <!-- Lista de Módulos con Checkboxes Interactivos y Acciones Granulares -->
               <div class="modules-matrix-grid">
                 <div 
                   *ngFor="let mod of modulosSistema" 
                   class="module-matrix-card"
-                  [class.module-enabled]="rolesPermisos[selectedRoleId]?.[mod.key]"
-                  [class.module-locked]="selectedRoleId === 1"
-                  (click)="togglePermission(mod.key)">
+                  [class.module-enabled]="isModuleEnabled(selectedRoleId, mod.key)"
+                  [class.module-locked]="selectedRoleId === 1">
                   
                   <div class="module-card-header">
                     <div class="module-icon-wrap">
                       <span class="material-icons-outlined">{{ mod.icon }}</span>
                     </div>
-                    <div class="module-status-badge">
-                      <span class="badge" [ngClass]="rolesPermisos[selectedRoleId]?.[mod.key] ? 'bg-success' : 'bg-secondary'">
-                        {{ rolesPermisos[selectedRoleId]?.[mod.key] ? 'Permitido' : 'Bloqueado' }}
+                    <div class="d-flex align-items-center gap-2">
+                      <span class="badge" [ngClass]="isModuleEnabled(selectedRoleId, mod.key) ? 'bg-success' : 'bg-secondary'">
+                        {{ isModuleEnabled(selectedRoleId, mod.key) ? 'Permitido' : 'Bloqueado' }}
                       </span>
+                      <div class="form-check form-switch p-0 m-0">
+                        <input 
+                          class="form-check-input ms-0" 
+                          type="checkbox" 
+                          [checked]="isModuleEnabled(selectedRoleId, mod.key)" 
+                          [disabled]="selectedRoleId === 1"
+                          (click)="$event.stopPropagation(); toggleModule(mod.key)"
+                          title="Habilitar/Bloquear Módulo">
+                      </div>
                     </div>
                   </div>
 
@@ -435,17 +443,33 @@
                     <p class="module-desc">{{ mod.descripcion }}</p>
                   </div>
 
-                  <div class="module-card-footer">
-                    <div class="form-check form-switch p-0 m-0 d-flex align-items-center justify-content-between">
-                      <label class="form-check-label small fw-bold" [class.text-success]="rolesPermisos[selectedRoleId]?.[mod.key]">
-                        {{ rolesPermisos[selectedRoleId]?.[mod.key] ? 'Acceso Habilitado' : 'Sin Acceso' }}
+                  <!-- Permisos Granulares de Acciones: Ver, Crear, Modificar, Eliminar -->
+                  <div class="module-card-footer pt-2">
+                    <div class="small fw-bold text-muted mb-1" style="font-size: 11px;">Acciones Permitidas:</div>
+                    <div class="crud-chips-grid">
+                      <label class="crud-chip" [class.active]="isActionAllowed(selectedRoleId, mod.key, 'ver')" (click)="toggleAction(mod.key, 'ver', $event)">
+                        <input type="checkbox" [checked]="isActionAllowed(selectedRoleId, mod.key, 'ver')" [disabled]="selectedRoleId === 1">
+                        <span class="crud-icon material-icons-outlined">visibility</span>
+                        <span>Ver</span>
                       </label>
-                      <input 
-                        class="form-check-input ms-0" 
-                        type="checkbox" 
-                        [checked]="rolesPermisos[selectedRoleId]?.[mod.key]" 
-                        [disabled]="selectedRoleId === 1"
-                        (click)="$event.stopPropagation(); togglePermission(mod.key)">
+
+                      <label class="crud-chip" [class.active]="isActionAllowed(selectedRoleId, mod.key, 'crear')" (click)="toggleAction(mod.key, 'crear', $event)">
+                        <input type="checkbox" [checked]="isActionAllowed(selectedRoleId, mod.key, 'crear')" [disabled]="selectedRoleId === 1">
+                        <span class="crud-icon material-icons-outlined">add_circle_outline</span>
+                        <span>Crear</span>
+                      </label>
+
+                      <label class="crud-chip" [class.active]="isActionAllowed(selectedRoleId, mod.key, 'editar')" (click)="toggleAction(mod.key, 'editar', $event)">
+                        <input type="checkbox" [checked]="isActionAllowed(selectedRoleId, mod.key, 'editar')" [disabled]="selectedRoleId === 1">
+                        <span class="crud-icon material-icons-outlined">edit</span>
+                        <span>Modificar</span>
+                      </label>
+
+                      <label class="crud-chip" [class.active]="isActionAllowed(selectedRoleId, mod.key, 'eliminar')" (click)="toggleAction(mod.key, 'eliminar', $event)">
+                        <input type="checkbox" [checked]="isActionAllowed(selectedRoleId, mod.key, 'eliminar')" [disabled]="selectedRoleId === 1">
+                        <span class="crud-icon material-icons-outlined">delete_outline</span>
+                        <span>Eliminar</span>
+                      </label>
                     </div>
                   </div>
                 </div>

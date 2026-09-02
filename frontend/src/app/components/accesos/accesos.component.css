@@ -679,3 +679,212 @@ td {
   }
 }
 
+/* ========================================================
+   ESTILOS PARA ROLES Y MATRIZ DE PERMISOS GRANULARES
+======================================================== */
+.roles-permissions-view {
+  margin-top: 1rem;
+}
+
+.roles-pills-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.roles-pills-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #64748b;
+  letter-spacing: 0.5px;
+}
+
+.roles-pills-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.role-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1rem;
+  border-radius: 9999px;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.role-pill-btn:hover {
+  background: #e2e8f0;
+  border-color: #94a3b8;
+}
+
+.role-pill-btn.active {
+  background: var(--primary-color, #003b71);
+  color: #ffffff;
+  border-color: var(--primary-color, #003b71);
+  box-shadow: 0 4px 10px rgba(0, 59, 113, 0.25);
+}
+
+.pill-icon {
+  font-size: 1.1rem;
+}
+
+.badge-custom-role {
+  background: #fef08a;
+  color: #854d0e;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+}
+
+.role-pill-btn.active .badge-custom-role {
+  background: #fde047;
+  color: #713f12;
+}
+
+.active-role-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+/* Grid de Módulos */
+.modules-matrix-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.module-matrix-card {
+  background: #ffffff;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.module-matrix-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+  border-color: #cbd5e1;
+}
+
+.module-matrix-card.module-enabled {
+  border-color: #10b981;
+  background: #f0fdf4;
+}
+
+.module-matrix-card.module-locked {
+  opacity: 0.95;
+}
+
+.module-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.module-icon-wrap {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #1e293b;
+}
+
+.module-matrix-card.module-enabled .module-icon-wrap {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.module-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 0.25rem;
+}
+
+.module-route {
+  display: inline-block;
+  background: #e2e8f0;
+  color: #475569;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.module-desc {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.35;
+}
+
+.module-card-footer {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #f1f5f9;
+}
+
+/* Chips de Acciones Granulares: Ver, Crear, Modificar, Eliminar */
+.crud-chips-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.crud-chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.15s ease;
+  margin: 0;
+}
+
+.crud-chip:hover {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+}
+
+.crud-chip.active {
+  background: #dbeafe;
+  border-color: #93c5fd;
+  color: #1e40af;
+}
+
+.crud-chip input {
+  margin: 0;
+  cursor: pointer;
+}
+
+.crud-chip .crud-icon {
+  font-size: 14px;
+}
+

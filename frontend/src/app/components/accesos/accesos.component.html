@@ -89,6 +89,9 @@
           <button [class.active]="activeTab === 'admin'" (click)="cambiarTab('admin')">
             <span class="material-icons-outlined">military_tech</span> Administradores
           </button>
+          <button [class.active]="activeTab === 'roles'" (click)="cambiarTab('roles')">
+            <span class="material-icons-outlined">security</span> Roles y Permisos
+          </button>
         </div>
 
         <!-- Botón para crear nuevo Administrador y configurar roles -->
@@ -97,14 +100,22 @@
             <span class="material-icons-outlined btn-icon">add</span>
             <span>Nuevo Usuario Admin</span>
           </button>
-          <a routerLink="/settings" [queryParams]="{tab: 'roles'}" class="btn btn-outline-dark d-flex align-items-center gap-1 shadow-sm" style="border-radius: 8px; font-weight: 600; text-decoration: none;">
+          <button type="button" (click)="cambiarTab('roles')" class="btn btn-outline-dark d-flex align-items-center gap-1 shadow-sm" style="border-radius: 8px; font-weight: 600;">
             <span class="material-icons-outlined btn-icon">security</span>
             <span>Configurar Roles y Permisos</span>
-          </a>
+          </button>
         </div>
 
-        <!-- Barra de Búsqueda Unificada -->
-        <div class="search-input-group">
+        <!-- Botón para crear rol en la pestaña de Roles -->
+        <div *ngIf="activeTab === 'roles'" class="d-flex gap-2">
+          <button type="button" (click)="openCreateRoleModal()" class="btn btn-warning fw-bold d-flex align-items-center gap-1 text-dark shadow-sm" style="border-radius: 8px;">
+            <span class="material-icons-outlined">add_moderator</span>
+            <span>+ Crear Nuevo Rol</span>
+          </button>
+        </div>
+
+        <!-- Barra de Búsqueda Unificada (Solo para nómina de usuarios) -->
+        <div class="search-input-group" *ngIf="activeTab !== 'roles'">
           <i class="material-icons-outlined search-icon">search</i>
           <input 
             type="text" 
@@ -116,8 +127,8 @@
           >
         </div>
 
-        <!-- Selector de Estado de Cuenta (Solo si no es pestaña de admin) -->
-        <div class="status-select-group" *ngIf="activeTab !== 'admin'">
+        <!-- Selector de Estado de Cuenta (Solo si no es pestaña de admin ni roles) -->
+        <div class="status-select-group" *ngIf="activeTab !== 'admin' && activeTab !== 'roles'">
           <select [(ngModel)]="statusFilter" (change)="filtrarPersonas()" class="filter-select" aria-label="Filtrar por estado de acceso">
             <option value="todos">Todos los Estados</option>
             <option value="con_acceso">Con Cuenta de Acceso</option>
@@ -126,13 +137,13 @@
         </div>
       </div>
 
-      <div *ngIf="isLoading" class="loader">
+      <div *ngIf="isLoading && activeTab !== 'roles'" class="loader">
         <div class="spinner-border text-primary" role="status"></div>
         <p>Cargando nómina del establecimiento...</p>
       </div>
 
       <!-- Tabla de Personas para Escritorio (Desktop) -->
-      <div class="table-responsive mt-3 d-none d-md-block" *ngIf="!isLoading">
+      <div class="table-responsive mt-3 d-none d-md-block" *ngIf="!isLoading && activeTab !== 'roles'">
         <table class="table table-hover align-middle">
           <thead class="table-light">
             <tr>
@@ -230,7 +241,7 @@
       </div>
 
       <!-- Tarjetas Responsivas para Celulares y APK (Mobile View < 768px) -->
-      <div class="mobile-cards-view d-block d-md-none mt-3" *ngIf="!isLoading">
+      <div class="mobile-cards-view d-block d-md-none mt-3" *ngIf="!isLoading && activeTab !== 'roles'">
         <div *ngFor="let persona of filteredPersonas" class="persona-card-mobile animate-fade-in mb-3">
           <div class="card-mobile-header">
             <div class="user-avatar-badge">
@@ -316,6 +327,170 @@
           <p class="text-muted mb-0">No se encontraron personas con los filtros seleccionados.</p>
         </div>
       </div>
+
+      <!-- ==================== PESTAÑA ESPECIAL: ROLES Y PERMISOS GRANULARES ==================== -->
+      <div *ngIf="activeTab === 'roles'" class="roles-permissions-view animate-fade-in mt-2">
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+          <div>
+            <h2 class="pane-title m-0" style="font-size: 1.3rem; font-weight: 700; color: #003b71;">
+              🛡️ Roles Institucionales y Permisos por Módulo
+            </h2>
+            <p class="pane-description m-0 text-muted" style="font-size: 0.85rem;">
+              Crea nuevos roles y configura exactamente si cada rol puede <strong>Ver</strong>, <strong>Crear</strong>, <strong>Modificar</strong> o <strong>Eliminar</strong> en cada módulo.
+            </p>
+          </div>
+          <button type="button" class="btn btn-warning fw-bold d-flex align-items-center gap-1 text-dark shadow-sm" (click)="openCreateRoleModal()">
+            <span class="material-icons-outlined">add_moderator</span>
+            <span>+ Crear Nuevo Rol</span>
+          </button>
+        </div>
+
+        <!-- Alertas de éxito / error -->
+        <div *ngIf="roleSuccessMessage" class="alert alert-success animate-fade-in py-2 px-3 mb-3 d-flex align-items-center gap-2">
+          <span class="material-icons-outlined">check_circle</span>
+          <span>{{ roleSuccessMessage }}</span>
+        </div>
+        <div *ngIf="roleErrorMessage" class="alert alert-danger animate-fade-in py-2 px-3 mb-3 d-flex align-items-center gap-2">
+          <span class="material-icons-outlined">error</span>
+          <span>{{ roleErrorMessage }}</span>
+        </div>
+
+        <!-- Loader de roles -->
+        <div *ngIf="rolesLoading" class="text-center py-4">
+          <div class="spinner-border text-primary" role="status"></div>
+          <p class="text-muted mt-2">Cargando roles y permisos...</p>
+        </div>
+
+        <div *ngIf="!rolesLoading">
+          <!-- Selector de Roles Estilo Pills -->
+          <div class="roles-pills-bar mb-4">
+            <span class="roles-pills-title">Seleccionar Rol a Configurar:</span>
+            <div class="roles-pills-list">
+              <button 
+                *ngFor="let rol of rolesList" 
+                type="button" 
+                class="role-pill-btn" 
+                [class.active]="selectedRoleId === rol.id_rol"
+                (click)="selectRole(rol.id_rol)">
+                <span class="material-icons-outlined pill-icon">
+                  {{ rol.id_rol == 1 ? 'military_tech' : rol.id_rol == 4 ? 'local_police' : rol.id_rol == 5 ? 'badge' : 'security' }}
+                </span>
+                <span class="pill-name">{{ formatRoleName(rol.nombre_rol) }}</span>
+                <span *ngIf="rol.id_rol > 5" class="badge-custom-role">Nuevo</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Ficha Informativa del Rol Activo -->
+          <div class="active-role-card mb-4 p-3 rounded-3 shadow-sm border bg-light">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+              <div class="d-flex align-items-center gap-3">
+                <div class="role-icon-circle p-2 rounded-circle bg-white shadow-sm border d-flex align-items-center justify-content-center" style="width: 46px; height: 46px;">
+                  <span class="material-icons-outlined text-primary fs-3">
+                    {{ selectedRoleId == 1 ? 'admin_panel_settings' : selectedRoleId == 4 ? 'policy' : selectedRoleId == 5 ? 'assignment_ind' : 'verified_user' }}
+                  </span>
+                </div>
+                <div>
+                  <h4 class="m-0 fw-bold fs-5">
+                    {{ formatRoleName(getSelectedRole().nombre_rol) }}
+                  </h4>
+                  <p class="text-muted small m-0">
+                    {{ selectedRoleId == 1 ? 'Control total absoluto de la plataforma y todas las configuraciones.' : 
+                       selectedRoleId == 4 ? 'Supervisión académica, control de cursos, paralelos y reportes estadísticos.' : 
+                       selectedRoleId == 5 ? 'Atención a estudiantes, inscripciones, recepción de documentos y consultas.' : 
+                       (getSelectedRole().descripcion || 'Rol institucional personalizado.') }}
+                  </p>
+                </div>
+              </div>
+
+              <!-- Acciones sobre roles personalizados -->
+              <div *ngIf="selectedRoleId > 5" class="d-flex gap-2">
+                <button type="button" class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1" (click)="openEditRoleModal(getSelectedRole())">
+                  <span class="material-icons-outlined" style="font-size: 16px;">edit</span> Editar
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-danger d-flex align-items-center gap-1" (click)="deleteRole(getSelectedRole())">
+                  <span class="material-icons-outlined" style="font-size: 16px;">delete</span> Eliminar
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Grid de Módulos con Switches y Acciones Granulares -->
+          <div class="modules-matrix-grid">
+            <div 
+              *ngFor="let mod of modulosSistema" 
+              class="module-matrix-card"
+              [class.module-enabled]="isModuleEnabled(selectedRoleId, mod.key)"
+              [class.module-locked]="selectedRoleId === 1">
+              
+              <div class="module-card-header">
+                <div class="module-icon-wrap">
+                  <span class="material-icons-outlined">{{ mod.icon }}</span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                  <span class="badge" [ngClass]="isModuleEnabled(selectedRoleId, mod.key) ? 'bg-success' : 'bg-secondary'">
+                    {{ isModuleEnabled(selectedRoleId, mod.key) ? 'Permitido' : 'Bloqueado' }}
+                  </span>
+                  <div class="form-check form-switch p-0 m-0">
+                    <input 
+                      class="form-check-input ms-0" 
+                      type="checkbox" 
+                      [checked]="isModuleEnabled(selectedRoleId, mod.key)" 
+                      [disabled]="selectedRoleId === 1"
+                      (click)="$event.stopPropagation(); toggleModule(mod.key)"
+                      title="Habilitar/Bloquear Módulo">
+                  </div>
+                </div>
+              </div>
+
+              <div class="module-card-body">
+                <h5 class="module-name">{{ mod.nombre }}</h5>
+                <code class="module-route">{{ mod.ruta }}</code>
+                <p class="module-desc">{{ mod.descripcion }}</p>
+              </div>
+
+              <!-- Acciones Granulares: Ver, Crear, Modificar, Eliminar -->
+              <div class="module-card-footer pt-2">
+                <div class="small fw-bold text-muted mb-1" style="font-size: 11px;">Acciones Permitidas:</div>
+                <div class="crud-chips-grid">
+                  <label class="crud-chip" [class.active]="isActionAllowed(selectedRoleId, mod.key, 'ver')" (click)="toggleAction(mod.key, 'ver', $event)">
+                    <input type="checkbox" [checked]="isActionAllowed(selectedRoleId, mod.key, 'ver')" [disabled]="selectedRoleId === 1">
+                    <span class="crud-icon material-icons-outlined">visibility</span>
+                    <span>Ver</span>
+                  </label>
+
+                  <label class="crud-chip" [class.active]="isActionAllowed(selectedRoleId, mod.key, 'crear')" (click)="toggleAction(mod.key, 'crear', $event)">
+                    <input type="checkbox" [checked]="isActionAllowed(selectedRoleId, mod.key, 'crear')" [disabled]="selectedRoleId === 1">
+                    <span class="crud-icon material-icons-outlined">add_circle_outline</span>
+                    <span>Crear</span>
+                  </label>
+
+                  <label class="crud-chip" [class.active]="isActionAllowed(selectedRoleId, mod.key, 'editar')" (click)="toggleAction(mod.key, 'editar', $event)">
+                    <input type="checkbox" [checked]="isActionAllowed(selectedRoleId, mod.key, 'editar')" [disabled]="selectedRoleId === 1">
+                    <span class="crud-icon material-icons-outlined">edit</span>
+                    <span>Modificar</span>
+                  </label>
+
+                  <label class="crud-chip" [class.active]="isActionAllowed(selectedRoleId, mod.key, 'eliminar')" (click)="toggleAction(mod.key, 'eliminar', $event)">
+                    <input type="checkbox" [checked]="isActionAllowed(selectedRoleId, mod.key, 'eliminar')" [disabled]="selectedRoleId === 1">
+                    <span class="crud-icon material-icons-outlined">delete_outline</span>
+                    <span>Eliminar</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Botón Guardar Matriz de Permisos -->
+          <div class="d-flex justify-content-end mt-4">
+            <button type="button" class="btn btn-primary px-4 py-2 fw-bold d-flex align-items-center gap-2 shadow" style="border-radius: 10px; background: #003B71;" (click)="savePermissions()" [disabled]="isSavingPermisos">
+              <span class="material-icons-outlined" *ngIf="!isSavingPermisos">save</span>
+              <div class="spinner-border spinner-border-sm" role="status" *ngIf="isSavingPermisos"></div>
+              <span>{{ isSavingPermisos ? 'Guardando permisos...' : 'Guardar y Aplicar Permisos del Rol' }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
     </section>
   </main>
 
@@ -346,7 +521,12 @@
         <form (ngSubmit)="asignarCredenciales()" #assignForm="ngForm">
           <!-- Selector de Rol (Solo para Personal Administrativo Nuevo) -->
           <div class="form-group-custom mb-3" *ngIf="selectedPersona?.tipo === 'admin'">
-            <label for="assign_rol">Rol en la Institución *</label>
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <label for="assign_rol" class="m-0">Rol en la Institución *</label>
+              <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none fw-bold" style="font-size: 12px; color: #003B71;" (click)="openCreateRoleModal()">
+                + Crear Nuevo Rol
+              </button>
+            </div>
             <div class="input-icon-wrapper">
               <span class="material-icons-outlined">manage_accounts</span>
               <select 
@@ -361,7 +541,7 @@
               </select>
             </div>
             <small class="text-muted d-block mt-1">
-              {{ formModel.id_rol == 1 ? 'Control total del sistema y configuraciones.' : formModel.id_rol == 4 ? 'Supervisión de cursos, aprobaciones y reportes académicos.' : 'Gestión de estudiantes, inscripciones y recepción de documentos.' }}
+              {{ formModel.id_rol == 1 ? 'Control total del sistema y configuraciones.' : formModel.id_rol == 4 ? 'Supervisión de cursos, aprobaciones y reportes académicos.' : formModel.id_rol == 5 ? 'Gestión de estudiantes, inscripciones y recepción de documentos.' : 'Rol institucional personalizado.' }}
             </small>
           </div>
 
@@ -447,7 +627,12 @@
         <form (ngSubmit)="actualizarCredenciales()" #editForm="ngForm">
           <!-- Selector de Rol (Para usuarios administrativos) -->
           <div class="form-group-custom mb-3" *ngIf="selectedPersona?.tipo === 'admin'">
-            <label for="edit_rol">Rol Administrativo Asignado</label>
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <label for="edit_rol" class="m-0">Rol Administrativo Asignado</label>
+              <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none fw-bold" style="font-size: 12px; color: #003B71;" (click)="openCreateRoleModal()">
+                + Crear Nuevo Rol
+              </button>
+            </div>
             <div class="input-icon-wrapper">
               <span class="material-icons-outlined">manage_accounts</span>
               <select 
@@ -510,6 +695,57 @@
           <div class="modal-footer-custom mt-4">
             <button type="button" class="btn-cancel-custom" (click)="closeEditModal()">CANCELAR</button>
             <button type="submit" class="btn-submit-custom btn-submit-dark" [disabled]="!editForm.valid">GUARDAR CAMBIOS</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 3: CREAR / EDITAR ROL INSTITUCIONAL ==================== -->
+  <div class="modal-backdrop-overlay" *ngIf="showRoleModal">
+    <div class="modal-card-custom animate-fade-in" style="max-width: 500px;">
+      <div class="modal-header-custom bg-dark text-white p-3 d-flex justify-content-between align-items-center">
+        <h5 class="m-0 d-flex align-items-center gap-2 fs-6">
+          <span class="material-icons-outlined">add_moderator</span>
+          {{ roleFormModel.id ? 'Editar Rol Institucional' : 'Crear Nuevo Rol Institucional' }}
+        </h5>
+        <button type="button" class="btn-close-custom" (click)="closeRoleModal()" aria-label="Cerrar">&times;</button>
+      </div>
+      <div class="modal-body-custom p-4">
+        <p class="text-muted small mb-3">
+          Los roles creados aparecerán inmediatamente disponibles para asignar credenciales y regular el acceso a cada módulo del sistema.
+        </p>
+
+        <form (ngSubmit)="saveRole()" #roleForm="ngForm">
+          <div class="form-group mb-3">
+            <label class="form-label fw-bold">Nombre del Rol *</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="material-icons-outlined">badge</i></span>
+              <input 
+                type="text" 
+                class="form-control" 
+                [(ngModel)]="roleFormModel.nombre_rol" 
+                name="nombre_rol" 
+                required 
+                placeholder="Ej: Kardex / Coordinador Académico">
+            </div>
+          </div>
+
+          <div class="form-group mb-4">
+            <label class="form-label fw-bold">Descripción / Funciones (Opcional)</label>
+            <textarea 
+              class="form-control" 
+              rows="3" 
+              [(ngModel)]="roleFormModel.descripcion" 
+              name="descripcion" 
+              placeholder="Breve descripción de las responsabilidades asignadas a este rol..."></textarea>
+          </div>
+
+          <div class="d-flex justify-content-end gap-2">
+            <button type="button" class="btn btn-secondary px-4" (click)="closeRoleModal()">CANCELAR</button>
+            <button type="submit" class="btn btn-warning px-4 text-dark fw-bold" [disabled]="!roleForm.valid">
+              {{ roleFormModel.id ? 'ACTUALIZAR' : 'GUARDAR ROL' }}
+            </button>
           </div>
         </form>
       </div>

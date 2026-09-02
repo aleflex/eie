@@ -34,12 +34,19 @@ export class AuthService {
    * Verifica si el usuario actual tiene acceso a un módulo específico según su rol y permisos configurados.
    */
   canAccess(module: string): boolean {
+    return this.canAction(module, 'ver');
+  }
+
+  /**
+   * Verifica si el usuario autenticado tiene permiso para una acción granular (ver, crear, editar, eliminar) en un módulo.
+   */
+  canAction(module: string, action: string = 'ver'): boolean {
     const user = this.obtenerUsuario();
     if (!user) return false;
     const idRol = user.id_rol ? Number(user.id_rol) : (user.rol === 'admin' ? 1 : null);
     if (idRol === 1) return true;
     if (!idRol) return false;
-    return this.roleService.hasAccessToModule(idRol, module);
+    return this.roleService.hasActionPermission(idRol, module, action);
   }
 
   /**
