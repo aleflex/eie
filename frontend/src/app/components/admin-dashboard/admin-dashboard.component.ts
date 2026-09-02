@@ -32,6 +32,10 @@ export class AdminDashboardComponent implements OnInit {
     this.isMobileMenuOpen = false;
   }
 
+  canAccess(module: string): boolean {
+    return this.authService.canAccess(module);
+  }
+
   constructor(
     private inscriptionService: InscriptionService,
     private authService: AuthService,

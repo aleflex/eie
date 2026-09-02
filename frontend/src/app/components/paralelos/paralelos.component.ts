@@ -5,6 +5,7 @@ import { RouterModule } from '@angular/router';
 import { ParaleloService } from '../../services/paralelo.service';
 import { CourseService } from '../../services/course.service';
 import { DocenteService } from '../../services/docente.service';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-paralelos',
@@ -57,8 +58,13 @@ export class ParalelosComponent implements OnInit {
   constructor(
     private paraleloService: ParaleloService,
     private courseService: CourseService,
-    private docenteService: DocenteService
+    private docenteService: DocenteService,
+    private authService: AuthService
   ) {}
+
+  canAccess(module: string): boolean {
+    return this.authService.canAccess(module);
+  }
 
   ngOnInit(): void {
     this.loadData();

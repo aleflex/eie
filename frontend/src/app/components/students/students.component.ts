@@ -13,6 +13,7 @@ import { ParaleloService } from '../../services/paralelo.service';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { ImageCompressorService } from '../../services/image-compressor.service';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-students',
@@ -44,6 +45,10 @@ export class StudentsComponent implements OnInit {
 
   closeMobileMenu() {
     this.isMobileMenuOpen = false;
+  }
+
+  canAccess(module: string): boolean {
+    return this.authService.canAccess(module);
   }
 
   toggleRow(studentId: number) {
@@ -99,7 +104,8 @@ export class StudentsComponent implements OnInit {
     private paraleloService: ParaleloService,
     private sanitizer: DomSanitizer,
     private imageCompressor: ImageCompressorService,
-    private http: HttpClient
+    private http: HttpClient,
+    private authService: AuthService
   ) {}
 
   ngOnInit() {

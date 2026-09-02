@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { SettingsService } from '../../services/settings.service';
 import { AuthService } from '../../services/auth.service';
+import { RoleService } from '../../services/role.service';
 import { ImageCompressorService } from '../../services/image-compressor.service';
 import { environment } from '../../../environments/environment';
 
@@ -25,6 +26,25 @@ export class SettingsComponent implements OnInit {
   // Control de la barra lateral (Sidebar)
   isSidebarCollapsed: boolean = false;
   isMobileMenuOpen: boolean = false;
+
+  // Roles y Permisos de Módulos
+  rolesList: any[] = [];
+  rolesPermisos: any = {};
+  selectedRoleId: number = 1;
+  modulosSistema: any[] = [];
+  rolesLoading: boolean = false;
+  isSavingPermisos: boolean = false;
+
+  // Modal Nuevo/Editar Rol
+  showRoleModal: boolean = false;
+  roleFormModel: { id?: number; nombre_rol: string; descripcion: string } = {
+    nombre_rol: '',
+    descripcion: ''
+  };
+
+  canAccess(module: string): boolean {
+    return this.authService.canAccess(module);
+  }
 
   toggleSidebar() {
     this.isSidebarCollapsed = !this.isSidebarCollapsed;
@@ -66,6 +86,7 @@ export class SettingsComponent implements OnInit {
   constructor(
     private settingsService: SettingsService,
     private authService: AuthService,
+    private roleService: RoleService,
     private router: Router,
     private imageCompressor: ImageCompressorService
   ) {}
@@ -88,6 +109,11 @@ export class SettingsComponent implements OnInit {
     }
     this.biometricEnabled = this.authService.isBiometricEnabled();
     this.cargarConfiguraciones();
+
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('tab') === 'roles') {
+      this.onSelectRolesTab();
+    }
   }
 
   biometricEnabled: boolean = false;
@@ -246,6 +272,145 @@ export class SettingsComponent implements OnInit {
         this.isSavingProfile = false;
       }
     });
+  }
+
+  // --- GESTIÓN DE ROLES Y MATRIZ DE PERMISOS DE MÓDULOS ---
+  onSelectRolesTab() {
+    this.activeTab = 'roles';
+    this.loadRolesAndPermissions();
+  }
+
+  loadRolesAndPermissions() {
+    this.rolesLoading = true;
+    this.modulosSistema = this.roleService.MODULOS_SISTEMA;
+
+    this.roleService.getRoles().subscribe({
+      next: (roles) => {
+        // Excluir estudiantes (2) y docentes (3) de la matriz de módulos administrativos
+        this.rolesList = roles.filter(r => r.id_rol !== 2 && r.id_rol !== 3);
+        if (this.rolesList.length > 0 && !this.rolesList.some(r => r.id_rol === this.selectedRoleId)) {
+          this.selectedRoleId = this.rolesList[0].id_rol;
+        }
+
+        this.roleService.getPermisos().subscribe({
+          next: (permisos) => {
+            this.rolesPermisos = permisos || {};
+            this.ensureRolePermisosStructure(this.selectedRoleId);
+            this.rolesLoading = false;
+          },
+          error: () => {
+            this.rolesLoading = false;
+          }
+        });
+      },
+      error: () => {
+        this.rolesLoading = false;
+      }
+    });
+  }
+
+  ensureRolePermisosStructure(roleId: number) {
+    if (!this.rolesPermisos[roleId]) {
+      this.rolesPermisos[roleId] = {};
+      this.modulosSistema.forEach(m => {
+        this.rolesPermisos[roleId][m.key] = roleId === 1;
+      });
+    }
+  }
+
+  selectRole(roleId: number) {
+    this.selectedRoleId = roleId;
+    this.ensureRolePermisosStructure(roleId);
+  }
+
+  togglePermission(moduleKey: string) {
+    if (this.selectedRoleId === 1) return; // Administrador General siempre tiene acceso total
+    this.ensureRolePermisosStructure(this.selectedRoleId);
+    this.rolesPermisos[this.selectedRoleId][moduleKey] = !this.rolesPermisos[this.selectedRoleId][moduleKey];
+  }
+
+  savePermissions() {
+    this.isSavingPermisos = true;
+    this.roleService.savePermisos(this.rolesPermisos).subscribe({
+      next: () => {
+        this.isSavingPermisos = false;
+        this.successMessage = '¡Matriz de permisos guardada exitosamente! Se aplicará al menú de cada rol.';
+        setTimeout(() => this.successMessage = '', 4000);
+      },
+      error: (err) => {
+        this.isSavingPermisos = false;
+        this.errorMessage = 'Error al guardar los permisos: ' + (err.error?.message || err.message);
+        setTimeout(() => this.errorMessage = '', 4000);
+      }
+    });
+  }
+
+  openCreateRoleModal() {
+    this.roleFormModel = { nombre_rol: '', descripcion: '' };
+    this.showRoleModal = true;
+  }
+
+  openEditRoleModal(rol: any) {
+    this.roleFormModel = { id: rol.id_rol, nombre_rol: rol.nombre_rol, descripcion: rol.descripcion || '' };
+    this.showRoleModal = true;
+  }
+
+  closeRoleModal() {
+    this.showRoleModal = false;
+    this.roleFormModel = { nombre_rol: '', descripcion: '' };
+  }
+
+  saveRole() {
+    if (!this.roleFormModel.nombre_rol || !this.roleFormModel.nombre_rol.trim()) {
+      alert('Por favor ingresa el nombre del nuevo rol.');
+      return;
+    }
+
+    if (this.roleFormModel.id) {
+      this.roleService.updateRole(this.roleFormModel.id, this.roleFormModel).subscribe({
+        next: () => {
+          alert('Rol actualizado correctamente.');
+          this.closeRoleModal();
+          this.loadRolesAndPermissions();
+        },
+        error: (err) => alert('Error al actualizar rol: ' + (err.error?.message || err.message))
+      });
+    } else {
+      this.roleService.createRole(this.roleFormModel).subscribe({
+        next: (res) => {
+          alert(`Rol "${this.roleFormModel.nombre_rol}" creado exitosamente.`);
+          this.closeRoleModal();
+          this.loadRolesAndPermissions();
+          if (res.rol) {
+            this.selectedRoleId = res.rol.id_rol;
+          }
+        },
+        error: (err) => alert('Error al crear rol: ' + (err.error?.message || err.message))
+      });
+    }
+  }
+
+  deleteRole(rol: any) {
+    if ([1, 2, 3].includes(rol.id_rol)) {
+      alert('Los roles base del sistema no pueden ser eliminados.');
+      return;
+    }
+
+    if (!confirm(`¿Estás seguro de eliminar el rol "${rol.nombre_rol}"?`)) {
+      return;
+    }
+
+    this.roleService.deleteRole(rol.id_rol).subscribe({
+      next: () => {
+        alert('Rol eliminado exitosamente.');
+        this.loadRolesAndPermissions();
+      },
+      error: (err) => alert('Error al eliminar rol: ' + (err.error?.message || err.message))
+    });
+  }
+
+  getSelectedRole() {
+    return this.rolesList.find(r => r.id_rol === this.selectedRoleId) || { id_rol: this.selectedRoleId, nombre_rol: 'Rol Seleccionado' };
   }
 
   /**

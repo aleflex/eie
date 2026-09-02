@@ -3,6 +3,8 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
 
+import { RoleService } from './role.service';
+
 /**
  * Servicio de Autenticación
  * Gestiona el inicio de sesión, cierre de sesión y gestión del usuario autenticado.
@@ -23,7 +25,22 @@ export class AuthService {
     return envUrl.endsWith('/api') ? envUrl : `${envUrl}/api`;
   }
 
-  constructor(private http: HttpClient) { }
+  constructor(
+    private http: HttpClient,
+    private roleService: RoleService
+  ) { }
+
+  /**
+   * Verifica si el usuario actual tiene acceso a un módulo específico según su rol y permisos configurados.
+   */
+  canAccess(module: string): boolean {
+    const user = this.obtenerUsuario();
+    if (!user) return false;
+    const idRol = user.id_rol ? Number(user.id_rol) : (user.rol === 'admin' ? 1 : null);
+    if (idRol === 1) return true;
+    if (!idRol) return false;
+    return this.roleService.hasAccessToModule(idRol, module);
+  }
 
   /**
    * Inicia sesión del usuario por Usuario o Correo
@@ -137,7 +154,7 @@ export class AuthService {
 
     try {
       const { NativeBiometric } = await import('@capgo/capacitor-native-biometric');
-      
+
       try {
         await NativeBiometric.isAvailable();
       } catch (e) {
@@ -158,7 +175,7 @@ export class AuthService {
       return { success: true, message: '¡Acceso con Huella / Rostro activado con éxito en este celular!' };
     } catch (e: any) {
       console.warn('Verificación biométrica en dispositivo nativo:', e);
-      
+
       // Si el usuario confirma o está en entorno móvil habilitado
       localStorage.setItem('eie_biometric_enabled', 'true');
       localStorage.setItem('eie_biometric_token', 'auth_token_active');

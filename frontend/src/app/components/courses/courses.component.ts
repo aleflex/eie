@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CourseService, Curso as Course } from '../../services/course.service';
+import { AuthService } from '../../services/auth.service';
 import { RouterModule } from '@angular/router';
 
 @Component({
@@ -26,6 +27,10 @@ export class CoursesComponent implements OnInit {
 
   closeMobileMenu() {
     this.isMobileMenuOpen = false;
+  }
+
+  canAccess(module: string): boolean {
+    return this.authService.canAccess(module);
   }
   
   // Paginación y Filtros
@@ -55,7 +60,10 @@ export class CoursesComponent implements OnInit {
     'NIVEL V (BOOK 25-30)'
   ];
 
-  constructor(private courseService: CourseService) {}
+  constructor(
+    private courseService: CourseService,
+    private authService: AuthService
+  ) {}
 
   ngOnInit(): void {
     this.loadCourses();

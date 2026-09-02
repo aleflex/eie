@@ -89,6 +89,12 @@ Route::post('/accesos/asignar', [AccesoController::class, 'asignar']);
 Route::put('/accesos/actualizar/{userId}', [AccesoController::class, 'actualizar']);
 Route::delete('/accesos/desvincular/{userId}', [AccesoController::class, 'desvincular']);
 
+// Roles y Matriz de Permisos de Módulos
+use App\Http\Controllers\Api\RoleController;
+Route::get('/roles/permisos', [RoleController::class, 'getPermisos']);
+Route::post('/roles/permisos', [RoleController::class, 'savePermisos']);
+Route::apiResource('roles', RoleController::class);
+
 // Reportes y Estadísticas (EPIC 4: RF 18, RF 19, RF 20, RF 21)
 use App\Http\Controllers\Api\ReportController;
 Route::get('/reports/statistics-by-language', [ReportController::class, 'getLanguageStatistics']);

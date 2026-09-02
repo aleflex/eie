@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { AccesoService } from '../../services/acceso.service';
 import { AuthService } from '../../services/auth.service';
+import { RoleService } from '../../services/role.service';
 
 @Component({
   selector: 'app-accesos',
@@ -32,6 +33,10 @@ export class AccesosComponent implements OnInit {
 
   closeMobileMenu() {
     this.isMobileMenuOpen = false;
+  }
+
+  canAccess(module: string): boolean {
+    return this.authService.canAccess(module);
   }
 
   // Filtros
@@ -63,6 +68,7 @@ export class AccesosComponent implements OnInit {
   constructor(
     private accesoService: AccesoService,
     private authService: AuthService,
+    private roleService: RoleService,
     private router: Router
   ) {}
 
@@ -73,6 +79,19 @@ export class AccesosComponent implements OnInit {
     }
     this.user = this.authService.getUser();
     this.cargarAccesos();
+    this.cargarRoles();
+  }
+
+  cargarRoles() {
+    this.roleService.getRoles().subscribe({
+      next: (roles: any[]) => {
+        const adminRoles = roles.filter(r => r.id_rol !== 2 && r.id_rol !== 3);
+        if (adminRoles.length > 0) {
+          this.rolesAdministrativos = adminRoles.map(r => ({ id: r.id_rol, nombre: r.nombre_rol }));
+        }
+      },
+      error: (e) => console.warn('No se pudieron cargar roles dinámicos:', e)
+    });
   }
 
   cargarAccesos() {

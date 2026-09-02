@@ -4,6 +4,7 @@ import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { DocenteService } from '../../services/docente.service';
 import { ImageCompressorService } from '../../services/image-compressor.service';
+import { AuthService } from '../../services/auth.service';
 import { environment } from '../../../environments/environment';
 
 @Component({
@@ -47,8 +48,13 @@ export class DocentesListComponent implements OnInit {
 
   constructor(
     private docenteService: DocenteService,
-    private imageCompressor: ImageCompressorService
+    private imageCompressor: ImageCompressorService,
+    private authService: AuthService
   ) {}
+
+  canAccess(module: string): boolean {
+    return this.authService.canAccess(module);
+  }
 
   ngOnInit(): void {
     this.loadDocentes();

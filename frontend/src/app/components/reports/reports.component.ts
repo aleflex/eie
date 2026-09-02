@@ -40,6 +40,10 @@ export class ReportsComponent implements OnInit, AfterViewInit {
     this.isMobileMenuOpen = false;
   }
 
+  canAccess(module: string): boolean {
+    return this.authService.canAccess(module);
+  }
+
   // Control del panel lateral de filtros colapsable (RF 21)
   isFilterSidebarOpen: boolean = false;
 

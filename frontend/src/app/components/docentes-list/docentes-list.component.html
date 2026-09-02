@@ -13,35 +13,35 @@
     </div>
 
     <nav class="sidebar-nav">
-      <a routerLink="/admin" routerLinkActive="active" class="nav-item" (click)="closeMobileMenu()">
+      <a *ngIf="canAccess('admin')" routerLink="/admin" routerLinkActive="active" class="nav-item" (click)="closeMobileMenu()">
         <i class="material-icons-outlined">dashboard</i>
         <span *ngIf="!isSidebarCollapsed">Panel Principal</span>
       </a>
-      <a routerLink="/students" routerLinkActive="active" class="nav-item" (click)="closeMobileMenu()">
+      <a *ngIf="canAccess('students')" routerLink="/students" routerLinkActive="active" class="nav-item" (click)="closeMobileMenu()">
         <i class="material-icons-outlined">people</i>
         <span *ngIf="!isSidebarCollapsed">Estudiantes</span>
       </a>
-      <a routerLink="/courses" routerLinkActive="active" class="nav-item" (click)="closeMobileMenu()">
+      <a *ngIf="canAccess('courses')" routerLink="/courses" routerLinkActive="active" class="nav-item" (click)="closeMobileMenu()">
         <i class="material-icons-outlined">school</i>
         <span *ngIf="!isSidebarCollapsed">Cursos</span>
       </a>
-      <a routerLink="/docentes-list" routerLinkActive="active" class="nav-item active" (click)="closeMobileMenu()">
+      <a *ngIf="canAccess('docentes-list')" routerLink="/docentes-list" routerLinkActive="active" class="nav-item active" (click)="closeMobileMenu()">
         <i class="material-icons-outlined">person</i>
         <span *ngIf="!isSidebarCollapsed">Instructores</span>
       </a>
-      <a routerLink="/paralelos" routerLinkActive="active" class="nav-item" (click)="closeMobileMenu()">
+      <a *ngIf="canAccess('paralelos')" routerLink="/paralelos" routerLinkActive="active" class="nav-item" (click)="closeMobileMenu()">
         <i class="material-icons-outlined">class</i>
         <span *ngIf="!isSidebarCollapsed">Paralelos</span>
       </a>
-      <a routerLink="/reports" routerLinkActive="active" class="nav-item" (click)="closeMobileMenu()">
+      <a *ngIf="canAccess('reports')" routerLink="/reports" routerLinkActive="active" class="nav-item" (click)="closeMobileMenu()">
         <i class="material-icons-outlined">bar_chart</i>
         <span *ngIf="!isSidebarCollapsed">Reportes y Estadísticas</span>
       </a>
-      <a routerLink="/accesos" routerLinkActive="active" class="nav-item" (click)="closeMobileMenu()">
+      <a *ngIf="canAccess('accesos')" routerLink="/accesos" routerLinkActive="active" class="nav-item" (click)="closeMobileMenu()">
         <i class="material-icons-outlined">vpn_key</i>
         <span *ngIf="!isSidebarCollapsed">Credenciales / Accesos</span>
       </a>
-      <a routerLink="/settings" routerLinkActive="active" class="nav-item" (click)="closeMobileMenu()">
+      <a *ngIf="canAccess('settings')" routerLink="/settings" routerLinkActive="active" class="nav-item" (click)="closeMobileMenu()">
         <i class="material-icons-outlined">settings</i>
         <span *ngIf="!isSidebarCollapsed">Configuración</span>
       </a>

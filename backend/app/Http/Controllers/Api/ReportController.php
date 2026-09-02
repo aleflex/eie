@@ -641,24 +641,31 @@ class ReportController extends Controller
      */
     public function exportPdf(Request $request)
     {
-        $filters = $request->only(['id_idioma', 'id_nivel', 'id_curso', 'id_paralelo', 'estado', 'fecha_desde', 'fecha_hasta']);
+        try {
+            $filters = $request->only(['id_idioma', 'id_nivel', 'id_curso', 'id_paralelo', 'estado', 'fecha_desde', 'fecha_hasta']);
 
-        $summary = $this->getDashboardSummary($request)->getData(true);
-        $langStats = $this->getLanguageStatistics($request)->getData(true);
-        $occStats = $this->getClassroomOccupancy($request)->getData(true);
-        $inscripciones = Inscripcion::with(['estudiante.user', 'curso.idioma', 'curso.nivelRel', 'paralelo'])
-            ->filterMultiCriteria($filters)
-            ->get();
+            $summary = $this->getDashboardSummary($request)->getData(true);
+            $langStats = $this->getLanguageStatistics($request)->getData(true);
+            $occStats = $this->getClassroomOccupancy($request)->getData(true);
+            $inscripciones = Inscripcion::with(['estudiante.user', 'curso.idioma', 'curso.nivelRel', 'paralelo'])
+                ->filterMultiCriteria($filters)
+                ->get();
 
-        $pdf = Pdf::loadView('pdf.reportes', [
-            'summary' => $summary,
-            'langStats' => $langStats,
-            'occStats' => $occStats,
-            'inscripciones' => $inscripciones,
-            'fecha' => date('d/m/Y')
-        ]);
+            $pdf = Pdf::loadView('pdf.reportes', [
+                'summary' => $summary,
+                'langStats' => $langStats,
+                'occStats' => $occStats,
+                'inscripciones' => $inscripciones,
+                'fecha' => date('d/m/Y')
+            ]);
 
-        return $pdf->download('Reporte_Estadistico_EIE_' . date('Ymd') . '.pdf');
+            $pdf->setPaper('letter', 'portrait');
+
+            return $pdf->download('Reporte_Estadistico_EIE_' . date('Ymd') . '.pdf');
+        } catch (\Throwable $e) {
+            \Log::error('Error exportando PDF de reportes: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            return response()->json(['message' => 'Error al generar el reporte en PDF: ' . $e->getMessage()], 500);
+        }
     }
 
     /**
