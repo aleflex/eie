@@ -308,7 +308,7 @@
         <!-- Contacto y Datos Generales -->
         <div class="section-title">Datos de Contacto</div>
         <div class="row">
-          <div class="col-md-4 form-group">
+          <div class="col-md-6 form-group">
             <label for="email">Correo Electrónico *</label>
             <input type="email" id="email" formControlName="email" class="form-control"
                    [class.is-invalid]="(isSubmitted || f['email'].touched) && f['email'].errors" placeholder="nombre@ejemplo.com">
@@ -317,7 +317,7 @@
               <small *ngIf="f['email'].errors['email']">Email inválido.</small>
             </div>
           </div>
-          <div class="col-md-4 form-group">
+          <div class="col-md-6 form-group">
             <label for="celular">Celular *</label>
             <div class="input-group-phone">
               <select formControlName="celularPrefix" class="prefix-select" title="Prefijo de país" aria-label="Prefijo de país">
@@ -339,12 +339,63 @@
               <small *ngIf="f['celular'].errors['pattern']">Debe tener entre 7 y 10 dígitos.</small>
             </div>
           </div>
-          <div class="col-md-4 form-group">
-            <label for="domicilio">Domicilio *</label>
+        </div>
+
+        <!-- Domicilio con Selector de Mapa y GPS -->
+        <div class="form-group mt-3">
+          <div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-2">
+            <label for="domicilio" class="m-0 fw-bold d-flex align-items-center gap-1">
+              <i class="material-icons text-danger" style="font-size: 20px;">place</i>
+              <span>Domicilio (Zona y Calle) *</span>
+            </label>
+            <button type="button" class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1 shadow-sm" (click)="usarUbicacionGps()" [disabled]="isGeolocating">
+              <i class="material-icons" style="font-size: 16px;">my_location</i>
+              <span>{{ isGeolocating ? 'Detectando tu GPS...' : '📍 Usar mi ubicación GPS actual' }}</span>
+            </button>
+          </div>
+
+          <div class="input-group mb-2">
             <input type="text" id="domicilio" formControlName="domicilio" class="form-control"
-                   [class.is-invalid]="(isSubmitted || f['domicilio'].touched) && f['domicilio'].errors" placeholder="Zona, Avenida, Nro Calle">
-            <div *ngIf="(isSubmitted || f['domicilio'].touched) && f['domicilio'].errors" class="error-msg">
-              <small>El domicilio es obligatorio.</small>
+                   [class.is-invalid]="(isSubmitted || f['domicilio'].touched) && f['domicilio'].errors" 
+                   placeholder="Ej. Zona Miraflores, Calle Díaz Romero Nro 123 (o marca en el mapa abajo)">
+            <button type="button" class="btn btn-secondary btn-sm" (click)="initMap()" title="Centrar mapa">
+              <i class="material-icons align-middle" style="font-size: 18px;">map</i> Ver Mapa
+            </button>
+          </div>
+          <div *ngIf="(isSubmitted || f['domicilio'].touched) && f['domicilio'].errors" class="error-msg mb-2">
+            <small>El domicilio es obligatorio. Puedes hacer clic en el mapa para fijar tu ubicación automáticamente.</small>
+          </div>
+
+          <!-- Tarjeta del Mapa Interactivo -->
+          <div class="map-picker-card">
+            <div class="map-picker-header d-flex justify-content-between align-items-center p-2 bg-light border-bottom flex-wrap gap-2">
+              <small class="text-muted d-flex align-items-center gap-1">
+                <i class="material-icons text-primary" style="font-size: 16px;">touch_app</i>
+                <strong>Haz clic o mueve el marcador</strong> sobre tu zona/calle:
+              </small>
+              <div class="d-flex gap-1 align-items-center">
+                <input type="text" [(ngModel)]="mapSearchQuery" [ngModelOptions]="{standalone: true}" 
+                       (keyup.enter)="buscarEnMapa()" 
+                       class="form-control form-control-sm" 
+                       placeholder="Buscar zona en el mapa..." style="width: 180px; font-size: 12px;">
+                <button type="button" class="btn btn-sm btn-dark px-2" (click)="buscarEnMapa()" [disabled]="isSearchingAddress" title="Buscar en mapa">
+                  <i class="material-icons" style="font-size: 14px;">search</i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Contenedor Leaflet -->
+            <div id="map-domicilio" style="height: 260px; width: 100%; z-index: 1;"></div>
+
+            <div class="map-picker-footer p-2 bg-white border-top d-flex justify-content-between align-items-center flex-wrap" *ngIf="detectedLocationInfo || isSearchingAddress">
+              <small class="text-success fw-bold d-flex align-items-center gap-1" *ngIf="!isSearchingAddress">
+                <i class="material-icons" style="font-size: 16px;">check_circle</i>
+                Ubicación detectada: {{ detectedLocationInfo }}
+              </small>
+              <small class="text-muted d-flex align-items-center gap-1" *ngIf="isSearchingAddress">
+                <span class="spinner-border spinner-border-sm" role="status"></span>
+                Identificando zona y calle...
+              </small>
             </div>
           </div>
         </div>
@@ -559,25 +610,25 @@
             <small class="text-muted mt-1">Formatos: Imagen o PDF.</small>
           </div>
 
-          <!-- Boleta de Depósito -->
-          <div class="col-md-6 form-group mt-3">
-            <label class="field-label-drop">Boleta de Depósito *</label>
+          <!-- Boleta de Inscripción EMI (Exclusivo para Estudiantes de la EMI) -->
+          <div class="col-md-6 form-group mt-3" *ngIf="userType === 'emi'">
+            <label class="field-label-drop">Boleta de Inscripción EMI *</label>
             <div class="custom-dropzone"
                  [class.has-file]="fileNames['deposito']"
                  [class.is-invalid]="(isSubmitted || inscriptionForm.get('archivos.deposito')?.touched) && inscriptionForm.get('archivos.deposito')?.invalid">
-              <input id="file_deposito" type="file" (change)="onFileSelected($event, 'deposito')" class="real-file-input" accept="image/*,application/pdf" title="Subir Boleta de Depósito" aria-label="Subir Boleta de Depósito">
+              <input id="file_deposito" type="file" (change)="onFileSelected($event, 'deposito')" class="real-file-input" accept="image/*,application/pdf" title="Subir Boleta de Inscripción EMI" aria-label="Subir Boleta de Inscripción EMI">
 
               <div class="dropzone-content" *ngIf="!fileNames['deposito']">
-                <i class="material-icons cloud-icon">cloud_upload</i>
+                <i class="material-icons cloud-icon">receipt_long</i>
                 <span class="upload-title">Seleccionar Archivo</span>
-                <span class="upload-subtitle">Comprobante de depósito/pago bancario</span>
+                <span class="upload-subtitle">Comprobante o Boleta de Inscripción de la EMI</span>
               </div>
 
               <div class="dropzone-preview animate-fade-in" *ngIf="fileNames['deposito']">
                 <i class="material-icons file-icon text-success-icon">receipt_long</i>
                 <div class="file-details">
                   <span class="file-name">{{ fileNames['deposito'] }}</span>
-                  <span class="file-status">Archivo cargado correctamente</span>
+                  <span class="file-status">Boleta EMI cargada correctamente</span>
                 </div>
                 <button type="button" class="btn-remove-file" (click)="removeFile('deposito')" title="Quitar archivo">
                   <i class="material-icons">close</i>
@@ -590,7 +641,7 @@
               <small class="align-middle ml-1">{{ fileWarnings['deposito'] }}</small>
             </div>
             <div *ngIf="(isSubmitted || inscriptionForm.get('archivos.deposito')?.touched) && inscriptionForm.get('archivos.deposito')?.invalid" class="error-msg">
-              <small>La Boleta de Depósito es obligatoria.</small>
+              <small>La Boleta de Inscripción EMI es obligatoria.</small>
             </div>
             <small class="text-muted mt-1">Formatos: Imagen o PDF.</small>
           </div>

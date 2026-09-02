@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { NavbarComponent } from '../navbar/navbar.component';
@@ -7,6 +7,8 @@ import { InscriptionService } from '../../services/inscription.service';
 import { ImageCompressorService } from '../../services/image-compressor.service';
 import { environment } from '../../../environments/environment';
 
+declare var L: any;
+
 @Component({
   selector: 'app-inscription',
   standalone: true,
@@ -14,7 +16,7 @@ import { environment } from '../../../environments/environment';
   templateUrl: './inscription.component.html',
   styleUrl: './inscription.component.css'
 })
-export class InscriptionComponent implements OnInit {
+export class InscriptionComponent implements OnInit, AfterViewInit {
   inscriptionForm!: FormGroup;
   isSubmitted = false;
 
@@ -32,6 +34,14 @@ export class InscriptionComponent implements OnInit {
   showApiConfigModal: boolean = false;
   customApiUrl: string = '';
   currentApiUrl: string = '';
+
+  // Mapa interactivo para selección de Domicilio
+  map: any = null;
+  marker: any = null;
+  isGeolocating: boolean = false;
+  mapSearchQuery: string = '';
+  isSearchingAddress: boolean = false;
+  detectedLocationInfo: string = '';
 
   // Almacenar nombres de archivo seleccionados para dropzones personalizados
   fileNames: { [key: string]: string } = {
@@ -76,6 +86,172 @@ export class InscriptionComponent implements OnInit {
 
     this.customApiUrl = localStorage.getItem('custom_api_url') || '';
     this.currentApiUrl = environment.apiUrl;
+  }
+
+  ngAfterViewInit() {
+    if (this.currentStep === 2) {
+      setTimeout(() => this.initMap(), 500);
+    }
+  }
+
+  /**
+   * Inicializa el mapa interactivo de OpenStreetMap con Leaflet
+   */
+  initMap() {
+    if (typeof L === 'undefined') {
+      console.warn('Leaflet aún no está cargado');
+      return;
+    }
+    const mapEl = document.getElementById('map-domicilio');
+    if (!mapEl) return;
+
+    if (this.map) {
+      setTimeout(() => {
+        if (this.map) this.map.invalidateSize();
+      }, 100);
+      return;
+    }
+
+    // Coordenadas por defecto (La Paz, Bolivia)
+    const defaultLat = -16.5000;
+    const defaultLng = -68.1500;
+
+    this.map = L.map('map-domicilio').setView([defaultLat, defaultLng], 14);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors',
+      maxZoom: 19
+    }).addTo(this.map);
+
+    this.marker = L.marker([defaultLat, defaultLng], {
+      draggable: true
+    }).addTo(this.map);
+
+    // Al hacer clic en cualquier punto del mapa
+    this.map.on('click', (e: any) => {
+      const { lat, lng } = e.latlng;
+      this.marker.setLatLng([lat, lng]);
+      this.reverseGeocode(lat, lng);
+    });
+
+    // Al arrastrar el pin
+    this.marker.on('dragend', () => {
+      const pos = this.marker.getLatLng();
+      this.reverseGeocode(pos.lat, pos.lng);
+    });
+
+    setTimeout(() => {
+      if (this.map) this.map.invalidateSize();
+    }, 300);
+  }
+
+  /**
+   * Obtiene la ubicación GPS precisa del estudiante
+   */
+  usarUbicacionGps() {
+    if (!navigator.geolocation) {
+      alert('Tu navegador o dispositivo no soporta geolocalización GPS.');
+      return;
+    }
+
+    this.isGeolocating = true;
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        this.isGeolocating = false;
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+
+        if (!this.map) {
+          this.initMap();
+        }
+
+        if (this.map && this.marker) {
+          this.map.setView([lat, lng], 17);
+          this.marker.setLatLng([lat, lng]);
+          this.reverseGeocode(lat, lng);
+        }
+      },
+      (error) => {
+        this.isGeolocating = false;
+        console.warn('Error GPS:', error);
+        alert('No se pudo acceder a tu ubicación GPS. Puedes mover el mapa y hacer clic directamente sobre tu zona.');
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }
+
+  /**
+   * Geocodificación inversa: Convierte latitud/longitud a Nombre de Calle y Zona
+   */
+  reverseGeocode(lat: number, lng: number) {
+    this.isSearchingAddress = true;
+    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`;
+    fetch(url)
+      .then(res => res.json())
+      .then(data => {
+        this.isSearchingAddress = false;
+        if (data && data.address) {
+          const addr = data.address;
+          const road = addr.road || addr.pedestrian || addr.street || '';
+          const suburb = addr.suburb || addr.neighbourhood || addr.quarter || addr.residential || addr.city_district || '';
+          const city = addr.city || addr.town || addr.village || '';
+
+          let direccionFinal = '';
+          if (suburb && road) {
+            direccionFinal = `Zona ${suburb}, ${road}`;
+          } else if (road) {
+            direccionFinal = road + (city ? `, ${city}` : '');
+          } else if (suburb) {
+            direccionFinal = `Zona ${suburb}` + (city ? `, ${city}` : '');
+          } else if (data.display_name) {
+            const parts = data.display_name.split(',');
+            direccionFinal = parts.slice(0, 3).join(',').trim();
+          } else {
+            direccionFinal = `Zona Central (Ubicación fijada en mapa)`;
+          }
+
+          this.detectedLocationInfo = direccionFinal;
+          this.inscriptionForm.get('domicilio')?.patchValue(direccionFinal);
+          this.inscriptionForm.get('domicilio')?.markAsDirty();
+          this.inscriptionForm.get('domicilio')?.markAsTouched();
+        }
+      })
+      .catch(err => {
+        this.isSearchingAddress = false;
+        console.error('Error reverse geocoding:', err);
+      });
+  }
+
+  /**
+   * Busca una zona o calle escrita por el usuario y centra el mapa
+   */
+  buscarEnMapa() {
+    if (!this.mapSearchQuery || !this.mapSearchQuery.trim()) return;
+    this.isSearchingAddress = true;
+    const query = encodeURIComponent(this.mapSearchQuery.trim() + ', Bolivia');
+    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${query}&limit=1`)
+      .then(res => res.json())
+      .then(results => {
+        this.isSearchingAddress = false;
+        if (results && results.length > 0) {
+          const first = results[0];
+          const lat = parseFloat(first.lat);
+          const lng = parseFloat(first.lon);
+          if (!this.map) {
+            this.initMap();
+          }
+          if (this.map && this.marker) {
+            this.map.setView([lat, lng], 16);
+            this.marker.setLatLng([lat, lng]);
+            this.reverseGeocode(lat, lng);
+          }
+        } else {
+          alert('No encontramos esa zona en el mapa. Intenta hacer clic manualmente sobre el mapa.');
+        }
+      })
+      .catch(() => {
+        this.isSearchingAddress = false;
+      });
   }
 
   /**
@@ -193,7 +369,7 @@ export class InscriptionComponent implements OnInit {
         carnet: [null, Validators.required],
         titulo: [null, Validators.required],
         nacimiento: [null, Validators.required],
-        deposito: [null, Validators.required],
+        deposito: [null], // Obligatorio SOLO para Estudiantes EMI
         foto: [null, Validators.required],
         credencialEmi: [null],
         carnetCossmil: [null]
@@ -224,6 +400,7 @@ export class InscriptionComponent implements OnInit {
       const nombrePadresCtrl = this.inscriptionForm.get('nombrePadres');
       const ciTutorCtrl = this.inscriptionForm.get('ciTutor');
       const carnetCossmilFileCtrl = this.inscriptionForm.get('archivos.carnetCossmil');
+      const depositoFileCtrl = this.inscriptionForm.get('archivos.deposito');
 
       if (type !== 'militar') {
         this.inscriptionForm.patchValue({
@@ -252,9 +429,19 @@ export class InscriptionComponent implements OnInit {
         this.fileNames['carnetCossmil'] = '';
       }
 
+      // Boleta de Depósito / Inscripción EMI: SOLO requerida para Estudiantes EMI
+      if (type === 'emi') {
+        depositoFileCtrl?.setValidators([Validators.required]);
+      } else {
+        depositoFileCtrl?.clearValidators();
+        depositoFileCtrl?.reset(null);
+        this.fileNames['deposito'] = '';
+      }
+
       nombrePadresCtrl?.updateValueAndValidity({ emitEvent: false });
       ciTutorCtrl?.updateValueAndValidity({ emitEvent: false });
       carnetCossmilFileCtrl?.updateValueAndValidity({ emitEvent: false });
+      depositoFileCtrl?.updateValueAndValidity({ emitEvent: false });
     });
   }
 
@@ -338,18 +525,26 @@ export class InscriptionComponent implements OnInit {
     if (step === 3) {
       const archivosGroup = this.inscriptionForm.get('archivos') as FormGroup;
       if (archivosGroup) {
-        // Establecer validación de credencialEmi dinámicamente
+        // Establecer validación de credencialEmi y deposito dinámicamente (SOLO obligatorios para EMI)
         const credencialCtrl = archivosGroup.get('credencialEmi');
+        const depositoCtrl = archivosGroup.get('deposito');
+
         if (this.userType === 'emi') {
           credencialCtrl?.setValidators(Validators.required);
+          depositoCtrl?.setValidators(Validators.required);
         } else {
           credencialCtrl?.clearValidators();
+          depositoCtrl?.clearValidators();
         }
         credencialCtrl?.updateValueAndValidity({ emitEvent: false });
+        depositoCtrl?.updateValueAndValidity({ emitEvent: false });
 
         let isValid = true;
         Object.keys(archivosGroup.controls).forEach(key => {
-          if (key === 'credencialEmi' && this.userType !== 'emi') {
+          if ((key === 'credencialEmi' || key === 'deposito') && this.userType !== 'emi') {
+            return;
+          }
+          if (key === 'carnetCossmil' && this.userType !== 'militar' && this.userType !== 'hijo_militar') {
             return;
           }
           const control = archivosGroup.controls[key];
@@ -375,6 +570,9 @@ export class InscriptionComponent implements OnInit {
         this.currentStep++;
         this.isSubmitted = false;
         window.scrollTo({ top: 0, behavior: 'smooth' });
+        if (this.currentStep === 2) {
+          setTimeout(() => this.initMap(), 400);
+        }
       }
     }
   }
@@ -387,6 +585,9 @@ export class InscriptionComponent implements OnInit {
       this.currentStep--;
       this.isSubmitted = false;
       window.scrollTo({ top: 0, behavior: 'smooth' });
+      if (this.currentStep === 2) {
+        setTimeout(() => this.initMap(), 400);
+      }
     }
   }
 
@@ -398,6 +599,9 @@ export class InscriptionComponent implements OnInit {
     if (step < this.currentStep) {
       this.currentStep = step;
       this.isSubmitted = false;
+      if (this.currentStep === 2) {
+        setTimeout(() => this.initMap(), 400);
+      }
     } else if (step > this.currentStep) {
       for (let s = this.currentStep; s < step; s++) {
         if (!this.validateStep(s)) {
@@ -406,6 +610,9 @@ export class InscriptionComponent implements OnInit {
       }
       this.currentStep = step;
       this.isSubmitted = false;
+      if (this.currentStep === 2) {
+        setTimeout(() => this.initMap(), 400);
+      }
     }
   }
 
