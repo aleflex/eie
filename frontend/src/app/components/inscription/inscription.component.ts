@@ -68,6 +68,12 @@ export class InscriptionComponent implements OnInit {
   ngOnInit(): void {
     this.initForm();
     this.setupFormSubscriptions();
+
+    // Pre-calentar servidor backend Render en segundo plano mientras el estudiante llena los datos
+    try {
+      this.inscriptionService.getCourses().subscribe({ error: () => {} });
+    } catch (e) {}
+
     this.customApiUrl = localStorage.getItem('custom_api_url') || '';
     this.currentApiUrl = environment.apiUrl;
   }
