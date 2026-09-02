@@ -163,7 +163,7 @@ export class InscriptionComponent implements OnInit {
     this.inscriptionForm = this.fb.group({
       userType: ['normal', Validators.required],
       nombres: ['', [Validators.required, Validators.minLength(3)]],
-      apellidos: ['', [Validators.required, Validators.pattern(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ']{2,}(?:\s+[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ']{2,})+$/)]],
+      apellidos: ['', [Validators.required, Validators.pattern(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ']{2,}(?:\s+[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ']{1,})*$/)]],
       gradoAcademico: [''],
       armaEspecialidad: [''],
       lugarNacimiento: ['', Validators.required],

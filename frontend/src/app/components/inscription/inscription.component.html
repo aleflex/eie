@@ -110,10 +110,10 @@
           <div class="col-md-4 form-group">
             <label for="apellidos">Apellidos *</label>
             <input type="text" id="apellidos" formControlName="apellidos" class="form-control"
-                   [class.is-invalid]="(isSubmitted || f['apellidos'].touched) && f['apellidos'].errors" placeholder="Ej. Pérez Mamani">
+                   [class.is-invalid]="(isSubmitted || f['apellidos'].touched) && f['apellidos'].errors" placeholder="Ej. Pérez o Pérez Mamani">
             <div *ngIf="(isSubmitted || f['apellidos'].touched) && f['apellidos'].errors" class="error-msg">
               <small *ngIf="f['apellidos'].errors['required']">Los apellidos son obligatorios.</small>
-              <small *ngIf="f['apellidos'].errors['pattern']">Debe ingresar sus dos apellidos (Paterno y Materno).</small>
+              <small *ngIf="f['apellidos'].errors['pattern']">Ingrese un apellido válido (solo letras).</small>
             </div>
           </div>
           <div class="col-md-3 form-group">
