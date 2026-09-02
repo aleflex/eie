@@ -2,7 +2,7 @@
 REM Script para compilar APK con Java 17, Angular y Capacitor
 setlocal enabledelayedexpansion
 
-set JAVA_HOME=C:\Program Files\Java\jdk-17
+set JAVA_HOME=C:\Program Files\Microsoft\jdk-21.0.12.8-hotspot
 set PATH=%JAVA_HOME%\bin;%PATH%
 
 REM Verifica que Java esté configurado correctamente
@@ -54,10 +54,11 @@ REM Si la compilación fue exitosa, muestra la ruta del APK
 if %errorlevel% equ 0 (
     echo.
     echo ✅ APK compilada exitosamente!
+    copy /Y "%~dp0android\app\build\outputs\apk\debug\app-debug.apk" "%~dp0..\app-eie-gestion.apk"
     echo.
-    echo Ubicación: %~dp0android\app\build\outputs\apk\debug\app-debug.apk
+    echo Ubicación: %~dp0..\app-eie-gestion.apk
     echo.
-    echo Puedes enviar este archivo por WhatsApp o AirDrop
+    echo Puedes enviar este archivo por WhatsApp, Bluetooth o instalarlo directamente en tu celular Android.
 ) else (
     echo.
     echo ❌ Error en la compilación del APK
