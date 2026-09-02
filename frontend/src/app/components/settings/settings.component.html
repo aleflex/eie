@@ -271,7 +271,7 @@
                     <button type="button" class="btn-upload-photo">
                       <i class="material-icons-outlined">photo_camera</i> Cambiar Fotografía
                     </button>
-                    <input type="file" (change)="onProfilePhotoSelected($event)" accept="image/*" capture="environment" aria-label="Cambiar fotografía de perfil">
+                    <input type="file" (change)="onProfilePhotoSelected($event)" accept="image/*" aria-label="Cambiar fotografía de perfil">
                     <span class="file-chosen-name" *ngIf="profilePhotoFileName">{{ profilePhotoFileName }}</span>
                   </div>
                   <small class="text-muted d-block mt-2">Formatos permitidos: JPG, PNG. Máximo 2MB.</small>

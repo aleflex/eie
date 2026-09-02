@@ -90,7 +90,7 @@
                 <button type="button" class="btn-upload-photo w-100 justify-content-center">
                   <i class="material-icons-outlined">photo_camera</i> Seleccionar Foto
                 </button>
-                <input type="file" (change)="onPhotoSelected($event)" accept="image/*" capture="environment" aria-label="Seleccionar fotografía 4x4">
+                <input type="file" (change)="onPhotoSelected($event)" accept="image/*" aria-label="Seleccionar fotografía 4x4">
               </div>
               <span class="file-chosen-name text-center d-block mt-1" *ngIf="photoFileName">{{ photoFileName }}</span>
               <button *ngIf="photoFile" (click)="uploadPhoto()" [disabled]="uploading" class="btn-save-photo-now mt-2">

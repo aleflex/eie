@@ -85,7 +85,7 @@
                     <button type="button" class="btn-upload-photo">
                       <i class="material-icons-outlined">photo_camera</i> Seleccionar Nueva Foto
                     </button>
-                    <input type="file" (change)="onAdminPhotoSelected($event)" accept="image/*" capture="environment"
+                    <input type="file" (change)="onAdminPhotoSelected($event)" accept="image/*"
                       aria-label="Seleccionar foto de perfil">
                     <span class="file-chosen-name" *ngIf="adminPhotoFileName">{{ adminPhotoFileName }}</span>
                   </div>
