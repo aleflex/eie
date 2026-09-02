@@ -14,6 +14,7 @@ import { SettingsComponent } from './components/settings/settings.component';
 import { AccesosComponent } from './components/accesos/accesos.component';
 import { StudentDashboardComponent } from './components/student-dashboard/student-dashboard.component';
 import { ReportsComponent } from './components/reports/reports.component';
+import { authGuard } from './guards/auth.guard';
 
 /**
  * Configuración de Rutas de la Aplicación
@@ -24,17 +25,8 @@ import { ReportsComponent } from './components/reports/reports.component';
  * - 'inscripcion': Formulario de inscripción de estudiantes
  * - 'login': Página de inicio de sesión
  *
- * Rutas privadas (requieren autenticación):
- * - 'admin': Panel del administrador
- * - 'students': Gestión de estudiantes
- * - 'courses': Gestión de cursos/paralelos
- * - 'docentes-list': Listado de docentes
- * - 'paralelos': Gestión de paralelos
- * - 'reports': Reportes y Estadísticas
- * - 'docente-dashboard': Panel del docente
- * - 'settings': Configuración del sistema
- * - 'accesos': Gestión de accesos y credenciales
- * - 'student-dashboard': Panel del estudiante
+ * Rutas privadas (requieren autenticación obligatoria):
+ * - 'admin', 'students', 'courses', 'docentes-list', 'paralelos', 'reports', 'settings', 'accesos'
  */
 export const routes: Routes = [
     // Ruta por defecto - Página de inicio
@@ -45,17 +37,20 @@ export const routes: Routes = [
     { path: 'inscripcion', component: InscriptionComponent },  // Inscripción de estudiantes
     { path: 'login', component: LoginComponent },              // Inicio de sesión
 
-    // Rutas de administrador
-    { path: 'admin', component: AdminDashboardComponent },     // Panel administrativo
-    { path: 'students', component: StudentsComponent },        // Gestión de estudiantes
-    { path: 'courses', component: CoursesComponent },          // Gestión de cursos
-    { path: 'docentes-list', component: DocentesListComponent }, // Listado de docentes
-    { path: 'paralelos', component: ParalelosComponent },      // Gestión de paralelos
-    { path: 'reports', component: ReportsComponent },          // Reportes y Estadísticas
-    { path: 'settings', component: SettingsComponent },        // Configuración
-    { path: 'accesos', component: AccesosComponent },          // Control de accesos
+    // Rutas de administrador (Protegidas)
+    { path: 'admin', component: AdminDashboardComponent, canActivate: [authGuard] },
+    { path: 'students', component: StudentsComponent, canActivate: [authGuard] },
+    { path: 'courses', component: CoursesComponent, canActivate: [authGuard] },
+    { path: 'docentes-list', component: DocentesListComponent, canActivate: [authGuard] },
+    { path: 'paralelos', component: ParalelosComponent, canActivate: [authGuard] },
+    { path: 'reports', component: ReportsComponent, canActivate: [authGuard] },
+    { path: 'settings', component: SettingsComponent, canActivate: [authGuard] },
+    { path: 'accesos', component: AccesosComponent, canActivate: [authGuard] },
 
-    // Rutas de rol específicos
-    { path: 'docente-dashboard', component: DocenteDashboardComponent }, // Panel del docente
-    { path: 'student-dashboard', component: StudentDashboardComponent }, // Panel del estudiante
+    // Rutas de rol específicos (Protegidas)
+    { path: 'docente-dashboard', component: DocenteDashboardComponent, canActivate: [authGuard] },
+    { path: 'student-dashboard', component: StudentDashboardComponent, canActivate: [authGuard] },
+
+    // Redirección por defecto para rutas no reconocidas
+    { path: '**', redirectTo: '' }
 ];

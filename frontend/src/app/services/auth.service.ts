@@ -28,7 +28,12 @@ export class AuthService {
   constructor(
     private http: HttpClient,
     private roleService: RoleService
-  ) { }
+  ) {
+    // Limpiar sesiones residuales antiguas de localStorage para que no se mantengan abiertas permanentemente
+    if (localStorage.getItem('usuario')) {
+      localStorage.removeItem('usuario');
+    }
+  }
 
   /**
    * Verifica si el usuario actual tiene acceso a un módulo específico según su rol y permisos configurados.
@@ -62,7 +67,8 @@ export class AuthService {
     return this.http.post(`${this.apiUrl}/login`, payload).pipe(
       tap((respuesta: any) => {
         if (respuesta.user) {
-          localStorage.setItem('usuario', JSON.stringify(respuesta.user));
+          sessionStorage.setItem('usuario', JSON.stringify(respuesta.user));
+          localStorage.removeItem('usuario');
           this.roleService.recargarPermisos();
         }
       })
@@ -83,7 +89,7 @@ export class AuthService {
         const user = this.obtenerUsuario();
         if (user) {
           user.debe_cambiar_password = false;
-          localStorage.setItem('usuario', JSON.stringify(user));
+          sessionStorage.setItem('usuario', JSON.stringify(user));
         }
       })
     );
@@ -93,6 +99,7 @@ export class AuthService {
    * Cierra la sesión del usuario actual
    */
   cerrarSesion() {
+    sessionStorage.removeItem('usuario');
     localStorage.removeItem('usuario');
     return this.http.post(`${this.apiUrl}/logout`, {});
   }
@@ -101,14 +108,14 @@ export class AuthService {
    * Verifica si hay un usuario autenticado
    */
   estaAutenticado(): boolean {
-    return localStorage.getItem('usuario') !== null;
+    return sessionStorage.getItem('usuario') !== null;
   }
 
   /**
    * Obtiene los datos del usuario autenticado
    */
   obtenerUsuario() {
-    const usuario = localStorage.getItem('usuario');
+    const usuario = sessionStorage.getItem('usuario');
     return usuario ? JSON.parse(usuario) : null;
   }
 
@@ -119,7 +126,7 @@ export class AuthService {
     return this.http.post(`${this.apiUrl}/user/profile`, datosFormulario).pipe(
       tap((respuesta: any) => {
         if (respuesta.user) {
-          localStorage.setItem('usuario', JSON.stringify(respuesta.user));
+          sessionStorage.setItem('usuario', JSON.stringify(respuesta.user));
         }
       })
     );
