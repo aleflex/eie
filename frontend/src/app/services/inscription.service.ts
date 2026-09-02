@@ -22,6 +22,15 @@ export class InscriptionService {
   constructor(private http: HttpClient) { }
 
   /**
+   * Envía un ping silencioso para despertar el backend en Render
+   */
+  ping(): Observable<any> {
+    return this.http.get(`${environment.apiUrl}/api/ping`).pipe(
+      catchError(() => throwError(() => null))
+    );
+  }
+
+  /**
    * Envía una solicitud de inscripción con datos y archivos adjuntos
    * @param datos - FormData con los datos de inscripción
    * @returns Observable con la respuesta del servidor

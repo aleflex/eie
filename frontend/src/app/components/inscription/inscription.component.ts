@@ -71,7 +71,7 @@ export class InscriptionComponent implements OnInit {
 
     // Pre-calentar servidor backend Render en segundo plano mientras el estudiante llena los datos
     try {
-      this.inscriptionService.getCourses().subscribe({ error: () => {} });
+      this.inscriptionService.ping().subscribe({ error: () => {} });
     } catch (e) {}
 
     this.customApiUrl = localStorage.getItem('custom_api_url') || '';
