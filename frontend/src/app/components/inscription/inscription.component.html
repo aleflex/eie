@@ -1,12 +1,7 @@
 <app-navbar></app-navbar>
 
 <div class="inscription-container">
-  <div class="form-card animate-fade-in" style="position: relative;">
-    <!-- Botón de Configuración de API rápido para móvil/APK -->
-    <button type="button" class="btn-api-config-trigger" (click)="openApiConfig()" title="Configurar Servidor API">
-      <i class="material-icons-outlined">settings</i>
-    </button>
-
+  <div class="form-card animate-fade-in">
     <div class="form-header">
       <img src="assets/imagenes/logo.jpg" alt="EIE Logo" class="form-logo">
       <h1 class="form-title">FORMULARIO DE INSCRIPCIÓN</h1>
@@ -746,53 +741,5 @@
   </div>
 </div>
 
-<!-- Modal de Configuración de API para Móviles/Pruebas -->
-<div class="modal-backdrop-overlay" *ngIf="showApiConfigModal" (click)="closeApiConfig()">
-  <div class="modal-card animate-zoom-in" (click)="$event.stopPropagation()" style="border-top-color: #d97706;">
-    <div class="modal-header-icon" style="background: #fffbeb; color: #d97706;">
-      <i class="material-icons">dns</i>
-    </div>
-    <h2 class="modal-title">Configuración de Conexión</h2>
-    <p class="modal-body-text" style="margin-bottom: 1.5rem;">
-      Si estás usando la aplicación móvil y tu backend no responde, puedes configurar la dirección de servidor aquí.
-    </p>
-
-    <!-- Estado Actual -->
-    <div class="status-api-info" style="width: 100%; text-align: left; background: #f8fafc; border: 1px solid #e2e8f0; padding: 0.8rem; border-radius: 8px; margin-bottom: 1.5rem; font-size: 0.85rem;">
-      <div style="font-weight: bold; color: var(--primary-color); margin-bottom: 0.2rem;">Servidor Actual:</div>
-      <div style="font-family: monospace; color: #475569; overflow-x: auto; white-space: nowrap;">{{ currentApiUrl }}</div>
-    </div>
-
-    <!-- Input de Dirección de Servidor -->
-    <div class="form-group" style="width: 100%; text-align: left; margin-bottom: 1.5rem;">
-      <label for="custom_api" style="font-weight: 700; font-size: 0.85rem; color: #334155; display: block; margin-bottom: 0.5rem;">Nueva URL del Servidor</label>
-      <input 
-        type="text" 
-        id="custom_api" 
-        name="custom_api"
-        [(ngModel)]="customApiUrl" 
-        class="form-control" 
-        style="padding: 0.8rem 1rem;"
-        placeholder="Ej. http://137.184.129.64 o https://tu-ngrok.ngrok-free.app">
-      <small style="color: #64748b; font-size: 0.72rem; display: block; margin-top: 0.4rem; line-height: 1.3;">
-        * No incluyas "/api" al final. La aplicación lo agregará automáticamente.
-      </small>
-    </div>
-
-    <!-- Botones de Acción -->
-    <div style="display: flex; gap: 0.8rem; width: 100%; margin-top: 1rem;">
-      <button type="button" class="btn-api-modal btn-reset" (click)="resetApiConfig()" style="flex: 1; padding: 0.8rem; border: 1.5px solid #cbd5e1; border-radius: 8px; background: white; color: #475569; font-weight: 700; cursor: pointer; transition: all 0.2s;">
-        Restablecer
-      </button>
-      <button type="button" class="btn-api-modal btn-save" (click)="saveApiConfig()" style="flex: 2; padding: 0.8rem; border: none; border-radius: 8px; background: var(--primary-color); color: white; font-weight: 800; cursor: pointer; transition: all 0.2s;">
-        Guardar y Aplicar
-      </button>
-    </div>
-    
-    <button type="button" (click)="closeApiConfig()" style="position: absolute; top: 15px; right: 15px; background: none; border: none; color: #94a3b8; cursor: pointer;" title="Cerrar modal">
-      <i class="material-icons">close</i>
-    </button>
-  </div>
-</div>
-
 <app-footer></app-footer>
+
