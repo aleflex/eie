@@ -58,6 +58,12 @@ class AccesoController extends Controller
         $excluidos = array_merge($docenteUserIds, $estudianteUserIds);
 
         $administradores = User::whereNotIn('id_usuario', $excluidos)->get()->map(function ($user) {
+            $rolNombre = 'Administrador General';
+            if ($user->id_rol == 5) {
+                $rolNombre = 'Secretaría';
+            } elseif ($user->id_rol == 4) {
+                $rolNombre = 'Jefe de Unidad';
+            }
             return [
                 'persona_id' => $user->id_usuario,
                 'user_id' => $user->id_usuario,
@@ -65,11 +71,13 @@ class AccesoController extends Controller
                 'apellidos' => '',
                 'ci' => 'N/A',
                 'tipo' => 'admin',
+                'id_rol' => $user->id_rol ?: 1,
+                'rol_nombre' => $rolNombre,
                 'usuario' => $user->usuario,
                 'correo_electronico' => $user->email,
                 'telefono' => 'N/A',
                 'tiene_cuenta' => true,
-                'estado' => 'Activo'
+                'estado' => $user->estado ?? 'Activo'
             ];
         });
 
@@ -91,6 +99,7 @@ class AccesoController extends Controller
             'usuario' => 'sometimes|required|string|max:100|unique:usuarios,usuario',
             'email' => 'nullable|string|email|max:255',
             'password' => 'required|string|min:8',
+            'id_rol' => 'nullable|integer',
         ]);
 
         try {
@@ -127,9 +136,19 @@ class AccesoController extends Controller
                 ? strtolower(trim($request->email)) 
                 : "{$username}@eie.edu.bo";
 
+            // Determinar rol
+            $idRol = 1;
+            if ($request->tipo === 'admin') {
+                $idRol = (int) $request->input('id_rol', 1);
+            } elseif ($request->tipo === 'docente') {
+                $idRol = 3;
+            } else {
+                $idRol = 2;
+            }
+
             // 1. Crear el usuario
             $user = User::create([
-                'id_rol' => $request->tipo === 'admin' ? 1 : ($request->tipo === 'docente' ? 2 : 3),
+                'id_rol' => $idRol,
                 'correo_institucional' => $email,
                 'usuario' => $username,
                 'password' => Hash::make($request->password),
@@ -190,6 +209,9 @@ class AccesoController extends Controller
             if ($request->filled('password')) {
                 $user->password = Hash::make($request->password);
                 $user->debe_cambiar_password = true; // Exigir cambio al actualizar la contraseña por admin
+            }
+            if ($request->filled('id_rol')) {
+                $user->id_rol = (int) $request->id_rol;
             }
             $user->save();
 

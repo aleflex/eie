@@ -426,19 +426,27 @@
                   <span *ngIf="!student.inscripciones || student.inscripciones.length === 0">-</span>
                 </td>
                 <td class="col-status-main">
-                  <span *ngIf="student.inscripciones && student.inscripciones.length > 0">
-                    <span class="badge rounded-pill" [ngClass]="{
-                            'bg-success': student.inscripciones[0]?.estado === 'activo',
-                            'bg-warning text-dark': student.inscripciones[0]?.estado === 'pendiente',
-                            'bg-danger': student.inscripciones[0]?.estado === 'retirado',
-                            'bg-primary': student.inscripciones[0]?.estado === 'finalizado'
-                          }">
-                      {{ student.inscripciones[0]?.estado === 'activo' ? 'Habilitado' :
-                      student.inscripciones[0]?.estado === 'pendiente' ? 'Pendiente' :
-                      student.inscripciones[0]?.estado }}
+                  <span *ngIf="isStudentDeBaja(student)">
+                    <span class="badge rounded-pill bg-danger d-inline-flex align-items-center gap-1">
+                      <i class="material-icons-outlined" style="font-size: 14px;">person_off</i> De Baja
                     </span>
                   </span>
-                  <span *ngIf="!student.inscripciones || student.inscripciones.length === 0">-</span>
+                  <span *ngIf="!isStudentDeBaja(student)">
+                    <span *ngIf="student.inscripciones && student.inscripciones.length > 0">
+                      <span class="badge rounded-pill" [ngClass]="{
+                              'bg-success': student.inscripciones[0]?.estado === 'activo',
+                              'bg-warning text-dark': student.inscripciones[0]?.estado === 'pendiente',
+                              'bg-danger': student.inscripciones[0]?.estado === 'retirado' || student.inscripciones[0]?.estado === 'baja',
+                              'bg-primary': student.inscripciones[0]?.estado === 'finalizado'
+                            }">
+                        {{ student.inscripciones[0]?.estado === 'activo' ? 'Habilitado' :
+                        student.inscripciones[0]?.estado === 'pendiente' ? 'Pendiente' :
+                        student.inscripciones[0]?.estado === 'baja' ? 'De Baja' :
+                        student.inscripciones[0]?.estado }}
+                      </span>
+                    </span>
+                    <span *ngIf="!student.inscripciones || student.inscripciones.length === 0">-</span>
+                  </span>
                 </td>
                 <td>
                   <div class="actions">
@@ -450,8 +458,14 @@
                         class="material-icons-outlined">print</i></button>
                     <button (click)="editStudent(student)" class="btn-edit" title="Editar"><i
                         class="material-icons-outlined">edit</i></button>
-                    <button (click)="openDeleteModal(student.id)" class="btn-delete" title="Eliminar"><i
-                        class="material-icons-outlined">delete</i></button>
+                    
+                    <!-- Botón Dinámico: Si está de baja mostrar Rehabilitar, si está activo mostrar Dar de Baja -->
+                    <button *ngIf="isStudentDeBaja(student)" (click)="rehabilitarStudent(student)" class="btn-rehabilitar" title="Rehabilitar Estudiante">
+                      <i class="material-icons-outlined">person_add</i>
+                    </button>
+                    <button *ngIf="!isStudentDeBaja(student)" (click)="openDeleteModal(student)" class="btn-delete" title="Dar de Baja">
+                      <i class="material-icons-outlined">person_off</i>
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -779,26 +793,54 @@
   <!-- MODAL DE CONFIRMACIÓN (Dar de Baja) -->
   <div class="modal-backdrop" *ngIf="showDeleteModal"></div>
   <div class="modal" [class.show]="showDeleteModal" [style.display]="showDeleteModal ? 'block' : 'none'" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered" [ngClass]="{'modal-lg': studentHasGrades}">
       <div class="modal-content border-0 shadow-lg">
-        <div class="modal-header bg-warning text-dark">
-          <h5 class="modal-title">
-            <i class="material-icons-outlined align-middle">warning</i>
-            Confirmar Dar de Baja
+        <div class="modal-header" [ngClass]="studentHasGrades ? 'bg-danger text-white' : 'bg-warning text-dark'">
+          <h5 class="modal-title d-flex align-items-center gap-2 m-0">
+            <i class="material-icons-outlined align-middle">{{ studentHasGrades ? 'gavel' : 'warning' }}</i>
+            {{ studentHasGrades ? 'Baja Justificada por Infracción Grave' : 'Confirmar Dar de Baja' }}
           </h5>
-          <button type="button" class="btn-close" (click)="closeDeleteModal()" aria-label="Cerrar"
-            title="Cerrar"></button>
+          <button type="button" class="btn-close" [class.btn-close-white]="studentHasGrades" (click)="closeDeleteModal()" aria-label="Cerrar" title="Cerrar"></button>
         </div>
-        <div class="modal-body py-4 text-center">
-          <div class="mb-3">
-            <i class="material-icons-outlined text-warning modal-icon-large">person_off</i>
+        <div class="modal-body py-4">
+          
+          <!-- Caso 1: El estudiante TIENE NOTAS REGISTRADAS -->
+          <div *ngIf="studentHasGrades" class="px-2">
+            <div class="alert alert-danger d-flex align-items-start gap-2 mb-3">
+              <i class="material-icons-outlined fs-4 mt-1">report_problem</i>
+              <div>
+                <strong>Restricción Institucional:</strong> Este estudiante <u>cuenta con notas académicas registradas</u> en el sistema. Según el reglamento de la institución, solo puede ser dado de baja si cometió una <strong>falta o infracción grave</strong>, debiendo constar obligatoriamente el motivo y la prueba/acta de respaldo.
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-bold">Motivo o Causa de la Falta Grave: <span class="text-danger">*</span></label>
+              <textarea class="form-control" rows="3" [(ngModel)]="motivoBaja" placeholder="Especifique detalladamente el motivo de la baja o la regla infringida por el estudiante..."></textarea>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-bold">Documento / Acta de Prueba (PDF o Imagen):</label>
+              <input type="file" class="form-control" (change)="onPruebaBajaSelected($event)" accept=".pdf,image/*">
+              <small class="text-muted" *ngIf="archivoPruebaBajaName">Archivo adjunto: {{ archivoPruebaBajaName }}</small>
+            </div>
           </div>
-          <p class="fs-5 mb-1">¿Deseas dar de baja a este estudiante?</p>
-          <p class="text-muted small mb-0">El usuario pasará a estado <strong>Inactivo (Baja)</strong> y se retirará de sus inscripciones. No se borrará de la base de datos.</p>
+
+          <!-- Caso 2: El estudiante NO tiene notas aún (Baja administrativa regular) -->
+          <div *ngIf="!studentHasGrades" class="text-center">
+            <div class="mb-3">
+              <i class="material-icons-outlined text-warning modal-icon-large">person_off</i>
+            </div>
+            <p class="fs-5 mb-1">¿Deseas dar de baja a este estudiante?</p>
+            <p class="text-muted small mb-0">El usuario pasará a estado <strong>De Baja</strong>. Su registro no se borrará de la base de datos y podrás rehabilitarlo en cualquier momento.</p>
+          </div>
+
         </div>
         <div class="modal-footer bg-light">
-          <button type="button" class="btn btn-secondary px-4" (click)="closeDeleteModal()">CANCELAR</button>
-          <button type="button" class="btn btn-warning px-4 text-dark fw-bold" (click)="executeDelete()">DAR DE BAJA</button>
+          <button type="button" class="btn btn-secondary px-4" (click)="closeDeleteModal()" [disabled]="bajaLoading">CANCELAR</button>
+          <button type="button" class="btn px-4 fw-bold" [ngClass]="studentHasGrades ? 'btn-danger' : 'btn-warning text-dark'" (click)="executeDelete()" [disabled]="bajaLoading">
+            <span *ngIf="bajaLoading" class="spinner-border spinner-border-sm me-1"></span>
+            {{ studentHasGrades ? 'APLICAR BAJA JUSTIFICADA' : 'DAR DE BAJA' }}
+          </button>
         </div>
       </div>
     </div>

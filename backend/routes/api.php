@@ -22,6 +22,8 @@ Route::post('/user/change-password', [AuthController::class, 'changePassword']);
 
 // Estudiantes (CRUD)
 Route::get('/estudiantes/buscar', [StudentController::class, 'search']);
+Route::post('/estudiantes/{id}/rehabilitar', [StudentController::class, 'rehabilitar']);
+Route::post('/estudiantes/{id}/baja', [StudentController::class, 'destroy']);
 Route::apiResource('estudiantes', StudentController::class);
 Route::get('/estudiantes/{id}/historial', [StudentController::class, 'history']);
 

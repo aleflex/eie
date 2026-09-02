@@ -146,8 +146,22 @@ export class StudentService {
     return this.actualizarEstudianteConFoto(id, formData);
   }
 
-  deleteStudent(id: number): Observable<any> {
+  deleteStudent(id: number, data?: any): Observable<any> {
+    if (data) {
+      return this.darDeBajaEstudiante(id, data);
+    }
     return this.eliminarEstudiante(id);
+  }
+
+  rehabilitarEstudiante(id: number): Observable<any> {
+    return this.http.post(`${this.apiUrl}/${id}/rehabilitar`, {});
+  }
+
+  darDeBajaEstudiante(id: number, data?: any): Observable<any> {
+    if (data instanceof FormData) {
+      return this.http.post(`${this.apiUrl}/${id}/baja`, data);
+    }
+    return this.http.post(`${this.apiUrl}/${id}/baja`, data || {});
   }
 
   getStudentHistory(id: number): Observable<any> {

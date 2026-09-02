@@ -159,10 +159,13 @@
                       [ngClass]="{
                         'bg-primary': persona.tipo === 'docente',
                         'bg-success': persona.tipo === 'estudiante',
-                        'bg-danger': persona.tipo === 'admin'
+                        'bg-danger': persona.tipo === 'admin' && persona.id_rol == 1,
+                        'bg-warning text-dark': persona.tipo === 'admin' && persona.id_rol == 4,
+                        'bg-info text-dark': persona.tipo === 'admin' && persona.id_rol == 5
                       }">
                   {{ persona.tipo === 'docente' ? 'Instructor' : 
-                     persona.tipo === 'estudiante' ? 'Estudiante' : 'Administrador' }}
+                     persona.tipo === 'estudiante' ? 'Estudiante' : 
+                     (persona.rol_nombre || 'Administrador') }}
                 </span>
               </td>
               <td><strong>{{ persona.ci }}</strong></td>
@@ -235,10 +238,13 @@
                     [ngClass]="{
                       'bg-primary': persona.tipo === 'docente',
                       'bg-success': persona.tipo === 'estudiante',
-                      'bg-danger': persona.tipo === 'admin'
+                      'bg-danger': persona.tipo === 'admin' && persona.id_rol == 1,
+                      'bg-warning text-dark': persona.tipo === 'admin' && persona.id_rol == 4,
+                      'bg-info text-dark': persona.tipo === 'admin' && persona.id_rol == 5
                     }">
                 {{ persona.tipo === 'docente' ? 'Instructor' : 
-                   persona.tipo === 'estudiante' ? 'Estudiante' : 'Administrador' }}
+                   persona.tipo === 'estudiante' ? 'Estudiante' : 
+                   (persona.rol_nombre || 'Administrador') }}
               </span>
             </div>
           </div>
@@ -332,9 +338,30 @@
         </div>
         
         <form (ngSubmit)="asignarCredenciales()" #assignForm="ngForm">
+          <!-- Selector de Rol (Solo para Personal Administrativo Nuevo) -->
+          <div class="form-group-custom mb-3" *ngIf="selectedPersona?.tipo === 'admin'">
+            <label for="assign_rol">Rol en la Institución *</label>
+            <div class="input-icon-wrapper">
+              <span class="material-icons-outlined">manage_accounts</span>
+              <select 
+                id="assign_rol" 
+                [(ngModel)]="formModel.id_rol" 
+                name="id_rol" 
+                class="form-control-custom" 
+                required>
+                <option *ngFor="let rol of rolesAdministrativos" [ngValue]="rol.id">
+                  {{ rol.nombre }}
+                </option>
+              </select>
+            </div>
+            <small class="text-muted d-block mt-1">
+              {{ formModel.id_rol == 1 ? 'Control total del sistema y configuraciones.' : formModel.id_rol == 4 ? 'Supervisión de cursos, aprobaciones y reportes académicos.' : 'Gestión de estudiantes, inscripciones y recepción de documentos.' }}
+            </small>
+          </div>
+
           <!-- Campo Nombre Completo (Solo para Administrador Nuevo) -->
           <div class="form-group-custom mb-3" *ngIf="selectedPersona?.tipo === 'admin'">
-            <label for="assign_nombres">Nombre Completo del Administrador *</label>
+            <label for="assign_nombres">Nombre Completo del Personal *</label>
             <div class="input-icon-wrapper">
               <span class="material-icons-outlined">person_outline</span>
               <input 
@@ -345,7 +372,7 @@
                 name="nombres" 
                 class="form-control-custom" 
                 required 
-                placeholder="Ej: Cnl. DAEN Juan Pérez">
+                placeholder="Ej: Lic. María Flores / Cnl. DAEN Juan Pérez">
             </div>
           </div>
 
@@ -412,6 +439,23 @@
         </div>
         
         <form (ngSubmit)="actualizarCredenciales()" #editForm="ngForm">
+          <!-- Selector de Rol (Para usuarios administrativos) -->
+          <div class="form-group-custom mb-3" *ngIf="selectedPersona?.tipo === 'admin'">
+            <label for="edit_rol">Rol Administrativo Asignado</label>
+            <div class="input-icon-wrapper">
+              <span class="material-icons-outlined">manage_accounts</span>
+              <select 
+                id="edit_rol" 
+                [(ngModel)]="formModel.id_rol" 
+                name="id_rol" 
+                class="form-control-custom">
+                <option *ngFor="let rol of rolesAdministrativos" [ngValue]="rol.id">
+                  {{ rol.nombre }}
+                </option>
+              </select>
+            </div>
+          </div>
+
           <div class="form-group-custom mb-3">
             <label for="edit_usuario">Nombre de Usuario de Ingreso *</label>
             <div class="input-icon-wrapper">

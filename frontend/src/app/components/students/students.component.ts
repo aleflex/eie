@@ -430,31 +430,117 @@ export class StudentsComponent implements OnInit {
     });
   }
 
-  openDeleteModal(id: number) {
-    this.studentToDeleteId = id;
+  // Variables para Baja Lógica y Falta Grave con Pruebas
+  selectedStudentForBaja: any = null;
+  studentHasGrades: boolean = false;
+  motivoBaja: string = '';
+  archivoPruebaBaja: File | null = null;
+  archivoPruebaBajaName: string = '';
+  bajaLoading: boolean = false;
+
+  hasStudentGrades(student: any): boolean {
+    if (!student || !student.inscripciones || student.inscripciones.length === 0) return false;
+    return student.inscripciones.some((ins: any) => ins.notas && ins.notas.length > 0);
+  }
+
+  isStudentDeBaja(student: any): boolean {
+    if (!student) return false;
+    const inscrip = student.inscripciones && student.inscripciones.length > 0 ? student.inscripciones[0] : null;
+    const estadoInscrip = (inscrip?.estado || '').toLowerCase();
+    const estadoUser = (student.user?.estado || '').toUpperCase();
+    return estadoInscrip === 'baja' || estadoInscrip === 'retirado' || estadoUser === 'INACTIVO';
+  }
+
+  openDeleteModal(studentOrId: any) {
+    let student = null;
+    if (typeof studentOrId === 'object') {
+      student = studentOrId;
+      this.studentToDeleteId = student.id || student.id_estudiante;
+    } else {
+      this.studentToDeleteId = studentOrId;
+      student = this.allStudents.find(s => s.id === studentOrId || s.id_estudiante === studentOrId);
+    }
+
+    this.selectedStudentForBaja = student;
+    this.studentHasGrades = this.hasStudentGrades(student);
+    this.motivoBaja = '';
+    this.archivoPruebaBaja = null;
+    this.archivoPruebaBajaName = '';
+    this.bajaLoading = false;
     this.showDeleteModal = true;
+  }
+
+  onPruebaBajaSelected(event: any) {
+    const file = event.target.files[0];
+    if (file) {
+      this.archivoPruebaBaja = file;
+      this.archivoPruebaBajaName = file.name;
+    }
   }
 
   closeDeleteModal() {
     this.showDeleteModal = false;
     this.studentToDeleteId = null;
+    this.selectedStudentForBaja = null;
+    this.studentHasGrades = false;
+    this.motivoBaja = '';
+    this.archivoPruebaBaja = null;
+    this.archivoPruebaBajaName = '';
+    this.bajaLoading = false;
   }
 
   executeDelete() {
-    if (this.studentToDeleteId) {
-      this.studentService.deleteStudent(this.studentToDeleteId).subscribe({
-        next: () => {
-          this.loadStudents();
-          this.loadCourses(); //se recarga la lista de cursos para que se actualice el cupo maximo
-          this.closeDeleteModal();
-        },
-        error: (err) => {
-          const msg = err.error?.message || err.message || 'Error desconocido';
-          alert('No se pudo eliminar: ' + msg);
-          this.closeDeleteModal();
-        }
-      });
+    if (!this.studentToDeleteId) return;
+
+    if (this.studentHasGrades) {
+      if (!this.motivoBaja || this.motivoBaja.trim().length < 5) {
+        alert('Este estudiante tiene notas registradas en el sistema. Es obligatorio detallar el motivo de la infracción grave al reglamento institucional.');
+        return;
+      }
     }
+
+    this.bajaLoading = true;
+    const formData = new FormData();
+    formData.append('motivo_baja', this.motivoBaja || 'Baja solicitada por administración');
+    formData.append('forzar_con_pruebas', this.studentHasGrades ? '1' : '0');
+    if (this.archivoPruebaBaja) {
+      formData.append('archivo_prueba', this.archivoPruebaBaja);
+    }
+
+    this.studentService.darDeBajaEstudiante(this.studentToDeleteId, formData).subscribe({
+      next: () => {
+        this.bajaLoading = false;
+        alert('El estudiante ha sido dado de baja exitosamente. Su registro e historial permanecen protegidos.');
+        this.loadStudents();
+        this.loadCourses();
+        this.closeDeleteModal();
+      },
+      error: (err) => {
+        this.bajaLoading = false;
+        const msg = err.error?.message || err.message || 'Error desconocido';
+        alert('No se pudo procesar la baja: ' + msg);
+      }
+    });
+  }
+
+  rehabilitarStudent(student: any) {
+    const id = student.id || student.id_estudiante;
+    const nombre = `${student.nombres || student.user?.nombres || ''} ${student.apellidos || student.user?.apellidos || ''}`.trim();
+    if (!confirm(`¿Deseas rehabilitar al estudiante "${nombre}" para que vuelva a estar habilitado en el sistema?`)) {
+      return;
+    }
+
+    this.studentService.rehabilitarEstudiante(id).subscribe({
+      next: () => {
+        alert(`¡Estudiante "${nombre}" rehabilitado exitosamente!`);
+        this.loadStudents();
+        this.loadCourses();
+      },
+      error: (err) => {
+        const msg = err.error?.message || err.message || 'Error desconocido';
+        alert('No se pudo rehabilitar al estudiante: ' + msg);
+      }
+    });
   }
 
   cancelEdit() {

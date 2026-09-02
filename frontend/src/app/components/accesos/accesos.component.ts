@@ -43,12 +43,21 @@ export class AccesosComponent implements OnInit {
   showAssignModal: boolean = false;
   showEditModal: boolean = false;
 
+  // Catálogo de Roles para Personal Administrativo
+  rolesAdministrativos = [
+    { id: 1, nombre: 'Administrador General' },
+    { id: 4, nombre: 'Jefe de Unidad / Dirección' },
+    { id: 5, nombre: 'Secretaría' }
+  ];
+
   // Modelos de formulario
   selectedPersona: any = null;
   formModel: any = {
     nombres: '',
+    usuario: '',
     email: '',
-    password: ''
+    password: '',
+    id_rol: 1
   };
 
   constructor(
@@ -130,11 +139,13 @@ export class AccesosComponent implements OnInit {
 
   // --- REGISTRAR NUEVO ADMINISTRADOR ---
   openAdminCreateForm() {
-    this.selectedPersona = { tipo: 'admin', nombres: 'Nuevo Administrador' };
+    this.selectedPersona = { tipo: 'admin', nombres: 'Nuevo Usuario Administrativo' };
     this.formModel = {
       nombres: '',
+      usuario: '',
       email: '',
-      password: ''
+      password: '',
+      id_rol: 1
     };
     this.showAssignModal = true;
   }
@@ -222,7 +233,8 @@ export class AccesosComponent implements OnInit {
       nombres: '',
       usuario: usuarioSugerido,
       email: persona.correo_electronico || '',
-      password: ''
+      password: '',
+      id_rol: persona.tipo === 'admin' ? 1 : (persona.tipo === 'docente' ? 3 : 2)
     };
     this.showAssignModal = true;
   }
@@ -230,14 +242,14 @@ export class AccesosComponent implements OnInit {
   closeAssignModal() {
     this.showAssignModal = false;
     this.selectedPersona = null;
-    this.formModel = { nombres: '', usuario: '', email: '', password: '' };
+    this.formModel = { nombres: '', usuario: '', email: '', password: '', id_rol: 1 };
   }
 
   asignarCredenciales() {
     if (!this.selectedPersona) return;
 
     if (this.selectedPersona.tipo === 'admin' && !this.formModel.nombres) {
-      alert('Por favor complete el nombre completo del administrador.');
+      alert('Por favor complete el nombre completo del administrador o personal.');
       return;
     }
 
@@ -250,7 +262,8 @@ export class AccesosComponent implements OnInit {
       tipo: this.selectedPersona.tipo,
       usuario: this.formModel.usuario,
       email: this.formModel.email || `${this.formModel.usuario}@eie.edu.bo`,
-      password: this.formModel.password
+      password: this.formModel.password,
+      id_rol: this.formModel.id_rol
     };
 
     if (this.selectedPersona.tipo === 'admin') {
@@ -261,7 +274,7 @@ export class AccesosComponent implements OnInit {
 
     this.accesoService.asignarCredenciales(payload).subscribe({
       next: () => {
-        alert(this.selectedPersona.tipo === 'admin' ? 'Administrador creado con éxito' : 'Credenciales asignadas y cuenta de acceso creada con éxito.');
+        alert(this.selectedPersona.tipo === 'admin' ? 'Usuario administrativo creado con éxito' : 'Credenciales asignadas y cuenta de acceso creada con éxito.');
         this.closeAssignModal();
         this.cargarAccesos();
       },
@@ -278,7 +291,8 @@ export class AccesosComponent implements OnInit {
       nombres: persona.nombres || '',
       usuario: persona.usuario || '',
       email: persona.correo_electronico || '',
-      password: ''
+      password: '',
+      id_rol: persona.id_rol || 1
     };
     this.showEditModal = true;
   }
@@ -286,7 +300,7 @@ export class AccesosComponent implements OnInit {
   closeEditModal() {
     this.showEditModal = false;
     this.selectedPersona = null;
-    this.formModel = { nombres: '', usuario: '', email: '', password: '' };
+    this.formModel = { nombres: '', usuario: '', email: '', password: '', id_rol: 1 };
   }
 
   actualizarCredenciales() {
@@ -297,7 +311,8 @@ export class AccesosComponent implements OnInit {
 
     const payload: any = {
       usuario: this.formModel.usuario,
-      email: this.formModel.email
+      email: this.formModel.email,
+      id_rol: this.formModel.id_rol
     };
 
     if (this.formModel.password && this.formModel.password.trim() !== '') {
@@ -306,7 +321,7 @@ export class AccesosComponent implements OnInit {
 
     this.accesoService.actualizarCredenciales(this.selectedPersona.user_id, payload).subscribe({
       next: () => {
-        alert('Credenciales actualizadas y aplicadas correctamente.');
+        alert('Credenciales y rol actualizados correctamente.');
         this.closeEditModal();
         this.cargarAccesos();
       },

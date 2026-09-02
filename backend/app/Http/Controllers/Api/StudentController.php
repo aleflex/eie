@@ -227,32 +227,99 @@ class StudentController extends Controller
         ]);
     }
 
-    public function destroy($id)
+    /**
+     * Da de baja lógica a un estudiante sin eliminarlo de la base de datos.
+     * Si el estudiante ya tiene notas registradas, exige motivo y prueba de falta grave.
+     */
+    public function destroy(Request $request, $id)
     {
         try {
-            $estudiante = Estudiante::findOrFail($id);
-            $user = $estudiante->user;
+            $estudiante = Estudiante::with(['user', 'inscripciones.notas'])->findOrFail($id);
 
-            \Illuminate\Support\Facades\DB::transaction(function () use ($estudiante, $user) {
-                // Eliminar inscripciones, documentos, contactos y responsables vinculados
-                $estudiante->inscripciones()->delete();
-                $estudiante->documentos()->delete();
-                \Illuminate\Support\Facades\DB::table('contactos_emergencia')->where('id_estudiante', $estudiante->id_estudiante)->delete();
-                \Illuminate\Support\Facades\DB::table('estudiante_responsable')->where('id_estudiante', $estudiante->id_estudiante)->delete();
-                
-                // Eliminar estudiante
-                $estudiante->delete();
+            // Verificar si el estudiante tiene notas registradas
+            $tieneNotas = \App\Models\Nota::whereHas('inscripcion', function($q) use ($id) {
+                $q->where('id_estudiante', $id);
+            })->exists();
 
-                // Eliminar usuario si existe
-                if ($user) {
-                    $user->delete();
+            $motivo = $request->input('motivo_baja');
+            $forzarBajaConNotas = $request->boolean('forzar_con_pruebas', false);
+
+            if ($tieneNotas && (empty($motivo) || !$forzarBajaConNotas)) {
+                return response()->json([
+                    'message' => 'El estudiante tiene notas registradas en el sistema. Para proceder con la baja por infracción grave al reglamento institucional, debe especificar el motivo y adjuntar la prueba de respaldo.',
+                    'tiene_notas' => true,
+                    'requiere_justificacion' => true
+                ], 422);
+            }
+
+            \Illuminate\Support\Facades\DB::transaction(function () use ($estudiante, $request, $motivo) {
+                // 1. Cambiar estado de inscripciones a 'baja'
+                $estudiante->inscripciones()->update(['estado' => 'baja']);
+
+                // 2. Desactivar cuenta de usuario para que no pueda ingresar
+                if ($estudiante->user) {
+                    $estudiante->user->update(['estado' => 'INACTIVO']);
+                }
+
+                // 3. Si se subió un archivo de prueba/acta de baja
+                if ($request->hasFile('archivo_prueba')) {
+                    $file = $request->file('archivo_prueba');
+                    $fileName = 'baja_' . time() . '_' . preg_replace('/[^a-zA-Z0-9\._-]/', '_', $file->getClientOriginalName());
+                    $path = $file->storeAs('estudiantes/' . $estudiante->id_estudiante, $fileName, 'documentos');
+                    $ruta = '/storage/documentos/' . $path;
+
+                    \App\Models\Documento::create([
+                        'id_estudiante' => $estudiante->id_estudiante,
+                        'tipo_documento' => 'Acta de Baja por Falta Grave',
+                        'nombre_archivo' => $fileName,
+                        'ruta_archivo' => $ruta,
+                        'observacion' => $motivo ?: 'Baja institucional justificada'
+                    ]);
                 }
             });
 
-            return response()->json(['message' => 'Estudiante y usuario eliminados permanentemente con éxito.']);
+            return response()->json([
+                'message' => 'El estudiante ha sido dado de baja exitosamente. Su registro e historial permanecen protegidos.',
+                'estudiante' => $estudiante->fresh(['user', 'inscripciones.curso', 'inscripciones.paralelo'])
+            ]);
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Error al eliminar el estudiante.',
+                'message' => 'Error al procesar la baja del estudiante.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Rehabilita a un estudiante previamente dado de baja, reactivando su inscripción y usuario.
+     */
+    public function rehabilitar($id)
+    {
+        try {
+            $estudiante = Estudiante::with(['user', 'inscripciones'])->findOrFail($id);
+
+            \Illuminate\Support\Facades\DB::transaction(function () use ($estudiante) {
+                // 1. Reactivar sus inscripciones que estaban en baja
+                $estudiante->inscripciones()->whereIn('estado', ['baja', 'retirado'])->update(['estado' => 'activo']);
+
+                // 2. Si no tenía inscripciones en baja, poner la última activa
+                if ($estudiante->inscripciones()->where('estado', 'activo')->count() === 0 && $estudiante->inscripciones()->count() > 0) {
+                    $estudiante->inscripciones()->latest('id_inscripcion')->first()->update(['estado' => 'activo']);
+                }
+
+                // 3. Reactivar usuario en sistema
+                if ($estudiante->user) {
+                    $estudiante->user->update(['estado' => 'ACTIVO']);
+                }
+            });
+
+            return response()->json([
+                'message' => 'El estudiante ha sido rehabilitado exitosamente.',
+                'estudiante' => $estudiante->fresh(['user', 'inscripciones.curso', 'inscripciones.paralelo'])
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al rehabilitar al estudiante.',
                 'error' => $e->getMessage()
             ], 500);
         }
