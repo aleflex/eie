@@ -6,6 +6,7 @@ import { FooterComponent } from '../footer/footer.component';
 import { InscriptionService } from '../../services/inscription.service';
 import { ImageCompressorService } from '../../services/image-compressor.service';
 import { environment } from '../../../environments/environment';
+import { Geolocation } from '@capacitor/geolocation';
 
 declare var L: any;
 
@@ -146,38 +147,63 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
   }
 
   /**
-   * Obtiene la ubicación GPS precisa del estudiante
+   * Obtiene la ubicación GPS precisa del estudiante (Nativo móvil y Web)
    */
-  usarUbicacionGps() {
-    if (!navigator.geolocation) {
-      alert('Tu navegador o dispositivo no soporta geolocalización GPS.');
-      return;
-    }
-
+  async usarUbicacionGps() {
     this.isGeolocating = true;
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        this.isGeolocating = false;
-        const lat = position.coords.latitude;
-        const lng = position.coords.longitude;
+    try {
+      // 1. Solicitar permisos nativos si es necesario en Android/iOS
+      const permStatus = await Geolocation.checkPermissions();
+      if (permStatus.location !== 'granted') {
+        await Geolocation.requestPermissions();
+      }
 
-        if (!this.map) {
-          this.initMap();
-        }
+      const position = await Geolocation.getCurrentPosition({
+        enableHighAccuracy: true,
+        timeout: 10000
+      });
 
-        if (this.map && this.marker) {
-          this.map.setView([lat, lng], 17);
-          this.marker.setLatLng([lat, lng]);
-          this.reverseGeocode(lat, lng);
-        }
-      },
-      (error) => {
+      this.isGeolocating = false;
+      const lat = position.coords.latitude;
+      const lng = position.coords.longitude;
+
+      if (!this.map) {
+        this.initMap();
+      }
+
+      if (this.map && this.marker) {
+        this.map.setView([lat, lng], 17);
+        this.marker.setLatLng([lat, lng]);
+        this.reverseGeocode(lat, lng);
+      }
+    } catch (e: any) {
+      console.warn('Fallo Geolocation nativo, probando navegador:', e);
+      // Fallback clásico a navigator.geolocation
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            this.isGeolocating = false;
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            if (!this.map) this.initMap();
+            if (this.map && this.marker) {
+              this.map.setView([lat, lng], 17);
+              this.marker.setLatLng([lat, lng]);
+              this.reverseGeocode(lat, lng);
+            }
+          },
+          (err) => {
+            this.isGeolocating = false;
+            console.warn('Error GPS fallback:', err);
+            alert('Asegúrate de activar la Ubicación (GPS) en los ajustes de tu teléfono y permitir el acceso de ubicación a la app.');
+          },
+          { enableHighAccuracy: true, timeout: 10000 }
+        );
+      } else {
         this.isGeolocating = false;
-        console.warn('Error GPS:', error);
-        alert('No se pudo acceder a tu ubicación GPS. Puedes mover el mapa y hacer clic directamente sobre tu zona.');
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
+        alert('No se pudo acceder a tu ubicación GPS. Asegúrate de tener el GPS encendido.');
+      }
+    }
   }
 
   /**
