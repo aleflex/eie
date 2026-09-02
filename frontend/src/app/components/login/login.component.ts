@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../services/auth.service';
 import { environment } from '../../../environments/environment';
 import { NativeBiometric } from '@capgo/capacitor-native-biometric';
@@ -44,7 +45,8 @@ export class LoginComponent implements OnInit {
 
   constructor(
     private servicioAutenticacion: AuthService,
-    private enrutador: Router
+    private enrutador: Router,
+    private http: HttpClient
   ) {}
 
   async ngOnInit() {
@@ -54,6 +56,11 @@ export class LoginComponent implements OnInit {
     }
     this.customApiUrl = localStorage.getItem('custom_api_url') || '';
     this.currentApiUrl = environment.apiUrl;
+
+    // Pre-calentar servidor backend Render en segundo plano mientras el usuario escribe sus credenciales
+    try {
+      this.http.get(`${this.currentApiUrl}/api/cursos`).subscribe({ error: () => {} });
+    } catch (e) {}
 
     // Detectar si es dispositivo móvil o contenedor Capacitor
     this.isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) 

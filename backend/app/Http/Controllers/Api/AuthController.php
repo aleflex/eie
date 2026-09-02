@@ -26,8 +26,8 @@ class AuthController extends Controller
             ], 422);
         }
 
-        // Buscar por usuario o por correo institucional
-        $user = User::where(function($q) use ($loginInput) {
+        // Buscar por usuario o por correo institucional con relaciones precargadas
+        $user = User::with(['docente', 'estudiante'])->where(function($q) use ($loginInput) {
             $q->where('usuario', strtolower($loginInput))
               ->orWhere('correo_institucional', strtolower($loginInput));
         })->first();
@@ -36,9 +36,9 @@ class AuthController extends Controller
             // Iniciar sesión
             Auth::login($user);
 
-            // Verificar si el usuario tiene perfil de docente o estudiante
-            $docente = \App\Models\Docente::where('id_usuario', $user->id_usuario)->first();
-            $estudiante = \App\Models\Estudiante::where('id_usuario', $user->id_usuario)->first();
+            // Obtener perfil precargado
+            $docente = $user->docente;
+            $estudiante = $user->estudiante;
 
             $userData = $user->toArray();
             if ($docente) {
