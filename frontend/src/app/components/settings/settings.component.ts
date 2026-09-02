@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
+import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { SettingsService } from '../../services/settings.service';
 import { AuthService } from '../../services/auth.service';
 import { RoleService } from '../../services/role.service';
@@ -88,6 +88,7 @@ export class SettingsComponent implements OnInit {
     private authService: AuthService,
     private roleService: RoleService,
     private router: Router,
+    private route: ActivatedRoute,
     private imageCompressor: ImageCompressorService
   ) {}
 
@@ -110,10 +111,11 @@ export class SettingsComponent implements OnInit {
     this.biometricEnabled = this.authService.isBiometricEnabled();
     this.cargarConfiguraciones();
 
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('tab') === 'roles') {
-      this.onSelectRolesTab();
-    }
+    this.route.queryParams.subscribe(params => {
+      if (params['tab'] === 'roles') {
+        this.onSelectRolesTab();
+      }
+    });
   }
 
   biometricEnabled: boolean = false;
@@ -312,10 +314,29 @@ export class SettingsComponent implements OnInit {
   ensureRolePermisosStructure(roleId: number) {
     if (!this.rolesPermisos[roleId]) {
       this.rolesPermisos[roleId] = {};
-      this.modulosSistema.forEach(m => {
-        this.rolesPermisos[roleId][m.key] = roleId === 1;
-      });
     }
+    this.modulosSistema.forEach(m => {
+      if (this.rolesPermisos[roleId][m.key] === undefined) {
+        if (roleId === 1) {
+          this.rolesPermisos[roleId][m.key] = true;
+        } else if (roleId === 4) {
+          this.rolesPermisos[roleId][m.key] = ['admin', 'students', 'courses', 'docentes-list', 'paralelos', 'reports'].includes(m.key);
+        } else if (roleId === 5) {
+          this.rolesPermisos[roleId][m.key] = ['admin', 'students', 'courses', 'reports'].includes(m.key);
+        } else {
+          this.rolesPermisos[roleId][m.key] = false;
+        }
+      }
+    });
+  }
+
+  formatRoleName(name: string): string {
+    if (!name) return 'Rol';
+    const lower = name.toLowerCase().trim();
+    if (lower === 'admin') return 'Administrador General';
+    if (lower === 'directivo') return 'Jefe de Unidad / Directivo';
+    if (lower === 'secretaria') return 'Secretaría';
+    return name.charAt(0).toUpperCase() + name.slice(1);
   }
 
   selectRole(roleId: number) {
@@ -383,6 +404,8 @@ export class SettingsComponent implements OnInit {
           this.loadRolesAndPermissions();
           if (res.rol) {
             this.selectedRoleId = res.rol.id_rol;
+            this.ensureRolePermisosStructure(this.selectedRoleId);
+            this.roleService.savePermisos(this.rolesPermisos).subscribe();
           }
         },
         error: (err) => alert('Error al crear rol: ' + (err.error?.message || err.message))

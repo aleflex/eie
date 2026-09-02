@@ -30,7 +30,18 @@ export class RoleService {
 
   private cachedPermisos: any = null;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) {
+    this.recargarPermisos();
+  }
+
+  recargarPermisos(): void {
+    this.getPermisos().subscribe({
+      next: (permisos) => {
+        this.cachedPermisos = permisos;
+      },
+      error: () => {}
+    });
+  }
 
   getRoles(): Observable<any[]> {
     return this.http.get<any[]>(this.apiUrl);

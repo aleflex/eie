@@ -56,6 +56,7 @@ export class AuthService {
       tap((respuesta: any) => {
         if (respuesta.user) {
           localStorage.setItem('usuario', JSON.stringify(respuesta.user));
+          this.roleService.recargarPermisos();
         }
       })
     );

@@ -87,7 +87,14 @@ export class AccesosComponent implements OnInit {
       next: (roles: any[]) => {
         const adminRoles = roles.filter(r => r.id_rol !== 2 && r.id_rol !== 3);
         if (adminRoles.length > 0) {
-          this.rolesAdministrativos = adminRoles.map(r => ({ id: r.id_rol, nombre: r.nombre_rol }));
+          this.rolesAdministrativos = adminRoles.map(r => {
+            const lower = (r.nombre_rol || '').toLowerCase().trim();
+            const friendlyName = lower === 'admin' ? 'Administrador General' :
+                                 lower === 'directivo' ? 'Jefe de Unidad / Directivo' :
+                                 lower === 'secretaria' ? 'Secretaría' :
+                                 (r.nombre_rol.charAt(0).toUpperCase() + r.nombre_rol.slice(1));
+            return { id: r.id_rol, nombre: friendlyName };
+          });
         }
       },
       error: (e) => console.warn('No se pudieron cargar roles dinámicos:', e)
