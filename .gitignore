@@ -1,0 +1,9 @@
+*.apk
+*.aab
+*.jar
+.gradle/
+android/.gradle/
+android/gradle-8.7/
+node_modules/
+dist/
+.vercel
