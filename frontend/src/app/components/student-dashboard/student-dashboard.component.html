@@ -10,13 +10,13 @@
     </div>
 
     <nav class="sidebar-nav">
-      <button [class.active]="activeTab === 'profile'" (click)="activeTab = 'profile'; isMobileMenuOpen = false" class="nav-btn">
+      <button [class.active]="activeTab === 'profile'" (click)="setTab('profile')" class="nav-btn">
         <i class="material-icons-outlined">person</i> Mi Perfil
       </button>
-      <button [class.active]="activeTab === 'history'" (click)="activeTab = 'history'; isMobileMenuOpen = false" class="nav-btn">
+      <button [class.active]="activeTab === 'history'" (click)="setTab('history')" class="nav-btn">
         <i class="material-icons-outlined">history_edu</i> Historial Académico
       </button>
-      <button [class.active]="activeTab === 'documents'" (click)="activeTab = 'documents'; isMobileMenuOpen = false" class="nav-btn">
+      <button [class.active]="activeTab === 'documents'" (click)="setTab('documents')" class="nav-btn">
         <i class="material-icons-outlined">folder_shared</i> Expediente Digital
       </button>
     </nav>
@@ -37,7 +37,11 @@
           <p style="margin: 0; font-size: 0.85rem; color: #64748b;">Consulta tus calificaciones, descarga constancias y administra tus documentos oficiales.</p>
         </div>
       </div>
-      <div class="header-right mt-2 mt-sm-0">
+      <div class="header-right mt-2 mt-sm-0 d-flex align-items-center gap-2">
+        <button type="button" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1 rounded-pill px-3 py-1" (click)="refreshData()" [disabled]="isRefreshing" title="Sincronizar calificaciones y perfil en tiempo real">
+          <i class="material-icons-outlined" [style.animation]="isRefreshing ? 'spin 1s linear infinite' : 'none'" style="font-size: 18px;">sync</i>
+          <span style="font-size: 0.82rem; font-weight: 600;">{{ isRefreshing ? 'Sincronizando...' : 'Actualizar' }}</span>
+        </button>
         <div class="user-info-header">
           <div class="user-info">
             <span class="user-name">{{ student?.nombres }} {{ student?.apellidos }}</span>
@@ -191,8 +195,22 @@
 
       <!-- PESTAÑA 2: HISTORIAL ACADÉMICO -->
       <div *ngIf="activeTab === 'history'" class="settings-pane-content">
-        <h2 class="pane-title">🎓 Historial de Cursos y Calificaciones</h2>
-        <p class="pane-description">A continuación, se listan los niveles oficiales en los que te has inscrito, junto con las notas asentadas por tus docentes.</p>
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+          <div>
+            <h2 class="pane-title mb-1">🎓 Historial de Cursos y Calificaciones</h2>
+            <p class="pane-description mb-0">A continuación, se listan los niveles oficiales en los que te has inscrito, junto con las notas asentadas por tus docentes.</p>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-success-subtle text-success border border-success-subtle d-inline-flex align-items-center gap-1" style="font-size: 0.8rem; padding: 5px 12px; border-radius: 20px;">
+              <span style="width: 8px; height: 8px; background-color: #22c55e; border-radius: 50%; display: inline-block;"></span>
+              Conexión en Vivo
+            </span>
+            <button type="button" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1 rounded-pill px-3 py-1" (click)="refreshData()" [disabled]="isRefreshing">
+              <i class="material-icons-outlined" [style.animation]="isRefreshing ? 'spin 1s linear infinite' : 'none'" style="font-size: 16px;">sync</i>
+              <span>{{ isRefreshing ? 'Actualizando...' : 'Refrescar Notas' }}</span>
+            </button>
+          </div>
+        </div>
 
         <div *ngIf="!student.inscripciones || student.inscripciones.length === 0" class="empty-history text-center py-5">
           <i class="material-icons-outlined text-muted fs-large">school</i>

@@ -72,6 +72,17 @@ export class DocenteDashboardComponent implements OnInit {
     if (!this.user) { this.router.navigate(['/login']); return; }
     if (this.user.rol === 'admin') { this.router.navigate(['/admin']); return; }
     if (this.user.rol === 'estudiante') { this.router.navigate(['/student-dashboard']); return; }
+    
+    // Suscripción reactiva para mantener perfil y foto de docente sincronizados
+    this.authService.usuario$.subscribe(u => {
+      if (u) {
+        this.user = u;
+        if (this.docente && u.foto_url) {
+          this.docente.foto_url = u.foto_url;
+        }
+      }
+    });
+
     this.biometricEnabled = this.authService.isBiometricEnabled();
     this.cargarMisParalelos();
   }

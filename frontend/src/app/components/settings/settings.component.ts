@@ -109,7 +109,16 @@ export class SettingsComponent implements OnInit {
       this.profileData.email = this.user.email || '';
     }
 
-    // Sincronizar en tiempo real con la base de datos backend
+    // Suscripción reactiva para sincronización de perfil y foto en tiempo real
+    this.authService.usuario$.subscribe(u => {
+      if (u) {
+        this.user = u;
+        this.profileData.name = u.name || this.profileData.name;
+        this.profileData.email = u.email || this.profileData.email;
+      }
+    });
+
+    // Sincronizar inmediatamente con la base de datos backend
     this.authService.cargarPerfilActualizado().subscribe({
       next: (res: any) => {
         if (res && res.user) {

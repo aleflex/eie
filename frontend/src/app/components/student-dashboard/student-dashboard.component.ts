@@ -1,8 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { Subscription, interval } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { StudentService } from '../../services/student.service';
 import { InscriptionService } from '../../services/inscription.service';
@@ -17,12 +18,16 @@ import { environment } from '../../../environments/environment';
   templateUrl: './student-dashboard.component.html',
   styleUrl: './student-dashboard.component.css'
 })
-export class StudentDashboardComponent implements OnInit {
+export class StudentDashboardComponent implements OnInit, OnDestroy {
   apiUrl = environment.apiUrl;
   user: any = null;
   student: any = null;
   isLoading: boolean = true;
+  isRefreshing: boolean = false;
   activeTab: string = 'profile'; // 'profile', 'history', 'documents'
+
+  private gradesPollSub: Subscription | null = null;
+  private userSub: Subscription | null = null;
 
   // Mobile menu sidebar drawer
   isMobileMenuOpen: boolean = false;
@@ -32,6 +37,24 @@ export class StudentDashboardComponent implements OnInit {
 
   closeMobileMenu() {
     this.isMobileMenuOpen = false;
+  }
+
+  setTab(tab: string) {
+    this.activeTab = tab;
+    this.closeMobileMenu();
+    if (this.user && this.user.estudiante_id) {
+      this.loadStudentProfile(this.user.estudiante_id, true);
+    }
+  }
+
+  refreshData() {
+    if (this.user && this.user.estudiante_id) {
+      this.isRefreshing = true;
+      this.loadStudentProfile(this.user.estudiante_id, true, () => {
+        this.isRefreshing = false;
+      });
+      this.authService.cargarPerfilActualizado().subscribe();
+    }
   }
 
   onImgError(event: any) {
@@ -82,15 +105,56 @@ export class StudentDashboardComponent implements OnInit {
     }
 
     this.user = this.authService.getUser();
-    if (this.user.rol === 'admin') { this.router.navigate(['/admin']); return; }
-    if (this.user.rol === 'docente') { this.router.navigate(['/docente-dashboard']); return; }
+    if (this.user?.rol === 'admin') { this.router.navigate(['/admin']); return; }
+    if (this.user?.rol === 'docente') { this.router.navigate(['/docente-dashboard']); return; }
 
     this.biometricEnabled = this.authService.isBiometricEnabled();
+
+    // Suscripción reactiva para mantener foto y perfil sincronizados en tiempo real
+    this.userSub = this.authService.usuario$.subscribe(u => {
+      if (u) {
+        this.user = u;
+        if (this.student && u.foto_url) {
+          this.student.foto_4x4_url = u.foto_url;
+        }
+      }
+    });
+
     if (this.user && this.user.estudiante_id) {
       this.loadStudentProfile(this.user.estudiante_id);
     } else {
       this.errorMessage = 'No se encontró un perfil de estudiante asociado a esta cuenta.';
       this.isLoading = false;
+    }
+
+    // Polling en tiempo real: consulta nuevas calificaciones cada 5 segundos
+    this.gradesPollSub = interval(5000).subscribe(() => {
+      if (this.user && this.user.estudiante_id && !this.uploading) {
+        this.loadStudentProfile(this.user.estudiante_id, true);
+      }
+    });
+
+    // Sincronización inmediata al volver a la APK o a la pestaña del navegador
+    if (typeof window !== 'undefined') {
+      window.addEventListener('focus', () => {
+        if (this.user && this.user.estudiante_id) {
+          this.loadStudentProfile(this.user.estudiante_id, true);
+        }
+      });
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden && this.user && this.user.estudiante_id) {
+          this.loadStudentProfile(this.user.estudiante_id, true);
+        }
+      });
+    }
+  }
+
+  ngOnDestroy() {
+    if (this.gradesPollSub) {
+      this.gradesPollSub.unsubscribe();
+    }
+    if (this.userSub) {
+      this.userSub.unsubscribe();
     }
   }
 
@@ -115,18 +179,26 @@ export class StudentDashboardComponent implements OnInit {
     }
   }
 
-  loadStudentProfile(id: number) {
-    this.isLoading = true;
+  loadStudentProfile(id: number, silent: boolean = false, callback?: () => void) {
+    if (!silent && !this.student) {
+      this.isLoading = true;
+    }
     this.studentService.getStudent(id).subscribe({
       next: (data) => {
         this.student = data;
         this.isLoading = false;
-        this.loadStudentDocuments();
+        if (!silent) {
+          this.loadStudentDocuments();
+        }
+        if (callback) callback();
       },
       error: (err) => {
         console.error('Error loading student profile', err);
-        this.errorMessage = 'No se pudo cargar tu información de perfil. Por favor, reintenta.';
-        this.isLoading = false;
+        if (!silent) {
+          this.errorMessage = 'No se pudo cargar tu información de perfil. Por favor, reintenta.';
+          this.isLoading = false;
+        }
+        if (callback) callback();
       }
     });
   }

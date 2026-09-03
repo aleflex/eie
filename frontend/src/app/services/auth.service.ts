@@ -1,6 +1,7 @@
-import { Injectable } from '@angular/core';
+import { Injectable, NgZone } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable, tap } from 'rxjs';
+import { Observable, BehaviorSubject, tap, interval, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 
 import { RoleService } from './role.service';
@@ -14,6 +15,10 @@ import { RoleService } from './role.service';
   providedIn: 'root'
 })
 export class AuthService {
+  private usuarioSubject = new BehaviorSubject<any>(this.obtenerUsuario());
+  public usuario$ = this.usuarioSubject.asObservable();
+  public currentUser$ = this.usuarioSubject.asObservable();
+
   private get apiUrl(): string {
     const customUrl = localStorage.getItem('custom_api_url');
     if (customUrl && customUrl.includes('railway.app')) {
@@ -27,12 +32,31 @@ export class AuthService {
 
   constructor(
     private http: HttpClient,
-    private roleService: RoleService
+    private roleService: RoleService,
+    private ngZone: NgZone
   ) {
-    // Limpiar sesiones residuales antiguas de localStorage para que no se mantengan abiertas permanentemente
-    if (localStorage.getItem('usuario')) {
-      localStorage.removeItem('usuario');
+    // Sincronización automática periódica y reactiva entre Web y APK
+    if (typeof window !== 'undefined') {
+      window.addEventListener('focus', () => this.sincronizarSilencioso());
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) this.sincronizarSilencioso();
+      });
+
+      // Polling cada 6 segundos en segundo plano si está autenticado
+      interval(6000).subscribe(() => {
+        if (this.estaAutenticado()) {
+          this.sincronizarSilencioso();
+        }
+      });
     }
+  }
+
+  /**
+   * Sincroniza silenciosamente el perfil con el servidor
+   */
+  sincronizarSilencioso() {
+    if (!this.estaAutenticado()) return;
+    this.cargarPerfilActualizado().pipe(catchError(() => of(null))).subscribe();
   }
 
   /**
@@ -69,6 +93,7 @@ export class AuthService {
         if (respuesta.user) {
           sessionStorage.setItem('usuario', JSON.stringify(respuesta.user));
           localStorage.removeItem('usuario');
+          this.usuarioSubject.next(respuesta.user);
           this.roleService.recargarPermisos();
         }
       })
@@ -90,6 +115,7 @@ export class AuthService {
         if (user) {
           user.debe_cambiar_password = false;
           sessionStorage.setItem('usuario', JSON.stringify(user));
+          this.usuarioSubject.next(user);
         }
       })
     );
@@ -101,6 +127,7 @@ export class AuthService {
   cerrarSesion() {
     sessionStorage.removeItem('usuario');
     localStorage.removeItem('usuario');
+    this.usuarioSubject.next(null);
     return this.http.post(`${this.apiUrl}/logout`, {});
   }
 
@@ -141,6 +168,7 @@ export class AuthService {
           sessionStorage.setItem('usuario', JSON.stringify(updated));
           localStorage.setItem('usuario', JSON.stringify(updated));
           localStorage.setItem('eie_biometric_user', JSON.stringify(updated));
+          this.usuarioSubject.next(updated);
         }
       })
     );
@@ -162,9 +190,15 @@ export class AuthService {
         if (respuesta && respuesta.user) {
           const current = this.obtenerUsuario() || {};
           const updated = { ...current, ...respuesta.user };
+          
+          // Solo actualizar si hay un cambio real para no causar repintados innecesarios
+          const isChanged = JSON.stringify(current) !== JSON.stringify(updated);
           sessionStorage.setItem('usuario', JSON.stringify(updated));
           localStorage.setItem('usuario', JSON.stringify(updated));
           localStorage.setItem('eie_biometric_user', JSON.stringify(updated));
+          if (isChanged) {
+            this.usuarioSubject.next(updated);
+          }
         }
       })
     );
