@@ -211,8 +211,17 @@
             <i class="material-icons-outlined">table_view</i> {{ isDownloadingExcel ? 'Exportando...' : 'Exportar Excel Asistencias' }}
           </button>
 
-          <button class="btn-print no-print" (click)="imprimirLista()" [disabled]="isDownloadingPdf">
-            <i class="material-icons-outlined">print</i> {{ isDownloadingPdf ? 'Generando PDF...' : 'Generar PDF' }}
+          <!-- Botón PDF Dinámico según el Tab Activo -->
+          <button *ngIf="tabActivo === 'notas'" class="btn-print no-print" (click)="imprimirNotasPdf()" [disabled]="isDownloadingPdf" style="background-color: #003B71; color: #ffffff;">
+            <i class="material-icons-outlined">picture_as_pdf</i> {{ isDownloadingPdf ? 'Generando PDF...' : 'Generar PDF Notas' }}
+          </button>
+
+          <button *ngIf="tabActivo === 'asistencia'" class="btn-print no-print" (click)="imprimirAsistenciasPdf()" [disabled]="isDownloadingPdf" style="background-color: #003B71; color: #ffffff;">
+            <i class="material-icons-outlined">picture_as_pdf</i> {{ isDownloadingPdf ? 'Generando PDF...' : 'Generar PDF Asistencias' }}
+          </button>
+
+          <button *ngIf="tabActivo === 'lista'" class="btn-print no-print" (click)="imprimirLista()" [disabled]="isDownloadingPdf">
+            <i class="material-icons-outlined">print</i> {{ isDownloadingPdf ? 'Generando PDF...' : 'Generar PDF Lista' }}
           </button>
         </div>
       </div>

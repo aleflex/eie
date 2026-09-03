@@ -100,4 +100,26 @@ export class ReportService {
       responseType: 'blob'
     });
   }
+
+  /**
+   * Descarga de Planilla Oficial de Calificaciones / Notas para Docentes en PDF (.pdf)
+   */
+  downloadNotasPdf(filters?: any): Observable<Blob> {
+    const params = { ...filters, tipo: 'notas' };
+    return this.http.get(`${this.apiUrl}/export/notas-pdf`, {
+      params: this.buildParams(params),
+      responseType: 'blob'
+    });
+  }
+
+  /**
+   * Descarga de Planilla Oficial de Asistencias para Docentes en PDF (.pdf)
+   */
+  downloadAsistenciasPdf(filters?: any): Observable<Blob> {
+    const params = { ...filters, tipo: 'asistencia' };
+    return this.http.get(`${this.apiUrl}/export/asistencias-pdf`, {
+      params: this.buildParams(params),
+      responseType: 'blob'
+    });
+  }
 }

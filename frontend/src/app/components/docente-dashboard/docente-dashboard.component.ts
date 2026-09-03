@@ -428,13 +428,23 @@ export class DocenteDashboardComponent implements OnInit {
 
   isDownloadingPdf = false;
 
+  imprimirSegunTab() {
+    if (this.tabActivo === 'notas') {
+      this.imprimirNotasPdf();
+    } else if (this.tabActivo === 'asistencia') {
+      this.imprimirAsistenciasPdf();
+    } else {
+      this.imprimirLista();
+    }
+  }
+
   imprimirLista() {
     if (!this.paraleloActivo) {
       window.print();
       return;
     }
     this.isDownloadingPdf = true;
-    const filters = { id_paralelo: this.paraleloActivo.id };
+    const filters = { id_paralelo: this.paraleloActivo.id, tipo: 'lista' };
     this.reportService.downloadDocentePdf(filters).subscribe({
       next: (blob: Blob) => {
         this.isDownloadingPdf = false;
@@ -443,6 +453,48 @@ export class DocenteDashboardComponent implements OnInit {
       },
       error: (err: any) => {
         console.error('Error generando PDF de nómina docente', err);
+        this.isDownloadingPdf = false;
+        window.print();
+      }
+    });
+  }
+
+  imprimirNotasPdf() {
+    if (!this.paraleloActivo) {
+      window.print();
+      return;
+    }
+    this.isDownloadingPdf = true;
+    const filters = { id_paralelo: this.paraleloActivo.id, tipo: 'notas' };
+    this.reportService.downloadNotasPdf(filters).subscribe({
+      next: (blob: Blob) => {
+        this.isDownloadingPdf = false;
+        const filename = `Planilla_Calificaciones_${this.paraleloActivo.nombre || 'Paralelo'}_${new Date().toISOString().slice(0,10)}.pdf`;
+        downloadFile(blob, filename);
+      },
+      error: (err: any) => {
+        console.error('Error generando PDF de calificaciones', err);
+        this.isDownloadingPdf = false;
+        window.print();
+      }
+    });
+  }
+
+  imprimirAsistenciasPdf() {
+    if (!this.paraleloActivo) {
+      window.print();
+      return;
+    }
+    this.isDownloadingPdf = true;
+    const filters = { id_paralelo: this.paraleloActivo.id, tipo: 'asistencia' };
+    this.reportService.downloadAsistenciasPdf(filters).subscribe({
+      next: (blob: Blob) => {
+        this.isDownloadingPdf = false;
+        const filename = `Planilla_Asistencias_${this.paraleloActivo.nombre || 'Paralelo'}_${new Date().toISOString().slice(0,10)}.pdf`;
+        downloadFile(blob, filename);
+      },
+      error: (err: any) => {
+        console.error('Error generando PDF de asistencias', err);
         this.isDownloadingPdf = false;
         window.print();
       }

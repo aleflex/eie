@@ -106,6 +106,8 @@ Route::get('/reports/export/nominal-excel', [ReportController::class, 'exportNom
 Route::get('/reports/export/notas-excel', [ReportController::class, 'exportNotasExcel']);
 Route::get('/reports/export/pdf', [ReportController::class, 'exportPdf']);
 Route::get('/reports/export/docente-pdf', [ReportController::class, 'exportDocentePdf']);
+Route::get('/reports/export/notas-pdf', [ReportController::class, 'exportNotasPdf']);
+Route::get('/reports/export/asistencias-pdf', [ReportController::class, 'exportAsistenciasPdf']);
 
 // Ruta de imágenes /storage/ en API para responder siempre HTTP 200 OK
 Route::get('/storage/{p1}/{p2}/{filename}', function ($p1, $p2, $filename) {
