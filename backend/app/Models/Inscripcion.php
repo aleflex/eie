@@ -115,6 +115,39 @@ class Inscripcion extends Model
             $query->whereDate('fecha_registro', '<=', $filters['fecha_hasta']);
         }
 
+        if (!empty($filters['gestion'])) {
+            $query->whereYear('fecha_registro', $filters['gestion']);
+        }
+
+        if (!empty($filters['id_docente'])) {
+            $query->whereHas('paralelo.docentes', function ($q) use ($filters) {
+                $q->where('docentes.id_docente', $filters['id_docente']);
+            });
+        }
+
+        if (!empty($filters['turno'])) {
+            $turno = strtolower($filters['turno']);
+            $query->whereHas('paralelo.horarios', function ($q) use ($turno) {
+                if ($turno === 'sabado' || $turno === 'sábado') {
+                    $q->where(function($sq) {
+                        $sq->where('dia_semana', 'like', '%sábado%')
+                           ->orWhere('dia_semana', 'like', '%sabado%');
+                    });
+                } elseif ($turno === 'manana' || $turno === 'mañana') {
+                    $q->where('hora_inicio', '<', '12:00:00')
+                      ->where('dia_semana', 'not like', '%sábado%')
+                      ->where('dia_semana', 'not like', '%sabado%');
+                } elseif ($turno === 'tarde') {
+                    $q->where('hora_inicio', '>=', '12:00:00')
+                      ->where('hora_inicio', '<', '18:00:00')
+                      ->where('dia_semana', 'not like', '%sábado%')
+                      ->where('dia_semana', 'not like', '%sabado%');
+                } elseif ($turno === 'noche') {
+                    $q->where('hora_inicio', '>=', '18:00:00');
+                }
+            });
+        }
+
         return $query;
     }
 }

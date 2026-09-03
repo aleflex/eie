@@ -200,16 +200,18 @@
     </table>
 
     <!-- 3. OCUPACIÓN DE AULAS -->
-    <div class="section-title">3. Porcentaje de Ocupación por Aula y Paralelo</div>
+    <div class="section-title">3. Porcentaje de Ocupación por Aula, Paralelo y Estado de Estudiantes</div>
     <table class="table-list">
         <thead>
             <tr>
-                <th style="width: 15%;">Paralelo</th>
-                <th class="left" style="width: 35%;">Curso / Nivel</th>
-                <th style="width: 20%;">Aula Asignada</th>
-                <th style="width: 10%;">Capacidad</th>
-                <th style="width: 10%;">Inscritos</th>
-                <th style="width: 10%;">% Ocup.</th>
+                <th style="width: 12%;">Paralelo</th>
+                <th class="left" style="width: 28%;">Curso / Nivel</th>
+                <th style="width: 16%;">Aula Asignada</th>
+                <th style="width: 8%;">Capacidad</th>
+                <th style="width: 7%;">Inscritos</th>
+                <th style="width: 17%;">Estudiantes (Act/Pend/Baja)</th>
+                <th style="width: 6%;">% Ocup.</th>
+                <th style="width: 12%;">Nivel Ocupación</th>
             </tr>
         </thead>
         <tbody>
@@ -223,11 +225,17 @@
                     <td>{{ strtoupper($aula['aula'] ?? 'Sin Aula') }}</td>
                     <td>{{ $aula['capacidad'] ?? 0 }}</td>
                     <td><strong>{{ $aula['inscritos'] ?? 0 }}</strong></td>
+                    <td style="font-size: 7.5px;">
+                        <span style="color: #15803d; font-weight: bold;">{{ $aula['activos_count'] ?? 0 }} Act</span> / 
+                        <span style="color: #b45309; font-weight: bold;">{{ $aula['pendientes_count'] ?? 0 }} Pend</span> / 
+                        <span style="color: #b91c1c; font-weight: bold;">{{ $aula['bajas_count'] ?? 0 }} Baja</span>
+                    </td>
                     <td><strong>{{ $aula['porcentaje_ocupacion'] ?? 0 }}%</strong></td>
+                    <td>{{ $aula['estado_ocupacion'] ?? 'Ocupación Baja' }}</td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="6">No se registraron datos de ocupación de aulas.</td>
+                    <td colspan="8">No se registraron datos de ocupación de aulas.</td>
                 </tr>
             @endforelse
         </tbody>

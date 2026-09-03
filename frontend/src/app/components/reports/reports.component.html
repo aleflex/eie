@@ -92,6 +92,45 @@
       </div>
 
       <div class="row g-3">
+        <!-- 1. Gestión (Año) -->
+        <div class="col-md-3">
+          <label class="form-label fw-bold">Gestión (Año)</label>
+          <select class="form-select" [(ngModel)]="filters.gestion" (change)="onFilterChange()">
+            <option value="">Todas las Gestiones</option>
+            <option *ngFor="let g of gestionesList" [value]="g">{{ g }}</option>
+          </select>
+        </div>
+
+        <!-- 2. Docente / Instructor -->
+        <div class="col-md-3">
+          <label class="form-label fw-bold">Docente / Instructor</label>
+          <select class="form-select" [(ngModel)]="filters.id_docente" (change)="onFilterChange()">
+            <option value="">Todos los Docentes</option>
+            <option *ngFor="let d of docentesList" [value]="d.id || d.id_docente">
+              {{ d.nombres }} {{ d.apellidos }} ({{ d.ci }})
+            </option>
+          </select>
+        </div>
+
+        <!-- 3. Nivel -->
+        <div class="col-md-3">
+          <label class="form-label fw-bold">Nivel</label>
+          <select class="form-select" [(ngModel)]="filters.id_nivel" (change)="onFilterChange()">
+            <option value="">Todos los Niveles</option>
+            <option *ngFor="let item of nivelesList" [value]="item.id">{{ item.nombre }}</option>
+          </select>
+        </div>
+
+        <!-- 4. Turno (Horario) -->
+        <div class="col-md-3">
+          <label class="form-label fw-bold">Turno (Horario)</label>
+          <select class="form-select" [(ngModel)]="filters.turno" (change)="onFilterChange()">
+            <option value="">Todos los Turnos</option>
+            <option *ngFor="let t of turnosList" [value]="t.id">{{ t.nombre }}</option>
+          </select>
+        </div>
+
+        <!-- 5. Idioma -->
         <div class="col-md-3">
           <label class="form-label">Idioma</label>
           <select class="form-select" [(ngModel)]="filters.id_idioma" (change)="onFilterChange()">
@@ -100,14 +139,7 @@
           </select>
         </div>
 
-        <div class="col-md-3">
-          <label class="form-label">Nivel</label>
-          <select class="form-select" [(ngModel)]="filters.id_nivel" (change)="onFilterChange()">
-            <option value="">Todos los Niveles</option>
-            <option *ngFor="let item of nivelesList" [value]="item.id">{{ item.nombre }}</option>
-          </select>
-        </div>
-
+        <!-- 6. Paralelo -->
         <div class="col-md-3">
           <label class="form-label">Paralelo</label>
           <select class="form-select" [(ngModel)]="filters.id_paralelo" (change)="onFilterChange()">
@@ -116,29 +148,31 @@
           </select>
         </div>
 
+        <!-- 7. Estado Inscripción -->
         <div class="col-md-3">
           <label class="form-label">Estado Inscripción</label>
           <select class="form-select" [(ngModel)]="filters.estado" (change)="onFilterChange()">
             <option value="">Todos los Estados</option>
             <option value="activo">Habilitado / Activo</option>
             <option value="pendiente">Pendiente</option>
-            <option value="retirado">Retirado</option>
+            <option value="retirado">De Baja / Retirado</option>
           </select>
         </div>
 
+        <!-- 8. Fechas -->
         <div class="col-md-3">
-          <label class="form-label">Fecha Registro Desde</label>
+          <label class="form-label">Fecha Desde</label>
           <input type="date" class="form-control" [(ngModel)]="filters.fecha_desde" (change)="onFilterChange()">
         </div>
 
         <div class="col-md-3">
-          <label class="form-label">Fecha Registro Hasta</label>
+          <label class="form-label">Fecha Hasta</label>
           <input type="date" class="form-control" [(ngModel)]="filters.fecha_hasta" (change)="onFilterChange()">
         </div>
 
-        <div class="col-md-6 d-flex align-items-end gap-2">
-          <button class="btn btn-secondary w-100" (click)="resetFilters()">
-            <i class="material-icons-outlined">restart_alt</i> Limpiar Filtros
+        <div class="col-md-9 d-flex align-items-end gap-2">
+          <button class="btn btn-secondary" (click)="resetFilters()">
+            <i class="material-icons-outlined align-middle">restart_alt</i> Limpiar Filtros
           </button>
         </div>
       </div>
@@ -162,7 +196,7 @@
         </div>
         <div class="stat-info">
           <h3>{{ summaryData.habilitados }}</h3>
-          <p>Estudiantes Activados</p>
+          <p>Estudiantes Activos</p>
         </div>
       </div>
 
@@ -172,7 +206,7 @@
         </div>
         <div class="stat-info">
           <h3>{{ summaryData.pendientes }}</h3>
-          <p>Por Activar / Pendientes</p>
+          <p>Estudiantes Pendientes</p>
         </div>
       </div>
 
@@ -234,15 +268,33 @@
 
     <!-- Tablas Resumen de Ocupación y Estadísticas con Detalle de Estudiantes y Notas -->
     <section class="table-container animate-fade-in delay-2 mt-4">
-      <div class="table-header d-flex justify-content-between align-items-center">
+      <div class="table-header d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
         <div>
           <h2>Detalle de Ocupación por Aula, Paralelo, Estudiantes y Notas</h2>
           <p>Capacidad total, estudiantes asignados y sus calificaciones registradas.</p>
         </div>
+
+        <!-- Conmutador de Vistas: Aulas/Paralelos vs Lista General de Estudiantes -->
+        <div class="btn-group shadow-sm" role="group">
+          <button type="button" class="btn"
+            [ngClass]="activeTableView === 'aulas' ? 'btn-primary text-white fw-bold' : 'btn-outline-primary'"
+            (click)="setActiveTableView('aulas')">
+            <i class="material-icons-outlined align-middle me-1">meeting_room</i>
+            Vista Aulas y Paralelos ({{ classroomStats.length }})
+          </button>
+          <button type="button" class="btn"
+            [ngClass]="activeTableView === 'estudiantes' ? 'btn-primary text-white fw-bold' : 'btn-outline-primary'"
+            (click)="setActiveTableView('estudiantes')">
+            <i class="material-icons-outlined align-middle me-1">groups</i>
+            Lista de Estudiantes y Notas ({{ allFilteredStudents.length }})
+          </button>
+        </div>
       </div>
 
-      <!-- Vista de Tabla para Escritorio -->
-      <div class="table-responsive desktop-table-view">
+      <!-- VISTA 1: AULAS Y PARALELOS -->
+      <div *ngIf="activeTableView === 'aulas'">
+        <!-- Vista de Tabla para Escritorio -->
+        <div class="table-responsive desktop-table-view">
         <table class="table table-hover align-middle">
           <thead class="table-light">
             <tr>
@@ -250,9 +302,9 @@
               <th>Curso / Idioma</th>
               <th>Paralelo</th>
               <th>Capacidad</th>
-              <th>Inscritos</th>
+              <th>Estudiantes Inscritos</th>
               <th>% Ocupación</th>
-              <th>Estado</th>
+              <th>Nivel Ocupación Aula</th>
               <th>Acción</th>
             </tr>
           </thead>
@@ -263,7 +315,22 @@
                 <td>{{ item.curso }}</td>
                 <td>{{ item.nombre_paralelo }}</td>
                 <td>{{ item.capacidad }} asientos</td>
-                <td><strong>{{ item.inscritos }}</strong></td>
+                <td>
+                  <div class="d-flex flex-column">
+                    <span class="fs-6"><strong>{{ item.inscritos }}</strong> inscritos</span>
+                    <div class="d-flex gap-1 mt-1 flex-wrap" style="font-size: 0.72rem;">
+                      <span class="badge bg-success" title="Estudiantes Activos">
+                        {{ item.activos_count || 0 }} Activos
+                      </span>
+                      <span class="badge bg-warning text-dark" title="Estudiantes Pendientes">
+                        {{ item.pendientes_count || 0 }} Pend.
+                      </span>
+                      <span class="badge bg-danger" title="Estudiantes de Baja / Retirados">
+                        {{ item.bajas_count || 0 }} De Baja
+                      </span>
+                    </div>
+                  </div>
+                </td>
                 <td>
                   <div class="d-flex align-items-center gap-2">
                     <div class="progress flex-grow-1" style="height: 8px;">
@@ -280,14 +347,14 @@
                   </div>
                 </td>
                 <td>
-                  <span class="badge rounded-pill"
+                  <span class="badge rounded-pill px-2 py-1"
                         [ngClass]="{
-                          'bg-danger': item.estado_ocupacion === 'Lleno',
-                          'bg-warning text-dark': item.estado_ocupacion === 'Alta',
-                          'bg-info text-dark': item.estado_ocupacion === 'Media',
-                          'bg-success': item.estado_ocupacion === 'Baja'
+                          'bg-danger': item.estado_ocupacion === 'Aula Llena' || item.estado_ocupacion === 'Lleno',
+                          'bg-warning text-dark': item.estado_ocupacion === 'Ocupación Alta' || item.estado_ocupacion === 'Alta',
+                          'bg-info text-dark': item.estado_ocupacion === 'Ocupación Media' || item.estado_ocupacion === 'Media',
+                          'bg-success': item.estado_ocupacion === 'Ocupación Baja' || item.estado_ocupacion === 'Baja'
                         }">
-                    {{ item.estado_ocupacion }}
+                    {{ item.estado_ocupacion.includes('Ocupación') || item.estado_ocupacion.includes('Aula') ? item.estado_ocupacion : ('Ocupación ' + item.estado_ocupacion) }}
                   </span>
                 </td>
                 <td>
@@ -302,32 +369,57 @@
               <tr *ngIf="expandedParaleloId === item.id_paralelo">
                 <td colspan="8" class="bg-light p-3">
                   <div class="p-3 bg-white rounded shadow-sm border">
-                    <h6 class="fw-bold text-primary mb-3">
-                      <i class="material-icons-outlined align-middle me-1">people_alt</i>
-                      Lista de Estudiantes Asignados a {{ item.aula }} - Paralelo {{ item.nombre_paralelo }}
-                    </h6>
-                    <div class="table-responsive" *ngIf="item.estudiantes && item.estudiantes.length > 0">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                      <h6 class="fw-bold text-primary mb-0">
+                        <i class="material-icons-outlined align-middle me-1">people_alt</i>
+                        Estudiantes Asignados a {{ item.aula }} - Paralelo {{ item.nombre_paralelo }}
+                      </h6>
+                      <div class="btn-group btn-group-sm" role="group">
+                        <button type="button" class="btn"
+                          [ngClass]="(studentFilterByParalelo[item.id_paralelo] || 'todos') === 'todos' ? 'btn-primary' : 'btn-outline-secondary'"
+                          (click)="setStudentFilter(item.id_paralelo, 'todos')">
+                          Todos ({{ item.estudiantes?.length || 0 }})
+                        </button>
+                        <button type="button" class="btn"
+                          [ngClass]="studentFilterByParalelo[item.id_paralelo] === 'activo' ? 'btn-success text-white' : 'btn-outline-success'"
+                          (click)="setStudentFilter(item.id_paralelo, 'activo')">
+                          Activos ({{ item.activos_count || 0 }})
+                        </button>
+                        <button type="button" class="btn"
+                          [ngClass]="studentFilterByParalelo[item.id_paralelo] === 'pendiente' ? 'btn-warning text-dark' : 'btn-outline-warning'"
+                          (click)="setStudentFilter(item.id_paralelo, 'pendiente')">
+                          Pendientes ({{ item.pendientes_count || 0 }})
+                        </button>
+                        <button type="button" class="btn"
+                          [ngClass]="studentFilterByParalelo[item.id_paralelo] === 'baja' ? 'btn-danger text-white' : 'btn-outline-danger'"
+                          (click)="setStudentFilter(item.id_paralelo, 'baja')">
+                          De Baja ({{ item.bajas_count || 0 }})
+                        </button>
+                      </div>
+                    </div>
+
+                    <div class="table-responsive" *ngIf="getFilteredStudents(item).length > 0">
                       <table class="table table-bordered table-sm align-middle mb-0">
                         <thead class="table-secondary">
                           <tr>
                             <th>Estudiante</th>
                             <th>C.I.</th>
-                            <th>Estado</th>
+                            <th>Estado Académico</th>
                             <th>Notas Registradas</th>
                             <th>Promedio Final</th>
                           </tr>
                         </thead>
                         <tbody>
-                          <tr *ngFor="let est of item.estudiantes">
+                          <tr *ngFor="let est of getFilteredStudents(item)">
                             <td><strong>{{ est.nombre_completo }}</strong></td>
                             <td>{{ est.ci }}</td>
                             <td>
                               <span class="badge" [ngClass]="{
-                                'bg-success': est.estado === 'Activo',
+                                'bg-success': est.estado === 'Activo' || est.estado === 'Habilitado',
                                 'bg-warning text-dark': est.estado === 'Pendiente',
-                                'bg-danger': est.estado === 'Retirado'
+                                'bg-danger': est.estado === 'Retirado' || est.estado === 'Baja' || est.estado === 'Inactivo'
                               }">
-                                {{ est.estado }}
+                                {{ est.estado === 'Retirado' ? 'De Baja / Retirado' : est.estado }}
                               </span>
                             </td>
                             <td>
@@ -349,8 +441,8 @@
                         </tbody>
                       </table>
                     </div>
-                    <div *ngIf="!item.estudiantes || item.estudiantes.length === 0" class="text-muted text-center py-2">
-                      No hay estudiantes asignados activamente a este paralelo.
+                    <div *ngIf="getFilteredStudents(item).length === 0" class="text-muted text-center py-2">
+                      No hay estudiantes para el estado seleccionado en este paralelo.
                     </div>
                   </div>
                 </td>
@@ -375,12 +467,12 @@
             <span class="report-card-title"><i class="material-icons-outlined">meeting_room</i> {{ item.aula }}</span>
             <span class="badge rounded-pill"
                   [ngClass]="{
-                    'bg-danger': item.estado_ocupacion === 'Lleno',
-                    'bg-warning text-dark': item.estado_ocupacion === 'Alta',
-                    'bg-info text-dark': item.estado_ocupacion === 'Media',
-                    'bg-success': item.estado_ocupacion === 'Baja'
+                    'bg-danger': item.estado_ocupacion === 'Aula Llena' || item.estado_ocupacion === 'Lleno',
+                    'bg-warning text-dark': item.estado_ocupacion === 'Ocupación Alta' || item.estado_ocupacion === 'Alta',
+                    'bg-info text-dark': item.estado_ocupacion === 'Ocupación Media' || item.estado_ocupacion === 'Media',
+                    'bg-success': item.estado_ocupacion === 'Ocupación Baja' || item.estado_ocupacion === 'Baja'
                   }">
-              {{ item.estado_ocupacion }}
+              {{ item.estado_ocupacion.includes('Ocupación') || item.estado_ocupacion.includes('Aula') ? item.estado_ocupacion : ('Ocupación ' + item.estado_ocupacion) }}
             </span>
           </div>
 
@@ -397,6 +489,15 @@
           <div class="report-card-row">
             <span class="report-card-label">Inscritos / Capacidad:</span>
             <span class="report-card-val">{{ item.inscritos }} / {{ item.capacidad }} asientos</span>
+          </div>
+
+          <div class="report-card-row mt-1">
+            <span class="report-card-label">Estudiantes por Estado:</span>
+            <div class="d-flex gap-1 flex-wrap">
+              <span class="badge bg-success" style="font-size: 0.7rem;">{{ item.activos_count || 0 }} Activos</span>
+              <span class="badge bg-warning text-dark" style="font-size: 0.7rem;">{{ item.pendientes_count || 0 }} Pend.</span>
+              <span class="badge bg-danger" style="font-size: 0.7rem;">{{ item.bajas_count || 0 }} De Baja</span>
+            </div>
           </div>
 
           <div class="mt-2 mb-2">
@@ -423,18 +524,176 @@
 
           <!-- Detalle de Estudiantes en móvil -->
           <div *ngIf="expandedParaleloId === item.id_paralelo" class="mt-3 p-2 bg-light rounded border">
-            <h6 class="fw-bold text-primary small mb-2"><i class="material-icons-outlined align-middle">groups</i> Estudiantes y Notas:</h6>
-            <div *ngIf="item.estudiantes && item.estudiantes.length > 0">
-              <div *ngFor="let est of item.estudiantes" class="p-2 mb-2 bg-white rounded border text-start small">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-1 mb-2">
+              <h6 class="fw-bold text-primary small mb-0"><i class="material-icons-outlined align-middle">groups</i> Estudiantes:</h6>
+              <div class="btn-group btn-group-sm" role="group">
+                <button type="button" class="btn btn-xs"
+                  [ngClass]="(studentFilterByParalelo[item.id_paralelo] || 'todos') === 'todos' ? 'btn-primary' : 'btn-outline-secondary'"
+                  (click)="setStudentFilter(item.id_paralelo, 'todos')" style="font-size: 0.68rem; padding: 1px 5px;">
+                  Todos
+                </button>
+                <button type="button" class="btn btn-xs"
+                  [ngClass]="studentFilterByParalelo[item.id_paralelo] === 'activo' ? 'btn-success text-white' : 'btn-outline-success'"
+                  (click)="setStudentFilter(item.id_paralelo, 'activo')" style="font-size: 0.68rem; padding: 1px 5px;">
+                  Activos
+                </button>
+                <button type="button" class="btn btn-xs"
+                  [ngClass]="studentFilterByParalelo[item.id_paralelo] === 'pendiente' ? 'btn-warning text-dark' : 'btn-outline-warning'"
+                  (click)="setStudentFilter(item.id_paralelo, 'pendiente')" style="font-size: 0.68rem; padding: 1px 5px;">
+                  Pend.
+                </button>
+                <button type="button" class="btn btn-xs"
+                  [ngClass]="studentFilterByParalelo[item.id_paralelo] === 'baja' ? 'btn-danger text-white' : 'btn-outline-danger'"
+                  (click)="setStudentFilter(item.id_paralelo, 'baja')" style="font-size: 0.68rem; padding: 1px 5px;">
+                  Baja
+                </button>
+              </div>
+            </div>
+
+            <div *ngIf="getFilteredStudents(item).length > 0">
+              <div *ngFor="let est of getFilteredStudents(item)" class="p-2 mb-2 bg-white rounded border text-start small">
                 <div class="fw-bold">{{ est.nombre_completo }}</div>
-                <div class="text-muted">CI: {{ est.ci }} | Estado: <span class="badge bg-secondary">{{ est.estado }}</span></div>
+                <div class="text-muted d-flex justify-content-between align-items-center mt-1">
+                  <span>CI: {{ est.ci }}</span>
+                  <span class="badge" [ngClass]="{
+                    'bg-success': est.estado === 'Activo' || est.estado === 'Habilitado',
+                    'bg-warning text-dark': est.estado === 'Pendiente',
+                    'bg-danger': est.estado === 'Retirado' || est.estado === 'Baja' || est.estado === 'Inactivo'
+                  }">{{ est.estado === 'Retirado' ? 'De Baja' : est.estado }}</span>
+                </div>
                 <div class="mt-1">
                   Promedio: <strong>{{ est.promedio }} {{ est.promedio !== 'Sin Notas' ? 'pts' : '' }}</strong>
                 </div>
               </div>
             </div>
-            <div *ngIf="!item.estudiantes || item.estudiantes.length === 0" class="text-muted small text-center">
-              Sin estudiantes asignados
+            <div *ngIf="getFilteredStudents(item).length === 0" class="text-muted small text-center py-2">
+              Sin estudiantes para este estado
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+      <!-- VISTA 2: LISTA CONSOLIDADA DE ESTUDIANTES Y CALIFICACIONES -->
+      <div *ngIf="activeTableView === 'estudiantes'" class="animate-fade-in">
+        <!-- Barra de búsqueda rápida de estudiantes -->
+        <div class="row mb-3 align-items-center">
+          <div class="col-md-6">
+            <div class="input-group">
+              <span class="input-group-text bg-light"><i class="material-icons-outlined">search</i></span>
+              <input type="text" class="form-control" placeholder="Buscar estudiante por nombre, C.I., paralelo o docente..."
+                     [(ngModel)]="searchTermStudent">
+              <button *ngIf="searchTermStudent" class="btn btn-outline-secondary" type="button" (click)="searchTermStudent = ''">
+                <i class="material-icons-outlined">close</i>
+              </button>
+            </div>
+          </div>
+          <div class="col-md-6 text-md-end mt-2 mt-md-0">
+            <span class="badge bg-primary fs-6 px-3 py-2">
+              Mostrando {{ allFilteredStudents.length }} estudiantes
+            </span>
+          </div>
+        </div>
+
+        <!-- Tabla Escritorio de Estudiantes -->
+        <div class="table-responsive desktop-table-view">
+          <table class="table table-hover align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>#</th>
+                <th>Estudiante</th>
+                <th>C.I.</th>
+                <th>Curso / Idioma</th>
+                <th>Paralelo</th>
+                <th>Docente Asignado</th>
+                <th>Turno / Horario</th>
+                <th>Estado</th>
+                <th>Calificaciones</th>
+                <th>Promedio</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let est of allFilteredStudents; let idx = index">
+                <td>{{ idx + 1 }}</td>
+                <td>
+                  <strong>{{ est.nombre_completo }}</strong>
+                </td>
+                <td>{{ est.ci }}</td>
+                <td>{{ est.curso_nombre }}</td>
+                <td><span class="badge bg-light text-dark border">{{ est.paralelo_nombre }}</span></td>
+                <td><small class="text-muted">{{ est.docente_nombre }}</small></td>
+                <td><small class="text-muted">{{ est.horario_desc }}</small></td>
+                <td>
+                  <span class="badge" [ngClass]="{
+                    'bg-success': est.estado === 'Activo' || est.estado === 'Habilitado',
+                    'bg-warning text-dark': est.estado === 'Pendiente',
+                    'bg-danger': est.estado === 'Retirado' || est.estado === 'Baja' || est.estado === 'Inactivo'
+                  }">
+                    {{ est.estado === 'Retirado' ? 'De Baja' : est.estado }}
+                  </span>
+                </td>
+                <td>
+                  <ng-container *ngIf="est.notas && est.notas.length > 0; else noNotasConsol">
+                    <span class="badge bg-light text-dark me-1 border" *ngFor="let n of est.notas">
+                      {{ n }}
+                    </span>
+                  </ng-container>
+                  <ng-template #noNotasConsol>
+                    <span class="text-muted small">Sin notas</span>
+                  </ng-template>
+                </td>
+                <td>
+                  <strong [ngClass]="{'text-success': est.promedio >= 51, 'text-danger': est.promedio < 51 && est.promedio !== 'Sin Notas'}">
+                    {{ est.promedio }} {{ est.promedio !== 'Sin Notas' ? 'pts' : '' }}
+                  </strong>
+                </td>
+              </tr>
+              <tr *ngIf="allFilteredStudents.length === 0">
+                <td colspan="10" class="text-center py-4 text-muted">
+                  No se encontraron estudiantes con los filtros seleccionados.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Tarjetas Móviles de Estudiantes -->
+        <div class="mobile-reports-cards">
+          <div *ngIf="allFilteredStudents.length === 0" class="text-center py-4 text-muted report-card-item">
+            No se encontraron estudiantes con los filtros seleccionados.
+          </div>
+          <div *ngFor="let est of allFilteredStudents" class="report-card-item">
+            <div class="report-card-top">
+              <span class="report-card-title">{{ est.nombre_completo }}</span>
+              <span class="badge" [ngClass]="{
+                'bg-success': est.estado === 'Activo' || est.estado === 'Habilitado',
+                'bg-warning text-dark': est.estado === 'Pendiente',
+                'bg-danger': est.estado === 'Retirado' || est.estado === 'Baja' || est.estado === 'Inactivo'
+              }">
+                {{ est.estado }}
+              </span>
+            </div>
+            <div class="report-card-row">
+              <span class="report-card-label">C.I.:</span>
+              <span class="report-card-val">{{ est.ci }}</span>
+            </div>
+            <div class="report-card-row">
+              <span class="report-card-label">Curso / Paralelo:</span>
+              <span class="report-card-val">{{ est.curso_nombre }} - {{ est.paralelo_nombre }}</span>
+            </div>
+            <div class="report-card-row">
+              <span class="report-card-label">Docente:</span>
+              <span class="report-card-val">{{ est.docente_nombre }}</span>
+            </div>
+            <div class="report-card-row">
+              <span class="report-card-label">Turno:</span>
+              <span class="report-card-val">{{ est.horario_desc }}</span>
+            </div>
+            <div class="report-card-row mt-2">
+              <span class="report-card-label">Promedio Final:</span>
+              <strong class="fs-6" [ngClass]="{'text-success': est.promedio >= 51, 'text-danger': est.promedio < 51 && est.promedio !== 'Sin Notas'}">
+                {{ est.promedio }} {{ est.promedio !== 'Sin Notas' ? 'pts' : '' }}
+              </strong>
             </div>
           </div>
         </div>

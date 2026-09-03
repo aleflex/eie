@@ -47,45 +47,26 @@ class InscriptionController extends Controller
 
             $celularCompleto = ($request->celularPrefix ? ($request->celularPrefix . ' ') : '') . $request->celular;
 
-            // 1. Buscar si ya existe el estudiante por su C.I.
-            $estudiante = Estudiante::whereHas('user', function($q) use ($request) {
-                $q->where('ci', $request->ci);
-            })->first();
+            // 1. Buscar o reutilizar usuario existente por CI o Correo Electrónico
+            $user = User::where('ci', $request->ci)
+                        ->orWhere('correo_institucional', strtolower($request->email))
+                        ->first();
             
-            if ($estudiante) {
-                // Si existe, obtener o actualizar su usuario
-                $user = User::find($estudiante->id_usuario);
-                if ($user) {
-                    $username = $user->usuario ?: User::generateUsername($request->nombres, $request->apellidos, $user->id_usuario);
-                    $user->update([
-                        'correo_institucional' => strtolower($request->email),
-                        'usuario' => $username,
-                        'password' => Hash::make($request->ci),
-                        'debe_cambiar_password' => true,
-                        'nombres' => $request->nombres,
-                        'apellidos' => $request->apellidos,
-                        'ci' => $request->ci,
-                    ]);
-                } else {
-                    $username = User::generateUsername($request->nombres, $request->apellidos);
-                    $user = User::create([
-                        'id_rol' => 3, // ESTUDIANTE
-                        'correo_institucional' => strtolower($request->email),
-                        'usuario' => $username,
-                        'password' => Hash::make($request->ci),
-                        'debe_cambiar_password' => true,
-                        'nombres' => $request->nombres,
-                        'apellidos' => $request->apellidos,
-                        'ci' => $request->ci,
-                        'expedido' => $request->expedido,
-                        'estado' => 'ACTIVO',
-                    ]);
-                }
+            if ($user) {
+                // Actualizar usuario existente
+                $user->update([
+                    'correo_institucional' => strtolower($request->email),
+                    'nombres' => $request->nombres,
+                    'apellidos' => $request->apellidos,
+                    'ci' => $request->ci,
+                    'password' => Hash::make($request->ci),
+                    'debe_cambiar_password' => true,
+                ]);
             } else {
-                // Si no existe, crear un nuevo usuario
+                // Crear nuevo usuario con rol Estudiante (id_rol = 2)
                 $username = User::generateUsername($request->nombres, $request->apellidos);
                 $user = User::create([
-                    'id_rol' => 3, // ESTUDIANTE
+                    'id_rol' => 2, // 2 = estudiante en tabla roles
                     'correo_institucional' => strtolower($request->email),
                     'usuario' => $username,
                     'password' => Hash::make($request->ci),
@@ -93,40 +74,106 @@ class InscriptionController extends Controller
                     'nombres' => $request->nombres,
                     'apellidos' => $request->apellidos,
                     'ci' => $request->ci,
-                    'expedido' => $request->expedido,
                     'estado' => 'ACTIVO',
                 ]);
             }
 
-            // 2. Resolver grado, arma, estado civil y grupo sanguíneo mediante catálogos (3NF)
+            // 2. Resolver grado académico mediante catálogo 'grados' (columna: nombre_grado)
             $idGrado = null;
-            if ($request->filled('gradoAcademico')) {
-                $grado = \App\Models\Grado::firstOrCreate(['nombre' => $request->gradoAcademico]);
+            if ($request->filled('gradoAcademico') && trim($request->gradoAcademico) !== '') {
+                $nombreGrado = trim($request->gradoAcademico);
+                $grado = \App\Models\Grado::where('nombre_grado', $nombreGrado)->first();
+                if (!$grado) {
+                    $grado = \App\Models\Grado::create(['nombre_grado' => $nombreGrado]);
+                }
                 $idGrado = $grado->id_grado;
             }
 
+            // 3. Resolver arma o especialidad mediante catálogo 'armas' (columna: nombre_arma)
             $idArma = null;
-            if ($request->filled('armaEspecialidad')) {
-                $arma = \App\Models\Arma::firstOrCreate(['nombre' => $request->armaEspecialidad]);
+            if ($request->filled('armaEspecialidad') && trim($request->armaEspecialidad) !== '') {
+                $nombreArma = trim($request->armaEspecialidad);
+                $arma = \App\Models\Arma::where('nombre_arma', $nombreArma)->first();
+                if (!$arma) {
+                    $arma = \App\Models\Arma::create(['nombre_arma' => $nombreArma]);
+                }
                 $idArma = $arma->id_arma;
             }
 
-            // 4. Crear/actualizar perfil estudiante vinculado al usuario
+            // 4. Resolver estado civil mediante catálogo 'estados_civil' (columna: nombre_estado_civil)
+            $idEstadoCivil = null;
+            if ($request->filled('estadoCivil') && trim($request->estadoCivil) !== '') {
+                $nombreEstado = trim($request->estadoCivil);
+                $ec = \DB::table('estados_civil')->where('nombre_estado_civil', $nombreEstado)->first();
+                if (!$ec) {
+                    $ec = \DB::table('estados_civil')->where('nombre_estado_civil', 'LIKE', '%' . strtok($nombreEstado, '/') . '%')->first();
+                }
+                if ($ec) {
+                    $idEstadoCivil = $ec->id_estado_civil;
+                } else {
+                    $idEstadoCivil = \DB::table('estados_civil')->insertGetId([
+                        'nombre_estado_civil' => $nombreEstado,
+                        'created_at' => now(),
+                        'updated_at' => now()
+                    ]);
+                }
+            }
+
+            // 5. Resolver grupo sanguíneo mediante catálogo 'grupos_sanguineo' (columna: nombre_grupo_sanguineo)
+            $idGrupoSanguineo = null;
+            if ($request->filled('grupoSanguineo') && trim($request->grupoSanguineo) !== '') {
+                $nombreGrupo = trim($request->grupoSanguineo);
+                if (preg_match('/^([ABO\+\-]+)/i', $nombreGrupo, $m)) {
+                    $cleanGrupo = trim($m[1]);
+                } else {
+                    $cleanGrupo = $nombreGrupo;
+                }
+                $gs = \DB::table('grupos_sanguineo')->where('nombre_grupo_sanguineo', $cleanGrupo)->first();
+                if (!$gs) {
+                    $gs = \DB::table('grupos_sanguineo')->where('nombre_grupo_sanguineo', $nombreGrupo)->first();
+                }
+                if ($gs) {
+                    $idGrupoSanguineo = $gs->id_grupo_sanguineo;
+                } else {
+                    $idGrupoSanguineo = \DB::table('grupos_sanguineo')->insertGetId([
+                        'nombre_grupo_sanguineo' => $cleanGrupo,
+                        'created_at' => now(),
+                        'updated_at' => now()
+                    ]);
+                }
+            }
+
+            // 6. Normalizar carnet militar y cossmil (NULL para evitar colisiones UNIQUE en la BD)
+            $carnetMilitar = ($request->filled('carnetMilitar') && trim($request->carnetMilitar) !== '') ? trim($request->carnetMilitar) : null;
+            $carnetCossmil = ($request->filled('carnetCossmil') && trim($request->carnetCossmil) !== '') ? trim($request->carnetCossmil) : null;
+
+            // 7. Buscar o crear perfil Estudiante
+            $estudiante = Estudiante::where('id_usuario', $user->id_usuario)->first();
+
+            // Verificar que los carnets no colisionen con otro estudiante
+            if ($carnetMilitar && Estudiante::where('carnet_militar', $carnetMilitar)->when($estudiante, fn($q) => $q->where('id_estudiante', '!=', $estudiante->id_estudiante))->exists()) {
+                $carnetMilitar = null;
+            }
+            if ($carnetCossmil && Estudiante::where('carnet_cossmil', $carnetCossmil)->when($estudiante, fn($q) => $q->where('id_estudiante', '!=', $estudiante->id_estudiante))->exists()) {
+                $carnetCossmil = null;
+            }
+
             $estudianteData = [
                 'id_usuario' => $user->id_usuario,
                 'id_grado' => $idGrado,
                 'id_arma' => $idArma,
-                'estado_civil' => $request->estadoCivil,
-                'grupo_sanguineo' => $request->grupoSanguineo,
+                'id_estado_civil' => $idEstadoCivil,
+                'id_grupo_sanguineo' => $idGrupoSanguineo,
                 'fecha_nacimiento' => $request->fechaNacimiento,
                 'lugar_nacimiento' => $request->lugarNacimiento,
-                'carnet_militar' => $request->carnetMilitar,
-                'carnet_cossmil' => $request->carnetCossmil,
-                'expedido' => $request->expedido,
+                'carnet_militar' => $carnetMilitar,
+                'carnet_cossmil' => $carnetCossmil,
                 'celular' => $celularCompleto,
                 'domicilio' => $request->domicilio,
                 'anio_egreso_bachiller' => $request->anioBachiller,
-                'hermanos_inscritos' => $request->hermanosInscritos ?? 0
+                'hermanos_inscritos' => is_numeric($request->hermanosInscritos) ? intval($request->hermanosInscritos) : 0,
+                'tipo_usuario' => $request->userType ?? $request->tipo_usuario ?? 'normal',
+                'estado' => 'Activo'
             ];
 
             if ($estudiante) {
@@ -135,57 +182,60 @@ class InscriptionController extends Controller
                 $estudiante = Estudiante::create($estudianteData);
             }
 
-            // 5. Procesar Archivo de Foto
-            if ($request->hasFile('foto')) {
-                $file = $request->file('foto');
-                $mime = $file->getClientMimeType() ?: 'image/jpeg';
-                $fileBinary = file_get_contents($file->getRealPath());
-                $fileName = time() . '_' . preg_replace('/[^a-zA-Z0-9\._-]/', '_', $file->getClientOriginalName());
-                $remotePath = 'fotos/' . $request->ci . '/' . $fileName;
-
-                $supabaseUrl = \App\Services\SupabaseStorageService::uploadFile($fileBinary, $remotePath, $mime);
-                if ($supabaseUrl) {
-                    $estudiante->foto_4x4_url = $supabaseUrl;
-                } else {
-                    $path = $file->store('fotos/' . $request->ci, 'public');
-                    $estudiante->foto_4x4_url = '/storage/' . $path;
-                }
-                $estudiante->save();
-            }
-
-            // 6. Procesar y almacenar los demás documentos en Supabase Storage
-            $filesToProcess = [
-                'carnet' => 'FOTOCOPIA CI',
-                'titulo' => 'TITULO DE BACHILLER',
-                'nacimiento' => 'CERTIFICADO DE NACIMIENTO',
-                'deposito' => 'COMPROBANTE DE PAGO'
-            ];
-
-            if ($request->userType === 'emi') {
-                $filesToProcess['credencialEmi'] = 'CREDENCIAL EMI';
-            }
-
-            foreach ($filesToProcess as $fileKey => $docTypeName) {
-                if ($request->hasFile($fileKey)) {
-                    $file = $request->file($fileKey);
-                    $mime = $file->getClientMimeType() ?: $file->getMimeType() ?: 'application/pdf';
+            // 8. Procesar y almacenar archivos (Foto y Documentos de respaldo)
+            try {
+                if ($request->hasFile('foto')) {
+                    $file = $request->file('foto');
+                    $mime = $file->getClientMimeType() ?: 'image/jpeg';
                     $fileBinary = file_get_contents($file->getRealPath());
                     $fileName = time() . '_' . preg_replace('/[^a-zA-Z0-9\._-]/', '_', $file->getClientOriginalName());
-                    $remotePath = 'documentos/estudiantes/' . $estudiante->id_estudiante . '/' . $fileName;
+                    $remotePath = 'fotos/' . $request->ci . '/' . $fileName;
 
                     $supabaseUrl = \App\Services\SupabaseStorageService::uploadFile($fileBinary, $remotePath, $mime);
-                    $finalPath = $supabaseUrl ?: ('/storage/documentos/' . $file->storeAs('estudiantes/' . $estudiante->id_estudiante, $fileName, 'documentos'));
-
-                    \App\Models\Documento::create([
-                        'id_estudiante' => $estudiante->id_estudiante,
-                        'tipo_documento' => $docTypeName,
-                        'nombre_archivo' => $fileName,
-                        'ruta_archivo' => $finalPath
-                    ]);
+                    if ($supabaseUrl) {
+                        $estudiante->foto_4x4_url = $supabaseUrl;
+                    } else {
+                        $path = $file->store('fotos/' . $request->ci, 'public');
+                        $estudiante->foto_4x4_url = '/storage/' . $path;
+                    }
+                    $estudiante->save();
                 }
+
+                $filesToProcess = [
+                    'carnet' => 'FOTOCOPIA CI',
+                    'titulo' => 'TITULO DE BACHILLER',
+                    'nacimiento' => 'CERTIFICADO DE NACIMIENTO',
+                    'deposito' => 'COMPROBANTE DE PAGO'
+                ];
+
+                if ($request->userType === 'emi') {
+                    $filesToProcess['credencialEmi'] = 'CREDENCIAL EMI';
+                }
+
+                foreach ($filesToProcess as $fileKey => $docTypeName) {
+                    if ($request->hasFile($fileKey)) {
+                        $file = $request->file($fileKey);
+                        $mime = $file->getClientMimeType() ?: $file->getMimeType() ?: 'application/pdf';
+                        $fileBinary = file_get_contents($file->getRealPath());
+                        $fileName = time() . '_' . preg_replace('/[^a-zA-Z0-9\._-]/', '_', $file->getClientOriginalName());
+                        $remotePath = 'documentos/estudiantes/' . $estudiante->id_estudiante . '/' . $fileName;
+
+                        $supabaseUrl = \App\Services\SupabaseStorageService::uploadFile($fileBinary, $remotePath, $mime);
+                        $finalPath = $supabaseUrl ?: ('/storage/documentos/' . $file->storeAs('estudiantes/' . $estudiante->id_estudiante, $fileName, 'documentos'));
+
+                        \App\Models\Documento::create([
+                            'id_estudiante' => $estudiante->id_estudiante,
+                            'tipo_documento' => $docTypeName,
+                            'nombre_archivo' => $fileName,
+                            'ruta_archivo' => $finalPath
+                        ]);
+                    }
+                }
+            } catch (\Throwable $fileEx) {
+                \Log::warning("Aviso archivo inscripción: " . $fileEx->getMessage());
             }
 
-            // 7. Guardar información de padres/tutores en la tabla 'responsables'
+            // 9. Guardar información de padres/tutores en la tabla 'responsables'
             if ($request->filled('nombrePadres')) {
                 $nombreCompleto = trim($request->nombrePadres);
                 $parts = explode(' ', $nombreCompleto);
@@ -209,15 +259,18 @@ class InscriptionController extends Controller
                     $nombres_resp = implode(' ', $parts);
                 }
 
+                $ciTutor = ($request->filled('ciTutor') && trim($request->ciTutor) !== '') ? trim($request->ciTutor) : null;
                 $id_responsable = null;
-                if ($request->filled('ciTutor')) {
-                    $responsable = \DB::table('responsables')->where('ci_responsable', $request->ciTutor)->first();
+
+                if ($ciTutor) {
+                    $responsable = \DB::table('responsables')->where('ci_responsable', $ciTutor)->first();
                     if ($responsable) {
                         $id_responsable = $responsable->id_responsable;
                         \DB::table('responsables')->where('id_responsable', $id_responsable)->update([
                             'nombres_responsable' => $nombres_resp,
                             'apellido_paterno_responsable' => $paterno_resp,
                             'apellido_materno_responsable' => $materno_resp,
+                            'updated_at' => now()
                         ]);
                     }
                 }
@@ -227,19 +280,21 @@ class InscriptionController extends Controller
                         'nombres_responsable' => $nombres_resp,
                         'apellido_paterno_responsable' => $paterno_resp,
                         'apellido_materno_responsable' => $materno_resp,
-                        'ci_responsable' => $request->ciTutor,
+                        'ci_responsable' => $ciTutor,
                         'celular_responsable' => '',
-                        'direccion_responsable' => ''
+                        'direccion_responsable' => '',
+                        'created_at' => now(),
+                        'updated_at' => now()
                     ]);
                 }
 
                 \DB::table('estudiante_responsable')->updateOrInsert(
                     ['id_estudiante' => $estudiante->id_estudiante, 'id_responsable' => $id_responsable],
-                    ['parentesco' => 'Padre/Madre/Tutor']
+                    ['parentesco' => 'Padre/Madre/Tutor', 'updated_at' => now()]
                 );
             }
 
-            // 8. Guardar información de contactos de emergencia
+            // 10. Guardar información de contactos de emergencia
             if ($request->filled('contactoEmergencia')) {
                 $contactoStr = trim($request->contactoEmergencia);
                 $telefono = '';
@@ -256,20 +311,25 @@ class InscriptionController extends Controller
                 }
 
                 \DB::table('contactos_emergencia')->updateOrInsert(
-                    ['id_estudiante' => $estudiante->id_estudiante],
+                    ['id_estudiante' => $estudiante->id_estudiante, 'es_principal' => 1],
                     [
                         'nombre_contacto' => $nombre_cont,
                         'telefono' => $telefono,
                         'relacion' => 'Familiar',
-                        'es_principal' => true
+                        'updated_at' => now()
                     ]
                 );
             }
 
-            // 9. Normalizar y resolver Curso mediante catálogos (3NF)
-            $idioma = \App\Models\Idioma::firstOrCreate(['nombre_idioma' => $request->idioma]);
-            $nivel = \App\Models\Nivel::firstOrCreate(['nombre_nivel' => $request->nivel]);
-            $modalidad = \App\Models\Modalidad::firstOrCreate(['nombre_modalidad' => $request->tipoCurso ?? 'Presencial']);
+            // 11. Normalizar y resolver Curso mediante catálogos (3NF)
+            $idiomaNombre = $request->idioma ?: 'Inglés';
+            $idioma = \App\Models\Idioma::firstOrCreate(['nombre_idioma' => $idiomaNombre]);
+
+            $nivelNombre = $request->nivel ?: 'NIVEL I (BOOK 1-6)';
+            $nivel = \App\Models\Nivel::firstOrCreate(['nombre_nivel' => $nivelNombre]);
+
+            $modalidadNombre = !empty($request->tipoCurso) ? ucfirst(strtolower($request->tipoCurso)) : 'Presencial';
+            $modalidad = \App\Models\Modalidad::firstOrCreate(['nombre_modalidad' => $modalidadNombre]);
 
             $curso = \App\Models\Curso::firstOrCreate([
                 'id_idioma' => $idioma->id_idioma,
@@ -281,14 +341,21 @@ class InscriptionController extends Controller
                 'estado' => 'Activo'
             ]);
 
-            // 10. Crear Inscripción vinculando al estudiante y curso (con paralelo null hasta aprobación)
-            $inscripcion = Inscripcion::create([
-                'id_estudiante' => $estudiante->id_estudiante,
-                'id_curso' => $curso->id_curso,
-                'id_paralelo' => null,
-                'fecha_registro' => now()->format('Y-m-d'),
-                'estado' => 'pendiente'
-            ]);
+            // 12. Crear o actualizar Inscripción vinculando al estudiante y curso
+            $inscripcion = Inscripcion::where('id_estudiante', $estudiante->id_estudiante)
+                ->where('id_curso', $curso->id_curso)
+                ->where('estado', 'pendiente')
+                ->first();
+
+            if (!$inscripcion) {
+                $inscripcion = Inscripcion::create([
+                    'id_estudiante' => $estudiante->id_estudiante,
+                    'id_curso' => $curso->id_curso,
+                    'id_paralelo' => null,
+                    'fecha_registro' => now()->format('Y-m-d'),
+                    'estado' => 'pendiente'
+                ]);
+            }
 
             DB::commit();
 
@@ -300,12 +367,12 @@ class InscriptionController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error("Error en Inscripción: " . $e->getMessage());
+            \Log::error("Error en Inscripción: " . $e->getMessage() . " en " . $e->getFile() . ":" . $e->getLine());
             
             return response()->json([
                 'message' => 'Error crítico en el servidor',
                 'detalle' => $e->getMessage(),
-                'file' => $e->getFile(),
+                'file' => basename($e->getFile()),
                 'line' => $e->getLine()
             ], 500);
         }

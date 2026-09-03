@@ -861,7 +861,8 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
           const validationErrors = Object.values(err.error.errors).flat().join('\n');
           this.modalMessage = 'Errores de validación del servidor:\n' + validationErrors;
         } else {
-          this.modalMessage = 'Hubo un problema al enviar tu formulario: ' + (err.error?.message || err.message || err);
+          const serverDetail = err.error?.detalle ? `\nDetalle: ${err.error.detalle}` : '';
+          this.modalMessage = 'Hubo un problema al enviar tu formulario: ' + (err.error?.message || err.message || 'Error del servidor') + serverDetail;
         }
         this.showModal = true;
       }

@@ -5,12 +5,13 @@ RUN apt-get update && apt-get install -y \
     libpng-dev \
     libjpeg-dev \
     libfreetype6-dev \
+    libzip-dev \
     zip \
     unzip \
     git \
     curl \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install pdo_mysql gd bcmath
+    && docker-php-ext-install pdo_mysql gd bcmath zip
 
 # Configurar limites de subida de archivos para soportar fotos de celular de alta resolucion
 RUN echo "upload_max_filesize = 64M" > /usr/local/etc/php/conf.d/uploads.ini \

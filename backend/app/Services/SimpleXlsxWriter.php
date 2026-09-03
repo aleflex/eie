@@ -77,12 +77,18 @@ class SimpleXlsxWriter
       <bottom style="thin"><color rgb="FFCBD5E1"/></bottom>
     </border>
   </borders>
+  <cellStyleXfs count="1">
+    <xf numFmtId="0" fontId="0" fillId="0" borderId="0"/>
+  </cellStyleXfs>
   <cellXfs count="4">
     <xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0"/>
     <xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
     <xf numFmtId="0" fontId="2" fillId="3" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>
     <xf numFmtId="0" fontId="3" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
   </cellXfs>
+  <cellStyles count="1">
+    <cellStyle name="Normal" xfId="0" builtinId="0"/>
+  </cellStyles>
 </styleSheet>');
 
         // 6. xl/worksheets/sheet1.xml
@@ -112,6 +118,10 @@ class SimpleXlsxWriter
 
         $sheetXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <sheetViews>
+    <sheetView tabSelected="1" workbookViewId="0"/>
+  </sheetViews>
+  <sheetFormatPr defaultRowHeight="16"/>
   <sheetData>' . $xmlRows . '</sheetData>
 </worksheet>';
 

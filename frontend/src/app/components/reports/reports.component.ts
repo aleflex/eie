@@ -5,6 +5,7 @@ import { RouterModule } from '@angular/router';
 import { ReportService } from '../../services/report.service';
 import { CourseService } from '../../services/course.service';
 import { ParaleloService } from '../../services/paralelo.service';
+import { DocenteService } from '../../services/docente.service';
 import { AuthService } from '../../services/auth.service';
 import { downloadFile } from '../../utils/file-downloader';
 
@@ -47,10 +48,13 @@ export class ReportsComponent implements OnInit, AfterViewInit {
   // Control del panel lateral de filtros colapsable (RF 21)
   isFilterSidebarOpen: boolean = false;
 
-  // Filtros Multi-criterio
+  // Filtros Multi-criterio Combinados (Gestión, Docente, Nivel, Turno, etc.)
   filters: any = {
-    id_idioma: '',
+    gestion: '',
+    id_docente: '',
     id_nivel: '',
+    turno: '',
+    id_idioma: '',
     id_curso: '',
     id_paralelo: '',
     estado: '',
@@ -58,9 +62,26 @@ export class ReportsComponent implements OnInit, AfterViewInit {
     fecha_hasta: ''
   };
 
+  // Selector de vista de tabla principal: 'aulas' (Ocupación Aulas/Paralelos) o 'estudiantes' (Lista consolidada de estudiantes y notas)
+  activeTableView: 'aulas' | 'estudiantes' = 'aulas';
+  searchTermStudent: string = '';
+
+  setActiveTableView(view: 'aulas' | 'estudiantes') {
+    this.activeTableView = view;
+  }
+
   // Catálogos para los selectores de filtro
   cursosList: any[] = [];
   paralelosList: any[] = [];
+  docentesList: any[] = [];
+  gestionesList: number[] = [2026, 2025, 2024, 2023];
+  turnosList: any[] = [
+    { id: 'manana', nombre: 'Mañana (08:00 - 12:00)' },
+    { id: 'tarde', nombre: 'Tarde (14:00 - 18:00)' },
+    { id: 'noche', nombre: 'Noche (18:30 - 21:00)' },
+    { id: 'sabado', nombre: 'Sábados' }
+  ];
+
   idiomasList: any[] = [
     { id: 1, nombre: 'Inglés' },
     { id: 2, nombre: 'Francés' },
@@ -97,19 +118,90 @@ export class ReportsComponent implements OnInit, AfterViewInit {
 
   // Control de expansión de estudiantes por Paralelo/Aula
   expandedParaleloId: number | null = null;
+  studentFilterByParalelo: { [id: number]: string } = {};
+
+  // Lista consolidada plana de todos los estudiantes filtrados de todas las aulas/paralelos
+  get allFilteredStudents(): any[] {
+    const list: any[] = [];
+    if (!this.classroomStats) return list;
+    for (const aula of this.classroomStats) {
+      if (aula.estudiantes && Array.isArray(aula.estudiantes)) {
+        for (const est of aula.estudiantes) {
+          list.push({
+            ...est,
+            aula_nombre: aula.aula || 'Sin Aula',
+            paralelo_nombre: aula.nombre_paralelo || 'N/A',
+            curso_nombre: aula.curso || 'N/A',
+            docente_nombre: aula.docente || 'Sin Asignar',
+            horario_desc: aula.horario || 'Regular'
+          });
+        }
+      }
+    }
+
+    if (!this.searchTermStudent || !this.searchTermStudent.trim()) {
+      return list;
+    }
+
+    const term = this.searchTermStudent.toLowerCase().trim();
+    return list.filter(e =>
+      (e.nombre_completo && e.nombre_completo.toLowerCase().includes(term)) ||
+      (e.ci && e.ci.toLowerCase().includes(term)) ||
+      (e.paralelo_nombre && e.paralelo_nombre.toLowerCase().includes(term)) ||
+      (e.curso_nombre && e.curso_nombre.toLowerCase().includes(term)) ||
+      (e.docente_nombre && e.docente_nombre.toLowerCase().includes(term))
+    );
+  }
 
   toggleParaleloExpand(id_paralelo: number) {
     if (this.expandedParaleloId === id_paralelo) {
       this.expandedParaleloId = null;
     } else {
       this.expandedParaleloId = id_paralelo;
+      if (!this.studentFilterByParalelo[id_paralelo]) {
+        this.studentFilterByParalelo[id_paralelo] = 'todos';
+      }
     }
+  }
+
+  setStudentFilter(idParalelo: number, estado: string) {
+    this.studentFilterByParalelo[idParalelo] = estado;
+  }
+
+  getFilteredStudents(item: any): any[] {
+    if (!item || !item.estudiantes) return [];
+    const filter = this.studentFilterByParalelo[item.id_paralelo] || 'todos';
+    if (filter === 'todos') return item.estudiantes;
+    return item.estudiantes.filter((e: any) => {
+      const st = (e.estado || '').toLowerCase();
+      if (filter === 'activo') return st.includes('act') || st.includes('hab');
+      if (filter === 'pendiente') return st.includes('pen');
+      if (filter === 'baja') return st.includes('ret') || st.includes('baj') || st.includes('inac');
+      return true;
+    });
+  }
+
+  calculateStudentCounts(estudiantes: any[]) {
+    let activos = 0, pendientes = 0, bajas = 0;
+    if (!estudiantes) return { activos, pendientes, bajas };
+    estudiantes.forEach(e => {
+      const st = (e.estado || '').toLowerCase();
+      if (st.includes('act') || st.includes('hab')) {
+        activos++;
+      } else if (st.includes('ret') || st.includes('baj') || st.includes('inac')) {
+        bajas++;
+      } else {
+        pendientes++;
+      }
+    });
+    return { activos, pendientes, bajas };
   }
 
   constructor(
     private reportService: ReportService,
     private courseService: CourseService,
     private paraleloService: ParaleloService,
+    private docenteService: DocenteService,
     private authService: AuthService
   ) {}
 
@@ -139,6 +231,11 @@ export class ReportsComponent implements OnInit, AfterViewInit {
       next: (data: any[]) => this.paralelosList = data,
       error: (err: any) => console.error('Error cargando paralelos', err)
     });
+
+    this.docenteService.getDocentes().subscribe({
+      next: (data: any[]) => this.docentesList = data,
+      error: (err: any) => console.error('Error cargando docentes', err)
+    });
   }
 
   /**
@@ -165,6 +262,14 @@ export class ReportsComponent implements OnInit, AfterViewInit {
     this.reportService.getClassroomOccupancy(this.filters).subscribe({
       next: (res: any) => {
         this.classroomStats = res.aulas || [];
+        this.classroomStats.forEach(item => {
+          if ((item.activos_count === undefined || item.activos_count === null) && item.estudiantes) {
+            const counts = this.calculateStudentCounts(item.estudiantes);
+            item.activos_count = counts.activos;
+            item.pendientes_count = counts.pendientes;
+            item.bajas_count = counts.bajas;
+          }
+        });
         this.isLoading = false;
         this.renderClassroomChart();
       },
@@ -181,14 +286,18 @@ export class ReportsComponent implements OnInit, AfterViewInit {
 
   resetFilters() {
     this.filters = {
-      id_idioma: '',
+      gestion: '',
+      id_docente: '',
       id_nivel: '',
+      turno: '',
+      id_idioma: '',
       id_curso: '',
       id_paralelo: '',
       estado: '',
       fecha_desde: '',
       fecha_hasta: ''
     };
+    this.searchTermStudent = '';
     this.cargarReportes();
   }
 

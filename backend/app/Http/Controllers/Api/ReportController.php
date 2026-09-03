@@ -20,11 +20,12 @@ class ReportController extends Controller
     public function getLanguageStatistics(Request $request)
     {
         try {
-            $filters = $request->only(['id_idioma', 'id_nivel', 'id_curso', 'id_paralelo', 'estado', 'fecha_desde', 'fecha_hasta']);
+            $filters = $request->only(['id_idioma', 'id_nivel', 'id_curso', 'id_paralelo', 'estado', 'fecha_desde', 'fecha_hasta', 'gestion', 'id_docente', 'turno']);
 
             $query = DB::table('inscripciones')
                 ->join('cursos', 'inscripciones.id_curso', '=', 'cursos.id_curso')
-                ->join('idiomas', 'cursos.id_idioma', '=', 'idiomas.id_idioma');
+                ->join('idiomas', 'cursos.id_idioma', '=', 'idiomas.id_idioma')
+                ->whereNull('inscripciones.deleted_at');
 
             if (!empty($filters['id_idioma'])) {
                 $query->where('cursos.id_idioma', $filters['id_idioma']);
@@ -46,6 +47,43 @@ class ReportController extends Controller
             }
             if (!empty($filters['fecha_hasta'])) {
                 $query->whereDate('inscripciones.fecha_registro', '<=', $filters['fecha_hasta']);
+            }
+            if (!empty($filters['gestion'])) {
+                $query->whereYear('inscripciones.fecha_registro', $filters['gestion']);
+            }
+            if (!empty($filters['id_docente'])) {
+                $query->whereExists(function ($sub) use ($filters) {
+                    $sub->select(DB::raw(1))
+                        ->from('docente_paralelo')
+                        ->whereColumn('docente_paralelo.id_paralelo', 'inscripciones.id_paralelo')
+                        ->where('docente_paralelo.id_docente', $filters['id_docente']);
+                });
+            }
+            if (!empty($filters['turno'])) {
+                $turno = strtolower($filters['turno']);
+                $query->whereExists(function ($sub) use ($turno) {
+                    $sub->select(DB::raw(1))
+                        ->from('horario_paralelo')
+                        ->join('horarios', 'horario_paralelo.id_horario', '=', 'horarios.id_horario')
+                        ->whereColumn('horario_paralelo.id_paralelo', 'inscripciones.id_paralelo');
+                    if ($turno === 'sabado' || $turno === 'sábado') {
+                        $sub->where(function($sq) {
+                            $sq->where('horarios.dia_semana', 'like', '%sábado%')
+                               ->orWhere('horarios.dia_semana', 'like', '%sabado%');
+                        });
+                    } elseif ($turno === 'manana' || $turno === 'mañana') {
+                        $sub->where('horarios.hora_inicio', '<', '12:00:00')
+                            ->where('horarios.dia_semana', 'not like', '%sábado%')
+                            ->where('horarios.dia_semana', 'not like', '%sabado%');
+                    } elseif ($turno === 'tarde') {
+                        $sub->where('horarios.hora_inicio', '>=', '12:00:00')
+                            ->where('horarios.hora_inicio', '<', '18:00:00')
+                            ->where('horarios.dia_semana', 'not like', '%sábado%')
+                            ->where('horarios.dia_semana', 'not like', '%sabado%');
+                    } elseif ($turno === 'noche') {
+                        $sub->where('horarios.hora_inicio', '>=', '18:00:00');
+                    }
+                });
             }
 
             $stats = $query->select(
@@ -87,25 +125,85 @@ class ReportController extends Controller
     public function getClassroomOccupancy(Request $request)
     {
         try {
-            $filters = $request->only(['id_idioma', 'id_nivel', 'id_curso', 'id_paralelo', 'estado', 'fecha_desde', 'fecha_hasta']);
+            $filters = $request->only(['id_idioma', 'id_nivel', 'id_curso', 'id_paralelo', 'estado', 'fecha_desde', 'fecha_hasta', 'gestion', 'id_docente', 'turno']);
 
-            $paralelos = Paralelo::with([
+            $paralelosQuery = Paralelo::with([
                 'aula',
                 'curso.idioma',
                 'curso.nivelRel',
+                'docentes.user',
+                'horarios',
                 'inscripciones' => function ($q) use ($filters) {
                     $q->filterMultiCriteria($filters);
                 },
                 'inscripciones.estudiante.user',
                 'inscripciones.notas'
-            ])->get();
+            ]);
+
+            if (!empty($filters['id_idioma'])) {
+                $paralelosQuery->whereHas('curso', fn($q) => $q->where('id_idioma', $filters['id_idioma']));
+            }
+            if (!empty($filters['id_nivel'])) {
+                $paralelosQuery->whereHas('curso', fn($q) => $q->where('id_nivel', $filters['id_nivel']));
+            }
+            if (!empty($filters['id_curso'])) {
+                $paralelosQuery->where('id_curso', $filters['id_curso']);
+            }
+            if (!empty($filters['id_paralelo'])) {
+                $paralelosQuery->where('id_paralelo', $filters['id_paralelo']);
+            }
+            if (!empty($filters['id_docente'])) {
+                $paralelosQuery->whereHas('docentes', fn($q) => $q->where('docentes.id_docente', $filters['id_docente']));
+            }
+            if (!empty($filters['turno'])) {
+                $turno = strtolower($filters['turno']);
+                $paralelosQuery->whereHas('horarios', function ($q) use ($turno) {
+                    if ($turno === 'sabado' || $turno === 'sábado') {
+                        $q->where(function($sq) {
+                            $sq->where('dia_semana', 'like', '%sábado%')->orWhere('dia_semana', 'like', '%sabado%');
+                        });
+                    } elseif ($turno === 'manana' || $turno === 'mañana') {
+                        $q->where('hora_inicio', '<', '12:00:00')
+                          ->where('dia_semana', 'not like', '%sábado%')
+                          ->where('dia_semana', 'not like', '%sabado%');
+                    } elseif ($turno === 'tarde') {
+                        $q->where('hora_inicio', '>=', '12:00:00')
+                          ->where('hora_inicio', '<', '18:00:00')
+                          ->where('dia_semana', 'not like', '%sábado%')
+                          ->where('dia_semana', 'not like', '%sabado%');
+                    } elseif ($turno === 'noche') {
+                        $q->where('hora_inicio', '>=', '18:00:00');
+                    }
+                });
+            }
+
+            $paralelos = $paralelosQuery->get();
 
             $ocupacion = $paralelos->map(function ($paralelo) {
                 $capacidad = $paralelo->aula ? ($paralelo->aula->capacidad ?: 30) : 30;
                 $inscritosCount = $paralelo->inscripciones ? $paralelo->inscripciones->count() : 0;
                 $porcentaje = $capacidad > 0 ? round(($inscritosCount / $capacidad) * 100, 1) : 0;
 
-                $estudiantesDetalle = ($paralelo->inscripciones ?? collect())->map(function ($ins) {
+                // Nombres de docentes asignados
+                $docentesNombres = $paralelo->docentes->map(function ($d) {
+                    $u = $d->user ?? null;
+                    return $u ? trim(($u->nombres ?? '') . ' ' . ($u->apellidos ?? '')) : 'Instructor N/A';
+                })->implode(', ');
+                if (empty($docentesNombres)) {
+                    $docentesNombres = 'Sin Instructor Asignado';
+                }
+
+                // Horario descriptivo
+                $horariosDesc = $paralelo->horarios->map(function ($h) {
+                    $ini = substr($h->hora_inicio, 0, 5);
+                    $fin = substr($h->hora_fin, 0, 5);
+                    return "{$h->dia_semana} ({$ini}-{$fin})";
+                })->implode(' | ');
+                if (empty($horariosDesc)) {
+                    $horariosDesc = 'Horario Regular';
+                }
+
+                $estudiantesDetalle = ($paralelo->inscripciones ?? collect())->map(function ($ins) use ($paralelo, $docentesNombres, $horariosDesc) {
                     $est = $ins->estudiante ?? null;
                     $user = $est ? ($est->user ?? null) : null;
                     $notas = ($ins->relationLoaded('notas') && $ins->notas) ? $ins->notas->pluck('nota')->toArray() : [];
@@ -117,20 +215,45 @@ class ReportController extends Controller
                         'nombre_completo' => $user ? trim(($user->nombres ?? '') . ' ' . ($user->apellidos ?? '')) : 'Estudiante N/A',
                         'ci' => $user->ci ?? 'N/A',
                         'estado' => ucfirst($ins->estado ?? 'pendiente'),
+                        'paralelo' => $paralelo->nombre_paralelo,
+                        'curso' => $paralelo->curso ? $paralelo->curso->nombre_curso : 'N/A',
+                        'aula' => $paralelo->aula ? ($paralelo->aula->nombre_aula ?: $paralelo->aula->nombre) : 'Sin Aula',
+                        'docente' => $docentesNombres,
+                        'horario' => $horariosDesc,
                         'notas' => $notas,
                         'promedio' => $prom !== null ? $prom : 'Sin Notas'
                     ];
                 })->values();
+
+                $activosCount = $estudiantesDetalle->filter(function ($e) {
+                    $st = strtolower($e['estado'] ?? '');
+                    return in_array($st, ['activo', 'habilitado']);
+                })->count();
+
+                $pendientesCount = $estudiantesDetalle->filter(function ($e) {
+                    $st = strtolower($e['estado'] ?? '');
+                    return in_array($st, ['pendiente']);
+                })->count();
+
+                $bajasCount = $estudiantesDetalle->filter(function ($e) {
+                    $st = strtolower($e['estado'] ?? '');
+                    return in_array($st, ['retirado', 'baja', 'inactivo']);
+                })->count();
 
                 return [
                     'id_paralelo' => $paralelo->id_paralelo,
                     'nombre_paralelo' => $paralelo->nombre_paralelo,
                     'curso' => $paralelo->curso ? $paralelo->curso->nombre_curso : 'N/A',
                     'aula' => $paralelo->aula ? ($paralelo->aula->nombre_aula ?: $paralelo->aula->nombre) : 'Sin Aula',
+                    'docente' => $docentesNombres,
+                    'horario' => $horariosDesc,
                     'capacidad' => $capacidad,
                     'inscritos' => $inscritosCount,
+                    'activos_count' => $activosCount,
+                    'pendientes_count' => $pendientesCount,
+                    'bajas_count' => $bajasCount,
                     'porcentaje_ocupacion' => min($porcentaje, 100),
-                    'estado_ocupacion' => $porcentaje >= 100 ? 'Lleno' : ($porcentaje >= 75 ? 'Alta' : ($porcentaje >= 40 ? 'Media' : 'Baja')),
+                    'estado_ocupacion' => $porcentaje >= 100 ? 'Aula Llena' : ($porcentaje >= 75 ? 'Ocupación Alta' : ($porcentaje >= 40 ? 'Ocupación Media' : 'Ocupación Baja')),
                     'estudiantes' => $estudiantesDetalle
                 ];
             });
@@ -162,7 +285,7 @@ class ReportController extends Controller
     public function getDashboardSummary(Request $request)
     {
         try {
-            $filters = $request->only(['id_idioma', 'id_nivel', 'id_curso', 'id_paralelo', 'estado', 'fecha_desde', 'fecha_hasta']);
+            $filters = $request->only(['id_idioma', 'id_nivel', 'id_curso', 'id_paralelo', 'estado', 'fecha_desde', 'fecha_hasta', 'gestion', 'id_docente', 'turno']);
 
             $inscripcionesQuery = Inscripcion::query()->filterMultiCriteria($filters);
 
@@ -227,7 +350,7 @@ class ReportController extends Controller
      */
     public function exportExcel(Request $request)
     {
-        $filters = $request->only(['id_idioma', 'id_nivel', 'id_curso', 'id_paralelo', 'estado', 'fecha_desde', 'fecha_hasta']);
+        $filters = $request->only(['id_idioma', 'id_nivel', 'id_curso', 'id_paralelo', 'estado', 'fecha_desde', 'fecha_hasta', 'gestion', 'id_docente', 'turno']);
 
         $summary = $this->getDashboardSummary($request)->getData(true);
         $langStats = $this->getLanguageStatistics($request)->getData(true);
@@ -289,7 +412,11 @@ class ReportController extends Controller
                 ['val' => 'Aula Asignada', 'style' => 1],
                 ['val' => 'Capacidad', 'style' => 1],
                 ['val' => 'Inscritos', 'style' => 1],
+                ['val' => 'Activos', 'style' => 1],
+                ['val' => 'Pendientes', 'style' => 1],
+                ['val' => 'De Baja', 'style' => 1],
                 ['val' => '% Ocupación', 'style' => 1],
+                ['val' => 'Nivel Ocupación', 'style' => 1],
             ];
 
             foreach ($occStats['aulas'] ?? [] as $a) {
@@ -299,7 +426,11 @@ class ReportController extends Controller
                     ['val' => $a['aula'] ?? 'Sin Aula', 'style' => 0],
                     ['val' => $a['capacidad'] ?? 0, 'style' => 0],
                     ['val' => $a['inscritos'] ?? 0, 'style' => 0],
+                    ['val' => $a['activos_count'] ?? 0, 'style' => 0],
+                    ['val' => $a['pendientes_count'] ?? 0, 'style' => 0],
+                    ['val' => $a['bajas_count'] ?? 0, 'style' => 0],
                     ['val' => ($a['porcentaje_ocupacion'] ?? 0) . '%', 'style' => 0],
+                    ['val' => $a['estado_ocupacion'] ?? 'Ocupación Baja', 'style' => 0],
                 ];
             }
 
@@ -341,9 +472,10 @@ class ReportController extends Controller
             ]);
         }
 
+        $fileNameXls = str_replace('.xlsx', '.xls', $fileName);
         $headers = [
             'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
-            'Content-Disposition' => "attachment; filename=\"$fileName\"",
+            'Content-Disposition' => "attachment; filename=\"$fileNameXls\"",
             'Pragma' => 'no-cache',
             'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
             'Expires' => '0'
@@ -559,15 +691,23 @@ class ReportController extends Controller
             ]);
         }
 
+        $fileNameXls = str_replace('.xlsx', '.xls', $fileName);
         $headers = [
             'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
-            'Content-Disposition' => "attachment; filename=\"$fileName\"",
+            'Content-Disposition' => "attachment; filename=\"$fileNameXls\"",
             'Pragma' => 'no-cache',
             'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
             'Expires' => '0'
         ];
 
         $callback = function () use ($inscripciones) {
+            $first = $inscripciones->first();
+            $cursoObj = $first ? $first->curso : null;
+            $paraleloObj = $first ? $first->paralelo : null;
+            $idiomaName = $cursoObj && $cursoObj->idioma ? ($cursoObj->idioma->nombre_idioma ?? $cursoObj->idioma->nombre) : 'INGLÉS';
+            $nivelName = $cursoObj ? ($cursoObj->nivelRel->nombre_nivel ?? $cursoObj->nivel ?? 'NIVEL I') : 'NIVEL I';
+            $paraleloName = $paraleloObj ? ($paraleloObj->nombre_paralelo ?? $paraleloObj->nombre ?? 'A') : 'PARALELO';
+
             echo '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
             echo '<head><meta charset="UTF-8">';
             echo '<!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Asistencias Alumnos</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->';
@@ -586,7 +726,7 @@ class ReportController extends Controller
             echo '<tr><td colspan="31" class="header-title"><u>BOLIVIA</u></td></tr>';
             echo '<tr><td colspan="31" class="header-title">&nbsp;</td></tr>';
             echo '<tr><td colspan="31" class="header-title">RELACION NOMINAL DEL PERSONAL DE ALUMNOS (REGISTRO DE ASISTENCIA)</td></tr>';
-            echo '<tr><td colspan="31" class="header-title">DEL CURSO: CGEC1108A26I FILIAL: COCHABAMBA BOOK: NIVEL 1</td></tr>';
+            echo '<tr><td colspan="31" class="header-title">IDIOMA: ' . strtoupper($idiomaName) . ' | ' . strtoupper($nivelName) . ' | PARALELO: ' . strtoupper($paraleloName) . ' | FILIAL: COCHABAMBA</td></tr>';
             echo '<tr><td colspan="31" class="header-title">&nbsp;</td></tr>';
 
             // Column Header 1
@@ -773,15 +913,23 @@ class ReportController extends Controller
             ]);
         }
 
+        $fileNameXls = str_replace('.xlsx', '.xls', $fileName);
         $headers = [
             'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
-            'Content-Disposition' => "attachment; filename=\"$fileName\"",
+            'Content-Disposition' => "attachment; filename=\"$fileNameXls\"",
             'Pragma' => 'no-cache',
             'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
             'Expires' => '0'
         ];
 
         $callback = function () use ($inscripciones) {
+            $first = $inscripciones->first();
+            $cursoObj = $first ? $first->curso : null;
+            $paraleloObj = $first ? $first->paralelo : null;
+            $idiomaName = $cursoObj && $cursoObj->idioma ? ($cursoObj->idioma->nombre_idioma ?? $cursoObj->idioma->nombre) : 'IDIOMAS';
+            $nivelName = $cursoObj ? ($cursoObj->nivelRel->nombre_nivel ?? $cursoObj->nivel ?? 'NIVEL I') : 'NIVEL I';
+            $paraleloName = $paraleloObj ? ($paraleloObj->nombre_paralelo ?? $paraleloObj->nombre ?? 'A') : 'PARALELO';
+
             echo '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
             echo '<head><meta charset="UTF-8">';
             echo '<!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Notas Alumnos</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->';
@@ -796,7 +944,8 @@ class ReportController extends Controller
 
             echo '<table>';
             echo '<tr><td colspan="13" class="header-title">ESCUELA DE IDIOMAS DEL EJÉRCITO - COCHABAMBA</td></tr>';
-            echo '<tr><td colspan="13" class="header-title">PLANILLA DE CALIFICACIONES DE ALUMNOS REGISTRADAS EN SISTEMA</td></tr>';
+            echo '<tr><td colspan="13" class="header-title">PLANILLA OFICIAL DE CALIFICACIONES DE ALUMNOS REGISTRADAS EN SISTEMA</td></tr>';
+            echo '<tr><td colspan="13" class="header-title">IDIOMA: ' . strtoupper($idiomaName) . ' | ' . strtoupper($nivelName) . ' | PARALELO: ' . strtoupper($paraleloName) . ' | FECHA: ' . date('d/m/Y') . '</td></tr>';
             echo '<tr><td colspan="13">&nbsp;</td></tr>';
 
             echo '<tr>';
@@ -878,7 +1027,7 @@ class ReportController extends Controller
     public function exportPdf(Request $request)
     {
         try {
-            $filters = $request->only(['id_idioma', 'id_nivel', 'id_curso', 'id_paralelo', 'estado', 'fecha_desde', 'fecha_hasta']);
+            $filters = $request->only(['id_idioma', 'id_nivel', 'id_curso', 'id_paralelo', 'estado', 'fecha_desde', 'fecha_hasta', 'gestion', 'id_docente', 'turno']);
 
             $summary = $this->getDashboardSummary($request)->getData(true);
             $langStats = $this->getLanguageStatistics($request)->getData(true);
