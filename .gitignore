@@ -2,8 +2,7 @@
 *.aab
 *.jar
 .gradle/
-android/.gradle/
-android/gradle-8.7/
+android/
 node_modules/
 dist/
 .vercel

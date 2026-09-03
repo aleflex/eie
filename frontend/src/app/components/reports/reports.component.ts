@@ -200,7 +200,7 @@ export class ReportsComponent implements OnInit, AfterViewInit {
     this.reportService.downloadExcel(this.filters).subscribe({
       next: (blob: Blob) => {
         this.isDownloadingExcel = false;
-        const filename = `Relacion_Nominal_EIE_${new Date().toISOString().slice(0,10)}.xls`;
+        const filename = `Relacion_Nominal_EIE_${new Date().toISOString().slice(0,10)}.xlsx`;
         downloadFile(blob, filename);
       },
       error: (err: any) => {

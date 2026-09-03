@@ -237,7 +237,109 @@ class ReportController extends Controller
             ->filterMultiCriteria($filters)
             ->get();
 
-        $fileName = 'Reportes_Estadisticos_EIE_' . date('Ymd_His') . '.xls';
+        $fileName = 'Reportes_Estadisticos_EIE_' . date('Ymd_His') . '.xlsx';
+
+        if (class_exists(\ZipArchive::class)) {
+            $rows = [
+                [['val' => 'ESCUELA DE IDIOMAS DEL EJÉRCITO', 'style' => 2]],
+                [['val' => 'REPORTES Y ESTADÍSTICAS GENERALES DE GESTIÓN ACADÉMICA', 'style' => 2]],
+                [['val' => 'FILIAL COCHABAMBA - BOLIVIA (' . date('d/m/Y') . ')', 'style' => 0]],
+                [''],
+                [['val' => '1. INDICADORES CLAVE DE RENDIMIENTO (KPIs)', 'style' => 2]],
+                [
+                    ['val' => 'Total Inscritos', 'style' => 1],
+                    ['val' => 'Estudiantes Habilitados', 'style' => 1],
+                    ['val' => 'Pendientes', 'style' => 1],
+                    ['val' => 'Retirados', 'style' => 1],
+                    ['val' => '% Habilitados', 'style' => 1],
+                    ['val' => 'Idioma Mayor Demanda', 'style' => 1],
+                    ['val' => 'Ocupación Promedio Aulas', 'style' => 1],
+                ],
+                [
+                    ['val' => $summary['total_inscritos'] ?? 0, 'style' => 3],
+                    ['val' => $summary['habilitados'] ?? 0, 'style' => 3],
+                    ['val' => $summary['pendientes'] ?? 0, 'style' => 3],
+                    ['val' => $summary['retirados'] ?? 0, 'style' => 3],
+                    ['val' => ($summary['porcentaje_habilitados'] ?? 0) . '%', 'style' => 3],
+                    ['val' => $summary['idioma_top'] ?? 'N/A', 'style' => 3],
+                    ['val' => ($summary['ocupacion_promedio'] ?? 0) . '%', 'style' => 3],
+                ],
+                [''],
+                [['val' => '2. DISTRIBUCIÓN DE MATRÍCULAS POR IDIOMA', 'style' => 2]],
+                [
+                    ['val' => 'Idioma', 'style' => 1],
+                    ['val' => 'Total Estudiantes', 'style' => 1],
+                    ['val' => 'Porcentaje (%)', 'style' => 1],
+                ]
+            ];
+
+            foreach ($langStats['estadisticas'] ?? [] as $l) {
+                $rows[] = [
+                    ['val' => $l['idioma'] ?? 'N/A', 'style' => 0],
+                    ['val' => $l['total_estudiantes'] ?? 0, 'style' => 0],
+                    ['val' => ($l['porcentaje'] ?? 0) . '%', 'style' => 0],
+                ];
+            }
+
+            $rows[] = [''];
+            $rows[] = [['val' => '3. OCUPACIÓN DE AULAS Y PARALELOS', 'style' => 2]];
+            $rows[] = [
+                ['val' => 'Paralelo', 'style' => 1],
+                ['val' => 'Curso / Nivel', 'style' => 1],
+                ['val' => 'Aula Asignada', 'style' => 1],
+                ['val' => 'Capacidad', 'style' => 1],
+                ['val' => 'Inscritos', 'style' => 1],
+                ['val' => '% Ocupación', 'style' => 1],
+            ];
+
+            foreach ($occStats['aulas'] ?? [] as $a) {
+                $rows[] = [
+                    ['val' => $a['nombre_paralelo'] ?? 'N/A', 'style' => 0],
+                    ['val' => $a['curso'] ?? 'N/A', 'style' => 0],
+                    ['val' => $a['aula'] ?? 'Sin Aula', 'style' => 0],
+                    ['val' => $a['capacidad'] ?? 0, 'style' => 0],
+                    ['val' => $a['inscritos'] ?? 0, 'style' => 0],
+                    ['val' => ($a['porcentaje_ocupacion'] ?? 0) . '%', 'style' => 0],
+                ];
+            }
+
+            $rows[] = [''];
+            $rows[] = [['val' => '4. DETALLE DE MATRÍCULAS FILTRADAS', 'style' => 2]];
+            $rows[] = [
+                ['val' => 'Nro', 'style' => 1],
+                ['val' => 'C.I.', 'style' => 1],
+                ['val' => 'Apellidos y Nombres', 'style' => 1],
+                ['val' => 'Idioma', 'style' => 1],
+                ['val' => 'Nivel', 'style' => 1],
+                ['val' => 'Paralelo', 'style' => 1],
+                ['val' => 'Estado', 'style' => 1],
+            ];
+
+            $idx = 1;
+            foreach ($inscripciones as $insc) {
+                $est = $insc->estudiante;
+                $cur = $insc->curso;
+                $idm = $cur ? $cur->idioma : null;
+                $par = $insc->paralelo;
+
+                $rows[] = [
+                    ['val' => $idx++, 'style' => 0],
+                    ['val' => $est->ci ?? 'N/A', 'style' => 0],
+                    ['val' => strtoupper(($est->apellidos ?? '') . ' ' . ($est->nombres ?? '')), 'style' => 0],
+                    ['val' => $idm->nombre_idioma ?? $idm->nombre ?? 'N/A', 'style' => 0],
+                    ['val' => $cur->nivel ?? 'N/A', 'style' => 0],
+                    ['val' => $par->nombre_paralelo ?? $par->nombre ?? 'N/A', 'style' => 0],
+                    ['val' => strtoupper($insc->estado ?? 'CONFIRMADO'), 'style' => 0],
+                ];
+            }
+
+            $xlsxContent = \App\Services\SimpleXlsxWriter::create('Reportes Estadisticos', $rows);
+            return response($xlsxContent, 200, [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'Content-Disposition' => "attachment; filename=\"$fileName\"",
+                'Cache-Control' => 'max-age=0'
+            ]);
+        }
 
         $headers = [
             'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
@@ -392,7 +494,70 @@ class ReportController extends Controller
             ->filterMultiCriteria($filters)
             ->get();
 
-        $fileName = 'Asistencias_Alumnos_EIE_' . date('Ymd_His') . '.xls';
+        $fileName = 'Asistencias_Alumnos_EIE_' . date('Ymd_His') . '.xlsx';
+
+        if (class_exists(\ZipArchive::class)) {
+            $rows = [
+                [['val' => 'ESCUELA DE IDIOMAS DEL EJÉRCITO', 'style' => 2]],
+                [['val' => 'RELACIÓN NOMINAL DEL PERSONAL DE ALUMNOS (REGISTRO DE ASISTENCIA)', 'style' => 2]],
+                [['val' => 'FECHA DE REPORTE: ' . date('d/m/Y H:i'), 'style' => 0]],
+                [''],
+                [
+                    ['val' => 'Nro', 'style' => 1],
+                    ['val' => 'C.I.', 'style' => 1],
+                    ['val' => 'Grado', 'style' => 1],
+                    ['val' => 'Apellidos', 'style' => 1],
+                    ['val' => 'Nombres', 'style' => 1],
+                    ['val' => 'Idioma', 'style' => 1],
+                    ['val' => 'Nivel', 'style' => 1],
+                    ['val' => 'Paralelo', 'style' => 1],
+                    ['val' => 'Total Clases', 'style' => 1],
+                    ['val' => 'Presentes', 'style' => 1],
+                    ['val' => 'Faltas', 'style' => 1],
+                    ['val' => 'Licencias', 'style' => 1],
+                    ['val' => '% Asistencia', 'style' => 1],
+                    ['val' => 'Estado', 'style' => 1],
+                ]
+            ];
+
+            $idx = 1;
+            foreach ($inscripciones as $insc) {
+                $est = $insc->estudiante;
+                $cur = $insc->curso;
+                $idm = $cur ? $cur->idioma : null;
+                $par = $insc->paralelo;
+
+                $totalSesiones = $insc->asistencias ? $insc->asistencias->count() : 0;
+                $presentes = $insc->asistencias ? $insc->asistencias->where('estado', 'presente')->count() : 0;
+                $faltas = $insc->asistencias ? $insc->asistencias->where('estado', 'falta')->count() : 0;
+                $licencias = $insc->asistencias ? $insc->asistencias->where('estado', 'licencia')->count() : 0;
+                $pct = $totalSesiones > 0 ? round(($presentes / $totalSesiones) * 100, 1) . '%' : '100%';
+
+                $rows[] = [
+                    ['val' => $idx++, 'style' => 0],
+                    ['val' => $est->ci ?? 'N/A', 'style' => 0],
+                    ['val' => $est->grado ?? 'Civil', 'style' => 0],
+                    ['val' => strtoupper($est->apellidos ?? ''), 'style' => 0],
+                    ['val' => strtoupper($est->nombres ?? ''), 'style' => 0],
+                    ['val' => $idm->nombre_idioma ?? $idm->nombre ?? 'N/A', 'style' => 0],
+                    ['val' => $cur->nivel ?? 'N/A', 'style' => 0],
+                    ['val' => $par->nombre_paralelo ?? $par->nombre ?? 'N/A', 'style' => 0],
+                    ['val' => $totalSesiones, 'style' => 0],
+                    ['val' => $presentes, 'style' => 0],
+                    ['val' => $faltas, 'style' => 0],
+                    ['val' => $licencias, 'style' => 0],
+                    ['val' => $pct, 'style' => 0],
+                    ['val' => strtoupper($insc->estado ?? 'ACTIVO'), 'style' => 0],
+                ];
+            }
+
+            $xlsxContent = \App\Services\SimpleXlsxWriter::create('Asistencias Alumnos', $rows);
+            return response($xlsxContent, 200, [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'Content-Disposition' => "attachment; filename=\"$fileName\"",
+                'Cache-Control' => 'max-age=0'
+            ]);
+        }
 
         $headers = [
             'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
@@ -535,7 +700,78 @@ class ReportController extends Controller
             ->filterMultiCriteria($filters)
             ->get();
 
-        $fileName = 'Notas_Calificaciones_EIE_' . date('Ymd_His') . '.xls';
+        $fileName = 'Notas_Calificaciones_EIE_' . date('Ymd_His') . '.xlsx';
+
+        if (class_exists(\ZipArchive::class)) {
+            $rows = [
+                [['val' => 'ESCUELA DE IDIOMAS DEL EJÉRCITO - FILIAL COCHABAMBA', 'style' => 2]],
+                [['val' => 'PLANILLA DE CALIFICACIONES DE ALUMNOS (REGISTRO OFICIAL)', 'style' => 2]],
+                [['val' => 'FECHA DE EMISIÓN: ' . date('d/m/Y H:i'), 'style' => 0]],
+                [''],
+                [
+                    ['val' => 'Nro', 'style' => 1],
+                    ['val' => 'C.I.', 'style' => 1],
+                    ['val' => 'Grado', 'style' => 1],
+                    ['val' => 'Apellidos y Nombres', 'style' => 1],
+                    ['val' => 'Idioma', 'style' => 1],
+                    ['val' => 'Nivel', 'style' => 1],
+                    ['val' => 'Paralelo', 'style' => 1],
+                    ['val' => 'Book 1', 'style' => 1],
+                    ['val' => 'Book 2', 'style' => 1],
+                    ['val' => 'Book 3', 'style' => 1],
+                    ['val' => 'Book 4', 'style' => 1],
+                    ['val' => 'Examen Nivel', 'style' => 1],
+                    ['val' => 'Promedio Final', 'style' => 1],
+                    ['val' => 'Estado', 'style' => 1],
+                ]
+            ];
+
+            $idx = 1;
+            foreach ($inscripciones as $insc) {
+                $est = $insc->estudiante;
+                $cur = $insc->curso;
+                $idm = $cur ? $cur->idioma : null;
+                $par = $insc->paralelo;
+
+                $b1 = '0'; $b2 = '0'; $b3 = '0'; $b4 = '0'; $ex = '0'; $pf = '0';
+                if ($insc->notas && $insc->notas->count() > 0) {
+                    $n = $insc->notas->first();
+                    $b1 = (string)($n->nota_parcial_1 ?? '0');
+                    $b2 = (string)($n->nota_parcial_2 ?? '0');
+                    $b3 = (string)($n->nota_parcial_3 ?? '0');
+                    $b4 = (string)($n->nota_parcial_4 ?? '0');
+                    $ex = (string)($n->examen_final ?? '0');
+                    $pf = (string)($n->promedio_final ?? '0');
+                }
+
+                $promNum = floatval($pf);
+                $estadoAprob = $promNum >= 70 ? 'APROBADO' : ($promNum > 0 ? 'REPROBADO' : 'EN CURSO');
+
+                $rows[] = [
+                    ['val' => $idx++, 'style' => 0],
+                    ['val' => $est->ci ?? 'N/A', 'style' => 0],
+                    ['val' => $est->grado ?? 'Civil', 'style' => 0],
+                    ['val' => strtoupper(($est->apellidos ?? '') . ' ' . ($est->nombres ?? '')), 'style' => 0],
+                    ['val' => $idm->nombre_idioma ?? $idm->nombre ?? 'N/A', 'style' => 0],
+                    ['val' => $cur->nivel ?? 'N/A', 'style' => 0],
+                    ['val' => $par->nombre_paralelo ?? $par->nombre ?? 'N/A', 'style' => 0],
+                    ['val' => $b1, 'style' => 0],
+                    ['val' => $b2, 'style' => 0],
+                    ['val' => $b3, 'style' => 0],
+                    ['val' => $b4, 'style' => 0],
+                    ['val' => $ex, 'style' => 0],
+                    ['val' => $pf, 'style' => 3],
+                    ['val' => $estadoAprob, 'style' => 0],
+                ];
+            }
+
+            $xlsxContent = \App\Services\SimpleXlsxWriter::create('Notas Alumnos', $rows);
+            return response($xlsxContent, 200, [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'Content-Disposition' => "attachment; filename=\"$fileName\"",
+                'Cache-Control' => 'max-age=0'
+            ]);
+        }
 
         $headers = [
             'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',

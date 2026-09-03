@@ -386,7 +386,7 @@ export class DocenteDashboardComponent implements OnInit {
     this.reportService.downloadNominalExcel(filters).subscribe({
       next: (blob: Blob) => {
         this.isDownloadingExcel = false;
-        const filename = `Planilla_Asistencias_${this.paraleloActivo.nombre || 'Paralelo'}_${new Date().toISOString().slice(0,10)}.xls`;
+        const filename = `Planilla_Asistencias_${this.paraleloActivo.nombre || 'Paralelo'}_${new Date().toISOString().slice(0,10)}.xlsx`;
         downloadFile(blob, filename);
       },
       error: (err: any) => {
@@ -404,7 +404,7 @@ export class DocenteDashboardComponent implements OnInit {
     this.reportService.downloadNotasExcel(filters).subscribe({
       next: (blob: Blob) => {
         this.isDownloadingExcel = false;
-        const filename = `Planilla_Calificaciones_${this.paraleloActivo.nombre || 'Paralelo'}_${new Date().toISOString().slice(0,10)}.xls`;
+        const filename = `Planilla_Calificaciones_${this.paraleloActivo.nombre || 'Paralelo'}_${new Date().toISOString().slice(0,10)}.xlsx`;
         downloadFile(blob, filename);
       },
       error: (err: any) => {
