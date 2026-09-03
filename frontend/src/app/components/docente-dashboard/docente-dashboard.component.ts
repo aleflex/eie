@@ -454,16 +454,13 @@ export class DocenteDashboardComponent implements OnInit {
       error: (err: any) => {
         console.error('Error generando PDF de nómina docente', err);
         this.isDownloadingPdf = false;
-        window.print();
+        alert('No se pudo generar el PDF de la lista. Por favor intente nuevamente.');
       }
     });
   }
 
   imprimirNotasPdf() {
-    if (!this.paraleloActivo) {
-      window.print();
-      return;
-    }
+    if (!this.paraleloActivo) return;
     this.isDownloadingPdf = true;
     const filters = { id_paralelo: this.paraleloActivo.id, tipo: 'notas' };
     this.reportService.downloadNotasPdf(filters).subscribe({
@@ -475,16 +472,13 @@ export class DocenteDashboardComponent implements OnInit {
       error: (err: any) => {
         console.error('Error generando PDF de calificaciones', err);
         this.isDownloadingPdf = false;
-        window.print();
+        alert('No se pudo generar el PDF de calificaciones. Por favor intente nuevamente.');
       }
     });
   }
 
   imprimirAsistenciasPdf() {
-    if (!this.paraleloActivo) {
-      window.print();
-      return;
-    }
+    if (!this.paraleloActivo) return;
     this.isDownloadingPdf = true;
     const filters = { id_paralelo: this.paraleloActivo.id, tipo: 'asistencia' };
     this.reportService.downloadAsistenciasPdf(filters).subscribe({
@@ -496,7 +490,7 @@ export class DocenteDashboardComponent implements OnInit {
       error: (err: any) => {
         console.error('Error generando PDF de asistencias', err);
         this.isDownloadingPdf = false;
-        window.print();
+        alert('No se pudo generar el PDF de asistencias. Por favor intente nuevamente.');
       }
     });
   }

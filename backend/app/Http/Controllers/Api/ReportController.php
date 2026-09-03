@@ -909,60 +909,61 @@ class ReportController extends Controller
      */
     public function exportDocentePdf(Request $request)
     {
-        $idParalelo = $request->input('id_paralelo');
-        $tipo = $request->input('tipo', 'lista'); // 'lista', 'notas', 'asistencia'
-        $filters = $request->only(['id_idioma', 'id_nivel', 'id_curso', 'id_paralelo', 'estado']);
+        try {
+            $idParalelo = $request->input('id_paralelo');
+            $tipo = $request->input('tipo', 'lista'); // 'lista', 'notas', 'asistencia'
+            $filters = $request->only(['id_idioma', 'id_nivel', 'id_curso', 'id_paralelo', 'estado']);
 
-        $paralelo = Paralelo::with(['curso.idioma', 'aula', 'docente.user'])->find($idParalelo);
-        if (!$paralelo && !empty($filters['id_paralelo'])) {
-            $paralelo = Paralelo::with(['curso.idioma', 'aula', 'docente.user'])->find($filters['id_paralelo']);
-        }
+            $paralelo = Paralelo::with(['curso.idioma', 'aula'])->find($idParalelo);
+            if (!$paralelo && !empty($filters['id_paralelo'])) {
+                $paralelo = Paralelo::with(['curso.idioma', 'aula'])->find($filters['id_paralelo']);
+            }
 
-        $inscripciones = Inscripcion::with(['estudiante.user', 'curso.idioma', 'paralelo', 'notas', 'asistencias'])
-            ->when($idParalelo, function($q) use ($idParalelo) {
-                $q->where('id_paralelo', $idParalelo);
-            })
-            ->filterMultiCriteria($filters)
-            ->get();
+            $inscripciones = Inscripcion::with(['estudiante.user', 'curso.idioma', 'paralelo', 'notas', 'asistencias'])
+                ->when($idParalelo, function($q) use ($idParalelo) {
+                    $q->where('id_paralelo', $idParalelo);
+                })
+                ->filterMultiCriteria($filters)
+                ->get();
 
-        $curso = $paralelo ? $paralelo->curso : ($inscripciones->first() ? $inscripciones->first()->curso : null);
-        $docente = $paralelo ? $paralelo->docente : null;
-        $nombreParalelo = $paralelo ? ($paralelo->nombre_paralelo ?: $paralelo->nombre) : 'Paralelo';
+            $curso = $paralelo ? $paralelo->curso : ($inscripciones->first() ? $inscripciones->first()->curso : null);
+            $nombreParalelo = $paralelo ? ($paralelo->nombre_paralelo ?: $paralelo->nombre) : 'Paralelo';
 
-        if ($tipo === 'notas') {
-            $pdf = Pdf::loadView('pdf.notas_docente', [
+            if ($tipo === 'notas') {
+                $pdf = Pdf::loadView('pdf.notas_docente', [
+                    'paralelo' => $paralelo ?: (object)['nombre_paralelo' => 'A'],
+                    'curso' => $curso ?: (object)['nivel' => 'NIVEL I'],
+                    'inscripciones' => $inscripciones,
+                    'fecha' => date('d/m/Y')
+                ]);
+                $pdf->setPaper('letter', 'portrait');
+                return $pdf->download('Planilla_Calificaciones_' . $nombreParalelo . '_' . date('Ymd') . '.pdf');
+            }
+
+            if ($tipo === 'asistencia') {
+                $pdf = Pdf::loadView('pdf.asistencias_docente', [
+                    'paralelo' => $paralelo ?: (object)['nombre_paralelo' => 'A'],
+                    'curso' => $curso ?: (object)['nivel' => 'NIVEL I'],
+                    'inscripciones' => $inscripciones,
+                    'fecha' => date('d/m/Y')
+                ]);
+                $pdf->setPaper('letter', 'portrait');
+                return $pdf->download('Planilla_Asistencias_' . $nombreParalelo . '_' . date('Ymd') . '.pdf');
+            }
+
+            $pdf = Pdf::loadView('pdf.lista_docente', [
                 'paralelo' => $paralelo ?: (object)['nombre_paralelo' => 'A'],
                 'curso' => $curso ?: (object)['nivel' => 'NIVEL I'],
-                'docente' => $docente,
                 'inscripciones' => $inscripciones,
                 'fecha' => date('d/m/Y')
             ]);
+
             $pdf->setPaper('letter', 'portrait');
-            return $pdf->download('Planilla_Calificaciones_' . $nombreParalelo . '_' . date('Ymd') . '.pdf');
+            return $pdf->download('Nomina_Alumnos_' . $nombreParalelo . '_' . date('Ymd') . '.pdf');
+        } catch (\Throwable $e) {
+            \Log::error('Error exportando PDF docente: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            return response()->json(['message' => 'Error al generar el PDF: ' . $e->getMessage()], 500);
         }
-
-        if ($tipo === 'asistencia') {
-            $pdf = Pdf::loadView('pdf.asistencias_docente', [
-                'paralelo' => $paralelo ?: (object)['nombre_paralelo' => 'A'],
-                'curso' => $curso ?: (object)['nivel' => 'NIVEL I'],
-                'docente' => $docente,
-                'inscripciones' => $inscripciones,
-                'fecha' => date('d/m/Y')
-            ]);
-            $pdf->setPaper('letter', 'portrait');
-            return $pdf->download('Planilla_Asistencias_' . $nombreParalelo . '_' . date('Ymd') . '.pdf');
-        }
-
-        $pdf = Pdf::loadView('pdf.lista_docente', [
-            'paralelo' => $paralelo ?: (object)['nombre_paralelo' => 'A'],
-            'curso' => $curso ?: (object)['nivel' => 'NIVEL I'],
-            'docente' => $docente,
-            'inscripciones' => $inscripciones,
-            'fecha' => date('d/m/Y')
-        ]);
-
-        $pdf->setPaper('letter', 'portrait');
-        return $pdf->download('Nomina_Alumnos_' . $nombreParalelo . '_' . date('Ymd') . '.pdf');
     }
 
     public function exportNotasPdf(Request $request)
