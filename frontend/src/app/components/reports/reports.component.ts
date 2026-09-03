@@ -62,12 +62,36 @@ export class ReportsComponent implements OnInit, AfterViewInit {
     fecha_hasta: ''
   };
 
-  // Selector de vista de tabla principal: 'aulas' (Ocupación Aulas/Paralelos) o 'estudiantes' (Lista consolidada de estudiantes y notas)
-  activeTableView: 'aulas' | 'estudiantes' = 'aulas';
+  // Selector de vista de tabla principal: 'aulas', 'estudiantes' o 'pendientes'
+  activeTableView: 'aulas' | 'estudiantes' | 'pendientes' = 'aulas';
   searchTermStudent: string = '';
+  searchTermPending: string = '';
 
-  setActiveTableView(view: 'aulas' | 'estudiantes') {
+  setActiveTableView(view: 'aulas' | 'estudiantes' | 'pendientes') {
     this.activeTableView = view;
+  }
+
+  filterByKpi(type: string) {
+    if (type === 'pendientes') {
+      this.activeTableView = 'pendientes';
+    } else if (type === 'activos') {
+      this.activeTableView = 'estudiantes';
+      this.searchTermStudent = '';
+    } else if (type === 'retirados') {
+      this.filters.estado = 'retirado';
+      this.activeTableView = 'estudiantes';
+      this.onFilterChange();
+      return;
+    } else {
+      this.activeTableView = 'aulas';
+    }
+
+    setTimeout(() => {
+      const tableSection = document.querySelector('.table-container');
+      if (tableSection) {
+        tableSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 50);
   }
 
   // Catálogos para los selectores de filtro
@@ -144,6 +168,42 @@ export class ReportsComponent implements OnInit, AfterViewInit {
     }
 
     const term = this.searchTermStudent.toLowerCase().trim();
+    return list.filter(e =>
+      (e.nombre_completo && e.nombre_completo.toLowerCase().includes(term)) ||
+      (e.ci && e.ci.toLowerCase().includes(term)) ||
+      (e.paralelo_nombre && e.paralelo_nombre.toLowerCase().includes(term)) ||
+      (e.curso_nombre && e.curso_nombre.toLowerCase().includes(term)) ||
+      (e.docente_nombre && e.docente_nombre.toLowerCase().includes(term))
+    );
+  }
+
+  // Lista consolidada de estudiantes en estado pendiente (con o sin paralelo)
+  get pendingStudents(): any[] {
+    const list: any[] = [];
+    if (!this.classroomStats) return list;
+    for (const aula of this.classroomStats) {
+      if (aula.estudiantes && Array.isArray(aula.estudiantes)) {
+        for (const est of aula.estudiantes) {
+          const st = (est.estado || '').toLowerCase();
+          if (st.includes('pen')) {
+            list.push({
+              ...est,
+              aula_nombre: aula.aula || 'Sin Aula Asignada',
+              paralelo_nombre: aula.nombre_paralelo || 'Sin Paralelo (Por Asignar)',
+              curso_nombre: aula.curso || 'N/A',
+              docente_nombre: aula.docente || 'Sin Asignar',
+              horario_desc: aula.horario || 'Por Definir'
+            });
+          }
+        }
+      }
+    }
+
+    if (!this.searchTermPending || !this.searchTermPending.trim()) {
+      return list;
+    }
+
+    const term = this.searchTermPending.toLowerCase().trim();
     return list.filter(e =>
       (e.nombre_completo && e.nombre_completo.toLowerCase().includes(term)) ||
       (e.ci && e.ci.toLowerCase().includes(term)) ||
@@ -298,6 +358,7 @@ export class ReportsComponent implements OnInit, AfterViewInit {
       fecha_hasta: ''
     };
     this.searchTermStudent = '';
+    this.searchTermPending = '';
     this.cargarReportes();
   }
 

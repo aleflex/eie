@@ -89,11 +89,26 @@
   gap: 16px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
   border: 1px solid rgba(0, 0, 0, 0.05);
-  transition: transform 0.2s ease;
+  transition: all 0.25s ease;
 }
 
 .stat-card:hover {
   transform: translateY(-2px);
+}
+
+.stat-card.clickable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.stat-card.clickable:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 59, 113, 0.12);
+  border-color: rgba(0, 59, 113, 0.2);
+}
+
+.stat-card.clickable:active {
+  transform: translateY(-1px);
 }
 
 .stat-icon {

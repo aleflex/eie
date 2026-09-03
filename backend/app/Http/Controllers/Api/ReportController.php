@@ -258,6 +258,75 @@ class ReportController extends Controller
                 ];
             });
 
+            // Incluir estudiantes con inscripción pendiente o sin paralelo asignado
+            $pendientesSinParaleloQuery = Inscripcion::with([
+                'estudiante.user',
+                'curso.idioma',
+                'curso.nivelRel',
+                'notas'
+            ])
+            ->whereNull('id_paralelo')
+            ->filterMultiCriteria($filters);
+
+            $pendientesSinParalelo = $pendientesSinParaleloQuery->get();
+
+            if ($pendientesSinParalelo->isNotEmpty()) {
+                $pendientesEstudiantes = $pendientesSinParalelo->map(function ($ins) {
+                    $est = $ins->estudiante ?? null;
+                    $user = $est ? ($est->user ?? null) : null;
+                    $nombreCompleto = $user ? trim(($user->nombres ?? '') . ' ' . ($user->apellidos ?? '')) : ($est ? trim(($est->nombres ?? '') . ' ' . ($est->apellidos ?? '')) : 'Estudiante N/A');
+                    $ci = $user->ci ?? ($est->ci ?? 'N/A');
+                    $notas = ($ins->relationLoaded('notas') && $ins->notas) ? $ins->notas->pluck('nota')->toArray() : [];
+                    $prom = count($notas) > 0 ? round(array_sum($notas) / count($notas), 1) : null;
+
+                    return [
+                        'id_inscripcion' => $ins->id_inscripcion,
+                        'id_estudiante' => $ins->id_estudiante,
+                        'nombre_completo' => $nombreCompleto,
+                        'ci' => $ci,
+                        'estado' => ucfirst($ins->estado ?? 'pendiente'),
+                        'paralelo' => 'Sin Paralelo (Por Asignar)',
+                        'curso' => $ins->curso ? $ins->curso->nombre_curso : 'Por Definir',
+                        'aula' => 'Por Asignar',
+                        'docente' => 'Sin Docente Asignado',
+                        'horario' => 'Pendiente de Turno',
+                        'notas' => $notas,
+                        'promedio' => $prom !== null ? $prom : 'Sin Notas'
+                    ];
+                });
+
+                $ocupacion->push([
+                    'id_paralelo' => 0,
+                    'nombre_paralelo' => 'Sin Paralelo (Por Asignar)',
+                    'curso' => 'Estudiantes Pendientes de Asignación',
+                    'aula' => 'Por Asignar',
+                    'docente' => 'Sin Asignar',
+                    'horario' => 'Pendiente',
+                    'capacidad' => 0,
+                    'inscritos' => $pendientesSinParalelo->count(),
+                    'activos_count' => 0,
+                    'pendientes_count' => $pendientesSinParalelo->count(),
+                    'bajas_count' => 0,
+                    'porcentaje_ocupacion' => 0,
+                    'estado_ocupacion' => 'Pendiente',
+                    'estudiantes' => $pendientesEstudiantes->values()
+                ]);
+            }
+
+            if (!empty($filters['estado'])) {
+                $estadoFiltro = strtolower($filters['estado']);
+                $ocupacion = $ocupacion->filter(function($item) use ($estadoFiltro) {
+                    if ($estadoFiltro === 'pendiente') {
+                        return ($item['pendientes_count'] ?? 0) > 0;
+                    } elseif ($estadoFiltro === 'activo' || $estadoFiltro === 'habilitado') {
+                        return ($item['activos_count'] ?? 0) > 0;
+                    } elseif ($estadoFiltro === 'retirado' || $estadoFiltro === 'baja') {
+                        return ($item['bajas_count'] ?? 0) > 0;
+                    }
+                    return $item['inscritos'] > 0;
+                })->values();
+            }
+
             $totalCapacidad = $ocupacion->sum('capacidad');
             $totalInscritos = $ocupacion->sum('inscritos');
             $promedioOcupacion = $totalCapacidad > 0 ? round(($totalInscritos / $totalCapacidad) * 100, 1) : 0;
@@ -449,19 +518,66 @@ class ReportController extends Controller
             $idx = 1;
             foreach ($inscripciones as $insc) {
                 $est = $insc->estudiante;
+                $user = $est ? ($est->user ?? null) : null;
                 $cur = $insc->curso;
                 $idm = $cur ? $cur->idioma : null;
                 $par = $insc->paralelo;
 
+                $nombreCompleto = $user ? trim(($user->apellidos ?? '') . ' ' . ($user->nombres ?? '')) : ($est ? trim(($est->apellidos ?? '') . ' ' . ($est->nombres ?? '')) : 'N/A');
+                $ciVal = $user->ci ?? ($est->ci ?? 'N/A');
+
                 $rows[] = [
                     ['val' => $idx++, 'style' => 0],
-                    ['val' => $est->ci ?? 'N/A', 'style' => 0],
-                    ['val' => strtoupper(($est->apellidos ?? '') . ' ' . ($est->nombres ?? '')), 'style' => 0],
+                    ['val' => $ciVal, 'style' => 0],
+                    ['val' => strtoupper($nombreCompleto), 'style' => 0],
                     ['val' => $idm->nombre_idioma ?? $idm->nombre ?? 'N/A', 'style' => 0],
                     ['val' => $cur->nivel ?? 'N/A', 'style' => 0],
-                    ['val' => $par->nombre_paralelo ?? $par->nombre ?? 'N/A', 'style' => 0],
-                    ['val' => strtoupper($insc->estado ?? 'CONFIRMADO'), 'style' => 0],
+                    ['val' => $par ? ($par->nombre_paralelo ?? $par->nombre ?? 'N/A') : 'Sin Paralelo (Por Asignar)', 'style' => 0],
+                    ['val' => strtoupper($insc->estado ?? 'PENDIENTE'), 'style' => 0],
                 ];
+            }
+
+            // SECCIÓN 5: ESTUDIANTES PENDIENTES
+            $pendientesList = $inscripciones->filter(function($i) {
+                return strtolower($i->estado ?? '') === 'pendiente';
+            });
+
+            if ($pendientesList->isNotEmpty()) {
+                $rows[] = [''];
+                $rows[] = [['val' => '5. LISTADO DE ESTUDIANTES PENDIENTES (' . $pendientesList->count() . ' REGISTROS)', 'style' => 2]];
+                $rows[] = [
+                    ['val' => 'Nro', 'style' => 1],
+                    ['val' => 'C.I.', 'style' => 1],
+                    ['val' => 'Apellidos y Nombres', 'style' => 1],
+                    ['val' => 'Idioma', 'style' => 1],
+                    ['val' => 'Nivel', 'style' => 1],
+                    ['val' => 'Paralelo Asignado', 'style' => 1],
+                    ['val' => 'Fecha Registro', 'style' => 1],
+                    ['val' => 'Estado', 'style' => 1],
+                ];
+
+                $pIdx = 1;
+                foreach ($pendientesList as $p) {
+                    $pEst = $p->estudiante;
+                    $pUser = $pEst ? ($pEst->user ?? null) : null;
+                    $pCur = $p->curso;
+                    $pIdm = $pCur ? $pCur->idioma : null;
+                    $pPar = $p->paralelo;
+
+                    $pNombre = $pUser ? trim(($pUser->apellidos ?? '') . ' ' . ($pUser->nombres ?? '')) : ($pEst ? trim(($pEst->apellidos ?? '') . ' ' . ($pEst->nombres ?? '')) : 'N/A');
+                    $pCi = $pUser->ci ?? ($pEst->ci ?? 'N/A');
+
+                    $rows[] = [
+                        ['val' => $pIdx++, 'style' => 0],
+                        ['val' => $pCi, 'style' => 0],
+                        ['val' => strtoupper($pNombre), 'style' => 0],
+                        ['val' => $pIdm->nombre_idioma ?? $pIdm->nombre ?? 'N/A', 'style' => 0],
+                        ['val' => $pCur->nivel ?? 'N/A', 'style' => 0],
+                        ['val' => $pPar ? ($pPar->nombre_paralelo ?? $pPar->nombre ?? 'N/A') : 'Sin Paralelo (Por Asignar)', 'style' => 0],
+                        ['val' => $p->fecha_registro ?? 'N/A', 'style' => 0],
+                        ['val' => 'PENDIENTE', 'style' => 0],
+                    ];
+                }
             }
 
             $xlsxContent = \App\Services\SimpleXlsxWriter::create('Reportes Estadisticos', $rows);
@@ -593,21 +709,66 @@ class ReportController extends Controller
             $idx = 1;
             foreach ($inscripciones as $insc) {
                 $est = $insc->estudiante;
+                $user = $est ? ($est->user ?? null) : null;
                 $cur = $insc->curso;
                 $idm = $cur ? $cur->idioma : null;
                 $par = $insc->paralelo;
 
+                $nombreCompleto = $user ? trim(($user->apellidos ?? '') . ' ' . ($user->nombres ?? '')) : ($est ? trim(($est->apellidos ?? '') . ' ' . ($est->nombres ?? '')) : 'N/A');
+                $ciVal = $user->ci ?? ($est->ci ?? 'N/A');
+
                 echo '<tr>';
                 echo '<td>' . $idx++ . '</td>';
-                echo '<td>' . htmlspecialchars($est->ci ?? 'N/A') . '</td>';
-                echo '<td class="left">' . htmlspecialchars(strtoupper(($est->apellidos ?? '') . ' ' . ($est->nombres ?? ''))) . '</td>';
+                echo '<td>' . htmlspecialchars($ciVal) . '</td>';
+                echo '<td class="left">' . htmlspecialchars(strtoupper($nombreCompleto)) . '</td>';
                 echo '<td>' . htmlspecialchars($idm->nombre_idioma ?? $idm->nombre ?? 'N/A') . '</td>';
                 echo '<td>' . htmlspecialchars($cur->nivel ?? 'N/A') . '</td>';
-                echo '<td>' . htmlspecialchars($par->nombre_paralelo ?? $par->nombre ?? 'N/A') . '</td>';
-                echo '<td>' . htmlspecialchars(strtoupper($insc->estado ?? 'CONFIRMADO')) . '</td>';
+                echo '<td>' . htmlspecialchars($par ? ($par->nombre_paralelo ?? $par->nombre ?? 'N/A') : 'Sin Paralelo (Por Asignar)') . '</td>';
+                echo '<td>' . htmlspecialchars(strtoupper($insc->estado ?? 'PENDIENTE')) . '</td>';
                 echo '</tr>';
             }
             echo '</table>';
+
+            // TABLA 5: LISTADO EXCLUSIVO DE ESTUDIANTES PENDIENTES
+            $pendientesHtml = $inscripciones->filter(function($i) {
+                return strtolower($i->estado ?? '') === 'pendiente';
+            });
+            if ($pendientesHtml->isNotEmpty()) {
+                echo '<br><table>';
+                echo '<tr><th colspan="7" class="section-title">5. LISTADO EXCLUSIVO DE ESTUDIANTES PENDIENTES (' . $pendientesHtml->count() . ' REGISTROS)</th></tr>';
+                echo '<tr>';
+                echo '<th>Nro</th>';
+                echo '<th>C.I.</th>';
+                echo '<th>Apellidos y Nombres</th>';
+                echo '<th>Idioma</th>';
+                echo '<th>Nivel</th>';
+                echo '<th>Paralelo</th>';
+                echo '<th>Estado</th>';
+                echo '</tr>';
+
+                $pIdx = 1;
+                foreach ($pendientesHtml as $p) {
+                    $pEst = $p->estudiante;
+                    $pUser = $pEst ? ($pEst->user ?? null) : null;
+                    $pCur = $p->curso;
+                    $pIdm = $pCur ? $pCur->idioma : null;
+                    $pPar = $p->paralelo;
+
+                    $pNombre = $pUser ? trim(($pUser->apellidos ?? '') . ' ' . ($pUser->nombres ?? '')) : ($pEst ? trim(($pEst->apellidos ?? '') . ' ' . ($pEst->nombres ?? '')) : 'N/A');
+                    $pCi = $pUser->ci ?? ($pEst->ci ?? 'N/A');
+
+                    echo '<tr>';
+                    echo '<td>' . $pIdx++ . '</td>';
+                    echo '<td>' . htmlspecialchars($pCi) . '</td>';
+                    echo '<td class="left">' . htmlspecialchars(strtoupper($pNombre)) . '</td>';
+                    echo '<td>' . htmlspecialchars($pIdm->nombre_idioma ?? $pIdm->nombre ?? 'N/A') . '</td>';
+                    echo '<td>' . htmlspecialchars($pCur->nivel ?? 'N/A') . '</td>';
+                    echo '<td>' . htmlspecialchars($pPar ? ($pPar->nombre_paralelo ?? $pPar->nombre ?? 'N/A') : 'Sin Paralelo (Por Asignar)') . '</td>';
+                    echo '<td style="background-color: #fef3c7; color: #92400e; font-weight: bold;">PENDIENTE</td>';
+                    echo '</tr>';
+                }
+                echo '</table>';
+            }
 
             echo '</body></html>';
         };

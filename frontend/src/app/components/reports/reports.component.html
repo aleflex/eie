@@ -180,43 +180,43 @@
 
     <!-- KPIs Numéricos de Estado y Notas (RF 18 - HU 18 - T3) -->
     <section class="stats-grid animate-fade-in">
-      <div class="stat-card">
+      <div class="stat-card clickable" (click)="filterByKpi('todos')" title="Ver todas las aulas y paralelos">
         <div class="stat-icon blue">
           <i class="material-icons-outlined">people</i>
         </div>
         <div class="stat-info">
           <h3>{{ summaryData.total_inscritos }}</h3>
-          <p>Total Registrados</p>
+          <p>Total Registrados <i class="material-icons-outlined" style="font-size: 13px; vertical-align: middle;">arrow_forward</i></p>
         </div>
       </div>
 
-      <div class="stat-card">
+      <div class="stat-card clickable" (click)="filterByKpi('activos')" title="Ver estudiantes activos habilitados">
         <div class="stat-icon green">
           <i class="material-icons-outlined">check_circle</i>
         </div>
         <div class="stat-info">
           <h3>{{ summaryData.habilitados }}</h3>
-          <p>Estudiantes Activos</p>
+          <p>Estudiantes Activos <i class="material-icons-outlined" style="font-size: 13px; vertical-align: middle;">arrow_forward</i></p>
         </div>
       </div>
 
-      <div class="stat-card">
+      <div class="stat-card clickable" (click)="filterByKpi('pendientes')" title="Ver estudiantes en estado pendiente">
         <div class="stat-icon gold">
           <i class="material-icons-outlined">hourglass_top</i>
         </div>
         <div class="stat-info">
           <h3>{{ summaryData.pendientes }}</h3>
-          <p>Estudiantes Pendientes</p>
+          <p>Estudiantes Pendientes <i class="material-icons-outlined" style="font-size: 13px; vertical-align: middle;">arrow_forward</i></p>
         </div>
       </div>
 
-      <div class="stat-card">
+      <div class="stat-card clickable" (click)="filterByKpi('retirados')" title="Ver estudiantes retirados / de baja">
         <div class="stat-icon red" style="background-color: #fee2e2; color: #dc2626;">
           <i class="material-icons-outlined">person_remove</i>
         </div>
         <div class="stat-info">
           <h3>{{ summaryData.retirados }}</h3>
-          <p>De Baja / Retirados</p>
+          <p>De Baja / Retirados <i class="material-icons-outlined" style="font-size: 13px; vertical-align: middle;">arrow_forward</i></p>
         </div>
       </div>
 
@@ -274,7 +274,7 @@
           <p>Capacidad total, estudiantes asignados y sus calificaciones registradas.</p>
         </div>
 
-        <!-- Conmutador de Vistas: Aulas/Paralelos vs Lista General de Estudiantes -->
+        <!-- Conmutador de Vistas: Aulas/Paralelos vs Lista General de Estudiantes vs Estudiantes Pendientes -->
         <div class="btn-group shadow-sm" role="group">
           <button type="button" class="btn"
             [ngClass]="activeTableView === 'aulas' ? 'btn-primary text-white fw-bold' : 'btn-outline-primary'"
@@ -286,7 +286,13 @@
             [ngClass]="activeTableView === 'estudiantes' ? 'btn-primary text-white fw-bold' : 'btn-outline-primary'"
             (click)="setActiveTableView('estudiantes')">
             <i class="material-icons-outlined align-middle me-1">groups</i>
-            Lista de Estudiantes y Notas ({{ allFilteredStudents.length }})
+            Lista General de Estudiantes ({{ allFilteredStudents.length }})
+          </button>
+          <button type="button" class="btn"
+            [ngClass]="activeTableView === 'pendientes' ? 'btn-warning text-dark fw-bold shadow-sm' : 'btn-outline-warning text-dark'"
+            (click)="setActiveTableView('pendientes')">
+            <i class="material-icons-outlined align-middle me-1">hourglass_top</i>
+            Estudiantes Pendientes ({{ pendingStudents.length }})
           </button>
         </div>
       </div>
@@ -694,6 +700,138 @@
               <strong class="fs-6" [ngClass]="{'text-success': est.promedio >= 51, 'text-danger': est.promedio < 51 && est.promedio !== 'Sin Notas'}">
                 {{ est.promedio }} {{ est.promedio !== 'Sin Notas' ? 'pts' : '' }}
               </strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- VISTA 3: LISTA EXCLUSIVA DE ESTUDIANTES PENDIENTES -->
+      <div *ngIf="activeTableView === 'pendientes'" class="animate-fade-in">
+        <!-- Banner de información sobre estado pendiente -->
+        <div class="alert alert-warning d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3 py-2 px-3 border-warning shadow-sm rounded-3">
+          <div class="d-flex align-items-center gap-2">
+            <i class="material-icons-outlined text-warning fs-3">hourglass_top</i>
+            <div>
+              <strong class="text-dark">Estudiantes en Estado Pendiente:</strong>
+              <span class="ms-1 text-dark">Matrículas a la espera de confirmación administrativa, asignación de paralelo o regularización documental.</span>
+            </div>
+          </div>
+          <a routerLink="/students" class="btn btn-sm btn-warning text-dark fw-bold d-flex align-items-center gap-1 shadow-sm">
+            <i class="material-icons-outlined">manage_accounts</i>
+            Gestionar en Estudiantes
+          </a>
+        </div>
+
+        <!-- Barra de búsqueda rápida de estudiantes pendientes -->
+        <div class="row mb-3 align-items-center">
+          <div class="col-md-6">
+            <div class="input-group">
+              <span class="input-group-text bg-light"><i class="material-icons-outlined">search</i></span>
+              <input type="text" class="form-control" placeholder="Buscar pendiente por nombre, C.I., curso o paralelo..."
+                     [(ngModel)]="searchTermPending">
+              <button *ngIf="searchTermPending" class="btn btn-outline-secondary" type="button" (click)="searchTermPending = ''">
+                <i class="material-icons-outlined">close</i>
+              </button>
+            </div>
+          </div>
+          <div class="col-md-6 text-md-end mt-2 mt-md-0">
+            <span class="badge bg-warning text-dark fs-6 px-3 py-2">
+              Mostrando {{ pendingStudents.length }} estudiantes pendientes
+            </span>
+          </div>
+        </div>
+
+        <!-- Tabla Escritorio de Estudiantes Pendientes -->
+        <div class="table-responsive desktop-table-view">
+          <table class="table table-hover align-middle">
+            <thead class="table-warning text-dark">
+              <tr>
+                <th>#</th>
+                <th>Estudiante</th>
+                <th>C.I.</th>
+                <th>Curso / Idioma</th>
+                <th>Paralelo Asignado</th>
+                <th>Aula</th>
+                <th>Docente Asignado</th>
+                <th>Turno / Horario</th>
+                <th>Estado</th>
+                <th class="text-center">Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let est of pendingStudents; let idx = index">
+                <td>{{ idx + 1 }}</td>
+                <td>
+                  <strong class="text-dark">{{ est.nombre_completo }}</strong>
+                </td>
+                <td><span class="badge bg-light text-dark border">{{ est.ci }}</span></td>
+                <td><strong>{{ est.curso_nombre }}</strong></td>
+                <td>
+                  <span class="badge" [ngClass]="est.paralelo_nombre.includes('Sin Paralelo') || est.paralelo_nombre.includes('Por Asignar') ? 'bg-secondary' : 'bg-info text-dark'">
+                    {{ est.paralelo_nombre }}
+                  </span>
+                </td>
+                <td><small class="text-muted">{{ est.aula_nombre }}</small></td>
+                <td><small class="text-muted">{{ est.docente_nombre }}</small></td>
+                <td><small class="text-muted">{{ est.horario_desc }}</small></td>
+                <td>
+                  <span class="badge bg-warning text-dark px-2 py-1">
+                    <i class="material-icons-outlined align-middle" style="font-size: 13px;">hourglass_top</i>
+                    Pendiente
+                  </span>
+                </td>
+                <td class="text-center">
+                  <a routerLink="/students" class="btn btn-sm btn-outline-primary py-1 px-2 d-inline-flex align-items-center gap-1">
+                    <i class="material-icons-outlined" style="font-size: 15px;">manage_accounts</i>
+                    Gestionar
+                  </a>
+                </td>
+              </tr>
+              <tr *ngIf="pendingStudents.length === 0">
+                <td colspan="10" class="text-center py-4 text-muted">
+                  <i class="material-icons-outlined fs-2 text-success d-block mb-1">check_circle</i>
+                  No hay estudiantes pendientes con los filtros aplicados.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Tarjetas Móviles de Estudiantes Pendientes -->
+        <div class="mobile-reports-cards">
+          <div *ngIf="pendingStudents.length === 0" class="text-center py-4 text-muted report-card-item">
+            <i class="material-icons-outlined fs-2 text-success d-block mb-1">check_circle</i>
+            No hay estudiantes pendientes con los filtros aplicados.
+          </div>
+          <div *ngFor="let est of pendingStudents" class="report-card-item border-warning">
+            <div class="report-card-top">
+              <span class="report-card-title">{{ est.nombre_completo }}</span>
+              <span class="badge bg-warning text-dark">Pendiente</span>
+            </div>
+            <div class="report-card-row">
+              <span class="report-card-label">C.I.:</span>
+              <span class="report-card-val">{{ est.ci }}</span>
+            </div>
+            <div class="report-card-row">
+              <span class="report-card-label">Curso:</span>
+              <span class="report-card-val">{{ est.curso_nombre }}</span>
+            </div>
+            <div class="report-card-row">
+              <span class="report-card-label">Paralelo:</span>
+              <span class="report-card-val">{{ est.paralelo_nombre }}</span>
+            </div>
+            <div class="report-card-row">
+              <span class="report-card-label">Docente:</span>
+              <span class="report-card-val">{{ est.docente_nombre }}</span>
+            </div>
+            <div class="report-card-row">
+              <span class="report-card-label">Turno:</span>
+              <span class="report-card-val">{{ est.horario_desc }}</span>
+            </div>
+            <div class="mt-2 pt-2 border-top">
+              <a routerLink="/students" class="btn btn-sm btn-outline-warning text-dark w-100 d-flex align-items-center justify-content-center gap-1">
+                <i class="material-icons-outlined">manage_accounts</i> Gestionar en Estudiantes
+              </a>
             </div>
           </div>
         </div>
