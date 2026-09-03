@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -46,7 +46,8 @@ export class LoginComponent implements OnInit {
   constructor(
     private servicioAutenticacion: AuthService,
     private enrutador: Router,
-    private http: HttpClient
+    private http: HttpClient,
+    private ngZone: NgZone
   ) {}
 
   async ngOnInit() {
@@ -201,10 +202,14 @@ export class LoginComponent implements OnInit {
       });
 
       // Si el SO Android confirma la huella/rostro correctamente:
-      const usuario = JSON.parse(savedUser);
+      const usuario = typeof savedUser === 'string' ? JSON.parse(savedUser) : savedUser;
       sessionStorage.setItem('usuario', JSON.stringify(usuario));
       localStorage.setItem('usuario', JSON.stringify(usuario));
-      this.redireccionarSegunRol(usuario.rol);
+
+      // Importante: Ejecutar la navegación dentro de NgZone para que Angular actualice la vista al instante
+      this.ngZone.run(() => {
+        this.redireccionarSegunRol(usuario.rol, usuario.id_rol);
+      });
 
     } catch (error: any) {
       console.warn('Biometría nativa cancelada o error:', error);
@@ -230,7 +235,9 @@ export class LoginComponent implements OnInit {
         alert('✅ Contraseña cambiada con éxito.');
         this.showMustChangePasswordModal = false;
         const usuario = this.pendingUserResponse?.user || this.servicioAutenticacion.obtenerUsuario();
-        this.redireccionarSegunRol(usuario?.rol);
+        this.ngZone.run(() => {
+          this.redireccionarSegunRol(usuario?.rol, usuario?.id_rol);
+        });
       },
       error: (err) => {
         console.error('Error al cambiar contraseña', err);
@@ -242,10 +249,10 @@ export class LoginComponent implements OnInit {
   /**
    * Redirecciona al panel según el rol del usuario
    */
-  redireccionarSegunRol(rol?: string) {
-    if (rol === 'docente') {
+  redireccionarSegunRol(rol?: string, idRol?: number) {
+    if (rol === 'docente' || idRol === 3) {
       this.enrutador.navigate(['/docente-dashboard']);
-    } else if (rol === 'estudiante') {
+    } else if (rol === 'estudiante' || idRol === 2) {
       this.enrutador.navigate(['/student-dashboard']);
     } else {
       this.enrutador.navigate(['/admin']);
