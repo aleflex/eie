@@ -33,6 +33,17 @@
         <i class="material-icons-outlined">login</i> INICIAR SESIÓN
       </button>
 
+      <!-- Botón de Inicio Rápido con Huella / Biometría -->
+      <div class="biometric-login-container" *ngIf="hasSavedBiometricToken">
+        <div class="biometric-divider">
+          <span>O ACCEDE RÁPIDAMENTE</span>
+        </div>
+        <button type="button" class="btn-biometric-auth" (click)="loginConBiometria()">
+          <i class="material-icons" style="font-size: 26px;">fingerprint</i>
+          <span>Ingresar con Huella Digital</span>
+        </button>
+      </div>
+
       <div class="login-footer">
         <a routerLink="/" class="back-link mt-2">
           <i class="material-icons-outlined">arrow_back</i> Volver al Inicio

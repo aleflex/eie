@@ -147,7 +147,8 @@ class AuthController extends Controller
      */
     public function updateProfile(Request $request)
     {
-        $user = auth()->user() ?? User::first();
+        $userId = $request->input('user_id') ?? auth()->id();
+        $user = $userId ? User::find($userId) : (auth()->user() ?? User::first());
         if (!$user) {
             return response()->json(['message' => 'Usuario no encontrado'], 404);
         }
@@ -156,6 +157,9 @@ class AuthController extends Controller
             'name' => 'sometimes|required|string|max:255',
             'email' => 'sometimes|required|string|email|max:255|unique:usuarios,correo_institucional,' . $user->id_usuario . ',id_usuario',
             'password' => 'sometimes|nullable|string|min:8',
+        ], [
+            'email.unique' => 'Este correo electrónico ya pertenece a otro usuario en el sistema.',
+            'password.min' => 'La nueva contraseña debe tener al menos 8 caracteres.'
         ]);
 
         $data = [];

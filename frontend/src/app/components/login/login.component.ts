@@ -195,18 +195,19 @@ export class LoginComponent implements OnInit {
       await NativeBiometric.verifyIdentity({
         title: 'Fingerprint ID',
         subtitle: 'Escuela de Idiomas del Ejército',
-        description: 'Ingrese su huella digital para iniciar sesión',
-        reason: 'Coloque su dedo en el sensor',
-        fallbackTitle: 'INGRESAR CONTRASEÑA'
+        description: 'Coloca tu dedo en el lector de huella digital para ingresar',
+        reason: 'Verificación biométrica de identidad',
+        fallbackTitle: 'USAR CONTRASEÑA'
       });
 
       // Si el SO Android confirma la huella/rostro correctamente:
       const usuario = JSON.parse(savedUser);
+      sessionStorage.setItem('usuario', JSON.stringify(usuario));
       localStorage.setItem('usuario', JSON.stringify(usuario));
       this.redireccionarSegunRol(usuario.rol);
 
     } catch (error: any) {
-      console.warn('Biometría nativa cancelada o cerrada por el usuario:', error);
+      console.warn('Biometría nativa cancelada o error:', error);
     }
   }
 

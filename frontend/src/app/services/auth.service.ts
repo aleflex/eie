@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
 
@@ -105,17 +105,17 @@ export class AuthService {
   }
 
   /**
-   * Verifica si hay un usuario autenticado
+   * Verifica si hay un usuario autenticado (soporta sesión activa y biometría)
    */
   estaAutenticado(): boolean {
-    return sessionStorage.getItem('usuario') !== null;
+    return sessionStorage.getItem('usuario') !== null || localStorage.getItem('usuario') !== null;
   }
 
   /**
    * Obtiene los datos del usuario autenticado
    */
   obtenerUsuario() {
-    const usuario = sessionStorage.getItem('usuario');
+    const usuario = sessionStorage.getItem('usuario') || localStorage.getItem('usuario');
     return usuario ? JSON.parse(usuario) : null;
   }
 
@@ -123,10 +123,24 @@ export class AuthService {
    * Actualiza el perfil del usuario autenticado
    */
   actualizarPerfil(datosFormulario: FormData): Observable<any> {
-    return this.http.post(`${this.apiUrl}/user/profile`, datosFormulario).pipe(
+    const usuario = this.obtenerUsuario();
+    let headers = new HttpHeaders();
+    if (usuario?.token) {
+      headers = headers.set('Authorization', `Bearer ${usuario.token}`);
+    }
+    const uid = usuario?.id_usuario || usuario?.id;
+    if (uid && !datosFormulario.has('user_id')) {
+      datosFormulario.append('user_id', String(uid));
+    }
+
+    return this.http.post(`${this.apiUrl}/user/profile`, datosFormulario, { headers }).pipe(
       tap((respuesta: any) => {
         if (respuesta.user) {
-          sessionStorage.setItem('usuario', JSON.stringify(respuesta.user));
+          const current = this.obtenerUsuario() || {};
+          const updated = { ...current, ...respuesta.user };
+          sessionStorage.setItem('usuario', JSON.stringify(updated));
+          localStorage.setItem('usuario', JSON.stringify(updated));
+          localStorage.setItem('eie_biometric_user', JSON.stringify(updated));
         }
       })
     );

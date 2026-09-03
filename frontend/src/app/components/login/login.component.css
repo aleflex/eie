@@ -248,3 +248,55 @@
   from { transform: scale(0.92); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
 }
+
+/* Botón de acceso biométrico */
+.biometric-login-container {
+  margin-top: 1.25rem;
+}
+
+.biometric-divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.biometric-divider::before,
+.biometric-divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.biometric-divider span {
+  padding: 0 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: #94a3b8;
+}
+
+.btn-biometric-auth {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.85rem 1.2rem;
+  background: #f0fdf4;
+  color: #166534;
+  border: 1.5px solid #bbf7d0;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-biometric-auth:hover {
+  background: #dcfce7;
+  border-color: #86efac;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(22, 101, 52, 0.15);
+}
+

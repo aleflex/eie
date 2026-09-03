@@ -245,6 +245,10 @@ export class SettingsComponent implements OnInit {
     this.errorMessage = '';
 
     const formData = new FormData();
+    const uid = this.user?.id_usuario || this.user?.id;
+    if (uid) {
+      formData.append('user_id', String(uid));
+    }
     formData.append('name', this.profileData.name);
     formData.append('email', this.profileData.email);
     if (this.profileData.password) {
@@ -260,6 +264,13 @@ export class SettingsComponent implements OnInit {
         this.profileData.password = '';
         this.profilePhotoFile = null;
         this.profilePhotoFileName = '';
+
+        const current = this.authService.obtenerUsuario() || {};
+        const updated = { ...current, ...response.user };
+        sessionStorage.setItem('usuario', JSON.stringify(updated));
+        localStorage.setItem('usuario', JSON.stringify(updated));
+        localStorage.setItem('eie_biometric_user', JSON.stringify(updated));
+
         this.successMessage = '¡Tu perfil ha sido actualizado con éxito!';
         this.isSavingProfile = false;
 
