@@ -108,6 +108,19 @@ export class SettingsComponent implements OnInit {
       this.profileData.name = this.user.name || '';
       this.profileData.email = this.user.email || '';
     }
+
+    // Sincronizar en tiempo real con la base de datos backend
+    this.authService.cargarPerfilActualizado().subscribe({
+      next: (res: any) => {
+        if (res && res.user) {
+          this.user = res.user;
+          this.profileData.name = res.user.name || this.profileData.name;
+          this.profileData.email = res.user.email || this.profileData.email;
+        }
+      },
+      error: (e) => console.warn('No se pudo refrescar perfil en tiempo real', e)
+    });
+
     this.biometricEnabled = this.authService.isBiometricEnabled();
     this.cargarConfiguraciones();
 

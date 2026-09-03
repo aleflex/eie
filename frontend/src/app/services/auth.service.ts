@@ -146,6 +146,30 @@ export class AuthService {
     );
   }
 
+  /**
+   * Sincroniza en tiempo real el perfil del usuario consultando al servidor backend
+   */
+  cargarPerfilActualizado(): Observable<any> {
+    const usuario = this.obtenerUsuario();
+    const uid = usuario?.id_usuario || usuario?.id;
+    let headers = new HttpHeaders();
+    if (usuario?.token) {
+      headers = headers.set('Authorization', `Bearer ${usuario.token}`);
+    }
+    const params = uid ? `?user_id=${uid}` : '';
+    return this.http.get(`${this.apiUrl}/user/profile${params}`, { headers }).pipe(
+      tap((respuesta: any) => {
+        if (respuesta && respuesta.user) {
+          const current = this.obtenerUsuario() || {};
+          const updated = { ...current, ...respuesta.user };
+          sessionStorage.setItem('usuario', JSON.stringify(updated));
+          localStorage.setItem('usuario', JSON.stringify(updated));
+          localStorage.setItem('eie_biometric_user', JSON.stringify(updated));
+        }
+      })
+    );
+  }
+
   // Métodos heredados para compatibilidad
   login(credenciales: any): Observable<any> {
     return this.iniciarSesion(credenciales);

@@ -17,6 +17,7 @@ Route::get('/ping', function () {
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/logout', [AuthController::class, 'logout']);
+Route::get('/user/profile', [AuthController::class, 'getProfile']);
 Route::post('/user/profile', [AuthController::class, 'updateProfile']);
 Route::post('/user/change-password', [AuthController::class, 'changePassword']);
 

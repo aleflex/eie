@@ -211,6 +211,9 @@ export class LoginComponent implements OnInit {
         this.redireccionarSegunRol(usuario.rol, usuario.id_rol);
       });
 
+      // Refrescar perfil en tiempo real desde el servidor para sincronizar foto y datos
+      this.servicioAutenticacion.cargarPerfilActualizado().subscribe({ error: () => {} });
+
     } catch (error: any) {
       console.warn('Biometría nativa cancelada o error:', error);
     }
