@@ -104,6 +104,12 @@ class SimpleXlsxWriter
                 $val = is_array($cell) ? ($cell['val'] ?? '') : $cell;
                 $style = is_array($cell) ? ($cell['style'] ?? 0) : 0;
 
+                if (is_object($val)) {
+                    $val = method_exists($val, '__toString') ? (string)$val : ($val->nombre ?? ($val->nombre_grado ?? ''));
+                } elseif (is_array($val)) {
+                    $val = implode(', ', $val);
+                }
+
                 if (is_int($val) || (is_numeric($val) && !is_string($val) && !preg_match('/^0[0-9]/', (string)$val))) {
                     $xmlRows .= '<c r="' . $cellRef . '" s="' . $style . '"><v>' . $val . '</v></c>';
                 } else {

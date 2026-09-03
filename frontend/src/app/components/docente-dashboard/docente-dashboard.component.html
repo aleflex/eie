@@ -201,6 +201,11 @@
         </button>
 
         <div class="tab-header-right d-flex gap-2">
+          <!-- Botón de Excel para Lista -->
+          <button *ngIf="tabActivo === 'lista'" class="btn-print no-print" (click)="exportarExcelLista()" [disabled]="isDownloadingExcel" style="background-color: #198754; color: #ffffff;">
+            <i class="material-icons-outlined">table_view</i> {{ isDownloadingExcel ? 'Exportando...' : 'Exportar Excel Lista' }}
+          </button>
+
           <!-- Botón de Excel para Notas -->
           <button *ngIf="tabActivo === 'notas'" class="btn-print no-print" (click)="exportarExcelNotas()" [disabled]="isDownloadingExcel" style="background-color: #198754; color: #ffffff;">
             <i class="material-icons-outlined">table_view</i> {{ isDownloadingExcel ? 'Exportando...' : 'Exportar Excel Notas' }}

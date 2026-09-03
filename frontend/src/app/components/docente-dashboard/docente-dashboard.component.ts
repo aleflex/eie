@@ -390,18 +390,40 @@ export class DocenteDashboardComponent implements OnInit {
     return ['Parcial 1', 'Parcial 2', 'Parcial 3', 'Final'];
   }
 
-  exportarExcelAsistencias() {
+  exportarExcelLista() {
     if (!this.paraleloActivo) return;
     this.isDownloadingExcel = true;
-    const filters = { id_paralelo: this.paraleloActivo.id };
+    const paraleloId = this.paraleloActivo.id || this.paraleloActivo.id_paralelo;
+    const filters = { id_paralelo: paraleloId, tipo: 'lista' };
     this.reportService.downloadNominalExcel(filters).subscribe({
       next: (blob: Blob) => {
         this.isDownloadingExcel = false;
-        const filename = `Planilla_Asistencias_${this.paraleloActivo.nombre || 'Paralelo'}_${new Date().toISOString().slice(0,10)}.xlsx`;
+        const nombre = this.paraleloActivo.nombre || this.paraleloActivo.nombre_paralelo || 'Paralelo';
+        const filename = `Nomina_Alumnos_${nombre}_${new Date().toISOString().slice(0,10)}.xlsx`;
         downloadFile(blob, filename);
       },
       error: (err: any) => {
-        console.error('Error exportando asistencias', err);
+        console.error('Error exportando lista nominal en Excel', err);
+        this.isDownloadingExcel = false;
+        alert('No se pudo generar la lista de alumnos en Excel');
+      }
+    });
+  }
+
+  exportarExcelAsistencias() {
+    if (!this.paraleloActivo) return;
+    this.isDownloadingExcel = true;
+    const paraleloId = this.paraleloActivo.id || this.paraleloActivo.id_paralelo;
+    const filters = { id_paralelo: paraleloId, tipo: 'asistencia' };
+    this.reportService.downloadNominalExcel(filters).subscribe({
+      next: (blob: Blob) => {
+        this.isDownloadingExcel = false;
+        const nombre = this.paraleloActivo.nombre || this.paraleloActivo.nombre_paralelo || 'Paralelo';
+        const filename = `Planilla_Asistencias_${nombre}_${new Date().toISOString().slice(0,10)}.xlsx`;
+        downloadFile(blob, filename);
+      },
+      error: (err: any) => {
+        console.error('Error exportando asistencias en Excel', err);
         this.isDownloadingExcel = false;
         alert('No se pudo generar el reporte de asistencias en Excel');
       }
@@ -411,15 +433,17 @@ export class DocenteDashboardComponent implements OnInit {
   exportarExcelNotas() {
     if (!this.paraleloActivo) return;
     this.isDownloadingExcel = true;
-    const filters = { id_paralelo: this.paraleloActivo.id };
+    const paraleloId = this.paraleloActivo.id || this.paraleloActivo.id_paralelo;
+    const filters = { id_paralelo: paraleloId };
     this.reportService.downloadNotasExcel(filters).subscribe({
       next: (blob: Blob) => {
         this.isDownloadingExcel = false;
-        const filename = `Planilla_Calificaciones_${this.paraleloActivo.nombre || 'Paralelo'}_${new Date().toISOString().slice(0,10)}.xlsx`;
+        const nombre = this.paraleloActivo.nombre || this.paraleloActivo.nombre_paralelo || 'Paralelo';
+        const filename = `Planilla_Calificaciones_${nombre}_${new Date().toISOString().slice(0,10)}.xlsx`;
         downloadFile(blob, filename);
       },
       error: (err: any) => {
-        console.error('Error exportando calificaciones', err);
+        console.error('Error exportando calificaciones en Excel', err);
         this.isDownloadingExcel = false;
         alert('No se pudo generar la planilla de calificaciones en Excel');
       }
@@ -444,11 +468,13 @@ export class DocenteDashboardComponent implements OnInit {
       return;
     }
     this.isDownloadingPdf = true;
-    const filters = { id_paralelo: this.paraleloActivo.id, tipo: 'lista' };
+    const paraleloId = this.paraleloActivo.id || this.paraleloActivo.id_paralelo;
+    const filters = { id_paralelo: paraleloId, tipo: 'lista' };
     this.reportService.downloadDocentePdf(filters).subscribe({
       next: (blob: Blob) => {
         this.isDownloadingPdf = false;
-        const filename = `Nomina_Alumnos_${this.paraleloActivo.nombre || 'Paralelo'}_${new Date().toISOString().slice(0,10)}.pdf`;
+        const nombre = this.paraleloActivo.nombre || this.paraleloActivo.nombre_paralelo || 'Paralelo';
+        const filename = `Nomina_Alumnos_${nombre}_${new Date().toISOString().slice(0,10)}.pdf`;
         downloadFile(blob, filename);
       },
       error: (err: any) => {
@@ -462,11 +488,13 @@ export class DocenteDashboardComponent implements OnInit {
   imprimirNotasPdf() {
     if (!this.paraleloActivo) return;
     this.isDownloadingPdf = true;
-    const filters = { id_paralelo: this.paraleloActivo.id, tipo: 'notas' };
+    const paraleloId = this.paraleloActivo.id || this.paraleloActivo.id_paralelo;
+    const filters = { id_paralelo: paraleloId, tipo: 'notas' };
     this.reportService.downloadNotasPdf(filters).subscribe({
       next: (blob: Blob) => {
         this.isDownloadingPdf = false;
-        const filename = `Planilla_Calificaciones_${this.paraleloActivo.nombre || 'Paralelo'}_${new Date().toISOString().slice(0,10)}.pdf`;
+        const nombre = this.paraleloActivo.nombre || this.paraleloActivo.nombre_paralelo || 'Paralelo';
+        const filename = `Planilla_Calificaciones_${nombre}_${new Date().toISOString().slice(0,10)}.pdf`;
         downloadFile(blob, filename);
       },
       error: (err: any) => {
@@ -480,11 +508,13 @@ export class DocenteDashboardComponent implements OnInit {
   imprimirAsistenciasPdf() {
     if (!this.paraleloActivo) return;
     this.isDownloadingPdf = true;
-    const filters = { id_paralelo: this.paraleloActivo.id, tipo: 'asistencia' };
+    const paraleloId = this.paraleloActivo.id || this.paraleloActivo.id_paralelo;
+    const filters = { id_paralelo: paraleloId, tipo: 'asistencia' };
     this.reportService.downloadAsistenciasPdf(filters).subscribe({
       next: (blob: Blob) => {
         this.isDownloadingPdf = false;
-        const filename = `Planilla_Asistencias_${this.paraleloActivo.nombre || 'Paralelo'}_${new Date().toISOString().slice(0,10)}.pdf`;
+        const nombre = this.paraleloActivo.nombre || this.paraleloActivo.nombre_paralelo || 'Paralelo';
+        const filename = `Planilla_Asistencias_${nombre}_${new Date().toISOString().slice(0,10)}.pdf`;
         downloadFile(blob, filename);
       },
       error: (err: any) => {

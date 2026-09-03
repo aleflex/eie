@@ -777,25 +777,43 @@ class ReportController extends Controller
     }
 
     /**
-     * EXPORTACIÓN DE RELACIÓN NOMINAL CON ASISTENCIA REAL DE ALUMNOS (MÓDULO DOCENTES) (.xls)
+     * EXPORTACIÓN DE RELACIÓN NOMINAL CON ASISTENCIA O LISTA DE ALUMNOS (MÓDULO DOCENTES) (.xlsx/.xls)
      */
     public function exportNominalExcel(Request $request)
     {
-        $filters = $request->only(['id_idioma', 'id_nivel', 'id_curso', 'id_paralelo', 'estado', 'fecha_desde', 'fecha_hasta']);
+        try {
+            $tipo = $request->input('tipo', 'asistencia'); // 'lista' o 'asistencia'
+            $filters = $request->only(['id_idioma', 'id_nivel', 'id_curso', 'id_paralelo', 'estado', 'fecha_desde', 'fecha_hasta']);
 
-        $inscripciones = Inscripcion::with(['estudiante.user', 'curso.idioma', 'curso.nivelRel', 'paralelo', 'notas', 'asistencias'])
-            ->filterMultiCriteria($filters)
-            ->get();
+            $inscripciones = Inscripcion::with(['estudiante.user', 'curso.idioma', 'curso.nivelRel', 'paralelo', 'notas', 'asistencias'])
+                ->filterMultiCriteria($filters)
+                ->get();
 
-        $fileName = 'Asistencias_Alumnos_EIE_' . date('Ymd_His') . '.xlsx';
+            $paraleloInfo = null;
+            if (!empty($filters['id_paralelo'])) {
+                $paraleloInfo = Paralelo::with(['curso.idioma', 'curso.nivelRel'])->find($filters['id_paralelo']);
+            }
 
-        if (class_exists(\ZipArchive::class)) {
-            $rows = [
-                [['val' => 'ESCUELA DE IDIOMAS DEL EJÉRCITO', 'style' => 2]],
-                [['val' => 'RELACIÓN NOMINAL DEL PERSONAL DE ALUMNOS (REGISTRO DE ASISTENCIA)', 'style' => 2]],
-                [['val' => 'FECHA DE REPORTE: ' . date('d/m/Y H:i'), 'style' => 0]],
-                [''],
-                [
+            $isLista = ($tipo === 'lista');
+            $fileName = ($isLista ? 'Nomina_Alumnos_EIE_' : 'Asistencias_Alumnos_EIE_') . date('Ymd_His') . '.xlsx';
+            $tituloReporte = $isLista 
+                ? 'RELACIÓN NOMINAL DEL PERSONAL DE ALUMNOS (LISTA GENERAL)' 
+                : 'RELACIÓN NOMINAL DEL PERSONAL DE ALUMNOS (REGISTRO DE ASISTENCIA)';
+
+            if (class_exists(\ZipArchive::class)) {
+                $headersRow = $isLista ? [
+                    ['val' => 'Nro', 'style' => 1],
+                    ['val' => 'C.I.', 'style' => 1],
+                    ['val' => 'Grado', 'style' => 1],
+                    ['val' => 'Apellidos', 'style' => 1],
+                    ['val' => 'Nombres', 'style' => 1],
+                    ['val' => 'Celular / Teléfono', 'style' => 1],
+                    ['val' => 'Correo Electrónico', 'style' => 1],
+                    ['val' => 'Idioma', 'style' => 1],
+                    ['val' => 'Nivel', 'style' => 1],
+                    ['val' => 'Paralelo', 'style' => 1],
+                    ['val' => 'Estado', 'style' => 1],
+                ] : [
                     ['val' => 'Nro', 'style' => 1],
                     ['val' => 'C.I.', 'style' => 1],
                     ['val' => 'Grado', 'style' => 1],
@@ -810,376 +828,433 @@ class ReportController extends Controller
                     ['val' => 'Licencias', 'style' => 1],
                     ['val' => '% Asistencia', 'style' => 1],
                     ['val' => 'Estado', 'style' => 1],
-                ]
-            ];
-
-            $idx = 1;
-            foreach ($inscripciones as $insc) {
-                $est = $insc->estudiante;
-                $cur = $insc->curso;
-                $idm = $cur ? $cur->idioma : null;
-                $par = $insc->paralelo;
-
-                $totalSesiones = $insc->asistencias ? $insc->asistencias->count() : 0;
-                $presentes = $insc->asistencias ? $insc->asistencias->where('estado', 'presente')->count() : 0;
-                $faltas = $insc->asistencias ? $insc->asistencias->where('estado', 'falta')->count() : 0;
-                $licencias = $insc->asistencias ? $insc->asistencias->where('estado', 'licencia')->count() : 0;
-                $pct = $totalSesiones > 0 ? round(($presentes / $totalSesiones) * 100, 1) . '%' : '100%';
-
-                $rows[] = [
-                    ['val' => $idx++, 'style' => 0],
-                    ['val' => $est->ci ?? 'N/A', 'style' => 0],
-                    ['val' => $est->grado ?? 'Civil', 'style' => 0],
-                    ['val' => strtoupper($est->apellidos ?? ''), 'style' => 0],
-                    ['val' => strtoupper($est->nombres ?? ''), 'style' => 0],
-                    ['val' => $idm->nombre_idioma ?? $idm->nombre ?? 'N/A', 'style' => 0],
-                    ['val' => $cur->nivel ?? 'N/A', 'style' => 0],
-                    ['val' => $par->nombre_paralelo ?? $par->nombre ?? 'N/A', 'style' => 0],
-                    ['val' => $totalSesiones, 'style' => 0],
-                    ['val' => $presentes, 'style' => 0],
-                    ['val' => $faltas, 'style' => 0],
-                    ['val' => $licencias, 'style' => 0],
-                    ['val' => $pct, 'style' => 0],
-                    ['val' => strtoupper($insc->estado ?? 'ACTIVO'), 'style' => 0],
                 ];
-            }
 
-            $xlsxContent = \App\Services\SimpleXlsxWriter::create('Asistencias Alumnos', $rows);
-            return response($xlsxContent, 200, [
-                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                'Content-Disposition' => "attachment; filename=\"$fileName\"",
-                'Cache-Control' => 'max-age=0'
-            ]);
-        }
+                $rows = [
+                    [['val' => 'ESCUELA DE IDIOMAS DEL EJÉRCITO', 'style' => 2]],
+                    [['val' => $tituloReporte, 'style' => 2]],
+                    [['val' => 'FECHA DE REPORTE: ' . date('d/m/Y H:i'), 'style' => 0]],
+                    [''],
+                    $headersRow
+                ];
 
-        $fileNameXls = str_replace('.xlsx', '.xls', $fileName);
-        $headers = [
-            'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
-            'Content-Disposition' => "attachment; filename=\"$fileNameXls\"",
-            'Pragma' => 'no-cache',
-            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
-            'Expires' => '0'
-        ];
+                $idx = 1;
+                foreach ($inscripciones as $insc) {
+                    $est = $insc->estudiante;
+                    $user = $est ? ($est->user ?? null) : null;
+                    $cur = $insc->curso ?: ($paraleloInfo ? $paraleloInfo->curso : null);
+                    $idm = $cur ? $cur->idioma : null;
+                    $par = $insc->paralelo ?: $paraleloInfo;
 
-        $callback = function () use ($inscripciones) {
-            $first = $inscripciones->first();
-            $cursoObj = $first ? $first->curso : null;
-            $paraleloObj = $first ? $first->paralelo : null;
-            $idiomaName = $cursoObj && $cursoObj->idioma ? ($cursoObj->idioma->nombre_idioma ?? $cursoObj->idioma->nombre) : 'INGLÉS';
-            $nivelName = $cursoObj ? ($cursoObj->nivelRel->nombre_nivel ?? $cursoObj->nivel ?? 'NIVEL I') : 'NIVEL I';
-            $paraleloName = $paraleloObj ? ($paraleloObj->nombre_paralelo ?? $paraleloObj->nombre ?? 'A') : 'PARALELO';
+                    $totalSesiones = $insc->asistencias ? $insc->asistencias->count() : 0;
+                    $presentes = $insc->asistencias ? $insc->asistencias->where('estado', 'presente')->count() : 0;
+                    $faltas = $insc->asistencias ? $insc->asistencias->where('estado', 'falta')->count() : 0;
+                    $licencias = $insc->asistencias ? $insc->asistencias->where('estado', 'licencia')->count() : 0;
+                    $pct = $totalSesiones > 0 ? round(($presentes / $totalSesiones) * 100, 1) . '%' : '100%';
 
-            echo '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
-            echo '<head><meta charset="UTF-8">';
-            echo '<!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Asistencias Alumnos</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->';
-            echo '<style>';
-            echo 'table { border-collapse: collapse; font-family: Arial, sans-serif; font-size: 9px; }';
-            echo 'th, td { border: 1px solid #000; padding: 3px 4px; text-align: center; vertical-align: middle; }';
-            echo 'th { background-color: #ffffff; color: #000; font-weight: bold; font-size: 8.5px; }';
-            echo '.header-title { font-weight: bold; font-size: 10.5px; border: none; text-align: center; }';
-            echo '.left { text-align: left; }';
-            echo '</style>';
-            echo '</head><body>';
+                    $gradoStr = $est ? ($est->grado_academico ?: (is_object($est->grado ?? null) ? ($est->grado->nombre ?? 'Civil') : 'Civil')) : 'Civil';
+                    $ciStr = $user->ci ?? ($est->ci ?? 'N/A');
+                    $apellidosStr = $user ? ($user->apellidos ?? '') : ($est->apellidos ?? '');
+                    $nombresStr = $user ? ($user->nombres ?? '') : ($est->nombres ?? '');
+                    $idmStr = $idm ? ($idm->nombre_idioma ?? $idm->nombre ?? 'N/A') : 'N/A';
+                    $nivelStr = $cur ? ($cur->nivel ?? 'N/A') : 'N/A';
+                    $parStr = $par ? ($par->nombre_paralelo ?? $par->nombre ?? 'N/A') : 'Sin Paralelo';
+                    $celularStr = $est->celular ?? ($user->telefono ?? '—');
+                    $emailStr = $user->email ?? ($est->correo_electronico ?? '—');
+                    $estadoStr = strtoupper($insc->estado ?? 'ACTIVO');
 
-            echo '<table>';
-            echo '<tr><td colspan="31" class="header-title">DEPARTAMENTO VI - EDUCACIÓN</td></tr>';
-            echo '<tr><td colspan="31" class="header-title">ESCUELA DE IDIOMAS DEL EJÉRCITO</td></tr>';
-            echo '<tr><td colspan="31" class="header-title"><u>BOLIVIA</u></td></tr>';
-            echo '<tr><td colspan="31" class="header-title">&nbsp;</td></tr>';
-            echo '<tr><td colspan="31" class="header-title">RELACION NOMINAL DEL PERSONAL DE ALUMNOS (REGISTRO DE ASISTENCIA)</td></tr>';
-            echo '<tr><td colspan="31" class="header-title">IDIOMA: ' . strtoupper($idiomaName) . ' | ' . strtoupper($nivelName) . ' | PARALELO: ' . strtoupper($paraleloName) . ' | FILIAL: COCHABAMBA</td></tr>';
-            echo '<tr><td colspan="31" class="header-title">&nbsp;</td></tr>';
-
-            // Column Header 1
-            echo '<tr>';
-            echo '<th rowspan="2">Nro</th>';
-            echo '<th rowspan="2">Grado</th>';
-            echo '<th colspan="2">APELLIDOS</th>';
-            echo '<th rowspan="2">Nombres</th>';
-            echo '<th colspan="14">ASISTENCIA (REGISTRADA EN SISTEMA)</th>';
-            echo '<th colspan="4">HW</th>';
-            echo '<th colspan="4">EE</th>';
-            echo '<th colspan="4">LAB</th>';
-            echo '<th rowspan="2">PROM<br>100</th>';
-            echo '<th rowspan="2">PART<br>100</th>';
-            echo '<th rowspan="2">OP<br>100</th>';
-            echo '<th rowspan="2">OBS</th>';
-            echo '</tr>';
-
-            // Column Header 2
-            echo '<tr>';
-            echo '<th>Ap. Paterno</th>';
-            echo '<th>Ap. Materno</th>';
-            for ($a = 1; $a <= 14; $a++) {
-                echo '<th>' . sprintf('%02d', $a) . '</th>';
-            }
-            for ($h = 1; $h <= 4; $h++) { echo '<th>' . $h . '</th>'; }
-            for ($e = 1; $e <= 4; $e++) { echo '<th>' . $e . '</th>'; }
-            for ($l = 1; $l <= 4; $l++) { echo '<th>' . $l . '</th>'; }
-            echo '</tr>';
-
-            $i = 1;
-            foreach ($inscripciones as $insc) {
-                $est = $insc->estudiante;
-                $paterno = 'N/A';
-                $materno = '-';
-                $nombres = 'N/A';
-                $grado = $est ? ($est->grado_academico ?: 'SR') : 'SR';
-
-                if ($est) {
-                    $parts = explode(' ', trim($est->apellidos ?? ''));
-                    $paterno = $parts[0] ?? 'N/A';
-                    $materno = count($parts) > 1 ? implode(' ', array_slice($parts, 1)) : '-';
-                    $nombres = $est->nombres ?? 'N/A';
-                }
-
-                echo '<tr>';
-                echo '<td>' . $i++ . '</td>';
-                echo '<td>' . htmlspecialchars(strtoupper($grado)) . '</td>';
-                echo '<td class="left">' . htmlspecialchars(strtoupper($paterno)) . '</td>';
-                echo '<td class="left">' . htmlspecialchars(strtoupper($materno)) . '</td>';
-                echo '<td class="left">' . htmlspecialchars(strtoupper($nombres)) . '</td>';
-
-                // 14 columnas de asistencia real registrada en la base de datos
-                $asistenciasList = $insc->asistencias ? $insc->asistencias->sortBy('fecha')->values() : collect();
-                for ($a = 0; $a < 14; $a++) {
-                    if (isset($asistenciasList[$a])) {
-                        $st = strtolower(trim($asistenciasList[$a]->estado));
-                        $char = match($st) {
-                            'presente', 'p' => 'P',
-                            'ausente', 'a' => '.',
-                            'justificado', 'licencia', 'l', 'j' => 'L',
-                            'tardanza', 't' => 'T',
-                            'sin_camara', 's' => 'S',
-                            default => 'P'
-                        };
-                        echo '<td>' . $char . '</td>';
+                    if ($isLista) {
+                        $rows[] = [
+                            ['val' => $idx++, 'style' => 0],
+                            ['val' => $ciStr, 'style' => 0],
+                            ['val' => $gradoStr, 'style' => 0],
+                            ['val' => strtoupper($apellidosStr), 'style' => 0],
+                            ['val' => strtoupper($nombresStr), 'style' => 0],
+                            ['val' => $celularStr, 'style' => 0],
+                            ['val' => $emailStr, 'style' => 0],
+                            ['val' => $idmStr, 'style' => 0],
+                            ['val' => $nivelStr, 'style' => 0],
+                            ['val' => $parStr, 'style' => 0],
+                            ['val' => $estadoStr, 'style' => 0],
+                        ];
                     } else {
-                        echo '<td>P</td>'; // Si se generó la lista activa, valor por defecto P
+                        $rows[] = [
+                            ['val' => $idx++, 'style' => 0],
+                            ['val' => $ciStr, 'style' => 0],
+                            ['val' => $gradoStr, 'style' => 0],
+                            ['val' => strtoupper($apellidosStr), 'style' => 0],
+                            ['val' => strtoupper($nombresStr), 'style' => 0],
+                            ['val' => $idmStr, 'style' => 0],
+                            ['val' => $nivelStr, 'style' => 0],
+                            ['val' => $parStr, 'style' => 0],
+                            ['val' => $totalSesiones, 'style' => 0],
+                            ['val' => $presentes, 'style' => 0],
+                            ['val' => $faltas, 'style' => 0],
+                            ['val' => $licencias, 'style' => 0],
+                            ['val' => $pct, 'style' => 0],
+                            ['val' => $estadoStr, 'style' => 0],
+                        ];
                     }
                 }
 
-                // 4 HW
-                for ($h = 1; $h <= 4; $h++) { echo '<td></td>'; }
-                // 4 EE
-                for ($e = 1; $e <= 4; $e++) { echo '<td></td>'; }
-                // 4 LAB
-                for ($l = 1; $l <= 4; $l++) { echo '<td></td>'; }
-
-                echo '<td></td>'; // PROM
-                echo '<td></td>'; // PART
-                echo '<td></td>'; // OP
-                echo '<td>' . htmlspecialchars(strtoupper($insc->estado ?? 'CONFIRMADO')) . '</td>';
-                echo '</tr>';
+                $sheetTitle = $isLista ? 'Nomina Alumnos' : 'Asistencias Alumnos';
+                $xlsxContent = \App\Services\SimpleXlsxWriter::create($sheetTitle, $rows);
+                return response($xlsxContent, 200, [
+                    'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    'Content-Disposition' => "attachment; filename=\"$fileName\"",
+                    'Cache-Control' => 'max-age=0'
+                ]);
             }
 
-            echo '<tr><td colspan="31" style="border:none;">&nbsp;</td></tr>';
-            echo '<tr><td colspan="15" class="left" style="border:none; font-weight:bold;">NOMBRE DEL DOCENTE: ___________________________</td><td colspan="16" class="left" style="border:none; font-weight:bold;">OBSERVACIONES:</td></tr>';
-            echo '<tr><td colspan="15" class="left" style="border:none; font-weight:bold;">NOMBRE DE EC: ___________________________</td><td colspan="16" class="left" style="border:none;">________________________________________</td></tr>';
-            echo '<tr><td colspan="31" style="border:none;">&nbsp;</td></tr>';
-            
-            // GLOSARIO
-            echo '<tr><td colspan="10" class="left" style="font-weight:bold; background-color:#ffffff;">P - ASISTIO A CLASE</td><td colspan="21" style="border:none;"></td></tr>';
-            echo '<tr><td colspan="10" class="left" style="font-weight:bold; background-color:#ffffff;">. - NO ASISTIO A CLASE</td><td colspan="21" style="border:none;"></td></tr>';
-            echo '<tr><td colspan="10" class="left" style="font-weight:bold; background-color:#ffffff;">L - LICENCIA</td><td colspan="21" style="border:none;"></td></tr>';
-            echo '<tr><td colspan="10" class="left" style="font-weight:bold; background-color:#ffffff;">S - ASISTIO SIN CAMARA</td><td colspan="21" style="border:none;"></td></tr>';
+            // Fallback HTML / XML
+            $fileNameXls = str_replace('.xlsx', '.xls', $fileName);
+            $headers = [
+                'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
+                'Content-Disposition' => "attachment; filename=\"$fileNameXls\"",
+                'Pragma' => 'no-cache',
+                'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+                'Expires' => '0'
+            ];
 
-            echo '</table></body></html>';
-        };
+            $callback = function () use ($inscripciones, $paraleloInfo) {
+                $first = $inscripciones->first();
+                $cursoObj = $first ? $first->curso : ($paraleloInfo ? $paraleloInfo->curso : null);
+                $paraleloObj = $first ? $first->paralelo : $paraleloInfo;
+                $idiomaName = $cursoObj && $cursoObj->idioma ? ($cursoObj->idioma->nombre_idioma ?? $cursoObj->idioma->nombre) : 'INGLÉS';
+                $nivelName = $cursoObj ? ($cursoObj->nivelRel->nombre_nivel ?? $cursoObj->nivel ?? 'NIVEL I') : 'NIVEL I';
+                $paraleloName = $paraleloObj ? ($paraleloObj->nombre_paralelo ?? $paraleloObj->nombre ?? 'A') : 'PARALELO';
 
-        return response()->stream($callback, 200, $headers);
+                echo '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
+                echo '<head><meta charset="UTF-8">';
+                echo '<!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Asistencias Alumnos</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->';
+                echo '<style>';
+                echo 'table { border-collapse: collapse; font-family: Arial, sans-serif; font-size: 9px; }';
+                echo 'th, td { border: 1px solid #000; padding: 3px 4px; text-align: center; vertical-align: middle; }';
+                echo 'th { background-color: #ffffff; color: #000; font-weight: bold; font-size: 8.5px; }';
+                echo '.header-title { font-weight: bold; font-size: 10.5px; border: none; text-align: center; }';
+                echo '.left { text-align: left; }';
+                echo '</style>';
+                echo '</head><body>';
+
+                echo '<table>';
+                echo '<tr><td colspan="31" class="header-title">DEPARTAMENTO VI - EDUCACIÓN</td></tr>';
+                echo '<tr><td colspan="31" class="header-title">ESCUELA DE IDIOMAS DEL EJÉRCITO</td></tr>';
+                echo '<tr><td colspan="31" class="header-title"><u>BOLIVIA</u></td></tr>';
+                echo '<tr><td colspan="31" class="header-title">&nbsp;</td></tr>';
+                echo '<tr><td colspan="31" class="header-title">RELACION NOMINAL DEL PERSONAL DE ALUMNOS (REGISTRO DE ASISTENCIA)</td></tr>';
+                echo '<tr><td colspan="31" class="header-title">IDIOMA: ' . strtoupper($idiomaName) . ' | ' . strtoupper($nivelName) . ' | PARALELO: ' . strtoupper($paraleloName) . ' | FILIAL: COCHABAMBA</td></tr>';
+                echo '<tr><td colspan="31" class="header-title">&nbsp;</td></tr>';
+
+                echo '<tr>';
+                echo '<th rowspan="2">Nro</th>';
+                echo '<th rowspan="2">Grado</th>';
+                echo '<th colspan="2">APELLIDOS</th>';
+                echo '<th rowspan="2">Nombres</th>';
+                echo '<th colspan="14">ASISTENCIA (REGISTRADA EN SISTEMA)</th>';
+                echo '<th colspan="4">HW</th>';
+                echo '<th colspan="4">EE</th>';
+                echo '<th colspan="4">LAB</th>';
+                echo '<th rowspan="2">PROM<br>100</th>';
+                echo '<th rowspan="2">PART<br>100</th>';
+                echo '<th rowspan="2">OP<br>100</th>';
+                echo '<th rowspan="2">OBS</th>';
+                echo '</tr>';
+
+                echo '<tr>';
+                echo '<th>Ap. Paterno</th>';
+                echo '<th>Ap. Materno</th>';
+                for ($a = 1; $a <= 14; $a++) {
+                    echo '<th>' . sprintf('%02d', $a) . '</th>';
+                }
+                for ($h = 1; $h <= 4; $h++) { echo '<th>' . $h . '</th>'; }
+                for ($e = 1; $e <= 4; $e++) { echo '<th>' . $e . '</th>'; }
+                for ($l = 1; $l <= 4; $l++) { echo '<th>' . $l . '</th>'; }
+                echo '</tr>';
+
+                $i = 1;
+                foreach ($inscripciones as $insc) {
+                    $est = $insc->estudiante;
+                    $user = $est ? ($est->user ?? null) : null;
+                    $paterno = 'N/A';
+                    $materno = '-';
+                    $nombres = 'N/A';
+                    $grado = $est ? ($est->grado_academico ?: (is_object($est->grado ?? null) ? ($est->grado->nombre ?? 'Civil') : 'Civil')) : 'Civil';
+
+                    $apellidos = $user ? ($user->apellidos ?? '') : ($est->apellidos ?? '');
+                    if (!empty($apellidos)) {
+                        $parts = explode(' ', trim($apellidos));
+                        $paterno = $parts[0] ?? 'N/A';
+                        $materno = count($parts) > 1 ? implode(' ', array_slice($parts, 1)) : '-';
+                    }
+                    $nombres = $user ? ($user->nombres ?? ($est->nombres ?? 'N/A')) : ($est->nombres ?? 'N/A');
+
+                    echo '<tr>';
+                    echo '<td>' . $i++ . '</td>';
+                    echo '<td>' . htmlspecialchars(strtoupper($grado)) . '</td>';
+                    echo '<td class="left">' . htmlspecialchars(strtoupper($paterno)) . '</td>';
+                    echo '<td class="left">' . htmlspecialchars(strtoupper($materno)) . '</td>';
+                    echo '<td class="left">' . htmlspecialchars(strtoupper($nombres)) . '</td>';
+
+                    $asistenciasList = $insc->asistencias ? $insc->asistencias->sortBy('fecha')->values() : collect();
+                    for ($a = 0; $a < 14; $a++) {
+                        if (isset($asistenciasList[$a])) {
+                            $st = strtolower(trim($asistenciasList[$a]->estado));
+                            $char = match($st) {
+                                'presente', 'p' => 'P',
+                                'ausente', 'a' => '.',
+                                'justificado', 'licencia', 'l', 'j' => 'L',
+                                'tardanza', 't' => 'T',
+                                'sin_camara', 's' => 'S',
+                                default => 'P'
+                            };
+                            echo '<td>' . $char . '</td>';
+                        } else {
+                            echo '<td>P</td>';
+                        }
+                    }
+
+                    for ($h = 1; $h <= 4; $h++) { echo '<td></td>'; }
+                    for ($e = 1; $e <= 4; $e++) { echo '<td></td>'; }
+                    for ($l = 1; $l <= 4; $l++) { echo '<td></td>'; }
+
+                    echo '<td></td>';
+                    echo '<td></td>';
+                    echo '<td></td>';
+                    echo '<td>' . htmlspecialchars(strtoupper($insc->estado ?? 'CONFIRMADO')) . '</td>';
+                    echo '</tr>';
+                }
+
+                echo '<tr><td colspan="31" style="border:none;">&nbsp;</td></tr>';
+                echo '<tr><td colspan="15" class="left" style="border:none; font-weight:bold;">NOMBRE DEL DOCENTE: ___________________________</td><td colspan="16" class="left" style="border:none; font-weight:bold;">OBSERVACIONES:</td></tr>';
+                echo '<tr><td colspan="15" class="left" style="border:none; font-weight:bold;">NOMBRE DE EC: ___________________________</td><td colspan="16" class="left" style="border:none;">________________________________________</td></tr>';
+                echo '<tr><td colspan="31" style="border:none;">&nbsp;</td></tr>';
+                
+                echo '<tr><td colspan="10" class="left" style="font-weight:bold; background-color:#ffffff;">P - ASISTIO A CLASE</td><td colspan="21" style="border:none;"></td></tr>';
+                echo '<tr><td colspan="10" class="left" style="font-weight:bold; background-color:#ffffff;">. - NO ASISTIO A CLASE</td><td colspan="21" style="border:none;"></td></tr>';
+                echo '<tr><td colspan="10" class="left" style="font-weight:bold; background-color:#ffffff;">L - LICENCIA</td><td colspan="21" style="border:none;"></td></tr>';
+                echo '<tr><td colspan="10" class="left" style="font-weight:bold; background-color:#ffffff;">S - ASISTIO SIN CAMARA</td><td colspan="21" style="border:none;"></td></tr>';
+
+                echo '</table></body></html>';
+            };
+
+            return response()->stream($callback, 200, $headers);
+        } catch (\Throwable $e) {
+            \Log::error("Error en exportNominalExcel: " . $e->getMessage() . " en " . $e->getFile() . ":" . $e->getLine());
+            return response()->json([
+                'error' => 'Error al exportar reporte nominal de asistencias: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
-     * EXPORTACIÓN DE CALIFICACIONES / NOTAS DE ALUMNOS (MÓDULO DOCENTES) (.xls)
+     * EXPORTACIÓN DE CALIFICACIONES / NOTAS DE ALUMNOS (MÓDULO DOCENTES) (.xlsx/.xls)
      */
     public function exportNotasExcel(Request $request)
     {
-        $filters = $request->only(['id_idioma', 'id_nivel', 'id_curso', 'id_paralelo', 'estado', 'fecha_desde', 'fecha_hasta']);
+        try {
+            $filters = $request->only(['id_idioma', 'id_nivel', 'id_curso', 'id_paralelo', 'estado', 'fecha_desde', 'fecha_hasta']);
 
-        $inscripciones = Inscripcion::with(['estudiante.user', 'curso.idioma', 'curso.nivelRel', 'paralelo', 'notas'])
-            ->filterMultiCriteria($filters)
-            ->get();
+            $inscripciones = Inscripcion::with(['estudiante.user', 'curso.idioma', 'curso.nivelRel', 'paralelo', 'notas'])
+                ->filterMultiCriteria($filters)
+                ->get();
 
-        $fileName = 'Notas_Calificaciones_EIE_' . date('Ymd_His') . '.xlsx';
+            $paraleloInfo = null;
+            if (!empty($filters['id_paralelo'])) {
+                $paraleloInfo = Paralelo::with(['curso.idioma', 'curso.nivelRel'])->find($filters['id_paralelo']);
+            }
 
-        if (class_exists(\ZipArchive::class)) {
-            $rows = [
-                [['val' => 'ESCUELA DE IDIOMAS DEL EJÉRCITO - FILIAL COCHABAMBA', 'style' => 2]],
-                [['val' => 'PLANILLA DE CALIFICACIONES DE ALUMNOS (REGISTRO OFICIAL)', 'style' => 2]],
-                [['val' => 'FECHA DE EMISIÓN: ' . date('d/m/Y H:i'), 'style' => 0]],
-                [''],
-                [
-                    ['val' => 'Nro', 'style' => 1],
-                    ['val' => 'C.I.', 'style' => 1],
-                    ['val' => 'Grado', 'style' => 1],
-                    ['val' => 'Apellidos y Nombres', 'style' => 1],
-                    ['val' => 'Idioma', 'style' => 1],
-                    ['val' => 'Nivel', 'style' => 1],
-                    ['val' => 'Paralelo', 'style' => 1],
-                    ['val' => 'Book 1', 'style' => 1],
-                    ['val' => 'Book 2', 'style' => 1],
-                    ['val' => 'Book 3', 'style' => 1],
-                    ['val' => 'Book 4', 'style' => 1],
-                    ['val' => 'Examen Nivel', 'style' => 1],
-                    ['val' => 'Promedio Final', 'style' => 1],
-                    ['val' => 'Estado', 'style' => 1],
-                ]
+            $fileName = 'Notas_Calificaciones_EIE_' . date('Ymd_His') . '.xlsx';
+
+            if (class_exists(\ZipArchive::class)) {
+                $rows = [
+                    [['val' => 'ESCUELA DE IDIOMAS DEL EJÉRCITO - FILIAL COCHABAMBA', 'style' => 2]],
+                    [['val' => 'PLANILLA DE CALIFICACIONES DE ALUMNOS (REGISTRO OFICIAL)', 'style' => 2]],
+                    [['val' => 'FECHA DE EMISIÓN: ' . date('d/m/Y H:i'), 'style' => 0]],
+                    [''],
+                    [
+                        ['val' => 'Nro', 'style' => 1],
+                        ['val' => 'C.I.', 'style' => 1],
+                        ['val' => 'Grado', 'style' => 1],
+                        ['val' => 'Apellidos y Nombres', 'style' => 1],
+                        ['val' => 'Idioma', 'style' => 1],
+                        ['val' => 'Nivel', 'style' => 1],
+                        ['val' => 'Paralelo', 'style' => 1],
+                        ['val' => 'Book 1', 'style' => 1],
+                        ['val' => 'Book 2', 'style' => 1],
+                        ['val' => 'Book 3', 'style' => 1],
+                        ['val' => 'Book 4', 'style' => 1],
+                        ['val' => 'Examen Nivel', 'style' => 1],
+                        ['val' => 'Promedio Final', 'style' => 1],
+                        ['val' => 'Estado', 'style' => 1],
+                    ]
+                ];
+
+                $idx = 1;
+                foreach ($inscripciones as $insc) {
+                    $est = $insc->estudiante;
+                    $user = $est ? ($est->user ?? null) : null;
+                    $cur = $insc->curso ?: ($paraleloInfo ? $paraleloInfo->curso : null);
+                    $idm = $cur ? $cur->idioma : null;
+                    $par = $insc->paralelo ?: $paraleloInfo;
+
+                    $gradoStr = $est ? ($est->grado_academico ?: (is_object($est->grado ?? null) ? ($est->grado->nombre ?? 'Civil') : 'Civil')) : 'Civil';
+                    $ciStr = $user->ci ?? ($est->ci ?? 'N/A');
+                    $nombreCompleto = $user ? trim(($user->apellidos ?? '') . ' ' . ($user->nombres ?? '')) : ($est ? trim(($est->apellidos ?? '') . ' ' . ($est->nombres ?? '')) : 'N/A');
+
+                    $b1 = '-'; $b2 = '-'; $b3 = '-'; $b4 = '-'; $ex = '-'; $pf = '-';
+                    if ($insc->notas && $insc->notas->count() > 0) {
+                        $notasMap = [];
+                        foreach ($insc->notas as $nt) {
+                            if (!empty($nt->periodo)) {
+                                $notasMap[strtolower(trim($nt->periodo))] = $nt->nota;
+                            }
+                        }
+                        $b1 = isset($notasMap['book 1']) ? (string)$notasMap['book 1'] : (isset($notasMap['parcial 1']) ? (string)$notasMap['parcial 1'] : '-');
+                        $b2 = isset($notasMap['book 2']) ? (string)$notasMap['book 2'] : (isset($notasMap['parcial 2']) ? (string)$notasMap['parcial 2'] : '-');
+                        $b3 = isset($notasMap['book 3']) ? (string)$notasMap['book 3'] : (isset($notasMap['parcial 3']) ? (string)$notasMap['parcial 3'] : '-');
+                        $b4 = isset($notasMap['book 4']) ? (string)$notasMap['book 4'] : (isset($notasMap['parcial 4']) ? (string)$notasMap['parcial 4'] : '-');
+                        $ex = isset($notasMap['examen final']) ? (string)$notasMap['examen final'] : (isset($notasMap['final']) ? (string)$notasMap['final'] : (isset($notasMap['examen nivel']) ? (string)$notasMap['examen nivel'] : '-'));
+
+                        $promVal = $insc->notas->avg('nota');
+                        $pf = $promVal !== null ? (string)round($promVal, 1) : '-';
+                    }
+
+                    $promNum = floatval($pf);
+                    $estadoAprob = $promNum >= 51 ? 'APROBADO' : ($promNum > 0 ? 'REPROBADO' : 'EN CURSO');
+
+                    $rows[] = [
+                        ['val' => $idx++, 'style' => 0],
+                        ['val' => $ciStr, 'style' => 0],
+                        ['val' => $gradoStr, 'style' => 0],
+                        ['val' => strtoupper($nombreCompleto), 'style' => 0],
+                        ['val' => $idm ? ($idm->nombre_idioma ?? $idm->nombre ?? 'N/A') : 'N/A', 'style' => 0],
+                        ['val' => $cur ? ($cur->nivel ?? 'N/A') : 'N/A', 'style' => 0],
+                        ['val' => $par ? ($par->nombre_paralelo ?? $par->nombre ?? 'N/A') : 'Sin Paralelo', 'style' => 0],
+                        ['val' => $b1, 'style' => 0],
+                        ['val' => $b2, 'style' => 0],
+                        ['val' => $b3, 'style' => 0],
+                        ['val' => $b4, 'style' => 0],
+                        ['val' => $ex, 'style' => 0],
+                        ['val' => $pf, 'style' => 3],
+                        ['val' => $estadoAprob, 'style' => 0],
+                    ];
+                }
+
+                $xlsxContent = \App\Services\SimpleXlsxWriter::create('Notas Alumnos', $rows);
+                return response($xlsxContent, 200, [
+                    'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    'Content-Disposition' => "attachment; filename=\"$fileName\"",
+                    'Cache-Control' => 'max-age=0'
+                ]);
+            }
+
+            // Fallback HTML/XML
+            $fileNameXls = str_replace('.xlsx', '.xls', $fileName);
+            $headers = [
+                'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
+                'Content-Disposition' => "attachment; filename=\"$fileNameXls\"",
+                'Pragma' => 'no-cache',
+                'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+                'Expires' => '0'
             ];
 
-            $idx = 1;
-            foreach ($inscripciones as $insc) {
-                $est = $insc->estudiante;
-                $cur = $insc->curso;
-                $idm = $cur ? $cur->idioma : null;
-                $par = $insc->paralelo;
+            $callback = function () use ($inscripciones, $paraleloInfo) {
+                $first = $inscripciones->first();
+                $cursoObj = $first ? $first->curso : ($paraleloInfo ? $paraleloInfo->curso : null);
+                $paraleloObj = $first ? $first->paralelo : $paraleloInfo;
+                $idiomaName = $cursoObj && $cursoObj->idioma ? ($cursoObj->idioma->nombre_idioma ?? $cursoObj->idioma->nombre) : 'IDIOMAS';
+                $nivelName = $cursoObj ? ($cursoObj->nivelRel->nombre_nivel ?? $cursoObj->nivel ?? 'NIVEL I') : 'NIVEL I';
+                $paraleloName = $paraleloObj ? ($paraleloObj->nombre_paralelo ?? $paraleloObj->nombre ?? 'A') : 'PARALELO';
 
-                $b1 = '0'; $b2 = '0'; $b3 = '0'; $b4 = '0'; $ex = '0'; $pf = '0';
-                if ($insc->notas && $insc->notas->count() > 0) {
-                    $n = $insc->notas->first();
-                    $b1 = (string)($n->nota_parcial_1 ?? '0');
-                    $b2 = (string)($n->nota_parcial_2 ?? '0');
-                    $b3 = (string)($n->nota_parcial_3 ?? '0');
-                    $b4 = (string)($n->nota_parcial_4 ?? '0');
-                    $ex = (string)($n->examen_final ?? '0');
-                    $pf = (string)($n->promedio_final ?? '0');
-                }
+                echo '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
+                echo '<head><meta charset="UTF-8">';
+                echo '<!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Notas Alumnos</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->';
+                echo '<style>';
+                echo 'table { border-collapse: collapse; font-family: Arial, sans-serif; font-size: 10px; }';
+                echo 'th, td { border: 1px solid #000; padding: 4px 6px; text-align: center; vertical-align: middle; }';
+                echo 'th { background-color: #003B71; color: #ffffff; font-weight: bold; font-size: 9.5px; }';
+                echo '.header-title { font-weight: bold; font-size: 12px; color: #003B71; border: none; text-align: center; }';
+                echo '.left { text-align: left; }';
+                echo '</style>';
+                echo '</head><body>';
 
-                $promNum = floatval($pf);
-                $estadoAprob = $promNum >= 70 ? 'APROBADO' : ($promNum > 0 ? 'REPROBADO' : 'EN CURSO');
-
-                $rows[] = [
-                    ['val' => $idx++, 'style' => 0],
-                    ['val' => $est->ci ?? 'N/A', 'style' => 0],
-                    ['val' => $est->grado ?? 'Civil', 'style' => 0],
-                    ['val' => strtoupper(($est->apellidos ?? '') . ' ' . ($est->nombres ?? '')), 'style' => 0],
-                    ['val' => $idm->nombre_idioma ?? $idm->nombre ?? 'N/A', 'style' => 0],
-                    ['val' => $cur->nivel ?? 'N/A', 'style' => 0],
-                    ['val' => $par->nombre_paralelo ?? $par->nombre ?? 'N/A', 'style' => 0],
-                    ['val' => $b1, 'style' => 0],
-                    ['val' => $b2, 'style' => 0],
-                    ['val' => $b3, 'style' => 0],
-                    ['val' => $b4, 'style' => 0],
-                    ['val' => $ex, 'style' => 0],
-                    ['val' => $pf, 'style' => 3],
-                    ['val' => $estadoAprob, 'style' => 0],
-                ];
-            }
-
-            $xlsxContent = \App\Services\SimpleXlsxWriter::create('Notas Alumnos', $rows);
-            return response($xlsxContent, 200, [
-                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                'Content-Disposition' => "attachment; filename=\"$fileName\"",
-                'Cache-Control' => 'max-age=0'
-            ]);
-        }
-
-        $fileNameXls = str_replace('.xlsx', '.xls', $fileName);
-        $headers = [
-            'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
-            'Content-Disposition' => "attachment; filename=\"$fileNameXls\"",
-            'Pragma' => 'no-cache',
-            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
-            'Expires' => '0'
-        ];
-
-        $callback = function () use ($inscripciones) {
-            $first = $inscripciones->first();
-            $cursoObj = $first ? $first->curso : null;
-            $paraleloObj = $first ? $first->paralelo : null;
-            $idiomaName = $cursoObj && $cursoObj->idioma ? ($cursoObj->idioma->nombre_idioma ?? $cursoObj->idioma->nombre) : 'IDIOMAS';
-            $nivelName = $cursoObj ? ($cursoObj->nivelRel->nombre_nivel ?? $cursoObj->nivel ?? 'NIVEL I') : 'NIVEL I';
-            $paraleloName = $paraleloObj ? ($paraleloObj->nombre_paralelo ?? $paraleloObj->nombre ?? 'A') : 'PARALELO';
-
-            echo '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
-            echo '<head><meta charset="UTF-8">';
-            echo '<!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Notas Alumnos</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->';
-            echo '<style>';
-            echo 'table { border-collapse: collapse; font-family: Arial, sans-serif; font-size: 10px; }';
-            echo 'th, td { border: 1px solid #000; padding: 4px 6px; text-align: center; vertical-align: middle; }';
-            echo 'th { background-color: #003B71; color: #ffffff; font-weight: bold; font-size: 9.5px; }';
-            echo '.header-title { font-weight: bold; font-size: 12px; color: #003B71; border: none; text-align: center; }';
-            echo '.left { text-align: left; }';
-            echo '</style>';
-            echo '</head><body>';
-
-            echo '<table>';
-            echo '<tr><td colspan="13" class="header-title">ESCUELA DE IDIOMAS DEL EJÉRCITO - COCHABAMBA</td></tr>';
-            echo '<tr><td colspan="13" class="header-title">PLANILLA OFICIAL DE CALIFICACIONES DE ALUMNOS REGISTRADAS EN SISTEMA</td></tr>';
-            echo '<tr><td colspan="13" class="header-title">IDIOMA: ' . strtoupper($idiomaName) . ' | ' . strtoupper($nivelName) . ' | PARALELO: ' . strtoupper($paraleloName) . ' | FECHA: ' . date('d/m/Y') . '</td></tr>';
-            echo '<tr><td colspan="13">&nbsp;</td></tr>';
-
-            echo '<tr>';
-            echo '<th>Nro</th>';
-            echo '<th>C.I.</th>';
-            echo '<th>Grado</th>';
-            echo '<th>Apellidos y Nombres</th>';
-            echo '<th>Book 1</th>';
-            echo '<th>Book 2</th>';
-            echo '<th>Book 3</th>';
-            echo '<th>Book 4</th>';
-            echo '<th>Book 5</th>';
-            echo '<th>Book 6</th>';
-            echo '<th>Examen Nivel</th>';
-            echo '<th>Promedio General</th>';
-            echo '<th>Estado</th>';
-            echo '</tr>';
-
-            $i = 1;
-            foreach ($inscripciones as $insc) {
-                $est = $insc->estudiante;
-                $notasCollection = $insc->notas ?: collect();
-                
-                $notasLibros = [1 => 0.00, 2 => 0.00, 3 => 0.00, 4 => 0.00, 5 => 0.00, 6 => 0.00];
-                $examenNivel = 0.00;
-
-                foreach ($notasCollection as $n) {
-                    $val = (float)($n->nota ?? $n->puntaje ?? 0);
-                    $periodo = strtolower(trim($n->periodo ?? $n->descripcion ?? ''));
-                    if (str_contains($periodo, 'examen') || str_contains($periodo, 'nivel')) {
-                        $examenNivel = $val;
-                    } elseif (preg_match('/(\d+)/', $periodo, $m)) {
-                        $num = (int)$m[1];
-                        if ($num >= 1 && $num <= 6) $notasLibros[$num] = $val;
-                    }
-                }
-                
-                if (array_sum($notasLibros) == 0 && $notasCollection->count() > 0) {
-                    $idx = 1;
-                    foreach ($notasCollection as $n) {
-                        if ($idx <= 6) {
-                            $notasLibros[$idx] = (float)($n->nota ?? $n->puntaje ?? 0);
-                            $idx++;
-                        }
-                    }
-                }
-
-                $validas = array_filter($notasLibros, fn($v) => $v > 0);
-                $promLibros = count($validas) > 0 ? array_sum($validas) / count($validas) : 0;
-                $promGral = round(($promLibros * 0.8) + ($examenNivel * 0.2), 2);
-                if ($promGral == 0) $promGral = round($promLibros, 2);
+                echo '<table>';
+                echo '<tr><td colspan="13" class="header-title">ESCUELA DE IDIOMAS DEL EJÉRCITO - COCHABAMBA</td></tr>';
+                echo '<tr><td colspan="13" class="header-title">PLANILLA OFICIAL DE CALIFICACIONES DE ALUMNOS REGISTRADAS EN SISTEMA</td></tr>';
+                echo '<tr><td colspan="13" class="header-title">IDIOMA: ' . strtoupper($idiomaName) . ' | ' . strtoupper($nivelName) . ' | PARALELO: ' . strtoupper($paraleloName) . ' | FECHA: ' . date('d/m/Y') . '</td></tr>';
+                echo '<tr><td colspan="13">&nbsp;</td></tr>';
 
                 echo '<tr>';
-                echo '<td>' . $i++ . '</td>';
-                echo '<td>' . htmlspecialchars($est->ci ?? 'N/A') . '</td>';
-                echo '<td>' . htmlspecialchars(strtoupper($est->grado_academico ?? 'SR')) . '</td>';
-                echo '<td class="left">' . htmlspecialchars(strtoupper(($est->apellidos ?? '') . ' ' . ($est->nombres ?? ''))) . '</td>';
-                
-                for ($b = 1; $b <= 6; $b++) {
-                    $nVal = $notasLibros[$b];
-                    echo '<td>' . ($nVal > 0 ? number_format($nVal, 2, ',', '.') : '0.00') . '</td>';
+                echo '<th>Nro</th>';
+                echo '<th>C.I.</th>';
+                echo '<th>Grado</th>';
+                echo '<th>Apellidos y Nombres</th>';
+                echo '<th>Book 1</th>';
+                echo '<th>Book 2</th>';
+                echo '<th>Book 3</th>';
+                echo '<th>Book 4</th>';
+                echo '<th>Book 5</th>';
+                echo '<th>Book 6</th>';
+                echo '<th>Examen Nivel</th>';
+                echo '<th>Promedio General</th>';
+                echo '<th>Estado</th>';
+                echo '</tr>';
+
+                $i = 1;
+                foreach ($inscripciones as $insc) {
+                    $est = $insc->estudiante;
+                    $user = $est ? ($est->user ?? null) : null;
+                    $gradoStr = $est ? ($est->grado_academico ?: (is_object($est->grado ?? null) ? ($est->grado->nombre ?? 'Civil') : 'Civil')) : 'Civil';
+                    $ciStr = $user->ci ?? ($est->ci ?? 'N/A');
+                    $nombreCompleto = $user ? trim(($user->apellidos ?? '') . ' ' . ($user->nombres ?? '')) : ($est ? trim(($est->apellidos ?? '') . ' ' . ($est->nombres ?? '')) : 'N/A');
+
+                    $notasCollection = $insc->notas ?: collect();
+                    $notasLibros = [1 => 0.00, 2 => 0.00, 3 => 0.00, 4 => 0.00, 5 => 0.00, 6 => 0.00];
+                    $examenNivel = 0.00;
+
+                    foreach ($notasCollection as $n) {
+                        $val = (float)($n->nota ?? $n->puntaje ?? 0);
+                        $periodo = strtolower(trim($n->periodo ?? $n->descripcion ?? ''));
+                        if (str_contains($periodo, 'examen') || str_contains($periodo, 'nivel')) {
+                            $examenNivel = $val;
+                        } elseif (preg_match('/(?:book|parcial)\s*(\d+)/i', $periodo, $m)) {
+                            $idxL = (int)$m[1];
+                            if ($idxL >= 1 && $idxL <= 6) {
+                                $notasLibros[$idxL] = $val;
+                            }
+                        }
+                    }
+
+                    $avgNotas = $notasCollection->avg('nota') ?? 0;
+                    $estadoTexto = $avgNotas >= 51 ? 'APROBADO' : ($avgNotas > 0 ? 'REPROBADO' : 'EN CURSO');
+
+                    echo '<tr>';
+                    echo '<td>' . $i++ . '</td>';
+                    echo '<td>' . htmlspecialchars($ciStr) . '</td>';
+                    echo '<td>' . htmlspecialchars(strtoupper($gradoStr)) . '</td>';
+                    echo '<td class="left">' . htmlspecialchars(strtoupper($nombreCompleto)) . '</td>';
+                    echo '<td>' . ($notasLibros[1] > 0 ? $notasLibros[1] : '-') . '</td>';
+                    echo '<td>' . ($notasLibros[2] > 0 ? $notasLibros[2] : '-') . '</td>';
+                    echo '<td>' . ($notasLibros[3] > 0 ? $notasLibros[3] : '-') . '</td>';
+                    echo '<td>' . ($notasLibros[4] > 0 ? $notasLibros[4] : '-') . '</td>';
+                    echo '<td>' . ($notasLibros[5] > 0 ? $notasLibros[5] : '-') . '</td>';
+                    echo '<td>' . ($notasLibros[6] > 0 ? $notasLibros[6] : '-') . '</td>';
+                    echo '<td>' . ($examenNivel > 0 ? $examenNivel : '-') . '</td>';
+                    echo '<td><strong>' . ($avgNotas > 0 ? round($avgNotas, 1) : '-') . '</strong></td>';
+                    echo '<td>' . $estadoTexto . '</td>';
+                    echo '</tr>';
                 }
 
-                echo '<td>' . ($examenNivel > 0 ? number_format($examenNivel, 2, ',', '.') : '0.00') . '</td>';
-                echo '<td><strong>' . ($promGral > 0 ? number_format($promGral, 2, ',', '.') : '0.00') . '</strong></td>';
-                echo '<td>' . htmlspecialchars(strtoupper($insc->estado ?? 'CONFIRMADO')) . '</td>';
-                echo '</tr>';
-            }
+                echo '</table></body></html>';
+            };
 
-            echo '</table></body></html>';
-        };
-
-        return response()->stream($callback, 200, $headers);
+            return response()->stream($callback, 200, $headers);
+        } catch (\Throwable $e) {
+            \Log::error("Error en exportNotasExcel: " . $e->getMessage() . " en " . $e->getFile() . ":" . $e->getLine());
+            return response()->json([
+                'error' => 'Error al exportar notas en Excel: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
