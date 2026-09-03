@@ -260,7 +260,6 @@
                 <th>Teléfono</th>
                 <th>Correo Electrónico</th>
                 <th>Estado</th>
-                <th class="no-print">Documentación</th>
               </tr>
             </thead>
             <tbody>
@@ -277,11 +276,6 @@
                     [class.estado-retirado]="insc.estado === 'retirado'">
                     {{ insc.estado === 'activo' ? 'Habilitado' : insc.estado === 'pendiente' ? 'Pendiente' : insc.estado }}
                   </span>
-                </td>
-                <td class="no-print">
-                  <button type="button" class="btn btn-sm btn-outline-primary py-1 px-2" (click)="habilitarDocumentosEstudiante(insc.estudiante?.id_estudiante || insc.estudiante?.id)" title="Habilitar subida de documentos digitales al estudiante" style="font-size: 0.8rem; border-color: #2563eb; color: #2563eb;">
-                    <i class="material-icons-outlined align-middle" style="font-size: 15px;">lock_open</i> Habilitar Documentos
-                  </button>
                 </td>
               </tr>
             </tbody>
@@ -319,11 +313,6 @@
               <div class="mobile-info-row">
                 <span><i class="material-icons-outlined" style="font-size: 16px;">email</i> Correo:</span>
                 <strong class="text-truncate" style="max-width: 180px;">{{ insc.estudiante?.correo_electronico || '—' }}</strong>
-              </div>
-              <div class="mt-2 no-print">
-                <button type="button" class="btn btn-sm btn-outline-primary w-100 py-1" (click)="habilitarDocumentosEstudiante(insc.estudiante?.id_estudiante || insc.estudiante?.id)">
-                  <i class="material-icons-outlined align-middle" style="font-size: 15px;">lock_open</i> Habilitar Documentos
-                </button>
               </div>
             </div>
           </div>
