@@ -295,6 +295,21 @@ class ReportController extends Controller
                     ];
                 });
 
+                $sinParaleloActivos = $pendientesEstudiantes->filter(function ($e) {
+                    $st = strtolower($e['estado'] ?? '');
+                    return in_array($st, ['activo', 'habilitado']);
+                })->count();
+
+                $sinParaleloPendientes = $pendientesEstudiantes->filter(function ($e) {
+                    $st = strtolower($e['estado'] ?? '');
+                    return in_array($st, ['pendiente']);
+                })->count();
+
+                $sinParaleloBajas = $pendientesEstudiantes->filter(function ($e) {
+                    $st = strtolower($e['estado'] ?? '');
+                    return in_array($st, ['retirado', 'baja', 'inactivo']);
+                })->count();
+
                 $ocupacion->push([
                     'id_paralelo' => 0,
                     'nombre_paralelo' => 'Sin Paralelo (Por Asignar)',
@@ -304,9 +319,9 @@ class ReportController extends Controller
                     'horario' => 'Pendiente',
                     'capacidad' => 0,
                     'inscritos' => $pendientesSinParalelo->count(),
-                    'activos_count' => 0,
-                    'pendientes_count' => $pendientesSinParalelo->count(),
-                    'bajas_count' => 0,
+                    'activos_count' => $sinParaleloActivos,
+                    'pendientes_count' => $sinParaleloPendientes,
+                    'bajas_count' => $sinParaleloBajas,
                     'porcentaje_ocupacion' => 0,
                     'estado_ocupacion' => 'Pendiente',
                     'estudiantes' => $pendientesEstudiantes->values()

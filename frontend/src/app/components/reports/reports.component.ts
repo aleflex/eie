@@ -323,7 +323,7 @@ export class ReportsComponent implements OnInit, AfterViewInit {
       next: (res: any) => {
         this.classroomStats = res.aulas || [];
         this.classroomStats.forEach(item => {
-          if ((item.activos_count === undefined || item.activos_count === null) && item.estudiantes) {
+          if (item.estudiantes && item.estudiantes.length > 0) {
             const counts = this.calculateStudentCounts(item.estudiantes);
             item.activos_count = counts.activos;
             item.pendientes_count = counts.pendientes;
