@@ -41,7 +41,7 @@ class User extends Authenticatable
         'remember_token',
     ];
 
-    protected $appends = ['id', 'name', 'email', 'foto_url'];
+    protected $appends = ['id', 'name', 'email', 'correo_electronico', 'foto_url'];
 
     /**
      * Obtener los atributos que deben ser convertidos.
@@ -76,6 +76,11 @@ class User extends Authenticatable
     }
 
     public function getEmailAttribute()
+    {
+        return $this->correo_institucional;
+    }
+
+    public function getCorreoElectronicoAttribute()
     {
         return $this->correo_institucional;
     }

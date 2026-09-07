@@ -137,7 +137,7 @@
               <td>
                 <div class="user-cell">
                   <span class="full-name">{{ inscripcion.estudiante?.nombres }} {{ inscripcion.estudiante?.apellidos }}</span>
-                  <span class="email">{{ inscripcion.estudiante?.correo_electronico }}</span>
+                  <span class="email">{{ inscripcion.estudiante?.correo_electronico || inscripcion.estudiante?.correo_institucional || inscripcion.estudiante?.email || 'Sin correo' }}</span>
                 </div>
               </td>
               <td>{{ inscripcion.estudiante?.ci }}</td>
@@ -186,7 +186,7 @@
           </div>
           <div class="mobile-card-details">
             <p><strong>C.I.:</strong> {{ inscripcion.estudiante?.ci }}</p>
-            <p><strong>Correo:</strong> {{ inscripcion.estudiante?.correo_electronico || 'N/A' }}</p>
+            <p><strong>Correo:</strong> {{ inscripcion.estudiante?.correo_electronico || inscripcion.estudiante?.correo_institucional || inscripcion.estudiante?.email || 'N/A' }}</p>
             <p><strong>Curso / Idioma:</strong> {{ inscripcion.curso?.idioma }} ({{ inscripcion.curso?.nivel }})</p>
             <p><strong>Fecha Registro:</strong> {{ inscripcion.fecha_registro | date:'mediumDate' }}</p>
           </div>

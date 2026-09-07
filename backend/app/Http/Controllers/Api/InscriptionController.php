@@ -401,7 +401,7 @@ class InscriptionController extends Controller
                     'nombres' => $ins->estudiante->user->nombres ?? '',
                     'apellidos' => $ins->estudiante->user->apellidos ?? '',
                     'ci' => $ins->estudiante->user->ci ?? '',
-                    'correo_electronico' => $ins->estudiante->user->correo_electronico ?? '',
+                    'correo_electronico' => $ins->estudiante->user->correo_institucional ?? $ins->estudiante->user->correo_electronico ?? $ins->estudiante->correo_electronico ?? '',
                     'celular' => $ins->estudiante->celular,
                     'fecha_nacimiento' => $ins->estudiante->fecha_nacimiento,
                     'lugar_nacimiento' => $ins->estudiante->lugar_nacimiento,
