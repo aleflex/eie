@@ -573,3 +573,197 @@ html {
   }
 }
 
+/* ==========================================
+   PANTALLAS GRANDES: LAPTOPS HD+ (≥ 1400px)
+   ========================================== */
+@media (min-width: 1400px) {
+  body {
+    font-size: 16px;
+  }
+
+  .main-content {
+    padding: 2.5rem 3rem;
+  }
+
+  .table-container, .table-card {
+    padding: 2rem;
+    border-radius: 20px;
+  }
+
+  th, td {
+    padding: 1.2rem 1.4rem;
+    font-size: 0.95rem;
+  }
+
+  .top-header h1 {
+    font-size: 2rem;
+  }
+
+  .modules-matrix-grid {
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.2rem;
+  }
+}
+
+/* ==========================================
+   TV / PLASMA / MONITORES 4K (≥ 1920px)
+   ========================================== */
+@media (min-width: 1920px) {
+  :root {
+    --base-font-size: 18px;
+  }
+
+  body {
+    font-size: 18px;
+  }
+
+  /* Sidebar más ancho para pantallas enormes */
+  .sidebar {
+    width: 300px !important;
+    min-width: 300px !important;
+    padding: 2rem 1.5rem !important;
+  }
+
+  .sidebar-header span {
+    font-size: 1.4rem !important;
+  }
+
+  .sidebar-logo {
+    height: 60px !important;
+  }
+
+  .nav-item, .nav-btn {
+    font-size: 1.05rem !important;
+    padding: 1rem 1.2rem !important;
+    border-radius: 12px !important;
+    gap: 1rem !important;
+  }
+
+  .nav-item i, .nav-btn i {
+    font-size: 26px !important;
+  }
+
+  .btn-logout {
+    font-size: 1rem !important;
+    padding: 0.9rem 1.2rem !important;
+  }
+
+  /* Contenido principal */
+  .main-content {
+    padding: 3rem 4rem;
+  }
+
+  .top-header h1 {
+    font-size: 2.4rem;
+  }
+
+  .top-header p {
+    font-size: 1.1rem;
+  }
+
+  /* Tarjetas y tablas */
+  .table-container, .table-card {
+    padding: 2.5rem;
+    border-radius: 24px;
+  }
+
+  th {
+    font-size: 0.95rem;
+    padding: 1.4rem 1.6rem;
+  }
+
+  td {
+    font-size: 1rem;
+    padding: 1.3rem 1.6rem;
+  }
+
+  /* Botones más grandes para control remoto / TV */
+  .btn-assign, .btn-edit-credentials, .btn-revoke,
+  .btn-edit, .btn-delete, .btn-history, .btn-docs,
+  .btn-print, .btn-save, .btn-cancel {
+    font-size: 0.95rem !important;
+    padding: 0.8rem 1.4rem !important;
+    border-radius: 12px !important;
+    min-height: 48px !important;
+  }
+
+  /* Inputs y selects */
+  .search-input, .filter-select, .form-control-custom {
+    font-size: 1rem;
+    padding: 0.9rem 1rem 0.9rem 3rem;
+    border-radius: 12px;
+  }
+
+  /* Modales más anchos */
+  .modal-card-custom {
+    max-width: 600px;
+    border-radius: 20px;
+  }
+
+  .modal-title-custom {
+    font-size: 1.3rem;
+  }
+
+  /* Grilla de módulos */
+  .modules-matrix-grid {
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 1.5rem;
+  }
+
+  /* Iconos Material */
+  .material-icons, .material-icons-outlined {
+    font-size: 28px;
+  }
+
+  /* Badges y pills */
+  .badge {
+    font-size: 0.9rem;
+    padding: 0.45rem 1rem;
+  }
+
+  .role-pill-btn {
+    font-size: 1rem;
+    padding: 0.65rem 1.3rem;
+  }
+
+  /* Scrollbar más visible en pantalla grande */
+  ::-webkit-scrollbar {
+    width: 14px;
+  }
+}
+
+/* ==========================================
+   ULTRA HD / 8K (≥ 2560px)
+   ========================================== */
+@media (min-width: 2560px) {
+  body {
+    font-size: 22px;
+  }
+
+  .sidebar {
+    width: 360px !important;
+    min-width: 360px !important;
+  }
+
+  .main-content {
+    padding: 4rem 6rem;
+  }
+
+  th, td {
+    font-size: 1.1rem;
+    padding: 1.6rem 2rem;
+  }
+
+  .top-header h1 {
+    font-size: 3rem;
+  }
+
+  .modal-card-custom {
+    max-width: 800px;
+  }
+
+  .modules-matrix-grid {
+    grid-template-columns: repeat(auto-fill, minmax(450px, 1fr));
+    gap: 2rem;
+  }
+}
