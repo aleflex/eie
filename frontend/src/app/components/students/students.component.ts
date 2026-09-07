@@ -187,6 +187,16 @@ export class StudentsComponent implements OnInit {
     this.historyLoading = false;
   }
 
+  getCourseAverage(notas: any[]): number | null {
+    if (!notas || !Array.isArray(notas) || notas.length === 0) return null;
+    const validNotas = notas
+      .map(n => Number(n?.nota))
+      .filter(n => !isNaN(n) && n !== null && n !== undefined);
+    if (validNotas.length === 0) return null;
+    const sum = validNotas.reduce((acc, curr) => acc + curr, 0);
+    return Math.round(sum / validNotas.length);
+  }
+
   adminPhotoFile: File | null = null;
   adminPhotoFileName: string = '';
 

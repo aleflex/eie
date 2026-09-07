@@ -41,6 +41,10 @@
         <i class="material-icons-outlined">vpn_key</i>
         <span *ngIf="!isSidebarCollapsed">Credenciales / Accesos</span>
       </a>
+      <a *ngIf="canAccess('roles')" routerLink="/roles" routerLinkActive="active" class="nav-item" (click)="closeMobileMenu()">
+        <i class="material-icons-outlined">security</i>
+        <span *ngIf="!isSidebarCollapsed">Roles y Permisos</span>
+      </a>
       <a *ngIf="canAccess('settings')" routerLink="/settings" routerLinkActive="active" class="nav-item" (click)="closeMobileMenu()">
         <i class="material-icons-outlined">settings</i>
         <span *ngIf="!isSidebarCollapsed">Configuración</span>
@@ -612,15 +616,21 @@
             </div>
             <div class="mobile-card-badges">
               <span class="status-badge" [ngClass]="student.tipo_usuario">{{ student.tipo_usuario }}</span>
-              <span *ngIf="student.inscripciones && student.inscripciones.length > 0" class="badge rounded-pill mt-1" [ngClass]="{
-                  'bg-success': student.inscripciones[0]?.estado === 'activo',
-                  'bg-warning text-dark': student.inscripciones[0]?.estado === 'pendiente',
-                  'bg-danger': student.inscripciones[0]?.estado === 'retirado',
-                  'bg-primary': student.inscripciones[0]?.estado === 'finalizado'
-                }">
-                {{ student.inscripciones[0]?.estado === 'activo' ? 'Habilitado' :
-                   student.inscripciones[0]?.estado === 'pendiente' ? 'Pendiente' :
-                   student.inscripciones[0]?.estado }}
+              <span *ngIf="isStudentDeBaja(student)" class="badge rounded-pill bg-danger d-inline-flex align-items-center gap-1 mt-1">
+                <i class="material-icons-outlined" style="font-size: 13px;">person_off</i> De Baja
+              </span>
+              <span *ngIf="!isStudentDeBaja(student)">
+                <span *ngIf="student.inscripciones && student.inscripciones.length > 0" class="badge rounded-pill mt-1" [ngClass]="{
+                    'bg-success': student.inscripciones[0]?.estado === 'activo',
+                    'bg-warning text-dark': student.inscripciones[0]?.estado === 'pendiente',
+                    'bg-danger': student.inscripciones[0]?.estado === 'retirado' || student.inscripciones[0]?.estado === 'baja',
+                    'bg-primary': student.inscripciones[0]?.estado === 'finalizado'
+                  }">
+                  {{ student.inscripciones[0]?.estado === 'activo' ? 'Habilitado' :
+                     student.inscripciones[0]?.estado === 'pendiente' ? 'Pendiente' :
+                     student.inscripciones[0]?.estado === 'baja' ? 'De Baja' :
+                     student.inscripciones[0]?.estado }}
+                </span>
               </span>
             </div>
           </div>
@@ -706,9 +716,14 @@
               <i class="material-icons-outlined">edit</i>
               <span>Editar</span>
             </button>
-            <button (click)="openDeleteModal(student.id)" class="btn-mobile-act btn-delete-mob" title="Eliminar Estudiante">
-              <i class="material-icons-outlined">delete</i>
-              <span>Eliminar</span>
+            <!-- Botón Dinámico en Móvil: Si está de baja mostrar Rehabilitar, si está activo mostrar Dar de Baja -->
+            <button *ngIf="isStudentDeBaja(student)" (click)="rehabilitarStudent(student)" class="btn-mobile-act btn-rehabilitar-mob" title="Rehabilitar Estudiante">
+              <i class="material-icons-outlined">person_add</i>
+              <span>Rehabilitar</span>
+            </button>
+            <button *ngIf="!isStudentDeBaja(student)" (click)="openDeleteModal(student)" class="btn-mobile-act btn-delete-mob" title="Dar de Baja">
+              <i class="material-icons-outlined">person_off</i>
+              <span>Baja</span>
             </button>
           </div>
         </div>
@@ -720,71 +735,113 @@
   <div class="modal-backdrop" *ngIf="showHistoryModal"></div>
   <div class="modal" [class.show]="showHistoryModal" [style.display]="showHistoryModal ? 'block' : 'none'"
     tabindex="-1">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-      <div class="modal-content border-0 shadow-lg">
-        <div class="modal-header bg-primary text-white">
-          <h5 class="modal-title">
-            <i class="material-icons-outlined align-middle">school</i>
-            Historial Académico: {{ academicHistory?.estudiante?.nombres }} {{ academicHistory?.estudiante?.apellidos }}
-          </h5>
+    <div class="modal-dialog modal-lg modal-dialog-centered history-modal-dialog">
+      <div class="modal-content border-0 shadow-lg history-modal-content">
+        <div class="modal-header bg-primary text-white history-modal-header">
+          <div class="modal-title-wrap">
+            <i class="material-icons-outlined modal-header-icon">school</i>
+            <div>
+              <h5 class="modal-title mb-0">Historial Académico</h5>
+              <small class="student-name-subtitle text-white-50">
+                {{ academicHistory?.estudiante?.nombres }} {{ academicHistory?.estudiante?.apellidos }}
+                <span *ngIf="academicHistory?.estudiante?.ci"> (C.I.: {{ academicHistory.estudiante.ci }})</span>
+              </small>
+            </div>
+          </div>
           <button type="button" class="btn-close btn-close-white" (click)="closeHistoryModal()" aria-label="Cerrar"
             title="Cerrar"></button>
         </div>
-        <div class="modal-body py-4">
-          <div *ngIf="historyLoading" class="text-center py-4">
+
+        <div class="modal-body history-modal-body">
+          <div *ngIf="historyLoading" class="text-center py-5">
             <div class="spinner-border text-primary" role="status"></div>
-            <p class="mt-2">Cargando registros académicos...</p>
+            <p class="mt-2 text-muted fw-semibold">Cargando registros académicos...</p>
           </div>
 
           <div *ngIf="!historyLoading && academicHistory">
-            <div class="history-list">
-              <div *ngFor="let item of academicHistory.historial" class="history-item mb-4">
-                <div class="history-header d-flex justify-content-between align-items-center">
+            <div *ngIf="!academicHistory.historial || academicHistory.historial.length === 0" class="text-center py-5 text-muted">
+              <i class="material-icons-outlined fs-1 text-secondary mb-2">menu_book</i>
+              <p>El estudiante no cuenta con inscripciones activas o pasadas registradas.</p>
+            </div>
+
+            <div class="history-list" *ngIf="academicHistory.historial && academicHistory.historial.length > 0">
+              <div *ngFor="let item of academicHistory.historial" class="history-item mb-3">
+                <div class="history-header">
                   <div class="course-title">
-                    <h4 class="mb-0 text-primary">{{ item.curso?.idioma }} - {{ item.curso?.nivel }}</h4>
-                    <small class="text-muted">Inscrito el: {{ item.fecha_registro | date:'mediumDate' }}</small>
+                    <h4 class="mb-1 text-primary">{{ item.curso?.idioma }} - {{ item.curso?.nivel }}</h4>
+                    <span *ngIf="item.paralelo" class="small-badge badge-paralelo me-2">
+                      {{ item.paralelo?.nombre }}
+                    </span>
+                    <small class="text-muted d-block mt-1">Inscrito el: {{ item.fecha_registro | date:'mediumDate' }}</small>
                   </div>
-                  <span class="badge rounded-pill" [ngClass]="{
-                          'bg-success': item.estado === 'activo',
-                          'bg-warning text-dark': item.estado === 'pendiente',
-                          'bg-danger': item.estado === 'retirado',
-                          'bg-primary': item.estado === 'finalizado'
-                        }">
-                    {{ item.estado === 'activo' ? 'Habilitado' :
-                    item.estado === 'pendiente' ? 'Pendiente' :
-                    item.estado }}
-                  </span>
+                  <div class="course-header-status">
+                    <span class="badge rounded-pill" [ngClass]="{
+                            'bg-success': item.estado === 'activo',
+                            'bg-warning text-dark': item.estado === 'pendiente',
+                            'bg-danger': item.estado === 'retirado' || item.estado === 'baja',
+                            'bg-primary': item.estado === 'finalizado'
+                          }">
+                      {{ item.estado === 'activo' ? 'Habilitado' :
+                         item.estado === 'pendiente' ? 'Pendiente' :
+                         item.estado === 'baja' ? 'De Baja' :
+                         item.estado }}
+                    </span>
+                  </div>
                 </div>
 
-                <div class="grades-section mt-2">
-                  <table class="table table-sm table-hover border">
-                    <thead class="bg-light">
+                <!-- Tabla Responsiva de Calificaciones -->
+                <div class="grades-table-wrapper">
+                  <table class="grades-history-table">
+                    <thead>
                       <tr>
-                        <th>Actividad / Examen</th>
-                        <th class="text-center">Nota</th>
+                        <th class="th-activity">Actividad / Evaluación</th>
+                        <th class="th-score text-center">Calificación</th>
                       </tr>
                     </thead>
                     <tbody>
                       <tr *ngFor="let nota of item.notas">
-                        <td>{{ nota.descripcion }}</td>
-                        <td class="text-center fw-bold" [class.text-danger]="nota.nota < 71"
-                          [class.text-success]="nota.nota >= 71">
-                          {{ nota.nota }}
+                        <td class="td-activity">
+                          <div class="activity-info">
+                            <i class="material-icons-outlined activity-bullet">edit_note</i>
+                            <span class="activity-text">{{ nota.descripcion }}</span>
+                          </div>
+                        </td>
+                        <td class="td-score text-center">
+                          <span class="grade-score-pill" [ngClass]="nota.nota >= 71 ? 'score-approved' : 'score-reproved'">
+                            <i class="material-icons-outlined grade-state-icon">{{ nota.nota >= 71 ? 'check_circle' : 'error' }}</i>
+                            <strong>{{ nota.nota }}</strong>
+                            <span class="score-base">/100</span>
+                          </span>
                         </td>
                       </tr>
                       <tr *ngIf="!item.notas || item.notas.length === 0">
-                        <td colspan="2" class="text-center text-muted small">No hay notas registradas para este curso.
+                        <td colspan="2" class="no-grades-td text-center text-muted py-3">
+                          <i class="material-icons-outlined align-middle me-1" style="font-size: 16px;">info</i>
+                          Aún no hay calificaciones parciales registradas para este periodo.
                         </td>
                       </tr>
                     </tbody>
                   </table>
                 </div>
+
+                <!-- Barra Resumen de Promedio -->
+                <div *ngIf="getCourseAverage(item.notas) !== null" class="course-average-summary">
+                  <div class="avg-label">
+                    <i class="material-icons-outlined">insights</i>
+                    <span>Promedio General:</span>
+                  </div>
+                  <div class="avg-value-pill" [ngClass]="getCourseAverage(item.notas)! >= 71 ? 'avg-approved' : 'avg-reproved'">
+                    <strong>{{ getCourseAverage(item.notas) }} / 100</strong>
+                    <span class="avg-state-text">({{ getCourseAverage(item.notas)! >= 71 ? 'Aprobado' : 'Reprobado' }})</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-primary" (click)="closeHistoryModal()">CERRAR</button>
+
+        <div class="modal-footer history-modal-footer">
+          <button type="button" class="btn btn-primary px-4 fw-bold" (click)="closeHistoryModal()">CERRAR</button>
         </div>
       </div>
     </div>

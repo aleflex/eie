@@ -25,6 +25,7 @@ export class RoleService {
     { key: 'paralelos', nombre: 'Paralelos', icon: 'class', ruta: '/paralelos', descripcion: 'Asignación de aulas, horarios, cupos e inscripciones por paralelo' },
     { key: 'reports', nombre: 'Reportes y Estadísticas', icon: 'bar_chart', ruta: '/reports', descripcion: 'Exportación de listas oficiales, nóminas y reportes en Excel/PDF' },
     { key: 'accesos', nombre: 'Credenciales / Accesos', icon: 'vpn_key', ruta: '/accesos', descripcion: 'Gestión de contraseñas, cuentas de usuario y roles de acceso' },
+    { key: 'roles', nombre: 'Roles y Permisos', icon: 'security', ruta: '/roles', descripcion: 'Matriz de permisos de módulos y administración de roles institucionales' },
     { key: 'settings', nombre: 'Configuración del Sistema', icon: 'settings', ruta: '/settings', descripcion: 'Periodos de inscripción, firmas oficiales y reglas institucionales' }
   ];
 

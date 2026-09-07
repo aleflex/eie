@@ -37,11 +37,11 @@
         <i class="material-icons-outlined">bar_chart</i>
         <span *ngIf="!isSidebarCollapsed">Reportes y Estadísticas</span>
       </a>
-      <a *ngIf="canAccess('accesos')" routerLink="/accesos" routerLinkActive="active" class="nav-item active" (click)="closeMobileMenu()">
+      <a *ngIf="canAccess('accesos')" routerLink="/accesos" routerLinkActive="active" class="nav-item" (click)="closeMobileMenu()">
         <i class="material-icons-outlined">vpn_key</i>
         <span *ngIf="!isSidebarCollapsed">Credenciales / Accesos</span>
       </a>
-      <a *ngIf="canAccess('settings')" routerLink="/settings" [queryParams]="{tab: 'roles'}" class="nav-item" (click)="closeMobileMenu()">
+      <a *ngIf="canAccess('roles')" routerLink="/roles" routerLinkActive="active" class="nav-item" (click)="closeMobileMenu()">
         <i class="material-icons-outlined">security</i>
         <span *ngIf="!isSidebarCollapsed">Roles y Permisos</span>
       </a>
@@ -104,7 +104,7 @@
             <span class="material-icons-outlined btn-icon">add</span>
             <span>Nuevo Usuario Admin</span>
           </button>
-          <button type="button" (click)="cambiarTab('roles')" class="btn btn-outline-dark d-flex align-items-center gap-1 shadow-sm" style="border-radius: 8px; font-weight: 600;">
+          <button type="button" routerLink="/roles" class="btn btn-outline-dark d-flex align-items-center gap-1 shadow-sm" style="border-radius: 8px; font-weight: 600;">
             <span class="material-icons-outlined btn-icon">security</span>
             <span>Configurar Roles y Permisos</span>
           </button>

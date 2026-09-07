@@ -12,6 +12,7 @@ import { ParalelosComponent } from './components/paralelos/paralelos.component';
 import { DocenteDashboardComponent } from './components/docente-dashboard/docente-dashboard.component';
 import { SettingsComponent } from './components/settings/settings.component';
 import { AccesosComponent } from './components/accesos/accesos.component';
+import { RolesComponent } from './components/roles/roles.component';
 import { StudentDashboardComponent } from './components/student-dashboard/student-dashboard.component';
 import { ReportsComponent } from './components/reports/reports.component';
 import { authGuard } from './guards/auth.guard';
@@ -26,7 +27,7 @@ import { authGuard } from './guards/auth.guard';
  * - 'login': Página de inicio de sesión
  *
  * Rutas privadas (requieren autenticación obligatoria):
- * - 'admin', 'students', 'courses', 'docentes-list', 'paralelos', 'reports', 'settings', 'accesos'
+ * - 'admin', 'students', 'courses', 'docentes-list', 'paralelos', 'reports', 'settings', 'accesos', 'roles'
  */
 export const routes: Routes = [
     // Ruta por defecto - Página de inicio
@@ -46,6 +47,7 @@ export const routes: Routes = [
     { path: 'reports', component: ReportsComponent, canActivate: [authGuard] },
     { path: 'settings', component: SettingsComponent, canActivate: [authGuard] },
     { path: 'accesos', component: AccesosComponent, canActivate: [authGuard] },
+    { path: 'roles', component: RolesComponent, canActivate: [authGuard] },
 
     // Rutas de rol específicos (Protegidas)
     { path: 'docente-dashboard', component: DocenteDashboardComponent, canActivate: [authGuard] },
