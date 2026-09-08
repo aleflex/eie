@@ -5,7 +5,7 @@ import { IMAGE_CONFIG } from '@angular/common';
 import { ServiceWorkerModule } from '@angular/service-worker';
 
 import { routes } from './app.routes';
-import { ngrokInterceptor } from './interceptors/ngrok.interceptor';
+import { authInterceptor } from './interceptors/auth.interceptor';
 
 /**
  * Configuración de la Aplicación Angular
@@ -13,7 +13,7 @@ import { ngrokInterceptor } from './interceptors/ngrok.interceptor';
  *
  * Incluye:
  * - Proveedor de enrutamiento
- * - Configuración de cliente HTTP con interceptores
+ * - Configuración de cliente HTTP con interceptor de seguridad (Bearer Token)
  * - Configuración de imágenes
  */
 export const appConfig: ApplicationConfig = {
@@ -21,9 +21,9 @@ export const appConfig: ApplicationConfig = {
     // Proveedor de enrutamiento con las rutas definidas
     provideRouter(routes),
 
-    // Proveedor HTTP con interceptor de ngrok para desarrollo
+    // Proveedor HTTP con interceptor de autenticación y seguridad
     provideHttpClient(
-      withInterceptors([ngrokInterceptor])
+      withInterceptors([authInterceptor])
     ),
 
     // Configuración de imágenes de Angular
