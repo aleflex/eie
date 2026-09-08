@@ -51,7 +51,7 @@ class SupabaseStorageService
         }
         try {
             $bucketUrl = rtrim(self::$supabaseUrl, '/') . '/storage/v1/bucket';
-            $response = Http::timeout(1.5)->connectTimeout(1.0)->withHeaders([
+            Http::timeout(1.5)->connectTimeout(1.0)->withHeaders([
                 'apikey' => self::$anonKey,
                 'Authorization' => 'Bearer ' . self::$anonKey,
                 'Content-Type' => 'application/json'
@@ -61,13 +61,9 @@ class SupabaseStorageService
                 'public' => true
             ]);
 
-            if ($response->successful()) {
-                self::$bucketChecked = true;
-            } else {
-                self::$isAvailable = false;
-            }
+            self::$bucketChecked = true;
         } catch (\Exception $e) {
-            self::$isAvailable = false;
+            self::$bucketChecked = true;
         }
     }
 
