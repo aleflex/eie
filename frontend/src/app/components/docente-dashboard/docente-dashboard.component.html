@@ -58,14 +58,28 @@
   <!-- Contenido Principal -->
   <main class="main-content">
     <header class="top-header">
-      <div class="header-left">
-        <h1>Panel del Instructor</h1>
-        <p>Gestione notas y asistencias de sus paralelos.</p>
+      <div class="d-flex align-items-center gap-2">
+        <div class="header-left">
+          <h1 style="margin: 0; font-size: 1.5rem; font-weight: 800; color: #003b71;">Panel del Instructor</h1>
+          <p style="margin: 0; font-size: 0.85rem; color: #64748b;">Gestione notas y asistencias de sus paralelos y administre su perfil.</p>
+        </div>
       </div>
-      <div class="header-right">
-        <div class="user-info" *ngIf="user">
-          <span class="user-name">{{ user.name }}</span>
-          <span class="user-role">Instructor</span>
+      <div class="header-right mt-2 mt-sm-0 d-flex align-items-center gap-2">
+        <button type="button" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1 rounded-pill px-3 py-1" (click)="refreshData()" [disabled]="isRefreshing" title="Sincronizar perfil y paralelos en tiempo real">
+          <i class="material-icons-outlined" [style.animation]="isRefreshing ? 'spin 1s linear infinite' : 'none'" style="font-size: 18px;">sync</i>
+          <span style="font-size: 0.82rem; font-weight: 600;">{{ isRefreshing ? 'Sincronizando...' : 'Actualizar' }}</span>
+        </button>
+        <div class="user-info-header" *ngIf="user || docente">
+          <div class="user-info">
+            <span class="user-name">{{ docente?.user?.name || user?.name || 'Instructor EIE' }}</span>
+            <span class="user-role">Instructor EIE</span>
+          </div>
+          <div class="user-header-avatar">
+            <img *ngIf="docente?.foto_url || user?.foto_url" [src]="getPhotoUrl(docente?.foto_url || user?.foto_url)" (error)="onImgError($event)" alt="Avatar" class="avatar-small">
+            <div [style.display]="(docente?.foto_url || user?.foto_url) ? 'none' : 'flex'" class="avatar-small-placeholder">
+              <span class="material-icons-outlined">person</span>
+            </div>
+          </div>
         </div>
       </div>
     </header>
@@ -93,62 +107,101 @@
 
     <!-- ======================== SECCIÓN: MI PERFIL / INFORMACIÓN PERSONAL ======================== -->
     <section class="profile-section animate-fade-in" *ngIf="tabActivo === 'perfil' && !isLoading">
-      <div class="card border-0 shadow-sm rounded-4 p-4 mb-4" style="background: #ffffff; border-radius: 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.06);">
-        <div class="d-flex align-items-center gap-4 flex-wrap pb-3 border-bottom mb-4">
-          <div class="profile-avatar-large" style="width: 80px; height: 80px; background: #1e3a8a; color: #ffffff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 36px; font-weight: bold;">
-            <i class="material-icons-outlined" style="font-size: 48px;">person</i>
-          </div>
-          <div>
-            <h2 class="m-0 font-weight-bold" style="color: #0f172a; font-size: 1.5rem;">{{ docente?.user?.name || user?.name || 'Instructor EIE' }}</h2>
-            <span class="badge bg-primary px-3 py-2 mt-2" style="font-size: 0.85rem; background-color: #2563eb !important;">Instructor / Docente de Idiomas</span>
-          </div>
-        </div>
-
-        <h4 class="mb-3" style="color: #1e3a8a; font-weight: 600;"><i class="material-icons-outlined align-middle me-1">badge</i> Información Personal y Académica</h4>
-        <div class="row g-3" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px;">
-          <div class="p-3 rounded-3" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px;">
-            <small class="text-muted d-block" style="color: #64748b; font-size: 0.8rem;">Nombres y Apellidos</small>
-            <strong style="color: #1e293b; font-size: 0.95rem;">{{ docente?.user?.name || user?.name || '—' }}</strong>
-          </div>
-          <div class="p-3 rounded-3" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px;">
-            <small class="text-muted d-block" style="color: #64748b; font-size: 0.8rem;">Carnet de Identidad (C.I.)</small>
-            <strong style="color: #1e293b; font-size: 0.95rem;">{{ docente?.user?.ci || user?.ci || '—' }} {{ docente?.user?.expedido || '' }}</strong>
-          </div>
-          <div class="p-3 rounded-3" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px;">
-            <small class="text-muted d-block" style="color: #64748b; font-size: 0.8rem;">Correo Institucional</small>
-            <strong style="color: #1e293b; font-size: 0.95rem;">{{ docente?.user?.correo_institucional || docente?.user?.email || user?.email || '—' }}</strong>
-          </div>
-          <div class="p-3 rounded-3" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px;">
-            <small class="text-muted d-block" style="color: #64748b; font-size: 0.8rem;">Celular / Teléfono</small>
-            <strong style="color: #1e293b; font-size: 0.95rem;">{{ docente?.celular || '—' }}</strong>
-          </div>
-          <div class="p-3 rounded-3" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px;">
-            <small class="text-muted d-block" style="color: #64748b; font-size: 0.8rem;">Especialidad / Materia</small>
-            <strong style="color: #1e293b; font-size: 0.95rem;">{{ docente?.especialidad || 'Idiomas EIE' }}</strong>
-          </div>
-          <div class="p-3 rounded-3" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px;">
-            <small class="text-muted d-block" style="color: #64748b; font-size: 0.8rem;">Estado de Contrato</small>
-            <strong [style.color]="contratoPorVencer ? '#dc2626' : '#16a34a'" style="font-size: 0.95rem;">
-              {{ contratoPorVencer ? 'Por Vencer (' + (docente?.fecha_contrato | date:'dd/MM/yyyy') + ')' : 'VIGENTE' }}
-            </strong>
-          </div>
-        </div>
-
-        <!-- Tarjeta de Ajuste Biométrico (Huella / Rostro) -->
-        <div class="mt-4 p-3 rounded-3 border" style="background: #f0f9ff; border-color: #bae6fd !important; border-radius: 12px; margin-top: 24px;">
-          <div class="d-flex align-items-center justify-content-between gap-3" style="display: flex; align-items: center; justify-content: space-between;">
-            <div class="d-flex align-items-center gap-3" style="display: flex; align-items: center; gap: 12px;">
-              <div style="background: #0284c7; color: #ffffff; width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-                <i class="material-icons-outlined" style="font-size: 24px;">fingerprint</i>
+      <div class="settings-card-wrapper">
+        <div class="settings-pane-content">
+          <div class="profile-dashboard-layout">
+            
+            <!-- Lado Izquierdo: Foto 4x4 y Datos Rápidos -->
+            <div class="profile-card-side">
+              <div class="profile-avatar-large-container">
+                <img *ngIf="docente?.foto_url || user?.foto_url" [src]="getPhotoUrl(docente?.foto_url || user?.foto_url)" (error)="onImgError($event)" alt="Foto Docente" class="profile-avatar-large">
+                <div [style.display]="(docente?.foto_url || user?.foto_url) ? 'none' : 'flex'" class="profile-avatar-large-placeholder">
+                  <span class="material-icons-outlined">person</span>
+                </div>
               </div>
-              <div>
-                <strong style="font-size: 1rem; color: #0c4a6e; display: block;">Acceso Biométrico (Huella / Rostro)</strong>
-                <small style="font-size: 0.82rem; color: #0369a1;">Habilitar o deshabilitar inicio de sesión biométrico en este dispositivo celular</small>
+              
+              <h2 class="profile-name-tag">{{ docente?.user?.name || user?.name || 'Instructor EIE' }}</h2>
+              <span class="profile-ci-tag">C.I. {{ docente?.user?.ci || user?.ci || 'Sin registrar' }} {{ docente?.user?.expedido || '' }}</span>
+              
+              <div class="profile-photo-change mt-4">
+                <label class="form-label-small">Actualizar Fotografía de Perfil</label>
+                <div class="upload-btn-wrapper w-100">
+                  <button type="button" class="btn-upload-photo w-100 justify-content-center">
+                    <i class="material-icons-outlined">photo_camera</i> Seleccionar Foto
+                  </button>
+                  <input type="file" (change)="onPhotoSelected($event)" accept="image/*" aria-label="Seleccionar fotografía de perfil">
+                </div>
+                <span class="file-chosen-name text-center d-block mt-1" *ngIf="photoFileName">{{ photoFileName }}</span>
+                <button *ngIf="photoFile" (click)="uploadPhoto()" [disabled]="uploadingPhoto" class="btn-save-photo-now mt-2">
+                  {{ uploadingPhoto ? 'Subiendo...' : 'SUBIR FOTO' }}
+                </button>
+              </div>
+
+              <!-- Configuración de Biometría -->
+              <div class="biometric-card-student mt-3 p-3 rounded-3 border" style="background: #f8fafc; border-color: #cbd5e1 !important; width: 100%;">
+                <div class="d-flex align-items-center justify-content-between gap-2">
+                  <div class="d-flex align-items-center gap-2">
+                    <div style="background: #e0f2fe; color: #0284c7; min-width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                      <i class="material-icons-outlined" style="font-size: 20px;">fingerprint</i>
+                    </div>
+                    <div>
+                      <strong style="font-size: 0.85rem; color: #0f172a; display: block;">Acceso por Huella / Rostro</strong>
+                      <small style="font-size: 0.74rem; color: #64748b;" class="d-block">Activar ingreso rápido biométrico</small>
+                    </div>
+                  </div>
+                  <div class="form-check form-switch m-0">
+                    <input class="form-check-input" type="checkbox" id="biometricSwitchDocente" [checked]="biometricEnabled" (change)="toggleBiometric($event)" style="width: 44px; height: 22px; cursor: pointer;" aria-label="Activar ingreso rápido biométrico" title="Activar ingreso rápido biométrico">
+                    <label class="form-check-label" for="biometricSwitchDocente"></label>
+                  </div>
+                </div>
               </div>
             </div>
-            <div class="form-check form-switch m-0">
-              <input class="form-check-input" type="checkbox" id="biometricSwitchDocenteProfile" [checked]="biometricEnabled" (change)="toggleBiometric($event)" style="width: 46px; height: 23px; cursor: pointer;" aria-label="Activar acceso biométrico" title="Activar acceso biométrico">
+
+            <!-- Lado Derecho: Datos Personales y Académicos -->
+            <div class="profile-info-side">
+              <h2 class="pane-title">📋 Información Personal y Académica</h2>
+              <div class="info-grid mt-4">
+                <div class="info-item col-span-2">
+                  <span class="info-label">Nombres y Apellidos</span>
+                  <span class="info-value font-bold">{{ docente?.user?.name || user?.name || '—' }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Carnet de Identidad (C.I.)</span>
+                  <span class="info-value">{{ docente?.user?.ci || user?.ci || '—' }} {{ docente?.user?.expedido || '' }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Celular / Teléfono</span>
+                  <span class="info-value">{{ docente?.celular || docente?.telefono || user?.celular || '—' }}</span>
+                </div>
+                <div class="info-item col-span-2">
+                  <span class="info-label">Correo Institucional</span>
+                  <span class="info-value">{{ docente?.user?.correo_institucional || docente?.user?.email || user?.email || '—' }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Especialidad / Materia</span>
+                  <span class="info-value font-bold text-primary">{{ docente?.especialidad || 'Idiomas EIE' }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Estado de Contrato</span>
+                  <span class="info-value font-bold" [style.color]="contratoPorVencer ? '#dc2626' : '#16a34a'">
+                    {{ contratoPorVencer ? 'POR VENCER (' + (docente?.fecha_contrato | date:'dd/MM/yyyy') + ')' : 'VIGENTE' }}
+                  </span>
+                </div>
+                <div class="info-item" *ngIf="docente?.grado">
+                  <span class="info-label">Grado</span>
+                  <span class="info-value">{{ docente.grado }}</span>
+                </div>
+                <div class="info-item" *ngIf="docente?.arma">
+                  <span class="info-label">Arma / Especialidad Militar</span>
+                  <span class="info-value">{{ docente.arma }}</span>
+                </div>
+                <div class="info-item col-span-2" *ngIf="docente?.domicilio || user?.domicilio">
+                  <span class="info-label">Domicilio Declarado</span>
+                  <span class="info-value">{{ docente?.domicilio || user?.domicilio }}</span>
+                </div>
+              </div>
             </div>
+
           </div>
         </div>
       </div>

@@ -11,6 +11,8 @@ import { environment } from '../../../environments/environment';
 import { ReportService } from '../../services/report.service';
 import { downloadFile } from '../../utils/file-downloader';
 
+import { ImageCompressorService } from '../../services/image-compressor.service';
+
 @Component({
   selector: 'app-docente-dashboard',
   standalone: true,
@@ -27,6 +29,11 @@ export class DocenteDashboardComponent implements OnInit {
   paraleloActivo: any = null;
   isMobileMenuOpen = false;
   isLoading = true;
+  isRefreshing = false;
+
+  photoFile: File | null = null;
+  photoFileName: string = '';
+  uploadingPhoto: boolean = false;
 
   toggleMobileMenu() {
     this.isMobileMenuOpen = !this.isMobileMenuOpen;
@@ -64,8 +71,58 @@ export class DocenteDashboardComponent implements OnInit {
     private authService: AuthService,
     private router: Router,
     private http: HttpClient,
-    private reportService: ReportService
+    private reportService: ReportService,
+    private imageCompressor: ImageCompressorService
   ) {}
+
+  onPhotoSelected(event: any) {
+    const file = event.target.files[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      alert('Por favor, selecciona una imagen de perfil válida.');
+      return;
+    }
+    this.imageCompressor.compressImage(file, 800, 800, 0.82).then(compressed => {
+      this.photoFile = compressed;
+      this.photoFileName = compressed.name;
+    });
+  }
+
+  uploadPhoto() {
+    if (!this.photoFile) return;
+
+    this.uploadingPhoto = true;
+    const formData = new FormData();
+    formData.append('foto', this.photoFile);
+
+    this.authService.actualizarPerfil(formData).subscribe({
+      next: (res: any) => {
+        alert('Fotografía de perfil actualizada con éxito');
+        this.photoFile = null;
+        this.photoFileName = '';
+        this.uploadingPhoto = false;
+        if (res.user) {
+          if (this.docente) this.docente.foto_url = res.user.foto_url;
+          if (this.user) this.user.foto_url = res.user.foto_url;
+        }
+        this.authService.cargarPerfilActualizado().subscribe();
+      },
+      error: (err) => {
+        console.error('Error subiendo foto de docente', err);
+        alert('Error al actualizar la fotografía: ' + (err.error?.message || err.message));
+        this.uploadingPhoto = false;
+      }
+    });
+  }
+
+  refreshData() {
+    this.isRefreshing = true;
+    this.cargarMisParalelos();
+    this.authService.cargarPerfilActualizado().subscribe({
+      next: () => this.isRefreshing = false,
+      error: () => this.isRefreshing = false
+    });
+  }
 
   ngOnInit(): void {
     this.user = this.authService.getUser();
