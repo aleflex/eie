@@ -74,16 +74,28 @@
         </button>
 
         <!-- Botones de Exportación Blob (RF 20 - HU 20) -->
-        <button class="btn btn-outline-success" (click)="exportExcel()" [disabled]="isDownloadingExcel">
+        <button class="btn btn-outline-success" (click)="exportExcel()" [disabled]="isDownloadingExcel" title="Exportar Relación Nominal Estadísticas generales">
           <i class="material-icons-outlined" *ngIf="!isDownloadingExcel">table_view</i>
           <span class="spinner-border spinner-border-sm" *ngIf="isDownloadingExcel"></span>
-          Exportar Excel
+          Excel General
         </button>
 
-        <button class="btn btn-primary btn-export-pdf" (click)="exportPdf()" [disabled]="isDownloadingPdf">
+        <button class="btn btn-success" (click)="exportNotasExcel()" [disabled]="isDownloadingNotasExcel" title="Exportar Planilla Oficial de Notas en Excel">
+          <i class="material-icons-outlined" *ngIf="!isDownloadingNotasExcel">grade</i>
+          <span class="spinner-border spinner-border-sm" *ngIf="isDownloadingNotasExcel"></span>
+          Notas (Excel)
+        </button>
+
+        <button class="btn btn-outline-danger" (click)="exportNotasPdf()" [disabled]="isDownloadingNotasPdf" title="Exportar Planilla Oficial de Notas en PDF">
+          <i class="material-icons-outlined" *ngIf="!isDownloadingNotasPdf">picture_as_pdf</i>
+          <span class="spinner-border spinner-border-sm" *ngIf="isDownloadingNotasPdf"></span>
+          Notas (PDF)
+        </button>
+
+        <button class="btn btn-primary btn-export-pdf" (click)="exportPdf()" [disabled]="isDownloadingPdf" title="Exportar Reporte Estadístico Oficial en PDF">
           <i class="material-icons-outlined" *ngIf="!isDownloadingPdf">picture_as_pdf</i>
           <span class="spinner-border spinner-border-sm" *ngIf="isDownloadingPdf"></span>
-          Exportar PDF
+          PDF General
         </button>
       </div>
     </header>
@@ -163,7 +175,15 @@
           </select>
         </div>
 
-        <!-- 8. Fechas -->
+        <!-- 8. Filtro por Rango / Rendimiento de Notas -->
+        <div class="col-md-3">
+          <label class="form-label fw-bold text-primary">Filtro por Calificación / Nota</label>
+          <select class="form-select border-primary" [(ngModel)]="filters.filtro_nota" (change)="onFilterChange()">
+            <option *ngFor="let fn of filtrosNotas" [value]="fn.id">{{ fn.nombre }}</option>
+          </select>
+        </div>
+
+        <!-- 9. Fechas -->
         <div class="col-md-3">
           <label class="form-label">Fecha Desde</label>
           <input type="date" class="form-control" [(ngModel)]="filters.fecha_desde" (change)="onFilterChange()">
@@ -174,7 +194,7 @@
           <input type="date" class="form-control" [(ngModel)]="filters.fecha_hasta" (change)="onFilterChange()">
         </div>
 
-        <div class="col-md-9 d-flex align-items-end gap-2">
+        <div class="col-md-6 d-flex align-items-end gap-2">
           <button class="btn btn-secondary" (click)="resetFilters()">
             <i class="material-icons-outlined align-middle">restart_alt</i> Limpiar Filtros
           </button>
@@ -224,13 +244,13 @@
         </div>
       </div>
 
-      <div class="stat-card">
+      <div class="stat-card clickable" (click)="filterByKpi('notas')" title="Ver Reporte y Centralizador de Notas">
         <div class="stat-icon teal">
           <i class="material-icons-outlined">grade</i>
         </div>
         <div class="stat-info">
           <h3>{{ summaryData.promedio_notas || '0' }} / 100</h3>
-          <p>Promedio General Notas</p>
+          <p>Promedio General Notas <i class="material-icons-outlined" style="font-size: 13px; vertical-align: middle;">arrow_forward</i></p>
         </div>
       </div>
 
@@ -274,12 +294,12 @@
     <section class="table-container animate-fade-in delay-2 mt-4">
       <div class="table-header d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
         <div>
-          <h2>Detalle de Ocupación por Aula, Paralelo, Estudiantes y Notas</h2>
+          <h2>Detalle de Ocupación, Estudiantes y Calificaciones</h2>
           <p>Capacidad total, estudiantes asignados y sus calificaciones registradas.</p>
         </div>
 
-        <!-- Conmutador de Vistas: Aulas/Paralelos vs Lista General de Estudiantes vs Estudiantes Pendientes -->
-        <div class="btn-group shadow-sm" role="group">
+        <!-- Conmutador de Vistas: Aulas/Paralelos vs Lista General vs Pendientes vs Reporte de Notas -->
+        <div class="btn-group shadow-sm flex-wrap" role="group">
           <button type="button" class="btn"
             [ngClass]="activeTableView === 'aulas' ? 'btn-primary text-white fw-bold' : 'btn-outline-primary'"
             (click)="setActiveTableView('aulas')">
@@ -290,13 +310,19 @@
             [ngClass]="activeTableView === 'estudiantes' ? 'btn-primary text-white fw-bold' : 'btn-outline-primary'"
             (click)="setActiveTableView('estudiantes')">
             <i class="material-icons-outlined align-middle me-1">groups</i>
-            Lista General de Estudiantes ({{ allFilteredStudents.length }})
+            Lista General ({{ allFilteredStudents.length }})
           </button>
           <button type="button" class="btn"
             [ngClass]="activeTableView === 'pendientes' ? 'btn-warning text-dark fw-bold shadow-sm' : 'btn-outline-warning text-dark'"
             (click)="setActiveTableView('pendientes')">
             <i class="material-icons-outlined align-middle me-1">hourglass_top</i>
-            Estudiantes Pendientes ({{ pendingStudents.length }})
+            Pendientes ({{ pendingStudents.length }})
+          </button>
+          <button type="button" class="btn"
+            [ngClass]="activeTableView === 'notas' ? 'btn-success text-white fw-bold shadow-sm' : 'btn-outline-success'"
+            (click)="setActiveTableView('notas')">
+            <i class="material-icons-outlined align-middle me-1">grade</i>
+            Reporte de Notas ({{ allGradesList.length }})
           </button>
         </div>
       </div>
@@ -836,6 +862,187 @@
               <a routerLink="/students" class="btn btn-sm btn-outline-warning text-dark w-100 d-flex align-items-center justify-content-center gap-1">
                 <i class="material-icons-outlined">manage_accounts</i> Gestionar en Estudiantes
               </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- VISTA 4: REPORTE Y CENTRALIZADOR DE NOTAS -->
+      <div *ngIf="activeTableView === 'notas'" class="animate-fade-in">
+        <!-- Banner Informativo y Botones de Exportación Rápida -->
+        <div class="alert alert-success d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3 py-2 px-3 border-success shadow-sm rounded-3">
+          <div class="d-flex align-items-center gap-2">
+            <i class="material-icons-outlined text-success fs-2">grade</i>
+            <div>
+              <strong class="text-dark">Planilla Oficial de Calificaciones y Rendimiento Académico:</strong>
+              <span class="ms-1 text-dark d-block d-md-inline">Centralizador de notas con desglose de Book 1 a Book 4, Examen de Nivel y Promedio Final.</span>
+            </div>
+          </div>
+          <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-success text-white fw-bold d-flex align-items-center gap-1 shadow-sm" (click)="exportNotasExcel()" [disabled]="isDownloadingNotasExcel">
+              <i class="material-icons-outlined" *ngIf="!isDownloadingNotasExcel">grid_on</i>
+              <span class="spinner-border spinner-border-sm" *ngIf="isDownloadingNotasExcel"></span>
+              Planilla Excel
+            </button>
+            <button class="btn btn-sm btn-outline-danger bg-white fw-bold d-flex align-items-center gap-1 shadow-sm" (click)="exportNotasPdf()" [disabled]="isDownloadingNotasPdf">
+              <i class="material-icons-outlined" *ngIf="!isDownloadingNotasPdf">picture_as_pdf</i>
+              <span class="spinner-border spinner-border-sm" *ngIf="isDownloadingNotasPdf"></span>
+              Planilla PDF
+            </button>
+          </div>
+        </div>
+
+        <!-- Tarjetas KPI Resumen del Grupo de Notas Filtrado -->
+        <div class="row g-2 mb-3">
+          <div class="col-6 col-md-2">
+            <div class="p-2 bg-light rounded text-center border">
+              <small class="text-muted d-block">Promedio Grupo</small>
+              <strong class="fs-5 text-primary">{{ gradesSummaryStats.promedioGroup }} / 100</strong>
+            </div>
+          </div>
+          <div class="col-6 col-md-2">
+            <div class="p-2 bg-light rounded text-center border">
+              <small class="text-muted d-block">Total Alumnos</small>
+              <strong class="fs-5 text-dark">{{ gradesSummaryStats.total }}</strong>
+            </div>
+          </div>
+          <div class="col-6 col-md-2">
+            <div class="p-2 bg-light rounded text-center border border-success">
+              <small class="text-success fw-bold d-block">Aprobados (≥51)</small>
+              <strong class="fs-5 text-success">{{ gradesSummaryStats.aprobados }}</strong>
+            </div>
+          </div>
+          <div class="col-6 col-md-2">
+            <div class="p-2 bg-light rounded text-center border border-danger">
+              <small class="text-danger fw-bold d-block">Reprobados (&lt;51)</small>
+              <strong class="fs-5 text-danger">{{ gradesSummaryStats.reprobados }}</strong>
+            </div>
+          </div>
+          <div class="col-6 col-md-2">
+            <div class="p-2 bg-light rounded text-center border border-warning">
+              <small class="text-warning text-dark fw-bold d-block">En Riesgo (51-69)</small>
+              <strong class="fs-5 text-warning text-dark">{{ gradesSummaryStats.enRiesgo }}</strong>
+            </div>
+          </div>
+          <div class="col-6 col-md-2">
+            <div class="p-2 bg-light rounded text-center border">
+              <small class="text-muted d-block">Sin Notas</small>
+              <strong class="fs-5 text-secondary">{{ gradesSummaryStats.sinNotas }}</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Barra de búsqueda rápida de notas -->
+        <div class="row mb-3 align-items-center">
+          <div class="col-md-6">
+            <div class="input-group">
+              <span class="input-group-text bg-light"><i class="material-icons-outlined">search</i></span>
+              <input type="text" class="form-control" placeholder="Buscar por estudiante, C.I., curso, paralelo o docente..."
+                     [(ngModel)]="searchTermNotas">
+              <button *ngIf="searchTermNotas" class="btn btn-outline-secondary" type="button" (click)="searchTermNotas = ''">
+                <i class="material-icons-outlined">close</i>
+              </button>
+            </div>
+          </div>
+          <div class="col-md-6 text-md-end mt-2 mt-md-0">
+            <span class="badge bg-success fs-6 px-3 py-2">
+              Mostrando {{ allGradesList.length }} registros de calificaciones
+            </span>
+          </div>
+        </div>
+
+        <!-- Tabla Escritorio de Reporte de Notas -->
+        <div class="table-responsive desktop-table-view">
+          <table class="table table-hover align-middle table-bordered">
+            <thead class="table-dark">
+              <tr>
+                <th style="width: 40px;">#</th>
+                <th>Estudiante (Apellidos y Nombres)</th>
+                <th>C.I.</th>
+                <th>Curso / Idioma</th>
+                <th>Paralelo</th>
+                <th>Instructor</th>
+                <th class="text-center bg-secondary">Book 1</th>
+                <th class="text-center bg-secondary">Book 2</th>
+                <th class="text-center bg-secondary">Book 3</th>
+                <th class="text-center bg-secondary">Book 4</th>
+                <th class="text-center bg-secondary">Examen Nivel</th>
+                <th class="text-center">Promedio Final</th>
+                <th class="text-center">Estado Rendimiento</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let est of allGradesList; let idx = index">
+                <td>{{ idx + 1 }}</td>
+                <td>
+                  <strong>{{ est.nombre_completo }}</strong>
+                </td>
+                <td><span class="badge bg-light text-dark border">{{ est.ci }}</span></td>
+                <td>{{ est.curso_nombre }}</td>
+                <td><span class="badge bg-light text-dark border">{{ est.paralelo_nombre }}</span></td>
+                <td><small class="text-muted">{{ est.docente_nombre }}</small></td>
+                <td class="text-center">{{ est.book1 }}</td>
+                <td class="text-center">{{ est.book2 }}</td>
+                <td class="text-center">{{ est.book3 }}</td>
+                <td class="text-center">{{ est.book4 }}</td>
+                <td class="text-center">{{ est.examenFinal }}</td>
+                <td class="text-center">
+                  <strong class="fs-6" [ngClass]="{'text-success': est.numericProm >= 51, 'text-danger': est.numericProm < 51 && est.promedio !== 'Sin Notas'}">
+                    {{ est.promedio }} {{ est.promedio !== 'Sin Notas' ? 'pts' : '' }}
+                  </strong>
+                </td>
+                <td class="text-center">
+                  <span class="badge" [ngClass]="est.badgeClass">
+                    {{ est.estadoRendimiento }}
+                  </span>
+                </td>
+              </tr>
+              <tr *ngIf="allGradesList.length === 0">
+                <td colspan="13" class="text-center py-4 text-muted">
+                  No se encontraron calificaciones registradas con los filtros aplicados.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Tarjetas Móviles de Notas (APK y Celulares) -->
+        <div class="mobile-reports-cards">
+          <div *ngIf="allGradesList.length === 0" class="text-center py-4 text-muted report-card-item">
+            No se encontraron calificaciones registradas con los filtros aplicados.
+          </div>
+          <div *ngFor="let est of allGradesList" class="report-card-item">
+            <div class="report-card-top">
+              <span class="report-card-title">{{ est.nombre_completo }}</span>
+              <span class="badge" [ngClass]="est.badgeClass">{{ est.estadoRendimiento }}</span>
+            </div>
+            <div class="report-card-row">
+              <span class="report-card-label">C.I.:</span>
+              <span class="report-card-val">{{ est.ci }}</span>
+            </div>
+            <div class="report-card-row">
+              <span class="report-card-label">Curso / Paralelo:</span>
+              <span class="report-card-val">{{ est.curso_nombre }} - {{ est.paralelo_nombre }}</span>
+            </div>
+            <div class="report-card-row">
+              <span class="report-card-label">Docente:</span>
+              <span class="report-card-val">{{ est.docente_nombre }}</span>
+            </div>
+            <div class="mt-2 p-2 bg-light rounded border text-start">
+              <small class="fw-bold d-block mb-1 text-primary">Desglose de Calificaciones:</small>
+              <div class="d-flex justify-content-between flex-wrap gap-1 small">
+                <span>B1: <strong>{{ est.book1 }}</strong></span>
+                <span>B2: <strong>{{ est.book2 }}</strong></span>
+                <span>B3: <strong>{{ est.book3 }}</strong></span>
+                <span>B4: <strong>{{ est.book4 }}</strong></span>
+                <span>Examen: <strong>{{ est.examenFinal }}</strong></span>
+              </div>
+            </div>
+            <div class="report-card-row mt-2 pt-2 border-top">
+              <span class="report-card-label fw-bold">Promedio Final:</span>
+              <strong class="fs-5" [ngClass]="{'text-success': est.numericProm >= 51, 'text-danger': est.numericProm < 51 && est.promedio !== 'Sin Notas'}">
+                {{ est.promedio }} {{ est.promedio !== 'Sin Notas' ? 'pts' : '' }}
+              </strong>
             </div>
           </div>
         </div>

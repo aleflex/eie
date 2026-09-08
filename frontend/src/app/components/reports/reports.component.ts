@@ -24,6 +24,8 @@ export class ReportsComponent implements OnInit, AfterViewInit {
   isLoading: boolean = true;
   isDownloadingExcel: boolean = false;
   isDownloadingPdf: boolean = false;
+  isDownloadingNotasExcel: boolean = false;
+  isDownloadingNotasPdf: boolean = false;
 
   // Control de la barra lateral (Sidebar)
   isSidebarCollapsed: boolean = false;
@@ -48,7 +50,7 @@ export class ReportsComponent implements OnInit, AfterViewInit {
   // Control del panel lateral de filtros colapsable (RF 21)
   isFilterSidebarOpen: boolean = false;
 
-  // Filtros Multi-criterio Combinados (Gestión, Docente, Nivel, Turno, etc.)
+  // Filtros Multi-criterio Combinados (Gestión, Docente, Nivel, Turno, Calificación, etc.)
   filters: any = {
     gestion: '',
     id_docente: '',
@@ -58,16 +60,18 @@ export class ReportsComponent implements OnInit, AfterViewInit {
     id_curso: '',
     id_paralelo: '',
     estado: '',
+    filtro_nota: '',
     fecha_desde: '',
     fecha_hasta: ''
   };
 
-  // Selector de vista de tabla principal: 'aulas', 'estudiantes' o 'pendientes'
-  activeTableView: 'aulas' | 'estudiantes' | 'pendientes' = 'aulas';
+  // Selector de vista de tabla principal: 'aulas', 'estudiantes', 'pendientes' o 'notas'
+  activeTableView: 'aulas' | 'estudiantes' | 'pendientes' | 'notas' = 'aulas';
   searchTermStudent: string = '';
   searchTermPending: string = '';
+  searchTermNotas: string = '';
 
-  setActiveTableView(view: 'aulas' | 'estudiantes' | 'pendientes') {
+  setActiveTableView(view: 'aulas' | 'estudiantes' | 'pendientes' | 'notas') {
     this.activeTableView = view;
   }
 
@@ -82,6 +86,8 @@ export class ReportsComponent implements OnInit, AfterViewInit {
       this.activeTableView = 'estudiantes';
       this.onFilterChange();
       return;
+    } else if (type === 'notas') {
+      this.activeTableView = 'notas';
     } else {
       this.activeTableView = 'aulas';
     }
@@ -104,6 +110,15 @@ export class ReportsComponent implements OnInit, AfterViewInit {
     { id: 'tarde', nombre: 'Tarde (14:00 - 18:00)' },
     { id: 'noche', nombre: 'Noche (18:30 - 21:00)' },
     { id: 'sabado', nombre: 'Sábados' }
+  ];
+
+  filtrosNotas: any[] = [
+    { id: '', nombre: 'Todas las Calificaciones' },
+    { id: 'aprobados', nombre: 'Aprobados (≥ 51 pts)' },
+    { id: 'reprobados', nombre: 'Reprobados (< 51 pts)' },
+    { id: 'excelentes', nombre: 'Excelente / Honor (≥ 90 pts)' },
+    { id: 'riesgo', nombre: 'En Riesgo / Regular (51 - 69 pts)' },
+    { id: 'sin_notas', nombre: 'Sin Calificaciones Registradas' }
   ];
 
   idiomasList: any[] = [
@@ -344,6 +359,109 @@ export class ReportsComponent implements OnInit, AfterViewInit {
     this.cargarReportes();
   }
 
+  // Lista consolidada plana de todos los estudiantes y sus calificaciones/notas
+  get allGradesList(): any[] {
+    const list: any[] = [];
+    if (!this.classroomStats) return list;
+    for (const aula of this.classroomStats) {
+      if (aula.estudiantes && Array.isArray(aula.estudiantes)) {
+        for (const est of aula.estudiantes) {
+          const notasArr = est.notas || [];
+          const prom = est.promedio;
+          const numericProm = typeof prom === 'number' ? prom : (parseFloat(prom) || 0);
+
+          let estadoRendimiento = 'Sin Notas';
+          let badgeClass = 'bg-secondary';
+          if (prom !== 'Sin Notas') {
+            if (numericProm >= 90) {
+              estadoRendimiento = 'Excelente / Honor';
+              badgeClass = 'bg-primary';
+            } else if (numericProm >= 51) {
+              if (numericProm < 70) {
+                estadoRendimiento = 'Aprobado (En Riesgo)';
+                badgeClass = 'bg-warning text-dark';
+              } else {
+                estadoRendimiento = 'Aprobado';
+                badgeClass = 'bg-success';
+              }
+            } else {
+              estadoRendimiento = 'Reprobado';
+              badgeClass = 'bg-danger';
+            }
+          }
+
+          list.push({
+            ...est,
+            aula_nombre: aula.aula || 'Sin Aula',
+            paralelo_nombre: aula.nombre_paralelo || 'N/A',
+            curso_nombre: aula.curso || 'N/A',
+            docente_nombre: aula.docente || 'Sin Asignar',
+            horario_desc: aula.horario || 'Regular',
+            numericProm,
+            estadoRendimiento,
+            badgeClass,
+            book1: notasArr[0] ?? '-',
+            book2: notasArr[1] ?? '-',
+            book3: notasArr[2] ?? '-',
+            book4: notasArr[3] ?? '-',
+            examenFinal: notasArr[4] ?? (notasArr.length > 4 ? notasArr[notasArr.length - 1] : '-')
+          });
+        }
+      }
+    }
+
+    let result = list;
+
+    // Aplicar filtro de nota si está seleccionado
+    if (this.filters.filtro_nota) {
+      const fn = this.filters.filtro_nota;
+      result = result.filter(e => {
+        if (fn === 'aprobados') return e.numericProm >= 51 && e.promedio !== 'Sin Notas';
+        if (fn === 'reprobados') return e.numericProm < 51 && e.promedio !== 'Sin Notas';
+        if (fn === 'excelentes') return e.numericProm >= 90;
+        if (fn === 'riesgo') return e.numericProm >= 51 && e.numericProm < 70;
+        if (fn === 'sin_notas') return e.promedio === 'Sin Notas';
+        return true;
+      });
+    }
+
+    if (this.searchTermNotas && this.searchTermNotas.trim()) {
+      const term = this.searchTermNotas.toLowerCase().trim();
+      result = result.filter(e =>
+        (e.nombre_completo && e.nombre_completo.toLowerCase().includes(term)) ||
+        (e.ci && e.ci.toLowerCase().includes(term)) ||
+        (e.paralelo_nombre && e.paralelo_nombre.toLowerCase().includes(term)) ||
+        (e.curso_nombre && e.curso_nombre.toLowerCase().includes(term)) ||
+        (e.docente_nombre && e.docente_nombre.toLowerCase().includes(term))
+      );
+    }
+
+    return result;
+  }
+
+  // KPIs Resumen de Calificaciones y Rendimiento
+  get gradesSummaryStats() {
+    const list = this.allGradesList;
+    const conNotas = list.filter(e => e.promedio !== 'Sin Notas');
+    const sum = conNotas.reduce((acc, curr) => acc + curr.numericProm, 0);
+    const promedioGroup = conNotas.length > 0 ? Math.round((sum / conNotas.length) * 10) / 10 : 0;
+    const aprobados = list.filter(e => e.numericProm >= 51 && e.promedio !== 'Sin Notas').length;
+    const reprobados = list.filter(e => e.numericProm < 51 && e.promedio !== 'Sin Notas').length;
+    const excelentes = list.filter(e => e.numericProm >= 90).length;
+    const enRiesgo = list.filter(e => e.numericProm >= 51 && e.numericProm < 70).length;
+    const sinNotas = list.filter(e => e.promedio === 'Sin Notas').length;
+
+    return {
+      total: list.length,
+      promedioGroup,
+      aprobados,
+      reprobados,
+      excelentes,
+      enRiesgo,
+      sinNotas
+    };
+  }
+
   resetFilters() {
     this.filters = {
       gestion: '',
@@ -354,11 +472,13 @@ export class ReportsComponent implements OnInit, AfterViewInit {
       id_curso: '',
       id_paralelo: '',
       estado: '',
+      filtro_nota: '',
       fecha_desde: '',
       fecha_hasta: ''
     };
     this.searchTermStudent = '';
     this.searchTermPending = '';
+    this.searchTermNotas = '';
     this.cargarReportes();
   }
 
@@ -396,6 +516,44 @@ export class ReportsComponent implements OnInit, AfterViewInit {
         console.error('Error exportando PDF', err);
         this.isDownloadingPdf = false;
         alert('No se pudo generar el reporte PDF en este momento');
+      }
+    });
+  }
+
+  /**
+   * Exportación dedicada de Planilla Oficial de Notas a Excel (.xlsx)
+   */
+  exportNotasExcel() {
+    this.isDownloadingNotasExcel = true;
+    this.reportService.downloadNotasExcel(this.filters).subscribe({
+      next: (blob: Blob) => {
+        this.isDownloadingNotasExcel = false;
+        const filename = `Planilla_Calificaciones_Notas_EIE_${new Date().toISOString().slice(0,10)}.xlsx`;
+        downloadFile(blob, filename);
+      },
+      error: (err: any) => {
+        console.error('Error exportando Planilla de Notas Excel', err);
+        this.isDownloadingNotasExcel = false;
+        alert('No se pudo generar la planilla de notas en Excel');
+      }
+    });
+  }
+
+  /**
+   * Exportación dedicada de Planilla Oficial de Notas a PDF (.pdf)
+   */
+  exportNotasPdf() {
+    this.isDownloadingNotasPdf = true;
+    this.reportService.downloadNotasPdf(this.filters).subscribe({
+      next: (blob: Blob) => {
+        this.isDownloadingNotasPdf = false;
+        const filename = `Planilla_Calificaciones_Notas_EIE_${new Date().toISOString().slice(0,10)}.pdf`;
+        downloadFile(blob, filename);
+      },
+      error: (err: any) => {
+        console.error('Error exportando Planilla de Notas PDF', err);
+        this.isDownloadingNotasPdf = false;
+        alert('No se pudo generar el reporte de notas en PDF');
       }
     });
   }

@@ -20,7 +20,7 @@ class ReportController extends Controller
     public function getLanguageStatistics(Request $request)
     {
         try {
-            $filters = $request->only(['id_idioma', 'id_nivel', 'id_curso', 'id_paralelo', 'estado', 'fecha_desde', 'fecha_hasta', 'gestion', 'id_docente', 'turno']);
+            $filters = $request->only(['id_idioma', 'id_nivel', 'id_curso', 'id_paralelo', 'estado', 'fecha_desde', 'fecha_hasta', 'gestion', 'id_docente', 'turno', 'filtro_nota']);
 
             $query = DB::table('inscripciones')
                 ->join('cursos', 'inscripciones.id_curso', '=', 'cursos.id_curso')
@@ -125,7 +125,7 @@ class ReportController extends Controller
     public function getClassroomOccupancy(Request $request)
     {
         try {
-            $filters = $request->only(['id_idioma', 'id_nivel', 'id_curso', 'id_paralelo', 'estado', 'fecha_desde', 'fecha_hasta', 'gestion', 'id_docente', 'turno']);
+            $filters = $request->only(['id_idioma', 'id_nivel', 'id_curso', 'id_paralelo', 'estado', 'fecha_desde', 'fecha_hasta', 'gestion', 'id_docente', 'turno', 'filtro_nota']);
 
             $paralelosQuery = Paralelo::with([
                 'aula',
@@ -369,7 +369,7 @@ class ReportController extends Controller
     public function getDashboardSummary(Request $request)
     {
         try {
-            $filters = $request->only(['id_idioma', 'id_nivel', 'id_curso', 'id_paralelo', 'estado', 'fecha_desde', 'fecha_hasta', 'gestion', 'id_docente', 'turno']);
+            $filters = $request->only(['id_idioma', 'id_nivel', 'id_curso', 'id_paralelo', 'estado', 'fecha_desde', 'fecha_hasta', 'gestion', 'id_docente', 'turno', 'filtro_nota']);
 
             $inscripcionesQuery = Inscripcion::query()->filterMultiCriteria($filters);
 
@@ -434,7 +434,7 @@ class ReportController extends Controller
      */
     public function exportExcel(Request $request)
     {
-        $filters = $request->only(['id_idioma', 'id_nivel', 'id_curso', 'id_paralelo', 'estado', 'fecha_desde', 'fecha_hasta', 'gestion', 'id_docente', 'turno']);
+        $filters = $request->only(['id_idioma', 'id_nivel', 'id_curso', 'id_paralelo', 'estado', 'fecha_desde', 'fecha_hasta', 'gestion', 'id_docente', 'turno', 'filtro_nota']);
 
         $summary = $this->getDashboardSummary($request)->getData(true);
         $langStats = $this->getLanguageStatistics($request)->getData(true);
@@ -798,7 +798,7 @@ class ReportController extends Controller
     {
         try {
             $tipo = $request->input('tipo', 'asistencia'); // 'lista' o 'asistencia'
-            $filters = $request->only(['id_idioma', 'id_nivel', 'id_curso', 'id_paralelo', 'estado', 'fecha_desde', 'fecha_hasta']);
+            $filters = $request->only(['id_idioma', 'id_nivel', 'id_curso', 'id_paralelo', 'estado', 'fecha_desde', 'fecha_hasta', 'gestion', 'id_docente', 'turno', 'filtro_nota']);
 
             $inscripciones = Inscripcion::with(['estudiante.user', 'curso.idioma', 'curso.nivelRel', 'paralelo', 'notas', 'asistencias'])
                 ->filterMultiCriteria($filters)
@@ -1067,7 +1067,7 @@ class ReportController extends Controller
     public function exportNotasExcel(Request $request)
     {
         try {
-            $filters = $request->only(['id_idioma', 'id_nivel', 'id_curso', 'id_paralelo', 'estado', 'fecha_desde', 'fecha_hasta']);
+            $filters = $request->only(['id_idioma', 'id_nivel', 'id_curso', 'id_paralelo', 'estado', 'fecha_desde', 'fecha_hasta', 'gestion', 'id_docente', 'turno', 'filtro_nota']);
 
             $inscripciones = Inscripcion::with(['estudiante.user', 'curso.idioma', 'curso.nivelRel', 'paralelo', 'notas'])
                 ->filterMultiCriteria($filters)
@@ -1278,7 +1278,7 @@ class ReportController extends Controller
     public function exportPdf(Request $request)
     {
         try {
-            $filters = $request->only(['id_idioma', 'id_nivel', 'id_curso', 'id_paralelo', 'estado', 'fecha_desde', 'fecha_hasta', 'gestion', 'id_docente', 'turno']);
+            $filters = $request->only(['id_idioma', 'id_nivel', 'id_curso', 'id_paralelo', 'estado', 'fecha_desde', 'fecha_hasta', 'gestion', 'id_docente', 'turno', 'filtro_nota']);
 
             $summary = $this->getDashboardSummary($request)->getData(true);
             $langStats = $this->getLanguageStatistics($request)->getData(true);
@@ -1312,7 +1312,7 @@ class ReportController extends Controller
         try {
             $idParalelo = $request->input('id_paralelo');
             $tipo = $request->input('tipo', 'lista'); // 'lista', 'notas', 'asistencia'
-            $filters = $request->only(['id_idioma', 'id_nivel', 'id_curso', 'id_paralelo', 'estado']);
+            $filters = $request->only(['id_idioma', 'id_nivel', 'id_curso', 'id_paralelo', 'estado', 'gestion', 'id_docente', 'turno', 'filtro_nota']);
 
             $paralelo = Paralelo::with(['curso.idioma', 'aula'])->find($idParalelo);
             if (!$paralelo && !empty($filters['id_paralelo'])) {

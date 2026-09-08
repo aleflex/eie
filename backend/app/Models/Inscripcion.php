@@ -148,6 +148,37 @@ class Inscripcion extends Model
             });
         }
 
+        if (!empty($filters['filtro_nota'])) {
+            $fn = strtolower($filters['filtro_nota']);
+            if ($fn === 'aprobados') {
+                $query->whereHas('notas', function ($q) {
+                    $q->select(\DB::raw(1))
+                      ->groupBy('id_inscripcion')
+                      ->havingRaw('AVG(nota) >= 51');
+                });
+            } elseif ($fn === 'reprobados') {
+                $query->whereHas('notas', function ($q) {
+                    $q->select(\DB::raw(1))
+                      ->groupBy('id_inscripcion')
+                      ->havingRaw('AVG(nota) < 51');
+                });
+            } elseif ($fn === 'excelentes') {
+                $query->whereHas('notas', function ($q) {
+                    $q->select(\DB::raw(1))
+                      ->groupBy('id_inscripcion')
+                      ->havingRaw('AVG(nota) >= 90');
+                });
+            } elseif ($fn === 'riesgo') {
+                $query->whereHas('notas', function ($q) {
+                    $q->select(\DB::raw(1))
+                      ->groupBy('id_inscripcion')
+                      ->havingRaw('AVG(nota) >= 51 AND AVG(nota) < 70');
+                });
+            } elseif ($fn === 'sin_notas') {
+                $query->doesntHave('notas');
+            }
+        }
+
         return $query;
     }
 }
