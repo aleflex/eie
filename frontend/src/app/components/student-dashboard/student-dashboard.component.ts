@@ -59,9 +59,9 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
 
   onImgError(event: any) {
     if (event && event.target) {
-      event.target.style.display = 'none';
-      if (event.target.nextElementSibling) {
-        event.target.nextElementSibling.style.display = 'flex';
+      const src = event.target.src || '';
+      if (!src.includes('default-avatar.svg') && !src.includes('default-avatar.png')) {
+        event.target.src = '/assets/default-avatar.svg';
       }
     }
   }
@@ -110,12 +110,17 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
 
     this.biometricEnabled = this.authService.isBiometricEnabled();
 
-    // Suscripción reactiva para mantener foto y perfil sincronizados en tiempo real
+    // Suscripción reactiva para mantener foto y perfil sincronizados en tiempo real entre Web y APK
     this.userSub = this.authService.usuario$.subscribe(u => {
       if (u) {
         this.user = u;
-        if (this.student && u.foto_url) {
-          this.student.foto_4x4_url = u.foto_url;
+        if (this.student) {
+          if (u.foto_url) this.student.foto_4x4_url = u.foto_url;
+          if (u.nombres) this.student.nombres = u.nombres;
+          if (u.apellidos) this.student.apellidos = u.apellidos;
+        }
+        if (u.estudiante_id && !this.uploading) {
+          this.loadStudentProfile(u.estudiante_id, true);
         }
       }
     });
@@ -127,8 +132,8 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
       this.isLoading = false;
     }
 
-    // Polling en tiempo real: consulta nuevas calificaciones cada 5 segundos
-    this.gradesPollSub = interval(5000).subscribe(() => {
+    // Polling en tiempo real: consulta nuevas calificaciones y perfil cada 4 segundos
+    this.gradesPollSub = interval(4000).subscribe(() => {
       if (this.user && this.user.estudiante_id && !this.uploading) {
         this.loadStudentProfile(this.user.estudiante_id, true);
       }

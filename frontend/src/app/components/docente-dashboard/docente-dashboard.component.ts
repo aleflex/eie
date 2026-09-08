@@ -192,9 +192,9 @@ export class DocenteDashboardComponent implements OnInit {
 
   onImgError(event: any) {
     if (event && event.target) {
-      event.target.style.display = 'none';
-      if (event.target.nextElementSibling) {
-        event.target.nextElementSibling.style.display = 'flex';
+      const src = event.target.src || '';
+      if (!src.includes('default-avatar.svg') && !src.includes('default-avatar.png')) {
+        event.target.src = '/assets/default-avatar.svg';
       }
     }
   }

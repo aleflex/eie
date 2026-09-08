@@ -43,8 +43,8 @@ export class AuthService {
         if (!document.hidden) this.sincronizarSilencioso();
       });
 
-      // Polling cada 6 segundos en segundo plano si está autenticado
-      interval(6000).subscribe(() => {
+      // Polling cada 4 segundos en segundo plano si está autenticado
+      interval(4000).subscribe(() => {
         if (this.estaAutenticado()) {
           this.sincronizarSilencioso();
         }
