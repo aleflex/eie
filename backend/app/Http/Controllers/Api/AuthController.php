@@ -87,7 +87,10 @@ class AuthController extends Controller
             'password' => 'required|string|min:8|confirmed',
         ]);
 
-        $user = auth()->user() ?? User::find($request->input('user_id'));
+        $user = auth('sanctum')->user() ?? auth()->user();
+        if (!$user && $request->has('user_id')) {
+            $user = User::find($request->input('user_id'));
+        }
         if (!$user) {
             return response()->json(['message' => 'Usuario no encontrado'], 404);
         }
@@ -147,11 +150,15 @@ class AuthController extends Controller
      */
     public function getProfile(Request $request)
     {
-        $userId = $request->query('user_id') ?? auth()->id();
-        $user = $userId ? User::with(['docente', 'estudiante'])->find($userId) : (auth()->user() ?? User::first());
-        if (!$user) {
-            return response()->json(['message' => 'Usuario no encontrado'], 404);
+        $user = auth('sanctum')->user() ?? auth()->user();
+        if (!$user && $request->has('user_id')) {
+            $user = User::find($request->query('user_id'));
         }
+        if (!$user) {
+            return response()->json(['message' => 'Usuario no autenticado'], 401);
+        }
+
+        $user->loadMissing(['docente', 'estudiante']);
 
         $userData = $user->toArray();
         if ($user->docente) {
@@ -183,10 +190,12 @@ class AuthController extends Controller
      */
     public function updateProfile(Request $request)
     {
-        $userId = $request->input('user_id') ?? auth()->id();
-        $user = $userId ? User::find($userId) : (auth()->user() ?? User::first());
+        $user = auth('sanctum')->user() ?? auth()->user();
+        if (!$user && $request->has('user_id')) {
+            $user = User::find($request->input('user_id'));
+        }
         if (!$user) {
-            return response()->json(['message' => 'Usuario no encontrado'], 404);
+            return response()->json(['message' => 'Usuario no autenticado'], 401);
         }
 
         $request->validate([

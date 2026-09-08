@@ -175,10 +175,14 @@ export class AuthService {
       tap((respuesta: any) => {
         if (respuesta.user) {
           const current = this.obtenerUsuario() || {};
-          const updated = { ...current, ...respuesta.user };
+          const token = current.token || respuesta.user.token;
+          const updated = { ...current, ...respuesta.user, token };
           sessionStorage.setItem('usuario', JSON.stringify(updated));
-          localStorage.setItem('usuario', JSON.stringify(updated));
-          localStorage.setItem('eie_biometric_user', JSON.stringify(updated));
+          if (Capacitor.isNativePlatform()) {
+            localStorage.setItem('usuario', JSON.stringify(updated));
+          } else {
+            localStorage.removeItem('usuario');
+          }
           this.usuarioSubject.next(updated);
         }
       })
@@ -198,13 +202,17 @@ export class AuthService {
       tap((respuesta: any) => {
         if (respuesta && respuesta.user) {
           const current = this.obtenerUsuario() || {};
-          const updated = { ...current, ...respuesta.user };
+          const token = current.token || respuesta.user.token;
+          const updated = { ...current, ...respuesta.user, token };
 
           // Solo actualizar si hay un cambio real para no causar repintados innecesarios
           const isChanged = JSON.stringify(current) !== JSON.stringify(updated);
           sessionStorage.setItem('usuario', JSON.stringify(updated));
-          localStorage.setItem('usuario', JSON.stringify(updated));
-          localStorage.setItem('eie_biometric_user', JSON.stringify(updated));
+          if (Capacitor.isNativePlatform()) {
+            localStorage.setItem('usuario', JSON.stringify(updated));
+          } else {
+            localStorage.removeItem('usuario');
+          }
           if (isChanged) {
             this.usuarioSubject.next(updated);
           }
