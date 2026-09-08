@@ -190,13 +190,11 @@ export class AuthService {
    */
   cargarPerfilActualizado(): Observable<any> {
     const usuario = this.obtenerUsuario();
-    const uid = usuario?.id_usuario || usuario?.id;
     let headers = new HttpHeaders();
     if (usuario?.token) {
       headers = headers.set('Authorization', `Bearer ${usuario.token}`);
     }
-    const params = uid ? `?user_id=${uid}` : '';
-    return this.http.get(`${this.apiUrl}/user/profile${params}`, { headers }).pipe(
+    return this.http.get(`${this.apiUrl}/user/profile`, { headers }).pipe(
       tap((respuesta: any) => {
         if (respuesta && respuesta.user) {
           const current = this.obtenerUsuario() || {};
