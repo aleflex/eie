@@ -3,37 +3,43 @@ import { CanActivateFn, Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 
 /**
- * Guard de Autenticación y Seguridad por Rol
- * Verifica si la sesión está activa y redirige según el rol correspondiente.
+ * Guard de Autenticación y Seguridad Estricta por Rol
+ * Impide rigurosamente que estudiantes o docentes ingresen a módulos administrativos o de otros roles.
  */
 export const authGuard: CanActivateFn = (route, state) => {
   const authService = inject(AuthService);
   const router = inject(Router);
 
   if (!authService.isLoggedIn()) {
-    // Si no ha iniciado sesión, redirigir inmediatamente al login guardando la URL intentada
     return router.createUrlTree(['/login'], { queryParams: { returnUrl: state.url } });
   }
 
   const user = authService.obtenerUsuario();
-  const path = route.routeConfig?.path || '';
+  const path = (route.routeConfig?.path || '').toLowerCase();
 
-  // Redirección inteligente y seguridad por rol de usuario
   if (user) {
-    const rol = (user.rol || '').toLowerCase();
-    
-    // Si un estudiante intenta entrar al dashboard de docentes o áreas administrativas
-    if (rol === 'estudiante') {
-      if (path === 'docente-dashboard' || path === 'admin' || path === 'roles' || path === 'accesos') {
+    const rolLower = (user.rol || '').toLowerCase();
+    const isEstudiante = !!user.estudiante_id || rolLower === 'estudiante';
+    const isDocente = !!user.docente_id || rolLower === 'docente' || rolLower === 'instructor';
+
+    // 🛡️ REGLA ESTRICTA DE SEGURIDAD PARA ESTUDIANTES:
+    // Un estudiante NUNCA puede ingresar a /roles, /admin, /students, /courses, /docentes-list, /paralelos, /reports, /settings, /accesos, etc.
+    if (isEstudiante) {
+      if (path !== 'student-dashboard') {
+        console.warn(`[Seguridad Guard] Bloqueado acceso no autorizado del estudiante (${user.name}) a /${path}. Redirigiendo a student-dashboard.`);
         return router.createUrlTree(['/student-dashboard']);
       }
+      return true;
     }
 
-    // Si un docente intenta entrar al dashboard de estudiantes
-    if (rol === 'docente') {
-      if (path === 'student-dashboard') {
+    // 🛡️ REGLA ESTRICTA DE SEGURIDAD PARA DOCENTES/INSTRUCTORES:
+    // Un docente NUNCA puede ingresar al portal de estudiantes ni a roles/configuración administrativa no permitida.
+    if (isDocente) {
+      if (path === 'student-dashboard' || path === 'roles' || path === 'accesos') {
+        console.warn(`[Seguridad Guard] Bloqueado acceso no autorizado del docente (${user.name}) a /${path}. Redirigiendo a docente-dashboard.`);
         return router.createUrlTree(['/docente-dashboard']);
       }
+      return true;
     }
   }
 
