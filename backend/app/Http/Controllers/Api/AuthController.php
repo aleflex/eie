@@ -237,16 +237,8 @@ class AuthController extends Controller
                 $fotoUrl = '/storage/' . $path;
             }
 
-            if ($user->estudiante) {
-                $user->estudiante->foto_4x4_url = $fotoUrl;
-                $user->estudiante->save();
-            } elseif ($user->docente) {
-                $user->docente->foto_url = $fotoUrl;
-                $user->docente->save();
-            } else {
-                $user->foto_url = $fotoUrl;
-                $user->save();
-            }
+            $user->foto_url = $fotoUrl;
+            $user->save();
         }
 
         $fresh = $user->fresh();

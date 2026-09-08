@@ -61,6 +61,14 @@ class Docente extends Authenticatable
         return $this->user ? $this->user->foto_url : null;
     }
 
+    public function setFotoUrlAttribute($value)
+    {
+        if ($this->user) {
+            $this->user->foto_url = $value;
+            $this->user->saveQuietly();
+        }
+    }
+
     public function getNombresAttribute()
     {
         return $this->user ? $this->user->nombres : null;
