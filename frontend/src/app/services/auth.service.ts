@@ -3,6 +3,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, BehaviorSubject, tap, interval, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
+import { Capacitor } from '@capacitor/core';
 
 import { RoleService } from './role.service';
 
@@ -91,8 +92,10 @@ export class AuthService {
     return this.http.post(`${this.apiUrl}/login`, payload).pipe(
       tap((respuesta: any) => {
         if (respuesta.user) {
+          // Guardar en AMBOS storages: sessionStorage para sesión web,
+          // localStorage para persistencia en APK Capacitor (se pierde al ir a background)
           sessionStorage.setItem('usuario', JSON.stringify(respuesta.user));
-          localStorage.removeItem('usuario');
+          localStorage.setItem('usuario', JSON.stringify(respuesta.user));
           this.usuarioSubject.next(respuesta.user);
           this.roleService.recargarPermisos();
         }
@@ -190,7 +193,7 @@ export class AuthService {
         if (respuesta && respuesta.user) {
           const current = this.obtenerUsuario() || {};
           const updated = { ...current, ...respuesta.user };
-          
+
           // Solo actualizar si hay un cambio real para no causar repintados innecesarios
           const isChanged = JSON.stringify(current) !== JSON.stringify(updated);
           sessionStorage.setItem('usuario', JSON.stringify(updated));
@@ -229,6 +232,9 @@ export class AuthService {
    * Métodos para la gestión de Biometría estilo Banca Móvil
    */
   isBiometricEnabled(): boolean {
+    if (!Capacitor.isNativePlatform()) {
+      return false;
+    }
     return localStorage.getItem('eie_biometric_enabled') === 'true' &&
       localStorage.getItem('eie_biometric_user') !== null;
   }
@@ -239,13 +245,24 @@ export class AuthService {
       return { success: false, message: 'Debes iniciar sesión para habilitar la biometría.' };
     }
 
+    if (!Capacitor.isNativePlatform()) {
+      return {
+        success: false,
+        message: 'La autenticación biométrica (Huella / Rostro) solo está disponible en la app instalada en tu dispositivo móvil Android o iOS.'
+      };
+    }
+
     try {
       const { NativeBiometric } = await import('@capgo/capacitor-native-biometric');
 
       try {
-        await NativeBiometric.isAvailable();
+        const check = await NativeBiometric.isAvailable();
+        if (!check || !check.isAvailable) {
+          return { success: false, message: 'Sensor biométrico no disponible en este dispositivo.' };
+        }
       } catch (e) {
         console.warn('Sensor biométrico check:', e);
+        return { success: false, message: 'El dispositivo no cuenta con sensor biométrico configurado.' };
       }
 
       await NativeBiometric.verifyIdentity({

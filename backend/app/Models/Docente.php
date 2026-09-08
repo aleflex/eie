@@ -34,12 +34,26 @@ class Docente extends Authenticatable
         'tipo_contrato',
         'fecha_inicio_contrato',
         'fecha_fin_contrato',
-        'foto_url'
+        'foto_url',
+        'expedido'
     ];
 
     public function getIdAttribute()
     {
         return $this->id_docente;
+    }
+
+    public function getExpedidoAttribute()
+    {
+        return $this->user ? $this->user->expedido : null;
+    }
+
+    public function setExpedidoAttribute($value)
+    {
+        if ($this->user) {
+            $this->user->expedido = $value;
+            $this->user->save();
+        }
     }
 
     public function getFotoUrlAttribute()

@@ -721,8 +721,13 @@
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
+    .inscription-container {
+        padding: max(1.5rem, calc(var(--safe-top, 0px) + 1.25rem)) 0.75rem max(2.5rem, calc(var(--safe-bottom, 0px) + 1rem)) 0.75rem !important;
+    }
+
     .form-card {
-        padding: 2rem;
+        padding: 1.75rem 1rem !important;
+        border-radius: 14px;
     }
     
     .stepper-progress-container {

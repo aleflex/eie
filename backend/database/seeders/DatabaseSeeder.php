@@ -379,6 +379,7 @@ class DatabaseSeeder extends Seeder
         // 3. Cursos, Paralelos e Inscripciones
         $idiomaIngles = Idioma::where('nombre_idioma', 'Inglés')->first()->id_idioma;
         $idiomaFrances = Idioma::where('nombre_idioma', 'Francés')->first()->id_idioma;
+        $idiomaChino = Idioma::where('nombre_idioma', 'Chino Mandarín')->first()?->id_idioma;
 
         $nivel1 = Nivel::first()->id_nivel;
         $modPresencial = Modalidad::where('nombre_modalidad', 'Presencial')->first()->id_modalidad;
@@ -396,6 +397,15 @@ class DatabaseSeeder extends Seeder
             ['cupo_minimo' => 5, 'cupo_maximo' => 25, 'estado' => 'Activo']
         );
 
+        // Curso 3: Chino Mandarín I Presencial
+        $cursoChino = null;
+        if ($idiomaChino) {
+            $cursoChino = Curso::firstOrCreate(
+                ['id_idioma' => $idiomaChino, 'id_nivel' => $nivel1, 'id_modalidad' => $modPresencial],
+                ['cupo_minimo' => 5, 'cupo_maximo' => 30, 'estado' => 'Activo']
+            );
+        }
+
         // Paralelos
         $aula101 = Aula::first()->id_aula;
         $paraleloA = Paralelo::firstOrCreate(
@@ -407,6 +417,13 @@ class DatabaseSeeder extends Seeder
             ['id_curso' => $cursoFrances->id_curso, 'nombre_paralelo' => 'Paralelo A-Virtual'],
             ['id_aula' => null, 'estado' => 'Activo']
         );
+
+        if ($cursoChino) {
+            Paralelo::firstOrCreate(
+                ['id_curso' => $cursoChino->id_curso, 'nombre_paralelo' => 'Paralelo A-Chino'],
+                ['id_aula' => $aula101, 'estado' => 'Activo']
+            );
+        }
 
         // Asignación de Docente a Paralelo
         DB::table('docente_paralelo')->insertOrIgnore([
@@ -429,6 +446,14 @@ class DatabaseSeeder extends Seeder
             ['id_estudiante' => $estudiante3->id_estudiante, 'id_curso' => $cursoFrances->id_curso],
             ['id_paralelo' => $paraleloB->id_paralelo, 'fecha_registro' => '2026-02-12', 'estado' => 'Activo']
         );
+
+        // Estudiante 4 (EMI) inscrito en Chino Mandarín con estado Pendiente (No Habilitado)
+        if ($cursoChino && isset($estudiante4)) {
+            Inscripcion::firstOrCreate(
+                ['id_estudiante' => $estudiante4->id_estudiante, 'id_curso' => $cursoChino->id_curso],
+                ['id_paralelo' => null, 'fecha_registro' => '2026-02-13', 'estado' => 'pendiente']
+            );
+        }
 
         // 4. Documentos Digitales Reales (Asociados a Estudiantes)
         $docsJuan = [

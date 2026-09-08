@@ -32,6 +32,12 @@ export class RoleService {
   private cachedPermisos: any = null;
 
   constructor(private http: HttpClient) {
+    // Cargar desde localStorage PRIMERO para disponibilidad inmediata (antes de la respuesta HTTP)
+    const stored = localStorage.getItem('eie_roles_permisos');
+    if (stored) {
+      try { this.cachedPermisos = JSON.parse(stored); } catch (e) {}
+    }
+    // Luego sincronizar con el servidor en segundo plano
     this.recargarPermisos();
   }
 
@@ -40,7 +46,15 @@ export class RoleService {
       next: (permisos) => {
         this.cachedPermisos = permisos;
       },
-      error: () => {}
+      error: () => {
+        // Si falla la red, intentar recuperar desde localStorage
+        if (!this.cachedPermisos) {
+          const stored = localStorage.getItem('eie_roles_permisos');
+          if (stored) {
+            try { this.cachedPermisos = JSON.parse(stored); } catch (e) {}
+          }
+        }
+      }
     });
   }
 
@@ -89,8 +103,10 @@ export class RoleService {
    * Verifica si un rol específico tiene permiso para una acción concreta en un módulo (ver, crear, editar, eliminar).
    */
   hasActionPermission(idRol: number, moduleKey: string, action: string = 'ver'): boolean {
-    if (idRol === 1) return true; // Administrador General siempre tiene acceso total a todo
+    // Administrador General (id_rol=1) siempre tiene acceso total — sin importar el caché
+    if (idRol === 1) return true;
 
+    // Intentar recuperar caché desde localStorage si no está en memoria
     if (!this.cachedPermisos) {
       const stored = localStorage.getItem('eie_roles_permisos');
       if (stored) {
@@ -100,6 +116,7 @@ export class RoleService {
       }
     }
 
+    // Verificar permisos configurados en la base de datos
     if (this.cachedPermisos && this.cachedPermisos[idRol]) {
       const modPerm = this.cachedPermisos[idRol][moduleKey];
       if (modPerm === true) return true; // Acceso total si está en formato booleano simple
@@ -112,9 +129,9 @@ export class RoleService {
       }
     }
 
-    // Valores por defecto
-    if (idRol === 4) { // Jefe de Unidad
-      const allowed = ['admin', 'students', 'courses', 'docentes-list', 'paralelos', 'reports'].includes(moduleKey);
+    // ── Valores por defecto si no hay permisos configurados en la BD ──
+    if (idRol === 4) { // Jefe de Unidad / Directivo
+      const allowed = ['admin', 'students', 'courses', 'docentes-list', 'paralelos', 'reports', 'accesos'].includes(moduleKey);
       if (!allowed) return false;
       if (action === 'eliminar' && ['docentes-list'].includes(moduleKey)) return false;
       return true;
@@ -122,7 +139,7 @@ export class RoleService {
     if (idRol === 5) { // Secretaría
       const allowed = ['admin', 'students', 'courses', 'reports'].includes(moduleKey);
       if (!allowed) return false;
-      if (action === 'eliminar') return false; // Secretaría no elimina registros por defecto
+      if (action === 'eliminar') return false;
       if (action === 'crear' || action === 'editar') return ['students'].includes(moduleKey);
       return action === 'ver';
     }

@@ -1,20 +1,25 @@
-<div class="admin-layout" [class.sidebar-collapsed]="isSidebarCollapsed">
+<div class="dashboard-layout">
   <!-- Mobile Backdrop Overlay -->
   <div class="mobile-backdrop" *ngIf="isMobileMenuOpen" (click)="closeMobileMenu()"></div>
 
   <!-- Barra Lateral (Sidebar) -->
-  <aside class="sidebar" [class.open]="isMobileMenuOpen">
+  <aside class="sidebar" [class.collapsed]="isSidebarCollapsed" [class.mobile-open]="isMobileMenuOpen">
     <div class="sidebar-header">
-      <div class="logo-container">
-        <img src="/assets/logo.png" alt="Logo Escuela de Idiomas" class="logo-img" onerror="this.src='/assets/default-avatar.svg'">
-        <span class="logo-text" *ngIf="!isSidebarCollapsed">E.I.E.</span>
-      </div>
-      <button class="btn-toggle-sidebar" (click)="toggleSidebar()" title="Colapsar menú">
+      <img src="assets/imagenes/logo.jpg" alt="Logo EIE" class="sidebar-logo" (error)="onImageError($event)">
+      <span *ngIf="!isSidebarCollapsed">EIE PANEL</span>
+      <button type="button" class="mobile-hamburger-btn" (click)="toggleMobileMenu()" aria-label="Toggle menú mobile">
+        <i class="material-icons-outlined">{{ isMobileMenuOpen ? 'close' : 'menu' }}</i>
+      </button>
+      <button type="button" class="btn-toggle-sidebar" (click)="toggleSidebar()" [title]="isSidebarCollapsed ? 'Expandir menú' : 'Contraer menú'">
         <i class="material-icons-outlined">{{ isSidebarCollapsed ? 'chevron_right' : 'chevron_left' }}</i>
       </button>
     </div>
 
     <nav class="sidebar-nav">
+      <a *ngIf="canAccess('admin')" routerLink="/admin" routerLinkActive="active" class="nav-item" (click)="closeMobileMenu()">
+        <i class="material-icons-outlined">dashboard</i>
+        <span *ngIf="!isSidebarCollapsed">Panel Principal</span>
+      </a>
       <a *ngIf="canAccess('students')" routerLink="/students" routerLinkActive="active" class="nav-item" (click)="closeMobileMenu()">
         <i class="material-icons-outlined">people</i>
         <span *ngIf="!isSidebarCollapsed">Estudiantes</span>
@@ -61,14 +66,9 @@
   <main class="main-content">
     <header class="top-header">
       <div class="header-left">
-        <div class="d-flex align-items-center gap-2">
-          <button class="btn-mobile-menu d-md-none" (click)="toggleMobileMenu()" aria-label="Abrir menú">
-            <span class="material-icons-outlined">menu</span>
-          </button>
-          <div>
-            <h1>Roles y Permisos</h1>
-            <p>Define con precisión a qué pantallas y funciones del sistema puede ingresar cada rol del personal institucional.</p>
-          </div>
+        <div>
+          <h1>Roles y Permisos</h1>
+          <p>Define con precisión a qué pantallas y funciones del sistema puede ingresar cada rol del personal institucional.</p>
         </div>
       </div>
       <div class="header-right">

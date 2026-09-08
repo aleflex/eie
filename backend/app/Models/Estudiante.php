@@ -17,8 +17,6 @@ class Estudiante extends Model
         'id_usuario',
         'id_grado',
         'id_arma',
-        'id_estado_civil',
-        'id_grupo_sanguineo',
         'estado_civil',
         'grupo_sanguineo',
         'fecha_nacimiento',
@@ -28,7 +26,6 @@ class Estudiante extends Model
         'celular',
         'domicilio',
         'anio_egreso_bachiller',
-        'foto_4x4_url',
         'hermanos_inscritos',
         'estado',
         'nombres',
@@ -135,12 +132,28 @@ class Estudiante extends Model
 
     public function getFoto4x4UrlAttribute()
     {
-        return $this->attributes['foto_4x4_url'] ?? null;
+        return $this->user ? $this->user->foto_url : null;
     }
 
     public function setFoto4x4UrlAttribute($value)
     {
-        $this->attributes['foto_4x4_url'] = $value;
+        if ($this->user) {
+            $this->user->foto_url = $value;
+            $this->user->saveQuietly();
+        }
+    }
+
+    public function getExpedidoAttribute()
+    {
+        return $this->user ? $this->user->expedido : null;
+    }
+
+    public function setExpedidoAttribute($value)
+    {
+        if ($this->user) {
+            $this->user->expedido = $value;
+            $this->user->saveQuietly();
+        }
     }
 
     public function gradoRel()
@@ -224,57 +237,27 @@ class Estudiante extends Model
 
     public function getEstadoCivilAttribute()
     {
-        if ($this->id_estado_civil) {
-            return \DB::table('estados_civil')->where('id_estado_civil', $this->id_estado_civil)->value('nombre_estado_civil') ?? 'Soltero/a';
-        }
-        return 'Soltero/a';
+        return $this->user ? $this->user->estado_civil : 'Soltero(a)';
     }
 
     public function setEstadoCivilAttribute($value)
     {
-        if (!empty($value)) {
-            $ec = \DB::table('estados_civil')->where('nombre_estado_civil', $value)->first();
-            if (!$ec) {
-                $ec = \DB::table('estados_civil')->where('nombre_estado_civil', 'LIKE', '%' . strtok($value, '/') . '%')->first();
-            }
-            if ($ec) {
-                $this->attributes['id_estado_civil'] = $ec->id_estado_civil;
-            } else {
-                $id = \DB::table('estados_civil')->insertGetId(['nombre_estado_civil' => $value]);
-                $this->attributes['id_estado_civil'] = $id;
-            }
-        } else {
-            $this->attributes['id_estado_civil'] = null;
+        if ($this->user) {
+            $this->user->estado_civil = $value;
+            $this->user->saveQuietly();
         }
     }
 
     public function getGrupoSanguineoAttribute()
     {
-        if ($this->id_grupo_sanguineo) {
-            return \DB::table('grupos_sanguineo')->where('id_grupo_sanguineo', $this->id_grupo_sanguineo)->value('nombre_grupo_sanguineo') ?? 'O+';
-        }
-        return 'O+';
+        return $this->user ? $this->user->grupo_sanguineo : 'O+';
     }
 
     public function setGrupoSanguineoAttribute($value)
     {
-        if (!empty($value)) {
-            $clean = $value;
-            if (preg_match('/\(([^)]+)\)/', $value, $m)) {
-                $clean = trim($m[1]);
-            }
-            $gs = \DB::table('grupos_sanguineo')->where('nombre_grupo_sanguineo', $clean)->first();
-            if (!$gs) {
-                $gs = \DB::table('grupos_sanguineo')->where('nombre_grupo_sanguineo', 'LIKE', '%' . $clean . '%')->first();
-            }
-            if ($gs) {
-                $this->attributes['id_grupo_sanguineo'] = $gs->id_grupo_sanguineo;
-            } else {
-                $id = \DB::table('grupos_sanguineo')->insertGetId(['nombre_grupo_sanguineo' => $clean]);
-                $this->attributes['id_grupo_sanguineo'] = $id;
-            }
-        } else {
-            $this->attributes['id_grupo_sanguineo'] = null;
+        if ($this->user) {
+            $this->user->grupo_sanguineo = $value;
+            $this->user->saveQuietly();
         }
     }
 

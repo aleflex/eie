@@ -30,6 +30,9 @@ class User extends Authenticatable
         'nombres',
         'apellidos',
         'ci',
+        'expedido',
+        'estado_civil',
+        'grupo_sanguineo',
         'foto_url',
     ];
 
@@ -41,7 +44,7 @@ class User extends Authenticatable
         'remember_token',
     ];
 
-    protected $appends = ['id', 'name', 'email', 'correo_electronico', 'foto_url'];
+    protected $appends = ['id', 'name', 'email', 'correo_electronico', 'foto_url', 'estado_civil', 'grupo_sanguineo'];
 
     /**
      * Obtener los atributos que deben ser convertidos.
@@ -88,6 +91,34 @@ class User extends Authenticatable
     public function getFotoUrlAttribute()
     {
         return $this->attributes['foto_url'] ?? null;
+    }
+
+    public function getEstadoCivilAttribute()
+    {
+        return $this->attributes['estado_civil'] ?? 'Soltero(a)';
+    }
+
+    public function setEstadoCivilAttribute($value)
+    {
+        $this->attributes['estado_civil'] = !empty($value) ? trim($value) : 'Soltero(a)';
+    }
+
+    public function getGrupoSanguineoAttribute()
+    {
+        return $this->attributes['grupo_sanguineo'] ?? 'O+';
+    }
+
+    public function setGrupoSanguineoAttribute($value)
+    {
+        if (!empty($value)) {
+            $clean = $value;
+            if (preg_match('/\(([^)]+)\)/', $value, $m)) {
+                $clean = trim($m[1]);
+            }
+            $this->attributes['grupo_sanguineo'] = trim($clean);
+        } else {
+            $this->attributes['grupo_sanguineo'] = 'O+';
+        }
     }
 
     /**

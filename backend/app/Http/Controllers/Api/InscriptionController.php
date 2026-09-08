@@ -102,52 +102,24 @@ class InscriptionController extends Controller
 
             // 4. Resolver estado civil mediante catálogo 'estados_civil' (columna: nombre_estado_civil)
             $idEstadoCivil = null;
+            // 4. Asignar estado civil y grupo sanguíneo directamente al Usuario (modelo User)
             if ($request->filled('estadoCivil') && trim($request->estadoCivil) !== '') {
-                $nombreEstado = trim($request->estadoCivil);
-                $ec = \DB::table('estados_civil')->where('nombre_estado_civil', $nombreEstado)->first();
-                if (!$ec) {
-                    $ec = \DB::table('estados_civil')->where('nombre_estado_civil', 'LIKE', '%' . strtok($nombreEstado, '/') . '%')->first();
-                }
-                if ($ec) {
-                    $idEstadoCivil = $ec->id_estado_civil;
-                } else {
-                    $idEstadoCivil = \DB::table('estados_civil')->insertGetId([
-                        'nombre_estado_civil' => $nombreEstado,
-                        'created_at' => now(),
-                        'updated_at' => now()
-                    ]);
-                }
+                $user->estado_civil = trim($request->estadoCivil);
             }
-
-            // 5. Resolver grupo sanguíneo mediante catálogo 'grupos_sanguineo' (columna: nombre_grupo_sanguineo)
-            $idGrupoSanguineo = null;
             if ($request->filled('grupoSanguineo') && trim($request->grupoSanguineo) !== '') {
-                $nombreGrupo = trim($request->grupoSanguineo);
-                if (preg_match('/^([ABO\+\-]+)/i', $nombreGrupo, $m)) {
+                $cleanGrupo = trim($request->grupoSanguineo);
+                if (preg_match('/^([ABO\+\-]+)/i', $cleanGrupo, $m)) {
                     $cleanGrupo = trim($m[1]);
-                } else {
-                    $cleanGrupo = $nombreGrupo;
                 }
-                $gs = \DB::table('grupos_sanguineo')->where('nombre_grupo_sanguineo', $cleanGrupo)->first();
-                if (!$gs) {
-                    $gs = \DB::table('grupos_sanguineo')->where('nombre_grupo_sanguineo', $nombreGrupo)->first();
-                }
-                if ($gs) {
-                    $idGrupoSanguineo = $gs->id_grupo_sanguineo;
-                } else {
-                    $idGrupoSanguineo = \DB::table('grupos_sanguineo')->insertGetId([
-                        'nombre_grupo_sanguineo' => $cleanGrupo,
-                        'created_at' => now(),
-                        'updated_at' => now()
-                    ]);
-                }
+                $user->grupo_sanguineo = $cleanGrupo;
             }
+            $user->save();
 
-            // 6. Normalizar carnet militar y cossmil (NULL para evitar colisiones UNIQUE en la BD)
+            // 5. Normalizar carnet militar y cossmil (NULL para evitar colisiones UNIQUE en la BD)
             $carnetMilitar = ($request->filled('carnetMilitar') && trim($request->carnetMilitar) !== '') ? trim($request->carnetMilitar) : null;
             $carnetCossmil = ($request->filled('carnetCossmil') && trim($request->carnetCossmil) !== '') ? trim($request->carnetCossmil) : null;
 
-            // 7. Buscar o crear perfil Estudiante
+            // 6. Buscar o crear perfil Estudiante
             $estudiante = Estudiante::where('id_usuario', $user->id_usuario)->first();
 
             // Verificar que los carnets no colisionen con otro estudiante
@@ -162,8 +134,6 @@ class InscriptionController extends Controller
                 'id_usuario' => $user->id_usuario,
                 'id_grado' => $idGrado,
                 'id_arma' => $idArma,
-                'id_estado_civil' => $idEstadoCivil,
-                'id_grupo_sanguineo' => $idGrupoSanguineo,
                 'fecha_nacimiento' => $request->fechaNacimiento,
                 'lugar_nacimiento' => $request->lugarNacimiento,
                 'carnet_militar' => $carnetMilitar,

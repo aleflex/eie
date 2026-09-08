@@ -1,0 +1,935 @@
+{
+  "metadata": {
+    "database": "defaultdb",
+    "timestamp": "2026-09-08T17:57:29.760Z",
+    "server": "mysql-1be5550e-alejandrokaviraya3-5905.a.aivencloud.com"
+  },
+  "serverConfig": {
+    "version": "8.4.8",
+    "comment": "Source distribution",
+    "sql_mode": "REAL_AS_FLOAT,PIPES_AS_CONCAT,ANSI_QUOTES,IGNORE_SPACE,ONLY_FULL_GROUP_BY,ANSI,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION",
+    "charset_db": "utf8mb4",
+    "collation_db": "utf8mb4_0900_ai_ci",
+    "time_zone": "SYSTEM",
+    "system_time_zone": "UTC",
+    "max_connections": 76
+  },
+  "tableStorage": [
+    {
+      "TABLE_NAME": "sessions",
+      "ENGINE": "InnoDB",
+      "TABLE_COLLATION": "utf8mb4_unicode_ci",
+      "TABLE_ROWS": 231,
+      "data_kb": "176.00",
+      "index_kb": "32.00",
+      "data_free_kb": "0.00",
+      "AUTO_INCREMENT": null
+    },
+    {
+      "TABLE_NAME": "estudiantes",
+      "ENGINE": "InnoDB",
+      "TABLE_COLLATION": "utf8mb4_unicode_ci",
+      "TABLE_ROWS": 11,
+      "data_kb": "16.00",
+      "index_kb": "128.00",
+      "data_free_kb": "0.00",
+      "AUTO_INCREMENT": 16
+    },
+    {
+      "TABLE_NAME": "usuarios",
+      "ENGINE": "InnoDB",
+      "TABLE_COLLATION": "utf8mb4_unicode_ci",
+      "TABLE_ROWS": 16,
+      "data_kb": "16.00",
+      "index_kb": "96.00",
+      "data_free_kb": "0.00",
+      "AUTO_INCREMENT": 28
+    },
+    {
+      "TABLE_NAME": "inscripciones",
+      "ENGINE": "InnoDB",
+      "TABLE_COLLATION": "utf8mb4_unicode_ci",
+      "TABLE_ROWS": 11,
+      "data_kb": "16.00",
+      "index_kb": "64.00",
+      "data_free_kb": "0.00",
+      "AUTO_INCREMENT": 14
+    },
+    {
+      "TABLE_NAME": "cursos",
+      "ENGINE": "InnoDB",
+      "TABLE_COLLATION": "utf8mb4_unicode_ci",
+      "TABLE_ROWS": 2,
+      "data_kb": "16.00",
+      "index_kb": "48.00",
+      "data_free_kb": "0.00",
+      "AUTO_INCREMENT": 8
+    },
+    {
+      "TABLE_NAME": "docentes",
+      "ENGINE": "InnoDB",
+      "TABLE_COLLATION": "utf8mb4_unicode_ci",
+      "TABLE_ROWS": 2,
+      "data_kb": "16.00",
+      "index_kb": "32.00",
+      "data_free_kb": "0.00",
+      "AUTO_INCREMENT": 3
+    },
+    {
+      "TABLE_NAME": "notas",
+      "ENGINE": "InnoDB",
+      "TABLE_COLLATION": "utf8mb4_unicode_ci",
+      "TABLE_ROWS": 0,
+      "data_kb": "16.00",
+      "index_kb": "32.00",
+      "data_free_kb": "0.00",
+      "AUTO_INCREMENT": 2
+    },
+    {
+      "TABLE_NAME": "paralelos",
+      "ENGINE": "InnoDB",
+      "TABLE_COLLATION": "utf8mb4_unicode_ci",
+      "TABLE_ROWS": 2,
+      "data_kb": "16.00",
+      "index_kb": "32.00",
+      "data_free_kb": "0.00",
+      "AUTO_INCREMENT": 5
+    },
+    {
+      "TABLE_NAME": "horario_paralelo",
+      "ENGINE": "InnoDB",
+      "TABLE_COLLATION": "utf8mb4_unicode_ci",
+      "TABLE_ROWS": 3,
+      "data_kb": "16.00",
+      "index_kb": "32.00",
+      "data_free_kb": "0.00",
+      "AUTO_INCREMENT": 7
+    },
+    {
+      "TABLE_NAME": "personal_access_tokens",
+      "ENGINE": "InnoDB",
+      "TABLE_COLLATION": "utf8mb4_unicode_ci",
+      "TABLE_ROWS": 97,
+      "data_kb": "16.00",
+      "index_kb": "32.00",
+      "data_free_kb": "0.00",
+      "AUTO_INCREMENT": 104
+    },
+    {
+      "TABLE_NAME": "estudiante_responsable",
+      "ENGINE": "InnoDB",
+      "TABLE_COLLATION": "utf8mb4_unicode_ci",
+      "TABLE_ROWS": 7,
+      "data_kb": "16.00",
+      "index_kb": "32.00",
+      "data_free_kb": "0.00",
+      "AUTO_INCREMENT": 15
+    },
+    {
+      "TABLE_NAME": "docente_paralelo",
+      "ENGINE": "InnoDB",
+      "TABLE_COLLATION": "utf8mb4_unicode_ci",
+      "TABLE_ROWS": 4,
+      "data_kb": "16.00",
+      "index_kb": "32.00",
+      "data_free_kb": "0.00",
+      "AUTO_INCREMENT": 7
+    },
+    {
+      "TABLE_NAME": "contactos_emergencia",
+      "ENGINE": "InnoDB",
+      "TABLE_COLLATION": "utf8mb4_unicode_ci",
+      "TABLE_ROWS": 9,
+      "data_kb": "16.00",
+      "index_kb": "32.00",
+      "data_free_kb": "0.00",
+      "AUTO_INCREMENT": 14
+    },
+    {
+      "TABLE_NAME": "tipos_documentos",
+      "ENGINE": "InnoDB",
+      "TABLE_COLLATION": "utf8mb4_unicode_ci",
+      "TABLE_ROWS": 7,
+      "data_kb": "16.00",
+      "index_kb": "32.00",
+      "data_free_kb": "0.00",
+      "AUTO_INCREMENT": 7
+    },
+    {
+      "TABLE_NAME": "responsables",
+      "ENGINE": "InnoDB",
+      "TABLE_COLLATION": "utf8mb4_unicode_ci",
+      "TABLE_ROWS": 9,
+      "data_kb": "16.00",
+      "index_kb": "16.00",
+      "data_free_kb": "0.00",
+      "AUTO_INCREMENT": 16
+    },
+    {
+      "TABLE_NAME": "asistencias",
+      "ENGINE": "InnoDB",
+      "TABLE_COLLATION": "utf8mb4_unicode_ci",
+      "TABLE_ROWS": 20,
+      "data_kb": "16.00",
+      "index_kb": "16.00",
+      "data_free_kb": "0.00",
+      "AUTO_INCREMENT": 24
+    },
+    {
+      "TABLE_NAME": "roles",
+      "ENGINE": "InnoDB",
+      "TABLE_COLLATION": "utf8mb4_unicode_ci",
+      "TABLE_ROWS": 5,
+      "data_kb": "16.00",
+      "index_kb": "16.00",
+      "data_free_kb": "0.00",
+      "AUTO_INCREMENT": 5
+    },
+    {
+      "TABLE_NAME": "tipos_contrato_docente",
+      "ENGINE": "InnoDB",
+      "TABLE_COLLATION": "utf8mb4_unicode_ci",
+      "TABLE_ROWS": 5,
+      "data_kb": "16.00",
+      "index_kb": "16.00",
+      "data_free_kb": "0.00",
+      "AUTO_INCREMENT": 5
+    },
+    {
+      "TABLE_NAME": "niveles",
+      "ENGINE": "InnoDB",
+      "TABLE_COLLATION": "utf8mb4_unicode_ci",
+      "TABLE_ROWS": 5,
+      "data_kb": "16.00",
+      "index_kb": "16.00",
+      "data_free_kb": "0.00",
+      "AUTO_INCREMENT": 6
+    },
+    {
+      "TABLE_NAME": "modalidades",
+      "ENGINE": "InnoDB",
+      "TABLE_COLLATION": "utf8mb4_unicode_ci",
+      "TABLE_ROWS": 3,
+      "data_kb": "16.00",
+      "index_kb": "16.00",
+      "data_free_kb": "0.00",
+      "AUTO_INCREMENT": 3
+    },
+    {
+      "TABLE_NAME": "idiomas",
+      "ENGINE": "InnoDB",
+      "TABLE_COLLATION": "utf8mb4_unicode_ci",
+      "TABLE_ROWS": 6,
+      "data_kb": "16.00",
+      "index_kb": "16.00",
+      "data_free_kb": "0.00",
+      "AUTO_INCREMENT": 7
+    },
+    {
+      "TABLE_NAME": "documentos",
+      "ENGINE": "InnoDB",
+      "TABLE_COLLATION": "utf8mb4_unicode_ci",
+      "TABLE_ROWS": 24,
+      "data_kb": "16.00",
+      "index_kb": "16.00",
+      "data_free_kb": "0.00",
+      "AUTO_INCREMENT": 47
+    },
+    {
+      "TABLE_NAME": "configuraciones",
+      "ENGINE": "InnoDB",
+      "TABLE_COLLATION": "utf8mb4_unicode_ci",
+      "TABLE_ROWS": 8,
+      "data_kb": "16.00",
+      "index_kb": "16.00",
+      "data_free_kb": "0.00",
+      "AUTO_INCREMENT": 8
+    },
+    {
+      "TABLE_NAME": "cache_locks",
+      "ENGINE": "InnoDB",
+      "TABLE_COLLATION": "utf8mb4_unicode_ci",
+      "TABLE_ROWS": 0,
+      "data_kb": "16.00",
+      "index_kb": "16.00",
+      "data_free_kb": "0.00",
+      "AUTO_INCREMENT": null
+    },
+    {
+      "TABLE_NAME": "cache",
+      "ENGINE": "InnoDB",
+      "TABLE_COLLATION": "utf8mb4_unicode_ci",
+      "TABLE_ROWS": 0,
+      "data_kb": "16.00",
+      "index_kb": "16.00",
+      "data_free_kb": "0.00",
+      "AUTO_INCREMENT": null
+    },
+    {
+      "TABLE_NAME": "migrations",
+      "ENGINE": "InnoDB",
+      "TABLE_COLLATION": "utf8mb4_unicode_ci",
+      "TABLE_ROWS": 6,
+      "data_kb": "16.00",
+      "index_kb": "0.00",
+      "data_free_kb": "0.00",
+      "AUTO_INCREMENT": 7
+    },
+    {
+      "TABLE_NAME": "horarios",
+      "ENGINE": "InnoDB",
+      "TABLE_COLLATION": "utf8mb4_unicode_ci",
+      "TABLE_ROWS": 7,
+      "data_kb": "16.00",
+      "index_kb": "0.00",
+      "data_free_kb": "0.00",
+      "AUTO_INCREMENT": 11
+    },
+    {
+      "TABLE_NAME": "grados",
+      "ENGINE": "InnoDB",
+      "TABLE_COLLATION": "utf8mb4_unicode_ci",
+      "TABLE_ROWS": 9,
+      "data_kb": "16.00",
+      "index_kb": "0.00",
+      "data_free_kb": "0.00",
+      "AUTO_INCREMENT": 9
+    },
+    {
+      "TABLE_NAME": "aulas",
+      "ENGINE": "InnoDB",
+      "TABLE_COLLATION": "utf8mb4_unicode_ci",
+      "TABLE_ROWS": 5,
+      "data_kb": "16.00",
+      "index_kb": "0.00",
+      "data_free_kb": "0.00",
+      "AUTO_INCREMENT": 6
+    },
+    {
+      "TABLE_NAME": "armas",
+      "ENGINE": "InnoDB",
+      "TABLE_COLLATION": "utf8mb4_unicode_ci",
+      "TABLE_ROWS": 7,
+      "data_kb": "16.00",
+      "index_kb": "0.00",
+      "data_free_kb": "0.00",
+      "AUTO_INCREMENT": 7
+    }
+  ],
+  "tablasSinPk": [],
+  "foreignKeys": [
+    {
+      "TABLE_NAME": "asistencias",
+      "COLUMN_NAME": "id_inscripcion",
+      "CONSTRAINT_NAME": "asistencias_id_inscripcion_foreign",
+      "REFERENCED_TABLE_NAME": "inscripciones",
+      "REFERENCED_COLUMN_NAME": "id_inscripcion",
+      "DELETE_RULE": "CASCADE",
+      "UPDATE_RULE": "NO ACTION"
+    },
+    {
+      "TABLE_NAME": "contactos_emergencia",
+      "COLUMN_NAME": "id_estudiante",
+      "CONSTRAINT_NAME": "contactos_emergencia_id_estudiante_foreign",
+      "REFERENCED_TABLE_NAME": "estudiantes",
+      "REFERENCED_COLUMN_NAME": "id_estudiante",
+      "DELETE_RULE": "CASCADE",
+      "UPDATE_RULE": "NO ACTION"
+    },
+    {
+      "TABLE_NAME": "cursos",
+      "COLUMN_NAME": "id_idioma",
+      "CONSTRAINT_NAME": "cursos_id_idioma_foreign",
+      "REFERENCED_TABLE_NAME": "idiomas",
+      "REFERENCED_COLUMN_NAME": "id_idioma",
+      "DELETE_RULE": "CASCADE",
+      "UPDATE_RULE": "NO ACTION"
+    },
+    {
+      "TABLE_NAME": "cursos",
+      "COLUMN_NAME": "id_modalidad",
+      "CONSTRAINT_NAME": "cursos_id_modalidad_foreign",
+      "REFERENCED_TABLE_NAME": "modalidades",
+      "REFERENCED_COLUMN_NAME": "id_modalidad",
+      "DELETE_RULE": "CASCADE",
+      "UPDATE_RULE": "NO ACTION"
+    },
+    {
+      "TABLE_NAME": "cursos",
+      "COLUMN_NAME": "id_nivel",
+      "CONSTRAINT_NAME": "cursos_id_nivel_foreign",
+      "REFERENCED_TABLE_NAME": "niveles",
+      "REFERENCED_COLUMN_NAME": "id_nivel",
+      "DELETE_RULE": "CASCADE",
+      "UPDATE_RULE": "NO ACTION"
+    },
+    {
+      "TABLE_NAME": "docente_paralelo",
+      "COLUMN_NAME": "id_docente",
+      "CONSTRAINT_NAME": "docente_paralelo_id_docente_foreign",
+      "REFERENCED_TABLE_NAME": "docentes",
+      "REFERENCED_COLUMN_NAME": "id_docente",
+      "DELETE_RULE": "CASCADE",
+      "UPDATE_RULE": "NO ACTION"
+    },
+    {
+      "TABLE_NAME": "docente_paralelo",
+      "COLUMN_NAME": "id_paralelo",
+      "CONSTRAINT_NAME": "docente_paralelo_id_paralelo_foreign",
+      "REFERENCED_TABLE_NAME": "paralelos",
+      "REFERENCED_COLUMN_NAME": "id_paralelo",
+      "DELETE_RULE": "CASCADE",
+      "UPDATE_RULE": "NO ACTION"
+    },
+    {
+      "TABLE_NAME": "docentes",
+      "COLUMN_NAME": "id_tipo_contrato",
+      "CONSTRAINT_NAME": "docentes_id_tipo_contrato_foreign",
+      "REFERENCED_TABLE_NAME": "tipos_contrato_docente",
+      "REFERENCED_COLUMN_NAME": "id_tipo_contrato",
+      "DELETE_RULE": "SET NULL",
+      "UPDATE_RULE": "NO ACTION"
+    },
+    {
+      "TABLE_NAME": "docentes",
+      "COLUMN_NAME": "id_usuario",
+      "CONSTRAINT_NAME": "docentes_id_usuario_foreign",
+      "REFERENCED_TABLE_NAME": "usuarios",
+      "REFERENCED_COLUMN_NAME": "id_usuario",
+      "DELETE_RULE": "CASCADE",
+      "UPDATE_RULE": "NO ACTION"
+    },
+    {
+      "TABLE_NAME": "documentos",
+      "COLUMN_NAME": "id_estudiante",
+      "CONSTRAINT_NAME": "documentos_id_estudiante_foreign",
+      "REFERENCED_TABLE_NAME": "estudiantes",
+      "REFERENCED_COLUMN_NAME": "id_estudiante",
+      "DELETE_RULE": "CASCADE",
+      "UPDATE_RULE": "NO ACTION"
+    },
+    {
+      "TABLE_NAME": "estudiante_responsable",
+      "COLUMN_NAME": "id_estudiante",
+      "CONSTRAINT_NAME": "estudiante_responsable_id_estudiante_foreign",
+      "REFERENCED_TABLE_NAME": "estudiantes",
+      "REFERENCED_COLUMN_NAME": "id_estudiante",
+      "DELETE_RULE": "CASCADE",
+      "UPDATE_RULE": "NO ACTION"
+    },
+    {
+      "TABLE_NAME": "estudiante_responsable",
+      "COLUMN_NAME": "id_responsable",
+      "CONSTRAINT_NAME": "estudiante_responsable_id_responsable_foreign",
+      "REFERENCED_TABLE_NAME": "responsables",
+      "REFERENCED_COLUMN_NAME": "id_responsable",
+      "DELETE_RULE": "CASCADE",
+      "UPDATE_RULE": "NO ACTION"
+    },
+    {
+      "TABLE_NAME": "estudiantes",
+      "COLUMN_NAME": "id_arma",
+      "CONSTRAINT_NAME": "estudiantes_nueva_id_arma_foreign",
+      "REFERENCED_TABLE_NAME": "armas",
+      "REFERENCED_COLUMN_NAME": "id_arma",
+      "DELETE_RULE": "SET NULL",
+      "UPDATE_RULE": "NO ACTION"
+    },
+    {
+      "TABLE_NAME": "estudiantes",
+      "COLUMN_NAME": "id_grado",
+      "CONSTRAINT_NAME": "estudiantes_nueva_id_grado_foreign",
+      "REFERENCED_TABLE_NAME": "grados",
+      "REFERENCED_COLUMN_NAME": "id_grado",
+      "DELETE_RULE": "SET NULL",
+      "UPDATE_RULE": "NO ACTION"
+    },
+    {
+      "TABLE_NAME": "estudiantes",
+      "COLUMN_NAME": "id_usuario",
+      "CONSTRAINT_NAME": "estudiantes_nueva_id_usuario_foreign",
+      "REFERENCED_TABLE_NAME": "usuarios",
+      "REFERENCED_COLUMN_NAME": "id_usuario",
+      "DELETE_RULE": "CASCADE",
+      "UPDATE_RULE": "NO ACTION"
+    },
+    {
+      "TABLE_NAME": "horario_paralelo",
+      "COLUMN_NAME": "id_horario",
+      "CONSTRAINT_NAME": "horario_paralelo_id_horario_foreign",
+      "REFERENCED_TABLE_NAME": "horarios",
+      "REFERENCED_COLUMN_NAME": "id_horario",
+      "DELETE_RULE": "CASCADE",
+      "UPDATE_RULE": "NO ACTION"
+    },
+    {
+      "TABLE_NAME": "horario_paralelo",
+      "COLUMN_NAME": "id_paralelo",
+      "CONSTRAINT_NAME": "horario_paralelo_id_paralelo_foreign",
+      "REFERENCED_TABLE_NAME": "paralelos",
+      "REFERENCED_COLUMN_NAME": "id_paralelo",
+      "DELETE_RULE": "CASCADE",
+      "UPDATE_RULE": "NO ACTION"
+    },
+    {
+      "TABLE_NAME": "inscripciones",
+      "COLUMN_NAME": "id_curso",
+      "CONSTRAINT_NAME": "inscripciones_id_curso_foreign",
+      "REFERENCED_TABLE_NAME": "cursos",
+      "REFERENCED_COLUMN_NAME": "id_curso",
+      "DELETE_RULE": "CASCADE",
+      "UPDATE_RULE": "NO ACTION"
+    },
+    {
+      "TABLE_NAME": "inscripciones",
+      "COLUMN_NAME": "id_estudiante",
+      "CONSTRAINT_NAME": "inscripciones_id_estudiante_foreign",
+      "REFERENCED_TABLE_NAME": "estudiantes",
+      "REFERENCED_COLUMN_NAME": "id_estudiante",
+      "DELETE_RULE": "CASCADE",
+      "UPDATE_RULE": "NO ACTION"
+    },
+    {
+      "TABLE_NAME": "inscripciones",
+      "COLUMN_NAME": "id_paralelo",
+      "CONSTRAINT_NAME": "inscripciones_id_paralelo_foreign",
+      "REFERENCED_TABLE_NAME": "paralelos",
+      "REFERENCED_COLUMN_NAME": "id_paralelo",
+      "DELETE_RULE": "SET NULL",
+      "UPDATE_RULE": "NO ACTION"
+    },
+    {
+      "TABLE_NAME": "notas",
+      "COLUMN_NAME": "id_inscripcion",
+      "CONSTRAINT_NAME": "notas_id_inscripcion_foreign",
+      "REFERENCED_TABLE_NAME": "inscripciones",
+      "REFERENCED_COLUMN_NAME": "id_inscripcion",
+      "DELETE_RULE": "CASCADE",
+      "UPDATE_RULE": "NO ACTION"
+    },
+    {
+      "TABLE_NAME": "paralelos",
+      "COLUMN_NAME": "id_aula",
+      "CONSTRAINT_NAME": "paralelos_id_aula_foreign",
+      "REFERENCED_TABLE_NAME": "aulas",
+      "REFERENCED_COLUMN_NAME": "id_aula",
+      "DELETE_RULE": "SET NULL",
+      "UPDATE_RULE": "NO ACTION"
+    },
+    {
+      "TABLE_NAME": "paralelos",
+      "COLUMN_NAME": "id_curso",
+      "CONSTRAINT_NAME": "paralelos_id_curso_foreign",
+      "REFERENCED_TABLE_NAME": "cursos",
+      "REFERENCED_COLUMN_NAME": "id_curso",
+      "DELETE_RULE": "CASCADE",
+      "UPDATE_RULE": "NO ACTION"
+    },
+    {
+      "TABLE_NAME": "usuarios",
+      "COLUMN_NAME": "id_rol",
+      "CONSTRAINT_NAME": "usuarios_id_rol_foreign",
+      "REFERENCED_TABLE_NAME": "roles",
+      "REFERENCED_COLUMN_NAME": "id_rol",
+      "DELETE_RULE": "RESTRICT",
+      "UPDATE_RULE": "NO ACTION"
+    }
+  ],
+  "columnasVacias": [
+    {
+      "table": "estudiantes",
+      "column": "deleted_at",
+      "type": "timestamp",
+      "count": 11
+    },
+    {
+      "table": "estudiantes",
+      "column": "created_at",
+      "type": "timestamp",
+      "count": 11
+    },
+    {
+      "table": "estudiantes",
+      "column": "updated_at",
+      "type": "timestamp",
+      "count": 11
+    },
+    {
+      "table": "usuarios",
+      "column": "email_verificado_at",
+      "type": "timestamp",
+      "count": 16
+    },
+    {
+      "table": "usuarios",
+      "column": "remember_token",
+      "type": "varchar",
+      "count": 16
+    },
+    {
+      "table": "usuarios",
+      "column": "deleted_at",
+      "type": "timestamp",
+      "count": 16
+    },
+    {
+      "table": "inscripciones",
+      "column": "created_at",
+      "type": "timestamp",
+      "count": 11
+    },
+    {
+      "table": "inscripciones",
+      "column": "deleted_at",
+      "type": "timestamp",
+      "count": 11
+    },
+    {
+      "table": "cursos",
+      "column": "created_at",
+      "type": "timestamp",
+      "count": 8
+    },
+    {
+      "table": "cursos",
+      "column": "updated_at",
+      "type": "timestamp",
+      "count": 8
+    },
+    {
+      "table": "cursos",
+      "column": "deleted_at",
+      "type": "timestamp",
+      "count": 8
+    },
+    {
+      "table": "docentes",
+      "column": "created_at",
+      "type": "timestamp",
+      "count": 2
+    },
+    {
+      "table": "docentes",
+      "column": "updated_at",
+      "type": "timestamp",
+      "count": 2
+    },
+    {
+      "table": "docentes",
+      "column": "deleted_at",
+      "type": "timestamp",
+      "count": 2
+    },
+    {
+      "table": "notas",
+      "column": "observacion",
+      "type": "text",
+      "count": 1
+    },
+    {
+      "table": "notas",
+      "column": "created_at",
+      "type": "timestamp",
+      "count": 1
+    },
+    {
+      "table": "notas",
+      "column": "updated_at",
+      "type": "timestamp",
+      "count": 1
+    },
+    {
+      "table": "notas",
+      "column": "deleted_at",
+      "type": "timestamp",
+      "count": 1
+    },
+    {
+      "table": "paralelos",
+      "column": "created_at",
+      "type": "timestamp",
+      "count": 5
+    },
+    {
+      "table": "paralelos",
+      "column": "updated_at",
+      "type": "timestamp",
+      "count": 5
+    },
+    {
+      "table": "paralelos",
+      "column": "deleted_at",
+      "type": "timestamp",
+      "count": 5
+    },
+    {
+      "table": "horario_paralelo",
+      "column": "created_at",
+      "type": "timestamp",
+      "count": 5
+    },
+    {
+      "table": "horario_paralelo",
+      "column": "updated_at",
+      "type": "timestamp",
+      "count": 5
+    },
+    {
+      "table": "personal_access_tokens",
+      "column": "last_used_at",
+      "type": "timestamp",
+      "count": 38
+    },
+    {
+      "table": "personal_access_tokens",
+      "column": "expires_at",
+      "type": "timestamp",
+      "count": 38
+    },
+    {
+      "table": "estudiante_responsable",
+      "column": "created_at",
+      "type": "timestamp",
+      "count": 11
+    },
+    {
+      "table": "asistencias",
+      "column": "observacion",
+      "type": "text",
+      "count": 20
+    },
+    {
+      "table": "asistencias",
+      "column": "deleted_at",
+      "type": "timestamp",
+      "count": 20
+    },
+    {
+      "table": "niveles",
+      "column": "created_at",
+      "type": "timestamp",
+      "count": 6
+    },
+    {
+      "table": "niveles",
+      "column": "updated_at",
+      "type": "timestamp",
+      "count": 6
+    },
+    {
+      "table": "modalidades",
+      "column": "created_at",
+      "type": "timestamp",
+      "count": 3
+    },
+    {
+      "table": "modalidades",
+      "column": "updated_at",
+      "type": "timestamp",
+      "count": 3
+    },
+    {
+      "table": "idiomas",
+      "column": "created_at",
+      "type": "timestamp",
+      "count": 7
+    },
+    {
+      "table": "idiomas",
+      "column": "updated_at",
+      "type": "timestamp",
+      "count": 7
+    },
+    {
+      "table": "horarios",
+      "column": "created_at",
+      "type": "timestamp",
+      "count": 9
+    },
+    {
+      "table": "horarios",
+      "column": "updated_at",
+      "type": "timestamp",
+      "count": 9
+    },
+    {
+      "table": "aulas",
+      "column": "created_at",
+      "type": "timestamp",
+      "count": 6
+    },
+    {
+      "table": "aulas",
+      "column": "updated_at",
+      "type": "timestamp",
+      "count": 6
+    }
+  ],
+  "columnasCasiVacias": [
+    {
+      "table": "estudiantes",
+      "column": "id_grado",
+      "type": "bigint",
+      "filled": 2,
+      "count": 11,
+      "emptyPct": "81.8"
+    },
+    {
+      "table": "estudiantes",
+      "column": "id_arma",
+      "type": "bigint",
+      "filled": 2,
+      "count": 11,
+      "emptyPct": "81.8"
+    },
+    {
+      "table": "estudiantes",
+      "column": "carnet_militar",
+      "type": "varchar",
+      "filled": 2,
+      "count": 11,
+      "emptyPct": "81.8"
+    },
+    {
+      "table": "estudiantes",
+      "column": "documentos_habilitados_hasta",
+      "type": "timestamp",
+      "filled": 2,
+      "count": 11,
+      "emptyPct": "81.8"
+    },
+    {
+      "table": "usuarios",
+      "column": "expedido",
+      "type": "varchar",
+      "filled": 2,
+      "count": 16,
+      "emptyPct": "87.5"
+    },
+    {
+      "table": "inscripciones",
+      "column": "updated_at",
+      "type": "timestamp",
+      "filled": 2,
+      "count": 11,
+      "emptyPct": "81.8"
+    },
+    {
+      "table": "estudiante_responsable",
+      "column": "updated_at",
+      "type": "timestamp",
+      "filled": 2,
+      "count": 11,
+      "emptyPct": "81.8"
+    },
+    {
+      "table": "responsables",
+      "column": "created_at",
+      "type": "timestamp",
+      "filled": 2,
+      "count": 15,
+      "emptyPct": "86.7"
+    },
+    {
+      "table": "responsables",
+      "column": "updated_at",
+      "type": "timestamp",
+      "filled": 2,
+      "count": 15,
+      "emptyPct": "86.7"
+    }
+  ],
+  "huerfanosFk": [],
+  "usuariosSinRol": [],
+  "estudiantesSinUsuario": [],
+  "docentesSinUsuario": [],
+  "responsablesSinEstudiante": [
+    {
+      "id_responsable": 1,
+      "nombres_responsable": "Sgt.",
+      "apellido_paterno_responsable": "Mario"
+    },
+    {
+      "id_responsable": 2,
+      "nombres_responsable": "Sr.",
+      "apellido_paterno_responsable": "Carlos"
+    },
+    {
+      "id_responsable": 4,
+      "nombres_responsable": "Gral.",
+      "apellido_paterno_responsable": "Rodrigo"
+    },
+    {
+      "id_responsable": 5,
+      "nombres_responsable": "Cnl.",
+      "apellido_paterno_responsable": "DAEN"
+    }
+  ],
+  "contactosSinEstudiante": [],
+  "documentosSinEstudiante": [],
+  "cursosRefsInval": [],
+  "tokensHuerf": [],
+  "passwordsInseguras": [],
+  "ciDuplicados": [],
+  "correosInstitucionalesDuplicados": [],
+  "inscripcionesDuplicadas": [],
+  "fechasNacimientoAnomalas": [],
+  "notasFueraDeRango": [],
+  "timestampAnomalies": [],
+  "estadosPorTabla": {
+    "usuarios": [
+      {
+        "estado": "ACTIVO",
+        "qty": 15
+      },
+      {
+        "estado": "INACTIVO",
+        "qty": 1
+      }
+    ],
+    "estudiantes": [
+      {
+        "estado": "Activo",
+        "qty": 11
+      }
+    ],
+    "docentes": [
+      {
+        "estado": "Activo",
+        "qty": 2
+      }
+    ],
+    "cursos": [
+      {
+        "estado": "Activo",
+        "qty": 8
+      }
+    ],
+    "inscripciones": [
+      {
+        "estado": "activo",
+        "qty": 7
+      },
+      {
+        "estado": "baja",
+        "qty": 1
+      },
+      {
+        "estado": "pendiente",
+        "qty": 3
+      }
+    ]
+  },
+  "tokensSanctumStats": {
+    "total_tokens": 38,
+    "never_used": "38",
+    "expired": "0",
+    "last_activity": null
+  },
+  "sessionStats": {
+    "total_sessions": 0,
+    "users_with_session": 0,
+    "oldest_session": null,
+    "newest_session": null
+  }
+}

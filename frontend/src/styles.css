@@ -65,6 +65,20 @@
   --glass-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
   
   --transition: all 0.25s ease-in-out;
+
+  /* Safe Area Insets adaptables (Web estándar y APK Capacitor) */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+}
+
+/* En APK Nativo Android / Capacitor, si el WebView no inyecta insets de barra de estado, aseguramos un mínimo de 28px para que los iconos de estado no tapen la cabecera */
+html.capacitor-native,
+body.capacitor-native,
+.capacitor-native {
+  --safe-top: max(env(safe-area-inset-top, 0px), 30px);
+  --safe-bottom: max(env(safe-area-inset-bottom, 0px), 16px);
 }
 
 * {
@@ -80,9 +94,9 @@ body {
   color: var(--text-primary);
   line-height: 1.6;
   overflow-x: hidden;
-  padding-left: env(safe-area-inset-left, 0px);
-  padding-right: env(safe-area-inset-right, 0px);
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: var(--safe-left, env(safe-area-inset-left, 0px));
+  padding-right: var(--safe-right, env(safe-area-inset-right, 0px));
+  padding-bottom: var(--safe-bottom, env(safe-area-inset-bottom, 0px));
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -171,37 +185,50 @@ html {
   }
 
   /* Contenedor Principal en Móvil */
-  .dashboard-layout {
+  .dashboard-layout,
+  .admin-layout {
     flex-direction: column !important;
-  }  /* Transformar Sidebar en un Top Nav Premium y Colapsable */
+    min-height: 100vh !important;
+    min-height: 100dvh !important;
+    width: 100% !important;
+  }
+
+  /* Transformar Sidebar en un Top Nav Premium y Colapsable */
   .sidebar {
     width: 100% !important;
     min-height: auto !important;
     flex-direction: column !important;
     align-items: stretch !important;
     justify-content: flex-start !important;
-    padding: 0 max(1rem, env(safe-area-inset-right, 16px)) 0 max(1rem, env(safe-area-inset-left, 16px)) !important;
+    padding-top: var(--safe-top, env(safe-area-inset-top, 0px)) !important;
+    padding-bottom: 0 !important;
+    padding-left: max(1rem, var(--safe-left, env(safe-area-inset-left, 16px))) !important;
+    padding-right: max(1rem, var(--safe-right, env(safe-area-inset-right, 16px))) !important;
     position: sticky !important;
     top: 0;
     left: 0 !important;
     z-index: 1000 !important;
     background: var(--primary-color, #003b71) !important;
     border-bottom: 3px solid var(--secondary-color, #f9b233) !important;
-    box-shadow: 0 4px 10px rgba(0, 59, 113, 0.15);
-    max-height: 60px !important;
+    box-shadow: 0 4px 14px rgba(0, 59, 113, 0.25);
+    max-height: calc(64px + var(--safe-top, env(safe-area-inset-top, 0px))) !important;
     overflow: hidden !important;
-    transition: max-height 0.3s ease-in-out !important;
+    transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1) !important;
   }
 
   .sidebar.mobile-open {
     max-height: 100vh !important;
+    max-height: 100dvh !important;
     overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
     visibility: visible !important;
     opacity: 1 !important;
+    padding-bottom: max(2rem, var(--safe-bottom, env(safe-area-inset-bottom, 16px))) !important;
   }
 
   .sidebar-header {
-    height: 60px !important;
+    height: 64px !important;
+    min-height: 64px !important;
     padding: 0 !important;
     display: flex !important;
     align-items: center !important;
@@ -209,14 +236,30 @@ html {
     flex-shrink: 0 !important;
   }
 
-  .sidebar-logo {
-    height: 32px !important;
+  .sidebar-logo,
+  .sidebar-header .logo-img {
+    height: 38px !important;
+    width: 38px !important;
+    border-radius: 8px !important;
+    object-fit: cover !important;
+    flex-shrink: 0 !important;
+    margin-right: 0.75rem !important;
   }
 
-  .sidebar-header span {
+  .sidebar-header span,
+  .sidebar-header .logo-text {
     font-size: 1.1rem !important;
     font-weight: 800 !important;
     color: white !important;
+    letter-spacing: 0.5px !important;
+    margin-right: auto !important;
+  }
+
+  .sidebar-header .logo-container {
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.75rem !important;
+    margin-right: auto !important;
   }
 
   /* Hamburger Menu Button */
@@ -224,18 +267,29 @@ html {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    background: transparent !important;
+    background: rgba(255, 255, 255, 0.12) !important;
     border: none !important;
+    border-radius: 10px !important;
     box-shadow: none !important;
     color: white !important;
     width: 44px !important;
     height: 44px !important;
+    min-width: 44px !important;
+    min-height: 44px !important;
     cursor: pointer !important;
     outline: none !important;
+    margin-left: auto !important;
+    transition: background 0.2s ease, transform 0.1s ease !important;
+    -webkit-tap-highlight-color: transparent !important;
+  }
+
+  .mobile-hamburger-btn:active {
+    background: rgba(255, 255, 255, 0.25) !important;
+    transform: scale(0.96);
   }
   
   .mobile-hamburger-btn i {
-    font-size: 28px !important;
+    font-size: 26px !important;
     color: white !important;
   }
 
@@ -294,8 +348,9 @@ html {
 
   /* Ajuste de Espaciado del Contenido */
   .main-content {
-    padding: 1rem max(0.85rem, env(safe-area-inset-right, 14px)) 2rem max(0.85rem, env(safe-area-inset-left, 14px)) !important;
+    padding: 1.25rem max(0.85rem, var(--safe-right, env(safe-area-inset-right, 14px))) max(3.5rem, calc(var(--safe-bottom, env(safe-area-inset-bottom, 0px)) + 2rem)) max(0.85rem, var(--safe-left, env(safe-area-inset-left, 14px))) !important;
     width: 100% !important;
+    max-width: 100% !important;
     box-sizing: border-box !important;
     overflow-x: hidden !important;
   }
