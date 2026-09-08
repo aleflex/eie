@@ -92,10 +92,12 @@ export class AuthService {
     return this.http.post(`${this.apiUrl}/login`, payload).pipe(
       tap((respuesta: any) => {
         if (respuesta.user) {
-          // Guardar en AMBOS storages: sessionStorage para sesión web,
-          // localStorage para persistencia en APK Capacitor (se pierde al ir a background)
           sessionStorage.setItem('usuario', JSON.stringify(respuesta.user));
-          localStorage.setItem('usuario', JSON.stringify(respuesta.user));
+          if (Capacitor.isNativePlatform()) {
+            localStorage.setItem('usuario', JSON.stringify(respuesta.user));
+          } else {
+            localStorage.removeItem('usuario');
+          }
           this.usuarioSubject.next(respuesta.user);
           this.roleService.recargarPermisos();
         }
@@ -135,17 +137,23 @@ export class AuthService {
   }
 
   /**
-   * Verifica si hay un usuario autenticado (soporta sesión activa y biometría)
+   * Verifica si hay un usuario autenticado (En Web requiere sesión activa en la pestaña)
    */
   estaAutenticado(): boolean {
-    return sessionStorage.getItem('usuario') !== null || localStorage.getItem('usuario') !== null;
+    if (Capacitor.isNativePlatform()) {
+      return localStorage.getItem('usuario') !== null || sessionStorage.getItem('usuario') !== null;
+    }
+    return sessionStorage.getItem('usuario') !== null;
   }
 
   /**
    * Obtiene los datos del usuario autenticado
    */
   obtenerUsuario() {
-    const usuario = sessionStorage.getItem('usuario') || localStorage.getItem('usuario');
+    let usuario = sessionStorage.getItem('usuario');
+    if (!usuario && Capacitor.isNativePlatform()) {
+      usuario = localStorage.getItem('usuario');
+    }
     return usuario ? JSON.parse(usuario) : null;
   }
 
