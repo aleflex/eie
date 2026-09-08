@@ -99,6 +99,19 @@ body {
   padding-bottom: var(--safe-bottom, env(safe-area-inset-bottom, 0px));
 }
 
+/* Sidebar Logo Global Constraint */
+.sidebar-logo,
+.sidebar-header img {
+  width: 38px !important;
+  height: 38px !important;
+  max-width: 38px !important;
+  max-height: 38px !important;
+  border-radius: 8px !important;
+  object-fit: cover !important;
+  flex-shrink: 0 !important;
+  display: inline-block !important;
+}
+
 h1, h2, h3, h4, h5, h6 {
   font-family: 'Outfit', sans-serif;
   font-weight: 700;
