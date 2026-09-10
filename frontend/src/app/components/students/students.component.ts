@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -10,7 +10,7 @@ import { CourseService } from '../../services/course.service';
 import { InscriptionService } from '../../services/inscription.service';
 import { downloadFile } from '../../utils/file-downloader';
 import { ParaleloService } from '../../services/paralelo.service';
-import { Subject } from 'rxjs';
+import { Subject, Subscription, interval } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { ImageCompressorService } from '../../services/image-compressor.service';
 import { AuthService } from '../../services/auth.service';
@@ -22,7 +22,7 @@ import { AuthService } from '../../services/auth.service';
   templateUrl: './students.component.html',
   styleUrl: './students.component.css'
 })
-export class StudentsComponent implements OnInit {
+export class StudentsComponent implements OnInit, OnDestroy {
   students: any[] = [];
   allStudents: any[] = [];
   courses: any[] = [];
@@ -97,6 +97,12 @@ export class StudentsComponent implements OnInit {
   isPreviewPdf: boolean = false;
   isPreviewImage: boolean = false;
 
+  // Sincronización en tiempo real silenciosa entre Web y APK
+  private realTimeSub: Subscription | null = null;
+  private isSyncing: boolean = false;
+  private focusHandler: any = null;
+  private visibilityHandler: any = null;
+
   constructor(
     private studentService: StudentService,
     private courseService: CourseService,
@@ -119,6 +125,92 @@ export class StudentsComponent implements OnInit {
       distinctUntilChanged() // Solo si el término cambió
     ).subscribe(() => {
       this.onSearch();
+    });
+
+    // Sincronización automática silenciosa en tiempo real cada 3.5 segundos
+    this.realTimeSub = interval(3500).subscribe(() => {
+      if (!this.selectedStudent) {
+        this.silentSyncStudents();
+      }
+      if (this.showDocumentsModal && this.currentStudentForDocs && !this.docsLoading) {
+        this.silentSyncDocuments();
+      }
+    });
+
+    // Refrescar al reanudar aplicación o enfocar pestaña
+    if (typeof window !== 'undefined') {
+      this.focusHandler = () => this.silentSyncStudents();
+      this.visibilityHandler = () => {
+        if (!document.hidden) this.silentSyncStudents();
+      };
+      window.addEventListener('focus', this.focusHandler);
+      document.addEventListener('visibilitychange', this.visibilityHandler);
+    }
+  }
+
+  ngOnDestroy() {
+    if (this.realTimeSub) {
+      this.realTimeSub.unsubscribe();
+    }
+    if (typeof window !== 'undefined') {
+      if (this.focusHandler) window.removeEventListener('focus', this.focusHandler);
+      if (this.visibilityHandler) document.removeEventListener('visibilitychange', this.visibilityHandler);
+    }
+  }
+
+  /**
+   * Sincroniza la lista de estudiantes e inscripciones en segundo plano sin interrumpir ni bloquear la pantalla
+   */
+  silentSyncStudents() {
+    if (this.isSyncing) return;
+    this.isSyncing = true;
+    this.studentService.getStudents().subscribe({
+      next: (data) => {
+        this.isSyncing = false;
+        if (!data || !Array.isArray(data)) return;
+
+        // Comprobar si hubo cambios (cantidad de estudiantes, fotos, inscripciones o estados)
+        const currentFingerprint = this.allStudents.map(s => 
+          `${s.id || s.id_estudiante}_${s.foto_4x4_url || ''}_${s.estado || ''}_${s.curso_id || ''}_${s.inscripciones?.length || 0}`
+        ).join('|');
+        
+        const newFingerprint = data.map(s => 
+          `${s.id || s.id_estudiante}_${s.foto_4x4_url || ''}_${s.estado || ''}_${s.curso_id || ''}_${s.inscripciones?.length || 0}`
+        ).join('|');
+
+        if (currentFingerprint !== newFingerprint) {
+          this.allStudents = data;
+          if (this.searchTerm && this.searchTerm.trim() !== '') {
+            this.onSearch();
+          } else {
+            this.students = [...data];
+          }
+        }
+      },
+      error: () => {
+        this.isSyncing = false;
+      }
+    });
+  }
+
+  /**
+   * Sincroniza en tiempo real los documentos del estudiante cuando el modal está abierto
+   */
+  silentSyncDocuments() {
+    if (!this.currentStudentForDocs || this.docsLoading) return;
+    const studentId = this.currentStudentForDocs.id || this.currentStudentForDocs.id_estudiante;
+    if (!studentId) return;
+
+    this.studentService.getDocuments(studentId).subscribe({
+      next: (docs) => {
+        if (!docs || !Array.isArray(docs)) return;
+        const currentFingerprint = (this.studentDocuments || []).map(d => `${d.id_documento}_${d.nombre_archivo}_${d.ruta_archivo}`).join('|');
+        const newFingerprint = docs.map(d => `${d.id_documento}_${d.nombre_archivo}_${d.ruta_archivo}`).join('|');
+        if (currentFingerprint !== newFingerprint) {
+          this.studentDocuments = docs;
+        }
+      },
+      error: () => {}
     });
   }
 

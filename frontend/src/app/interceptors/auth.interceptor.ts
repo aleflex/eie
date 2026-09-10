@@ -24,6 +24,13 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
     }
   }
 
+  // Evitar caché de respuestas en navegador o WebView para sincronización inmediata en tiempo real
+  if (req.method === 'GET' && req.url.includes('/api/')) {
+    headers = headers.set('Cache-Control', 'no-cache, no-store, must-revalidate')
+                     .set('Pragma', 'no-cache')
+                     .set('Expires', '0');
+  }
+
   const clonedRequest = req.clone({ headers });
   return next(clonedRequest);
 };

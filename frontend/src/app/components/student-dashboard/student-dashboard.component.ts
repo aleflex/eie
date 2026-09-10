@@ -132,10 +132,13 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
       this.isLoading = false;
     }
 
-    // Polling en tiempo real: consulta nuevas calificaciones y perfil cada 4 segundos
-    this.gradesPollSub = interval(4000).subscribe(() => {
+    // Polling en tiempo real: consulta nuevas calificaciones, perfil y documentos cada 3.5 segundos
+    this.gradesPollSub = interval(3500).subscribe(() => {
       if (this.user && this.user.estudiante_id && !this.uploading) {
         this.loadStudentProfile(this.user.estudiante_id, true);
+        if (this.activeTab === 'documents' && this.student) {
+          this.loadStudentDocuments(true);
+        }
       }
     });
 
@@ -208,12 +211,20 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
     });
   }
 
-  loadStudentDocuments() {
+  loadStudentDocuments(silent: boolean = false) {
     if (!this.student) return;
-    this.docsLoading = true;
+    if (!silent) this.docsLoading = true;
     this.studentService.getDocuments(this.student.id).subscribe({
       next: (docs) => {
-        this.studentDocuments = docs;
+        if (!docs || !Array.isArray(docs)) {
+          this.docsLoading = false;
+          return;
+        }
+        const currentFingerprint = (this.studentDocuments || []).map(d => `${d.id_documento}_${d.nombre_archivo}`).join('|');
+        const newFingerprint = docs.map(d => `${d.id_documento}_${d.nombre_archivo}`).join('|');
+        if (currentFingerprint !== newFingerprint) {
+          this.studentDocuments = docs;
+        }
         this.docsLoading = false;
       },
       error: (err) => {
