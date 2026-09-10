@@ -280,7 +280,9 @@
                         <span class="material-icons-outlined input-icon">person</span>
                         <input type="text" id="profile_name" [(ngModel)]="profileData.name" name="name"
                                (keydown)="blockNumbers($event)" (beforeinput)="blockNumbersBeforeInput($event)" (input)="cleanProfileName($event)"
-                               inputmode="text" pattern="[^\d]*"
+                               oninput="this.value = this.value.replace(/[0-9]/g, '')"
+                               onkeydown="if(!event.ctrlKey && !event.metaKey && ((event.key >= '0' && event.key <= '9') || (event.code && event.code.startsWith('Numpad') && event.code !== 'NumpadEnter'))) event.preventDefault();"
+                               inputmode="text"
                                class="form-control-premium" required>
                       </div>
                     </div>

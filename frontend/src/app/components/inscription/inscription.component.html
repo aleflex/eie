@@ -103,7 +103,9 @@
             <input type="text" id="nombres" formControlName="nombres" class="form-control"
                    (keydown)="blockNumbers($event)" (beforeinput)="blockNumbersBeforeInput($event)"
                    (input)="onInputSanitize($event, 'nombres')" (paste)="onPasteSanitize($event, 'nombres')"
-                   inputmode="text" pattern="[^\d]*"
+                   oninput="this.value = this.value.replace(/[0-9]/g, '')"
+                   onkeydown="if(!event.ctrlKey && !event.metaKey && ((event.key >= '0' && event.key <= '9') || (event.code && event.code.startsWith('Numpad') && event.code !== 'NumpadEnter'))) event.preventDefault();"
+                   inputmode="text"
                    [class.is-invalid]="(isSubmitted || f['nombres'].touched) && f['nombres'].errors" placeholder="Ej. Juan">
             <div *ngIf="(isSubmitted || f['nombres'].touched) && f['nombres'].errors" class="error-msg">
               <small *ngIf="f['nombres'].errors['required']">El nombre es obligatorio.</small>
@@ -116,7 +118,9 @@
             <input type="text" id="apellidos" formControlName="apellidos" class="form-control"
                    (keydown)="blockNumbers($event)" (beforeinput)="blockNumbersBeforeInput($event)"
                    (input)="onInputSanitize($event, 'apellidos')" (paste)="onPasteSanitize($event, 'apellidos')"
-                   inputmode="text" pattern="[^\d]*"
+                   oninput="this.value = this.value.replace(/[0-9]/g, '')"
+                   onkeydown="if(!event.ctrlKey && !event.metaKey && ((event.key >= '0' && event.key <= '9') || (event.code && event.code.startsWith('Numpad') && event.code !== 'NumpadEnter'))) event.preventDefault();"
+                   inputmode="text"
                    [class.is-invalid]="(isSubmitted || f['apellidos'].touched) && f['apellidos'].errors" placeholder="Ej. Pérez o Pérez Mamani">
             <div *ngIf="(isSubmitted || f['apellidos'].touched) && f['apellidos'].errors" class="error-msg">
               <small *ngIf="f['apellidos'].errors['required']">Los apellidos son obligatorios.</small>
@@ -277,7 +281,9 @@
             <input type="text" id="nombrePadres" formControlName="nombrePadres" class="form-control"
                    (keydown)="blockNumbers($event)" (beforeinput)="blockNumbersBeforeInput($event)"
                    (input)="onInputSanitize($event, 'nombrePadres')" (paste)="onPasteSanitize($event, 'nombrePadres')"
-                   inputmode="text" pattern="[^\d]*"
+                   oninput="this.value = this.value.replace(/[0-9]/g, '')"
+                   onkeydown="if(!event.ctrlKey && !event.metaKey && ((event.key >= '0' && event.key <= '9') || (event.code && event.code.startsWith('Numpad') && event.code !== 'NumpadEnter'))) event.preventDefault();"
+                   inputmode="text"
                    [class.is-invalid]="(isSubmitted || f['nombrePadres'].touched) && f['nombrePadres'].errors" placeholder="Nombre completo del tutor o padres">
             <div *ngIf="(isSubmitted || f['nombrePadres'].touched) && f['nombrePadres'].errors" class="error-msg">
               <small *ngIf="f['nombrePadres'].errors['required']">El nombre del tutor o padres es obligatorio.</small>
