@@ -74,32 +74,34 @@ export class LoginComponent implements OnInit {
     if (Capacitor.isNativePlatform()) {
       try {
         const { NativeBiometric } = await import('@capgo/capacitor-native-biometric');
-        const result = await NativeBiometric.isAvailable();
+        const result = await NativeBiometric.isAvailable({ useFallback: true });
         if (result && result.isAvailable) {
           this.biometricsAvailable = true;
+        } else {
+          this.biometricsAvailable = true; // En APK permitir el intento con el sensor nativo
         }
       } catch (e) {
-        console.log('Biometría no disponible en este dispositivo nativo.');
+        console.log('Biometría en APK nativa:', e);
+        this.biometricsAvailable = true;
       }
     } else {
       this.biometricsAvailable = false;
-      this.hasSavedBiometricToken = false;
     }
 
-    // Solo si estamos en APK Nativa y el sensor está habilitado en este dispositivo
-    if (Capacitor.isNativePlatform() && this.biometricsAvailable) {
-      const isBiometricEnabled = localStorage.getItem('eie_biometric_enabled');
-      const savedToken = localStorage.getItem('eie_biometric_token');
-      const savedUser = localStorage.getItem('eie_biometric_user');
-      if ((isBiometricEnabled === 'true' || savedToken) && savedUser) {
-        this.hasSavedBiometricToken = true;
-        // Disparar diálogo nativo de huella automáticamente al abrir la app estilo banco
+    // Verificar si el usuario habilitó activamente el acceso biométrico desde configuraciones
+    const isBiometricEnabled = localStorage.getItem('eie_biometric_enabled');
+    const savedToken = localStorage.getItem('eie_biometric_token');
+    const savedUser = localStorage.getItem('eie_biometric_user');
+    if ((isBiometricEnabled === 'true' || savedToken) && savedUser) {
+      this.hasSavedBiometricToken = true;
+      // Disparar diálogo nativo de huella automáticamente al abrir la APK nativa estilo banco
+      if (Capacitor.isNativePlatform()) {
         setTimeout(() => {
           this.loginConBiometria();
         }, 500);
-      } else {
-        this.hasSavedBiometricToken = false;
       }
+    } else {
+      this.hasSavedBiometricToken = false;
     }
   }
 
@@ -160,19 +162,20 @@ export class LoginComponent implements OnInit {
         const usuario = respuesta.user;
         this.pendingUserResponse = respuesta;
 
-        // Guardar credenciales para permitir acceso por Biometría Nativa solo si es plataforma móvil nativa con sensor
-        if (usuario && Capacitor.isNativePlatform() && this.biometricsAvailable) {
-          localStorage.setItem('eie_biometric_enabled', 'true');
-          localStorage.setItem('eie_biometric_token', respuesta.token || 'token_valid');
+        // Guardar credenciales para permitir acceso por Biometría Nativa
+        if (usuario && Capacitor.isNativePlatform()) {
           localStorage.setItem('eie_biometric_user', JSON.stringify(usuario));
-          this.hasSavedBiometricToken = true;
+          localStorage.setItem('eie_biometric_token', respuesta.token || 'token_valid');
+          if (localStorage.getItem('eie_biometric_enabled') === 'true') {
+            this.hasSavedBiometricToken = true;
+          }
         }
 
         // Verificar si debe cambiar su contraseña obligatoriamente
         if (usuario?.debe_cambiar_password) {
           this.showMustChangePasswordModal = true;
         } else {
-          this.redireccionarSegunRol(usuario?.rol);
+          this.redireccionarSegunRol(usuario?.rol, usuario?.id_rol);
         }
       },
       error: (error) => {
@@ -197,13 +200,12 @@ export class LoginComponent implements OnInit {
    * Despliega directamente el sensor de Huella Dactilar o el Reconocimiento Facial del celular (estilo banca móvil).
    */
   async loginConBiometria() {
-    if (!Capacitor.isNativePlatform()) {
+    const savedUser = localStorage.getItem('eie_biometric_user');
+    if (!savedUser) {
       return;
     }
 
-    const savedUser = localStorage.getItem('eie_biometric_user');
-    if (!savedUser) {
-      alert('Para activar la Huella Digital o Rostro en tu celular, ingresa con tu Nombre de Usuario y Contraseña una primera vez.');
+    if (!Capacitor.isNativePlatform()) {
       return;
     }
 
@@ -212,16 +214,17 @@ export class LoginComponent implements OnInit {
       // Invocar BiometricPrompt Nativo de Android (Ventana oficial del SO para huella / cara)
       await NativeBiometric.verifyIdentity({
         title: 'Fingerprint ID',
-        subtitle: 'Escuela de Idiomas del Ejército',
-        description: 'Coloca tu dedo en el lector de huella digital para ingresar',
-        reason: 'Verificación biométrica de identidad',
-        fallbackTitle: 'USAR CONTRASEÑA'
+        subtitle: 'Ingrese su huella digital para iniciar sesión',
+        description: 'Coloque su dedo en el sensor',
+        reason: 'Coloque su dedo en el sensor',
+        negativeButtonText: 'INGRESAR CONTRASEÑA'
       });
 
       // Si el SO Android confirma la huella/rostro correctamente:
       const usuario = typeof savedUser === 'string' ? JSON.parse(savedUser) : savedUser;
       sessionStorage.setItem('usuario', JSON.stringify(usuario));
       localStorage.setItem('usuario', JSON.stringify(usuario));
+      this.servicioAutenticacion.establecerSesionBiometrica(usuario);
 
       // Importante: Ejecutar la navegación dentro de NgZone para que Angular actualice la vista al instante
       this.ngZone.run(() => {

@@ -265,13 +265,15 @@ export class SettingsComponent implements OnInit {
 
     this.authService.updateProfile(formData).subscribe({
       next: (response: any) => {
-        this.user = response.user;
+        const cleanUser = this.authService.sanitizarUsuario(response.user);
+        this.user = cleanUser;
+        this.profileData.name = cleanUser.name;
         this.profileData.password = '';
         this.profilePhotoFile = null;
         this.profilePhotoFileName = '';
 
         const current = this.authService.obtenerUsuario() || {};
-        const updated = { ...current, ...response.user };
+        const updated = this.authService.sanitizarUsuario({ ...current, ...cleanUser });
         sessionStorage.setItem('usuario', JSON.stringify(updated));
         localStorage.setItem('usuario', JSON.stringify(updated));
         localStorage.setItem('eie_biometric_user', JSON.stringify(updated));

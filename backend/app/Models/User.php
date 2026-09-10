@@ -72,9 +72,19 @@ class User extends Authenticatable
 
     public function getNameAttribute()
     {
-        if ($this->nombres || $this->apellidos) {
-            return trim(($this->nombres ?? '') . ' ' . ($this->apellidos ?? ''));
+        $nombres = trim($this->nombres ?? '');
+        $apellidos = trim($this->apellidos ?? '');
+
+        if ($nombres && $apellidos) {
+            if (str_ends_with(strtolower($nombres), strtolower($apellidos))) {
+                return $nombres;
+            }
+            return trim($nombres . ' ' . $apellidos);
         }
+
+        if ($nombres) return $nombres;
+        if ($apellidos) return $apellidos;
+
         return 'Administrador';
     }
 

@@ -221,14 +221,32 @@ class AuthController extends Controller
         }
 
         if ($request->has('name') && !empty($request->name)) {
+            $fullName = trim(preg_replace('/\s+/', ' ', $request->name));
+            $parts = explode(' ', $fullName);
+            
+            if (count($parts) >= 3) {
+                // Si son 3 o más palabras (ej: Carlos Mario Mendoza Claros)
+                $nombres = implode(' ', array_slice($parts, 0, -2));
+                $apellidos = implode(' ', array_slice($parts, -2));
+            } elseif (count($parts) === 2) {
+                $nombres = $parts[0];
+                $apellidos = $parts[1];
+            } else {
+                $nombres = $fullName;
+                $apellidos = '';
+            }
+
             if ($user->estudiante) {
-                $user->estudiante->nombres = $request->name;
+                $user->estudiante->nombres = $nombres;
+                if (!empty($apellidos)) $user->estudiante->apellidos = $apellidos;
                 $user->estudiante->save();
             } elseif ($user->docente) {
-                $user->docente->nombres = $request->name;
+                $user->docente->nombres = $nombres;
+                if (!empty($apellidos)) $user->docente->apellidos = $apellidos;
                 $user->docente->save();
             } else {
-                $user->nombres = $request->name;
+                $user->nombres = $nombres;
+                $user->apellidos = $apellidos;
                 $user->save();
             }
         }

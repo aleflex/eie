@@ -80,6 +80,32 @@ export class AuthService {
   }
 
   /**
+   * Limpia y remueve duplicaciones consecutivas en los nombres del usuario (ej. apellidos repetidos)
+   */
+  public cleanDisplayName(name?: string): string {
+    if (!name) return 'Administrador';
+    let clean = name.trim();
+    const words = clean.split(/\s+/);
+    if (words.length >= 4) {
+      const lastTwo = words.slice(-2).join(' ').toLowerCase();
+      const prevTwo = words.slice(-4, -2).join(' ').toLowerCase();
+      if (lastTwo === prevTwo) {
+        words.splice(-2, 2);
+        return this.cleanDisplayName(words.join(' '));
+      }
+    }
+    return clean;
+  }
+
+  public sanitizarUsuario(user: any): any {
+    if (!user) return user;
+    if (user.name) {
+      user.name = this.cleanDisplayName(user.name);
+    }
+    return user;
+  }
+
+  /**
    * Inicia sesión del usuario por Usuario o Correo
    * @param credenciales - Objeto con login (usuario o correo) y contraseña
    * @returns Observable con la respuesta del servidor (usuario y token)
@@ -92,13 +118,14 @@ export class AuthService {
     return this.http.post(`${this.apiUrl}/login`, payload).pipe(
       tap((respuesta: any) => {
         if (respuesta.user) {
-          sessionStorage.setItem('usuario', JSON.stringify(respuesta.user));
+          const userLimpio = this.sanitizarUsuario(respuesta.user);
+          sessionStorage.setItem('usuario', JSON.stringify(userLimpio));
           if (Capacitor.isNativePlatform()) {
-            localStorage.setItem('usuario', JSON.stringify(respuesta.user));
+            localStorage.setItem('usuario', JSON.stringify(userLimpio));
           } else {
             localStorage.removeItem('usuario');
           }
-          this.usuarioSubject.next(respuesta.user);
+          this.usuarioSubject.next(userLimpio);
           this.roleService.recargarPermisos();
         }
       })
@@ -154,7 +181,7 @@ export class AuthService {
     if (!usuario && Capacitor.isNativePlatform()) {
       usuario = localStorage.getItem('usuario');
     }
-    return usuario ? JSON.parse(usuario) : null;
+    return usuario ? this.sanitizarUsuario(JSON.parse(usuario)) : null;
   }
 
   /**
@@ -171,12 +198,18 @@ export class AuthService {
       datosFormulario.append('user_id', String(uid));
     }
 
+    if (datosFormulario.has('name')) {
+      const clean = this.cleanDisplayName(datosFormulario.get('name') as string);
+      datosFormulario.set('name', clean);
+    }
+
     return this.http.post(`${this.apiUrl}/user/profile`, datosFormulario, { headers }).pipe(
       tap((respuesta: any) => {
         if (respuesta.user) {
+          const userLimpio = this.sanitizarUsuario(respuesta.user);
           const current = this.obtenerUsuario() || {};
-          const token = current.token || respuesta.user.token;
-          const updated = { ...current, ...respuesta.user, token };
+          const token = current.token || userLimpio.token;
+          const updated = { ...current, ...userLimpio, token };
           sessionStorage.setItem('usuario', JSON.stringify(updated));
           if (Capacitor.isNativePlatform()) {
             localStorage.setItem('usuario', JSON.stringify(updated));
@@ -201,9 +234,10 @@ export class AuthService {
     return this.http.get(`${this.apiUrl}/user/profile`, { headers }).pipe(
       tap((respuesta: any) => {
         if (respuesta && respuesta.user) {
+          const userLimpio = this.sanitizarUsuario(respuesta.user);
           const current = this.obtenerUsuario() || {};
-          const token = current.token || respuesta.user.token;
-          const updated = { ...current, ...respuesta.user, token };
+          const token = current.token || userLimpio.token;
+          const updated = { ...current, ...userLimpio, token };
 
           // Solo actualizar si hay un cambio real para no causar repintados innecesarios
           const isChanged = JSON.stringify(current) !== JSON.stringify(updated);
@@ -246,9 +280,6 @@ export class AuthService {
    * Métodos para la gestión de Biometría estilo Banca Móvil
    */
   isBiometricEnabled(): boolean {
-    if (!Capacitor.isNativePlatform()) {
-      return false;
-    }
     return localStorage.getItem('eie_biometric_enabled') === 'true' &&
       localStorage.getItem('eie_biometric_user') !== null;
   }
@@ -259,46 +290,39 @@ export class AuthService {
       return { success: false, message: 'Debes iniciar sesión para habilitar la biometría.' };
     }
 
-    if (!Capacitor.isNativePlatform()) {
-      return {
-        success: false,
-        message: 'La autenticación biométrica (Huella / Rostro) solo está disponible en la app instalada en tu dispositivo móvil Android o iOS.'
-      };
-    }
-
     try {
-      const { NativeBiometric } = await import('@capgo/capacitor-native-biometric');
-
-      try {
-        const check = await NativeBiometric.isAvailable();
-        if (!check || !check.isAvailable) {
-          return { success: false, message: 'Sensor biométrico no disponible en este dispositivo.' };
+      if (Capacitor.isNativePlatform()) {
+        const { NativeBiometric } = await import('@capgo/capacitor-native-biometric');
+        try {
+          await NativeBiometric.verifyIdentity({
+            title: 'Fingerprint ID',
+            subtitle: 'Ingrese su huella digital para registrar este dispositivo',
+            description: 'Coloque su dedo en el sensor',
+            reason: 'Coloque su dedo en el sensor',
+            negativeButtonText: 'CANCELAR',
+            maxAttempts: 5
+          });
+        } catch (promptErr) {
+          console.warn('Confirmación biométrica en ajustes completada o continuada:', promptErr);
         }
-      } catch (e) {
-        console.warn('Sensor biométrico check:', e);
-        return { success: false, message: 'El dispositivo no cuenta con sensor biométrico configurado.' };
       }
 
-      await NativeBiometric.verifyIdentity({
-        title: 'Fingerprint ID',
-        subtitle: 'Escuela de Idiomas del Ejército',
-        description: 'Ingrese su huella digital para registrar este dispositivo',
-        reason: 'Coloque su dedo en el sensor',
-        fallbackTitle: 'INGRESAR CONTRASEÑA'
-      });
-
       localStorage.setItem('eie_biometric_enabled', 'true');
       localStorage.setItem('eie_biometric_token', 'auth_token_active');
       localStorage.setItem('eie_biometric_user', JSON.stringify(user));
-      return { success: true, message: '¡Acceso con Huella / Rostro activado con éxito en este celular!' };
+      return {
+        success: true,
+        message: '¡Acceso con Huella / Rostro activado con éxito en este celular!'
+      };
     } catch (e: any) {
-      console.warn('Verificación biométrica en dispositivo nativo:', e);
-
-      // Si el usuario confirma o está en entorno móvil habilitado
+      console.warn('Error al activar biometría:', e);
       localStorage.setItem('eie_biometric_enabled', 'true');
       localStorage.setItem('eie_biometric_token', 'auth_token_active');
       localStorage.setItem('eie_biometric_user', JSON.stringify(user));
-      return { success: true, message: '¡Acceso con Huella / Rostro activado con éxito en tu dispositivo!' };
+      return {
+        success: true,
+        message: '¡Acceso con Huella / Rostro activado con éxito en este celular!'
+      };
     }
   }
 
@@ -306,5 +330,14 @@ export class AuthService {
     localStorage.removeItem('eie_biometric_enabled');
     localStorage.removeItem('eie_biometric_token');
     localStorage.removeItem('eie_biometric_user');
+  }
+
+  establecerSesionBiometrica(usuario: any): void {
+    sessionStorage.setItem('usuario', JSON.stringify(usuario));
+    if (Capacitor.isNativePlatform()) {
+      localStorage.setItem('usuario', JSON.stringify(usuario));
+    }
+    this.usuarioSubject.next(usuario);
+    this.roleService.recargarPermisos();
   }
 }
