@@ -225,6 +225,26 @@ export class StudentsComponent implements OnInit {
     }
   }
 
+  onlyLetters(event: KeyboardEvent) {
+    const char = event.key;
+    if (event.ctrlKey || event.altKey || event.metaKey || (event.key && event.key.length > 1)) {
+      return;
+    }
+    if (/[0-9]/.test(char) || !/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'\-]$/.test(char)) {
+      event.preventDefault();
+    }
+  }
+
+  filterLetters(event: Event, field: 'nombres' | 'apellidos' | 'nombre_padres') {
+    const input = event.target as HTMLInputElement;
+    if (!input || !this.selectedStudent) return;
+    const cleanValue = input.value.replace(/[0-9]/g, '');
+    if (input.value !== cleanValue) {
+      input.value = cleanValue;
+      this.selectedStudent[field] = cleanValue;
+    }
+  }
+
   updateCarnetMilitarFull() {
     if (!this.selectedStudent) return;
     const num = (this.carnetMilitarNum || '').trim();

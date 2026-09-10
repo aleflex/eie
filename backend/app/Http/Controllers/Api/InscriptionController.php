@@ -16,8 +16,8 @@ class InscriptionController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'nombres' => 'required|string|min:2|max:255',
-            'apellidos' => 'required|string|max:255',
+            'nombres' => ['required', 'string', 'min:2', 'max:255', 'regex:/^[\pL\s\.\'\-]+$/u'],
+            'apellidos' => ['required', 'string', 'max:255', 'regex:/^[\pL\s\.\'\-]+$/u'],
             'ci' => 'required|string|min:5|max:30',
             'email' => 'required|email',
             'celularPrefix' => 'nullable|string',
@@ -38,6 +38,8 @@ class InscriptionController extends Controller
             'tipoCurso' => 'required|string',
         ], [
             'nombres.min' => 'El nombre debe tener al menos 2 caracteres.',
+            'nombres.regex' => 'El nombre solo debe contener letras (no se permiten números).',
+            'apellidos.regex' => 'Los apellidos solo deben contener letras (no se permiten números).',
             'ci.min' => 'El carnet de identidad debe tener al menos 5 caracteres.',
             'lugarNacimiento.min' => 'El lugar de nacimiento debe tener al menos 2 caracteres.',
         ]);

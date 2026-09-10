@@ -101,19 +101,22 @@
           <div class="col-md-4 form-group">
             <label for="nombres">Nombres *</label>
             <input type="text" id="nombres" formControlName="nombres" class="form-control"
+                   (keypress)="onlyLetters($event)" (input)="filterLetters($event, 'nombres')"
                    [class.is-invalid]="(isSubmitted || f['nombres'].touched) && f['nombres'].errors" placeholder="Ej. Juan">
             <div *ngIf="(isSubmitted || f['nombres'].touched) && f['nombres'].errors" class="error-msg">
               <small *ngIf="f['nombres'].errors['required']">El nombre es obligatorio.</small>
               <small *ngIf="f['nombres'].errors['minlength']">Mínimo 3 caracteres.</small>
+              <small *ngIf="f['nombres'].errors['pattern']">No se permiten números en el nombre (solo letras).</small>
             </div>
           </div>
           <div class="col-md-4 form-group">
             <label for="apellidos">Apellidos *</label>
             <input type="text" id="apellidos" formControlName="apellidos" class="form-control"
+                   (keypress)="onlyLetters($event)" (input)="filterLetters($event, 'apellidos')"
                    [class.is-invalid]="(isSubmitted || f['apellidos'].touched) && f['apellidos'].errors" placeholder="Ej. Pérez o Pérez Mamani">
             <div *ngIf="(isSubmitted || f['apellidos'].touched) && f['apellidos'].errors" class="error-msg">
               <small *ngIf="f['apellidos'].errors['required']">Los apellidos son obligatorios.</small>
-              <small *ngIf="f['apellidos'].errors['pattern']">Ingrese un apellido válido (solo letras).</small>
+              <small *ngIf="f['apellidos'].errors['pattern']">Ingrese un apellido válido (solo letras, sin números).</small>
             </div>
           </div>
           <div class="col-md-3 form-group">
@@ -268,10 +271,12 @@
           <div class="col-md-6 form-group">
             <label for="nombrePadres">Nombres y Apellidos de los Padres / Tutor <span *ngIf="userType !== 'militar'">*</span></label>
             <input type="text" id="nombrePadres" formControlName="nombrePadres" class="form-control"
+                   (keypress)="onlyLetters($event)" (input)="filterLetters($event, 'nombrePadres')"
                    [class.is-invalid]="(isSubmitted || f['nombrePadres'].touched) && f['nombrePadres'].errors" placeholder="Nombre completo del tutor o padres">
             <div *ngIf="(isSubmitted || f['nombrePadres'].touched) && f['nombrePadres'].errors" class="error-msg">
               <small *ngIf="f['nombrePadres'].errors['required']">El nombre del tutor o padres es obligatorio.</small>
               <small *ngIf="f['nombrePadres'].errors['minlength']">Mínimo 6 caracteres.</small>
+              <small *ngIf="f['nombrePadres'].errors['pattern']">Solo se permiten letras en el nombre de los padres (sin números).</small>
             </div>
           </div>
           <div class="col-md-6 form-group">

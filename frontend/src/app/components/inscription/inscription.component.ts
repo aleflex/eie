@@ -364,7 +364,7 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
   initForm() {
     this.inscriptionForm = this.fb.group({
       userType: ['normal', Validators.required],
-      nombres: ['', [Validators.required, Validators.minLength(3)]],
+      nombres: ['', [Validators.required, Validators.minLength(3), Validators.pattern(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'\-]+$/)]],
       apellidos: ['', [Validators.required, Validators.pattern(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ']{2,}(?:\s+[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ']{1,})*$/)]],
       gradoAcademico: [''],
       armaEspecialidad: [''],
@@ -387,7 +387,7 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
       nivel: ['', Validators.required],
       idioma: ['Inglés', Validators.required],
       tipoCurso: ['regular', Validators.required],
-      nombrePadres: ['', [Validators.required, Validators.minLength(6)]],
+      nombrePadres: ['', [Validators.required, Validators.minLength(6), Validators.pattern(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'\-]+$/)]],
       ciTutor: ['', [Validators.required, Validators.pattern(/^[0-9]{7,8}$/)]],
       hermanosInscritos: [''],
       contactoEmergencia: ['', [Validators.required, Validators.minLength(4)]],
@@ -437,7 +437,7 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
         }, { emitEvent: false });
         
         // Re-add validators for non-military
-        nombrePadresCtrl?.setValidators([Validators.required, Validators.minLength(6)]);
+        nombrePadresCtrl?.setValidators([Validators.required, Validators.minLength(6), Validators.pattern(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'\-]+$/)]);
         ciTutorCtrl?.setValidators([Validators.required, Validators.pattern(/^[0-9]{7,8}$/)]);
       } else {
         // Remove validators for military
@@ -498,6 +498,33 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
     const charCode = event.which ? event.which : event.keyCode;
     if (charCode > 31 && (charCode < 48 || charCode > 57)) {
       event.preventDefault();
+    }
+  }
+
+  /**
+   * Restringe la entrada del teclado para permitir exclusivamente letras, espacios y caracteres de nombres.
+   * Bloquea terminantemente números (0-9).
+   */
+  onlyLetters(event: KeyboardEvent) {
+    const char = event.key;
+    if (event.ctrlKey || event.altKey || event.metaKey || (event.key && event.key.length > 1)) {
+      return;
+    }
+    if (/[0-9]/.test(char) || !/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'\-]$/.test(char)) {
+      event.preventDefault();
+    }
+  }
+
+  /**
+   * Filtra en tiempo real cualquier entrada (incluyendo copiado/pegado o teclado móvil) eliminando dígitos numéricos.
+   */
+  filterLetters(event: Event, controlName: string) {
+    const input = event.target as HTMLInputElement;
+    if (!input) return;
+    const cleanValue = input.value.replace(/[0-9]/g, '');
+    if (input.value !== cleanValue) {
+      input.value = cleanValue;
+      this.inscriptionForm.get(controlName)?.setValue(cleanValue, { emitEvent: true });
     }
   }
 
