@@ -278,7 +278,10 @@
                       <label for="profile_name">Nombre Completo *</label>
                       <div class="input-wrapper">
                         <span class="material-icons-outlined input-icon">person</span>
-                        <input type="text" id="profile_name" [(ngModel)]="profileData.name" name="name" class="form-control-premium" required>
+                        <input type="text" id="profile_name" [(ngModel)]="profileData.name" name="name"
+                               (keydown)="blockNumbers($event)" (beforeinput)="blockNumbersBeforeInput($event)" (input)="cleanProfileName($event)"
+                               inputmode="text" pattern="[^\d]*"
+                               class="form-control-premium" required>
                       </div>
                     </div>
                   </div>

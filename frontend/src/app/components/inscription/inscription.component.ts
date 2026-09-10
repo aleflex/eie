@@ -418,8 +418,28 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
       }
     });
 
-    this.inscriptionForm.get('nombres')?.valueChanges.subscribe(() => this.autoGenerateCossmil());
-    this.inscriptionForm.get('apellidos')?.valueChanges.subscribe(() => this.autoGenerateCossmil());
+    this.inscriptionForm.get('nombres')?.valueChanges.subscribe(val => {
+      if (val && /[0-9]/.test(val)) {
+        const clean = val.replace(/[0-9]/g, '');
+        this.inscriptionForm.get('nombres')?.setValue(clean, { emitEvent: false });
+      }
+      this.autoGenerateCossmil();
+    });
+
+    this.inscriptionForm.get('apellidos')?.valueChanges.subscribe(val => {
+      if (val && /[0-9]/.test(val)) {
+        const clean = val.replace(/[0-9]/g, '');
+        this.inscriptionForm.get('apellidos')?.setValue(clean, { emitEvent: false });
+      }
+      this.autoGenerateCossmil();
+    });
+
+    this.inscriptionForm.get('nombrePadres')?.valueChanges.subscribe(val => {
+      if (val && /[0-9]/.test(val)) {
+        const clean = val.replace(/[0-9]/g, '');
+        this.inscriptionForm.get('nombrePadres')?.setValue(clean, { emitEvent: false });
+      }
+    });
 
     // 2. Limpiar campos militares si se selecciona tipo de usuario civil o hijo de militar, o limpiar padres si es militar
     this.inscriptionForm.get('userType')?.valueChanges.subscribe(type => {
@@ -502,30 +522,65 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
   }
 
   /**
-   * Restringe la entrada del teclado para permitir exclusivamente letras, espacios y caracteres de nombres.
-   * Bloquea terminantemente números (0-9).
+   * Bloquea terminantemente teclas numéricas físicas y del teclado numérico
    */
-  onlyLetters(event: KeyboardEvent) {
-    const char = event.key;
-    if (event.ctrlKey || event.altKey || event.metaKey || (event.key && event.key.length > 1)) {
+  blockNumbers(event: KeyboardEvent) {
+    if (event.ctrlKey || event.altKey || event.metaKey || event.key === 'Backspace' || event.key === 'Tab' || event.key === 'Enter' || event.key === 'ArrowLeft' || event.key === 'ArrowRight' || event.key === 'Delete') {
       return;
     }
-    if (/[0-9]/.test(char) || !/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'\-]$/.test(char)) {
+    if ((event.key >= '0' && event.key <= '9') || (event.code && event.code.startsWith('Numpad') && !['NumpadEnter'].includes(event.code))) {
       event.preventDefault();
+      event.stopPropagation();
     }
   }
 
   /**
-   * Filtra en tiempo real cualquier entrada (incluyendo copiado/pegado o teclado móvil) eliminando dígitos numéricos.
+   * Bloquea en Android / teclados móviles virtuales la inserción de números antes de que entren al DOM
    */
-  filterLetters(event: Event, controlName: string) {
+  blockNumbersBeforeInput(event: any) {
+    if (event.data && /[0-9]/.test(event.data)) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  }
+
+  /**
+   * Limpia y sanitiza en tiempo real eliminando dígitos del valor del input
+   */
+  onInputSanitize(event: any, controlName: string) {
     const input = event.target as HTMLInputElement;
     if (!input) return;
     const cleanValue = input.value.replace(/[0-9]/g, '');
     if (input.value !== cleanValue) {
       input.value = cleanValue;
-      this.inscriptionForm.get(controlName)?.setValue(cleanValue, { emitEvent: true });
     }
+    this.inscriptionForm.get(controlName)?.setValue(cleanValue, { emitEvent: false });
+  }
+
+  /**
+   * Bloquea números al pegar texto desde el portapapeles
+   */
+  onPasteSanitize(event: ClipboardEvent, controlName: string) {
+    const pasted = event.clipboardData?.getData('text') || '';
+    if (/[0-9]/.test(pasted)) {
+      event.preventDefault();
+      const clean = pasted.replace(/[0-9]/g, '');
+      const input = event.target as HTMLInputElement;
+      const start = input.selectionStart || 0;
+      const end = input.selectionEnd || 0;
+      const current = input.value || '';
+      const updated = current.substring(0, start) + clean + current.substring(end);
+      input.value = updated;
+      this.inscriptionForm.get(controlName)?.setValue(updated);
+    }
+  }
+
+  onlyLetters(event: KeyboardEvent) {
+    this.blockNumbers(event);
+  }
+
+  filterLetters(event: Event, controlName: string) {
+    this.onInputSanitize(event, controlName);
   }
 
   // Easy access to form fields

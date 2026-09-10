@@ -317,24 +317,39 @@ export class StudentsComponent implements OnInit, OnDestroy {
     }
   }
 
-  onlyLetters(event: KeyboardEvent) {
-    const char = event.key;
-    if (event.ctrlKey || event.altKey || event.metaKey || (event.key && event.key.length > 1)) {
+  blockNumbers(event: KeyboardEvent) {
+    if (event.ctrlKey || event.altKey || event.metaKey || event.key === 'Backspace' || event.key === 'Tab' || event.key === 'Enter' || event.key === 'ArrowLeft' || event.key === 'ArrowRight' || event.key === 'Delete') {
       return;
     }
-    if (/[0-9]/.test(char) || !/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'\-]$/.test(char)) {
+    if ((event.key >= '0' && event.key <= '9') || (event.code && event.code.startsWith('Numpad') && !['NumpadEnter'].includes(event.code))) {
       event.preventDefault();
+      event.stopPropagation();
     }
   }
 
-  filterLetters(event: Event, field: 'nombres' | 'apellidos' | 'nombre_padres') {
+  blockNumbersBeforeInput(event: any) {
+    if (event.data && /[0-9]/.test(event.data)) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  }
+
+  onInputSanitize(event: any, field: 'nombres' | 'apellidos' | 'nombre_padres') {
     const input = event.target as HTMLInputElement;
     if (!input || !this.selectedStudent) return;
     const cleanValue = input.value.replace(/[0-9]/g, '');
     if (input.value !== cleanValue) {
       input.value = cleanValue;
-      this.selectedStudent[field] = cleanValue;
     }
+    this.selectedStudent[field] = cleanValue;
+  }
+
+  onlyLetters(event: KeyboardEvent) {
+    this.blockNumbers(event);
+  }
+
+  filterLetters(event: Event, field: 'nombres' | 'apellidos' | 'nombre_padres') {
+    this.onInputSanitize(event, field);
   }
 
   updateCarnetMilitarFull() {

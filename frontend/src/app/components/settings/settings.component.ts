@@ -235,6 +235,33 @@ export class SettingsComponent implements OnInit {
     });
   }
 
+  blockNumbers(event: KeyboardEvent) {
+    if (event.ctrlKey || event.altKey || event.metaKey || event.key === 'Backspace' || event.key === 'Tab' || event.key === 'Enter' || event.key === 'ArrowLeft' || event.key === 'ArrowRight' || event.key === 'Delete') {
+      return;
+    }
+    if ((event.key >= '0' && event.key <= '9') || (event.code && event.code.startsWith('Numpad') && !['NumpadEnter'].includes(event.code))) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  }
+
+  blockNumbersBeforeInput(event: any) {
+    if (event.data && /[0-9]/.test(event.data)) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  }
+
+  cleanProfileName(event: any) {
+    const input = event.target as HTMLInputElement;
+    if (!input) return;
+    const clean = input.value.replace(/[0-9]/g, '');
+    if (input.value !== clean) {
+      input.value = clean;
+    }
+    this.profileData.name = clean;
+  }
+
   /**
    * Envía los nuevos datos personales del usuario (nombre, correo, nueva contraseña o foto)
    * al servidor para actualizar su perfil.
