@@ -53,7 +53,8 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
     deposito: '',
     foto: '',
     credencialEmi: '',
-    carnetCossmil: ''
+    carnetCossmil: '',
+    carnetMilitarDoc: ''
   };
 
   // Warnings for mismatching filenames (Soft Warning - Option A)
@@ -64,7 +65,8 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
     deposito: '',
     foto: '',
     credencialEmi: '',
-    carnetCossmil: ''
+    carnetCossmil: '',
+    carnetMilitarDoc: ''
   };
 
   constructor(
@@ -400,7 +402,8 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
         deposito: [null], // Obligatorio SOLO para Estudiantes EMI
         foto: [null, Validators.required],
         credencialEmi: [null],
-        carnetCossmil: [null]
+        carnetCossmil: [null],
+        carnetMilitarDoc: [null]
       })
     });
   }
@@ -635,28 +638,44 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
     if (step === 3) {
       const archivosGroup = this.inscriptionForm.get('archivos') as FormGroup;
       if (archivosGroup) {
-        // Establecer validación de credencialEmi y deposito dinámicamente (SOLO obligatorios para EMI)
         const credencialCtrl = archivosGroup.get('credencialEmi');
         const depositoCtrl = archivosGroup.get('deposito');
+        const cossmilCtrl = archivosGroup.get('carnetCossmil');
+        const militarDocCtrl = archivosGroup.get('carnetMilitarDoc');
 
         if (this.userType === 'emi') {
           credencialCtrl?.setValidators(Validators.required);
           depositoCtrl?.setValidators(Validators.required);
+          cossmilCtrl?.clearValidators();
+          militarDocCtrl?.clearValidators();
+        } else if (this.userType === 'militar') {
+          cossmilCtrl?.setValidators(Validators.required);
+          militarDocCtrl?.setValidators(Validators.required);
+          credencialCtrl?.clearValidators();
+          depositoCtrl?.clearValidators();
+        } else if (this.userType === 'hijo_militar') {
+          cossmilCtrl?.setValidators(Validators.required);
+          militarDocCtrl?.clearValidators();
+          credencialCtrl?.clearValidators();
+          depositoCtrl?.clearValidators();
         } else {
           credencialCtrl?.clearValidators();
           depositoCtrl?.clearValidators();
+          cossmilCtrl?.clearValidators();
+          militarDocCtrl?.clearValidators();
         }
+
         credencialCtrl?.updateValueAndValidity({ emitEvent: false });
         depositoCtrl?.updateValueAndValidity({ emitEvent: false });
+        cossmilCtrl?.updateValueAndValidity({ emitEvent: false });
+        militarDocCtrl?.updateValueAndValidity({ emitEvent: false });
 
         let isValid = true;
         Object.keys(archivosGroup.controls).forEach(key => {
-          if ((key === 'credencialEmi' || key === 'deposito') && this.userType !== 'emi') {
-            return;
-          }
-          if (key === 'carnetCossmil' && this.userType !== 'militar' && this.userType !== 'hijo_militar') {
-            return;
-          }
+          if ((key === 'credencialEmi' || key === 'deposito') && this.userType !== 'emi') return;
+          if (key === 'carnetCossmil' && this.userType !== 'militar' && this.userType !== 'hijo_militar') return;
+          if (key === 'carnetMilitarDoc' && this.userType !== 'militar') return;
+
           const control = archivosGroup.controls[key];
           control.markAsTouched();
           if (control.invalid) {
@@ -726,21 +745,115 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
     }
   }
 
+  /**
+   * Valida la seguridad y autenticidad del archivo (Magic Bytes, extensión y detección de scripts maliciosos en PDFs).
+   */
+  private async validateFileSecurity(file: File, fieldName: string): Promise<{ valid: boolean; errorMsg?: string }> {
+    const ext = (file.name.split('.').pop() || '').toLowerCase();
+
+    // 1. Validación de tamaño (Máximo 5MB, mínimo 50 bytes)
+    if (file.size > 5 * 1024 * 1024) {
+      return { valid: false, errorMsg: '⚠️ El archivo supera el tamaño máximo permitido de 5 MB.' };
+    }
+    if (file.size < 50) {
+      return { valid: false, errorMsg: '⚠️ El archivo está vacío o dañado (tamaño inferior a 50 bytes).' };
+    }
+
+    // 2. Fotografía 4x4 SOLO puede ser imagen (JPG o PNG), NUNCA PDF
+    if (fieldName === 'foto') {
+      const allowedImageExts = ['jpg', 'jpeg', 'png', 'webp'];
+      if (!allowedImageExts.includes(ext)) {
+        return { valid: false, errorMsg: '⚠️ La Fotografía Personal 4x4 debe ser una imagen (JPG o PNG). No se permite formato PDF ni otros documentos.' };
+      }
+    } else {
+      // Documentos generales: PDF o Imagen
+      const allowedDocExts = ['pdf', 'jpg', 'jpeg', 'png', 'webp'];
+      if (!allowedDocExts.includes(ext)) {
+        return { valid: false, errorMsg: `⚠️ Extensión .${ext} no permitida. Solo se admiten documentos PDF e imágenes oficiales (JPG, PNG).` };
+      }
+    }
+
+    // 3. Inspección binaria de Magic Bytes (Firmas de archivo reales)
+    try {
+      const headerBuffer = await file.slice(0, 16).arrayBuffer();
+      const bytes = new Uint8Array(headerBuffer);
+
+      if (ext === 'pdf') {
+        // Cabecera PDF: %PDF- (0x25, 0x50, 0x44, 0x46, 0x2D)
+        const isPdf = bytes[0] === 0x25 && bytes[1] === 0x50 && bytes[2] === 0x44 && bytes[3] === 0x46;
+        if (!isPdf) {
+          return { valid: false, errorMsg: '⚠️ Archivo no auténtico: El archivo seleccionado no corresponde a un documento PDF válido (cabecera corrupta o falsa).' };
+        }
+
+        // 4. Detección de código maligno en PDFs (/JavaScript, /Launch, /EmbeddedFiles, etc.)
+        const textSlice = await file.slice(0, Math.min(file.size, 1024 * 1024)).text();
+        const maliciousPatterns = [
+          { regex: /\/JavaScript/i, name: 'scripts ejecutables (/JavaScript)' },
+          { regex: /\/JS\s*[\(\[<]/i, name: 'scripts embebidos (/JS)' },
+          { regex: /\/Launch/i, name: 'comandos del sistema (/Launch)' },
+          { regex: /\/EmbeddedFiles/i, name: 'archivos ejecutables incrustados (/EmbeddedFiles)' },
+          { regex: /<\?php/i, name: 'código PHP incrustado' },
+          { regex: /<\?=/i, name: 'código PHP abreviado' },
+          { regex: /<script/i, name: 'etiquetas web de script (<script)' },
+          { regex: /eval\s*\(/i, name: 'ejecución dinámica eval()' }
+        ];
+
+        for (const item of maliciousPatterns) {
+          if (item.regex.test(textSlice)) {
+            return {
+              valid: false,
+              errorMsg: `⚠️ ALERTA DE SEGURIDAD: Se ha detectado ${item.name} dentro del documento PDF. Por estrictas políticas de ciberseguridad institucional de la EIE, este archivo no puede ser subido.`
+            };
+          }
+        }
+      } else if (ext === 'jpg' || ext === 'jpeg') {
+        // JPEG Magic bytes: FF D8 FF
+        const isJpg = bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF;
+        if (!isJpg) {
+          return { valid: false, errorMsg: '⚠️ Archivo no auténtico: La cabecera binaria no coincide con una imagen JPEG/JPG real.' };
+        }
+      } else if (ext === 'png') {
+        // PNG Magic bytes: 89 50 4E 47
+        const isPng = bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47;
+        if (!isPng) {
+          return { valid: false, errorMsg: '⚠️ Archivo no auténtico: La cabecera binaria no coincide con una imagen PNG real.' };
+        }
+      }
+    } catch (e: any) {
+      console.warn('Error al verificar magic bytes:', e);
+    }
+
+    return { valid: true };
+  }
+
   // Files operations — with client-side image compression (RF16 - HU16 - T2)
   /**
    * Se activa cuando el usuario selecciona un archivo para subir.
-   * Realiza validaciones inteligentes de nombres, comprime imágenes y guarda el archivo en memoria.
+   * Realiza validaciones de ciberseguridad, coherencia, comprime imágenes y guarda el archivo en memoria.
    * @param event El evento input con el archivo.
    * @param fieldName El nombre del campo (carnet, titulo, etc.).
    */
-  onFileSelected(event: any, fieldName: string) {
+  async onFileSelected(event: any, fieldName: string) {
     const file = event.target.files[0];
     if (!file) return;
 
+    const fileInput = event.target as HTMLInputElement;
     const archivos = this.inscriptionForm.get('archivos') as FormGroup;
 
-    // Reiniciar advertencia
+    // Reiniciar advertencia previa
     this.fileWarnings[fieldName] = '';
+
+    // ================= SEGURIDAD Y VERIFICACIÓN BINARIA =================
+    const securityCheck = await this.validateFileSecurity(file, fieldName);
+    if (!securityCheck.valid) {
+      if (fileInput) fileInput.value = '';
+      archivos.patchValue({ [fieldName]: null });
+      this.fileNames[fieldName] = '';
+      this.modalType = 'error';
+      this.modalMessage = securityCheck.errorMsg || 'Archivo no permitido por razones de seguridad.';
+      this.showModal = true;
+      return;
+    }
 
     // Validación inteligente de coherencia de nombre de archivo (Soft Warning)
     const nameLower = file.name.toLowerCase();
@@ -769,7 +882,13 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
       }
     }
 
-    if (file.type.startsWith('image/')) {
+    if (fieldName === 'carnetMilitarDoc') {
+      if (nameLower.includes('cossmil') || nameLower.includes('titulo') || nameLower.includes('nacimiento')) {
+        this.fileWarnings[fieldName] = 'El archivo seleccionado parece ser otro documento en lugar de tu Carnet Militar.';
+      }
+    }
+
+    if (file.type.startsWith('image/') || /\.(jpg|jpeg|png|webp)$/i.test(file.name)) {
       const maxDim = fieldName === 'foto' ? 800 : 1200; // fotos 4x4 a 800px; documentos a 1200px
       const quality = fieldName === 'foto' ? 0.82 : 0.78;
       this.imageCompressor.compressImage(file, maxDim, maxDim, quality).then(compressed => {
@@ -782,7 +901,7 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
         }
       });
     } else {
-      // PDFs y otros formatos sin compresión
+      // PDFs genuinos sin compresión
       archivos.patchValue({ [fieldName]: file });
       archivos.get(fieldName)?.markAsTouched();
       this.fileNames[fieldName] = file.name;
@@ -921,7 +1040,7 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
           userType: 'normal',
           tipoCurso: 'presencial',
           idioma: 'Inglés',
-          archivos: { carnet: null, titulo: null, nacimiento: null, deposito: null, foto: null }
+          archivos: { carnet: null, titulo: null, nacimiento: null, deposito: null, foto: null, credencialEmi: null, carnetCossmil: null, carnetMilitarDoc: null }
         });
 
         // Reiniciar nombres de archivos y valores reales de entrada

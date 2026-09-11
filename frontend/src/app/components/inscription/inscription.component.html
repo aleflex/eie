@@ -735,6 +735,42 @@
             <small class="text-muted mt-1">Formatos: Imagen o PDF.</small>
           </div>
 
+          <!-- Carnet Militar Documento (Solo para militares) -->
+          <div class="col-md-6 form-group mt-3 animate-fade-in" *ngIf="userType === 'militar'">
+            <label class="field-label-drop">Carnet Militar (Credencial / Documento) *</label>
+            <div class="custom-dropzone"
+                 [class.has-file]="fileNames['carnetMilitarDoc']"
+                 [class.is-invalid]="(isSubmitted || inscriptionForm.get('archivos.carnetMilitarDoc')?.touched) && inscriptionForm.get('archivos.carnetMilitarDoc')?.invalid">
+              <input id="file_carnetMilitarDoc" type="file" (change)="onFileSelected($event, 'carnetMilitarDoc')" class="real-file-input" accept="image/*,application/pdf" title="Subir Carnet Militar" aria-label="Subir Carnet Militar">
+
+              <div class="dropzone-content" *ngIf="!fileNames['carnetMilitarDoc']">
+                <i class="material-icons cloud-icon">shield</i>
+                <span class="upload-title">Seleccionar Documento</span>
+                <span class="upload-subtitle">Foto o PDF de tu Carnet Militar</span>
+              </div>
+
+              <div class="dropzone-preview animate-fade-in" *ngIf="fileNames['carnetMilitarDoc']">
+                <i class="material-icons file-icon text-success-icon">shield</i>
+                <div class="file-details">
+                  <span class="file-name">{{ fileNames['carnetMilitarDoc'] }}</span>
+                  <span class="file-status">Documento militar cargado correctamente</span>
+                </div>
+                <button type="button" class="btn-remove-file" (click)="removeFile('carnetMilitarDoc')" title="Quitar carnet militar">
+                  <i class="material-icons">close</i>
+                </button>
+              </div>
+            </div>
+            <!-- Advertencia Inteligente de Coherencia -->
+            <div *ngIf="fileWarnings['carnetMilitarDoc']" class="warning-msg mt-2 animate-fade-in">
+              <i class="material-icons align-middle text-warning-icon">warning</i>
+              <small class="align-middle ml-1">{{ fileWarnings['carnetMilitarDoc'] }}</small>
+            </div>
+            <div *ngIf="(isSubmitted || inscriptionForm.get('archivos.carnetMilitarDoc')?.touched) && inscriptionForm.get('archivos.carnetMilitarDoc')?.invalid" class="error-msg">
+              <small>El Carnet Militar es obligatorio.</small>
+            </div>
+            <small class="text-muted mt-1">Formatos: Imagen o PDF.</small>
+          </div>
+
           <!-- Credencial o Factura EMI (Solo para estudiantes EMI) -->
           <div class="col-md-6 form-group mt-3 animate-fade-in" *ngIf="userType === 'emi'">
             <label class="field-label-drop">Credencial EMI o Factura de Mensualidad *</label>

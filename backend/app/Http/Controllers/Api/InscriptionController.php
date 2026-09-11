@@ -36,13 +36,39 @@ class InscriptionController extends Controller
             'nivel' => 'required|string',
             'horario' => 'required|string',
             'tipoCurso' => 'required|string',
+            'foto' => 'nullable|file|mimes:jpeg,jpg,png,webp|max:5120',
+            'carnet' => 'nullable|file|mimes:pdf,jpeg,jpg,png,webp|max:5120',
+            'titulo' => 'nullable|file|mimes:pdf,jpeg,jpg,png,webp|max:5120',
+            'nacimiento' => 'nullable|file|mimes:pdf,jpeg,jpg,png,webp|max:5120',
+            'deposito' => 'nullable|file|mimes:pdf,jpeg,jpg,png,webp|max:5120',
+            'credencialEmi' => 'nullable|file|mimes:pdf,jpeg,jpg,png,webp|max:5120',
+            'carnetCossmil' => 'nullable|file|mimes:pdf,jpeg,jpg,png,webp|max:5120',
+            'carnetMilitarDoc' => 'nullable|file|mimes:pdf,jpeg,jpg,png,webp|max:5120',
         ], [
             'nombres.min' => 'El nombre debe tener al menos 2 caracteres.',
             'nombres.regex' => 'El nombre solo debe contener letras (no se permiten números).',
             'apellidos.regex' => 'Los apellidos solo deben contener letras (no se permiten números).',
             'ci.min' => 'El carnet de identidad debe tener al menos 5 caracteres.',
             'lugarNacimiento.min' => 'El lugar de nacimiento debe tener al menos 2 caracteres.',
+            'foto.mimes' => 'La Fotografía Personal 4x4 debe ser una imagen (JPG o PNG). No se permite formato PDF.',
+            'carnet.mimes' => 'El Carnet de Identidad debe ser un archivo PDF o una imagen (JPG, PNG).',
+            'titulo.mimes' => 'El Título de Bachiller debe ser un archivo PDF o una imagen (JPG, PNG).',
+            'nacimiento.mimes' => 'El Certificado de Nacimiento debe ser un archivo PDF o una imagen (JPG, PNG).',
+            'deposito.mimes' => 'La Boleta de Pago debe ser un archivo PDF o una imagen (JPG, PNG).',
+            'credencialEmi.mimes' => 'La Credencial EMI debe ser un archivo PDF o una imagen (JPG, PNG).',
+            'carnetCossmil.mimes' => 'El Carnet COSSMIL debe ser un archivo PDF o una imagen (JPG, PNG).',
+            'carnetMilitarDoc.mimes' => 'El Carnet Militar debe ser un archivo PDF o una imagen (JPG, PNG).',
         ]);
+
+        // 0. Inspección estricta de Ciberseguridad de Archivos (Magic Bytes, Extensiones y Detección de Exploits en PDFs)
+        if ($request->hasFile('foto')) {
+            $this->validateSecureFile($request->file('foto'), true);
+        }
+        foreach (['carnet', 'titulo', 'nacimiento', 'deposito', 'credencialEmi', 'carnetCossmil', 'carnetMilitarDoc'] as $key) {
+            if ($request->hasFile($key)) {
+                $this->validateSecureFile($request->file($key), false);
+            }
+        }
 
         try {
             DB::beginTransaction();
@@ -160,7 +186,8 @@ class InscriptionController extends Controller
                     $file = $request->file('foto');
                     $mime = $file->getClientMimeType() ?: 'image/jpeg';
                     $fileBinary = file_get_contents($file->getRealPath());
-                    $fileName = time() . '_' . preg_replace('/[^a-zA-Z0-9\._-]/', '_', $file->getClientOriginalName());
+                    $ext = strtolower($file->getClientOriginalExtension()) ?: 'jpg';
+                    $fileName = time() . '_' . \Illuminate\Support\Str::random(12) . '.' . $ext;
                     $remotePath = 'fotos/' . $request->ci . '/' . $fileName;
 
                     $supabaseUrl = \App\Services\SupabaseStorageService::uploadFile($fileBinary, $remotePath, $mime);
@@ -177,19 +204,19 @@ class InscriptionController extends Controller
                     'carnet' => 'FOTOCOPIA CI',
                     'titulo' => 'TITULO DE BACHILLER',
                     'nacimiento' => 'CERTIFICADO DE NACIMIENTO',
-                    'deposito' => 'COMPROBANTE DE PAGO'
+                    'deposito' => 'COMPROBANTE DE PAGO',
+                    'credencialEmi' => 'CREDENCIAL EMI',
+                    'carnetCossmil' => 'CARNET COSSMIL',
+                    'carnetMilitarDoc' => 'CARNET MILITAR'
                 ];
-
-                if ($request->userType === 'emi') {
-                    $filesToProcess['credencialEmi'] = 'CREDENCIAL EMI';
-                }
 
                 foreach ($filesToProcess as $fileKey => $docTypeName) {
                     if ($request->hasFile($fileKey)) {
                         $file = $request->file($fileKey);
                         $mime = $file->getClientMimeType() ?: $file->getMimeType() ?: 'application/pdf';
                         $fileBinary = file_get_contents($file->getRealPath());
-                        $fileName = time() . '_' . preg_replace('/[^a-zA-Z0-9\._-]/', '_', $file->getClientOriginalName());
+                        $ext = strtolower($file->getClientOriginalExtension()) ?: 'pdf';
+                        $fileName = time() . '_' . \Illuminate\Support\Str::random(12) . '.' . $ext;
                         $remotePath = 'documentos/estudiantes/' . $estudiante->id_estudiante . '/' . $fileName;
 
                         $supabaseUrl = \App\Services\SupabaseStorageService::uploadFile($fileBinary, $remotePath, $mime);
@@ -520,6 +547,89 @@ class InscriptionController extends Controller
                 'message' => 'Error al asignar curso al estudiante.',
                 'error' => $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * Inspecciona rigurosamente la seguridad de un archivo subido:
+     * - Restricción de extensiones permitidas.
+     * - Validación de firmas binarias reales (Magic Bytes).
+     * - Detección de exploits y scripts maliciosos en PDFs (/JavaScript, /Launch, /EmbeddedFiles, PHP, etc.).
+     *
+     * @param \Illuminate\Http\UploadedFile $file
+     * @param bool $isPhotoOnly
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    private function validateSecureFile($file, bool $isPhotoOnly = false)
+    {
+        if (!$file || !$file->isValid()) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'archivo' => 'El archivo subido no es válido o está dañado.'
+            ]);
+        }
+
+        $extension = strtolower($file->getClientOriginalExtension());
+        $allowedExtensions = $isPhotoOnly ? ['jpg', 'jpeg', 'png', 'webp'] : ['pdf', 'jpg', 'jpeg', 'png', 'webp'];
+
+        if (!in_array($extension, $allowedExtensions)) {
+            $msg = $isPhotoOnly
+                ? "La Fotografía Personal 4x4 debe ser una imagen (JPG, PNG o WEBP), no se permite formato .{$extension}."
+                : "Extensión no permitida (.{$extension}). Solo se admiten documentos PDF o imágenes (JPG, PNG).";
+            throw \Illuminate\Validation\ValidationException::withMessages(['archivo' => $msg]);
+        }
+
+        // Inspección binaria de Magic Bytes
+        $handle = fopen($file->getRealPath(), 'rb');
+        $header = fread($handle, 16);
+        fclose($handle);
+
+        if ($isPhotoOnly) {
+            $isJpg = str_starts_with($header, "\xFF\xD8\xFF");
+            $isPng = str_starts_with($header, "\x89PNG");
+            $isWebp = str_starts_with($header, "RIFF") && strpos($header, "WEBP") !== false;
+            if (!$isJpg && !$isPng && !$isWebp) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'foto' => 'La fotografía 4x4 no corresponde a una imagen auténtica (cabecera binaria corrupta o formato falso).'
+                ]);
+            }
+        } elseif ($extension === 'pdf') {
+            if (!str_starts_with($header, "%PDF-")) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'archivo' => 'El documento no es un PDF auténtico (cabecera binaria inválida).'
+                ]);
+            }
+
+            // Análisis de seguridad de PDF (Detección de exploits y scripts incrustados)
+            $content = file_get_contents($file->getRealPath(), false, null, 0, 4 * 1024 * 1024);
+            $maliciousPatterns = [
+                '/\/JavaScript/i' => 'scripts ejecutables (/JavaScript)',
+                '/\/JS\s*[\(\[<]/i' => 'scripts embebidos (/JS)',
+                '/\/Launch/i' => 'comandos del sistema (/Launch)',
+                '/\/EmbeddedFiles/i' => 'archivos ejecutables incrustados (/EmbeddedFiles)',
+                '/<\?php/i' => 'código PHP incrustado',
+                '/<\?=/i' => 'código PHP abreviado',
+                '/<script/i' => 'etiquetas de script web (<script)',
+                '/eval\s*\(/i' => 'ejecución dinámica eval()'
+            ];
+
+            foreach ($maliciousPatterns as $pattern => $description) {
+                if (preg_match($pattern, $content)) {
+                    \Log::warning("Bloqueo de PDF malicioso detectado ({$description}) en archivo: " . $file->getClientOriginalName());
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        'archivo' => "¡Alerta de Seguridad! El archivo PDF contiene {$description}. Por seguridad de la Escuela de Idiomas del Ejército (EIE), este archivo ha sido bloqueado."
+                    ]);
+                }
+            }
+        } else {
+            // Documento en formato imagen
+            $isJpg = str_starts_with($header, "\xFF\xD8\xFF");
+            $isPng = str_starts_with($header, "\x89PNG");
+            $isWebp = str_starts_with($header, "RIFF") && strpos($header, "WEBP") !== false;
+            if (!$isJpg && !$isPng && !$isWebp) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'archivo' => 'El archivo no corresponde a un documento de imagen válido o está corrupto.'
+                ]);
+            }
         }
     }
 }
