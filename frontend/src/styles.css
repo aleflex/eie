@@ -1,4 +1,5 @@
 /* You can add global styles to this file, and also import other style files */
+@import 'sweetalert2/dist/sweetalert2.min.css';
 
 /* Local Material Icons */
 @font-face {
@@ -837,4 +838,142 @@ html {
     grid-template-columns: repeat(auto-fill, minmax(450px, 1fr));
     gap: 2rem;
   }
+}
+
+/* ==========================================================================
+   ESTILOS PREMIUM GLOBALES PARA ALERTAS Y NOTIFICACIONES (SweetAlert2)
+   Reemplaza ventanas cuadradas nativas por popups modernos con bordes curvos
+   ========================================================================== */
+.swal2-container {
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  background: rgba(10, 25, 47, 0.45) !important;
+  z-index: 99999 !important;
+}
+
+.swal2-popup {
+  border-radius: 24px !important;
+  padding: 2rem 2.2rem !important;
+  background: #ffffff !important;
+  box-shadow: 0 25px 60px -15px rgba(0, 35, 75, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.9) inset !important;
+  font-family: inherit !important;
+  max-width: 480px !important;
+  width: 90% !important;
+  animation: swalPopIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+@keyframes swalPopIn {
+  from {
+    opacity: 0;
+    transform: scale(0.88) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.swal2-title {
+  font-size: 1.35rem !important;
+  font-weight: 750 !important;
+  color: #0f172a !important;
+  letter-spacing: -0.02em !important;
+  margin-top: 0.8rem !important;
+  margin-bottom: 0.6rem !important;
+  padding: 0 !important;
+}
+
+.swal2-html-container {
+  font-size: 0.96rem !important;
+  line-height: 1.6 !important;
+  color: #475569 !important;
+  margin: 0 0 1.5rem 0 !important;
+  font-weight: 450 !important;
+}
+
+.swal2-actions {
+  gap: 12px !important;
+  margin-top: 0.5rem !important;
+  width: 100% !important;
+  display: flex !important;
+  justify-content: center !important;
+}
+
+.swal2-confirm {
+  border-radius: 50px !important;
+  padding: 0.75rem 2.2rem !important;
+  font-weight: 650 !important;
+  font-size: 0.95rem !important;
+  background: linear-gradient(135deg, #003B71 0%, #0056b3 100%) !important;
+  box-shadow: 0 6px 16px rgba(0, 59, 113, 0.32) !important;
+  border: none !important;
+  color: #ffffff !important;
+  cursor: pointer !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.swal2-confirm:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 22px rgba(0, 59, 113, 0.45) !important;
+  filter: brightness(1.05) !important;
+}
+
+.swal2-confirm:active {
+  transform: translateY(0) !important;
+}
+
+.swal2-cancel {
+  border-radius: 50px !important;
+  padding: 0.75rem 2rem !important;
+  font-weight: 600 !important;
+  font-size: 0.95rem !important;
+  background: #f1f5f9 !important;
+  color: #475569 !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: none !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+.swal2-cancel:hover {
+  background: #e2e8f0 !important;
+  color: #1e293b !important;
+}
+
+.swal2-icon {
+  margin: 0.5rem auto 0.8rem auto !important;
+  transform: scale(0.95) !important;
+  border-width: 3.5px !important;
+}
+
+.swal2-icon.swal2-success {
+  border-color: #10b981 !important;
+  color: #10b981 !important;
+}
+
+.swal2-icon.swal2-success [class^='swal2-success-line'] {
+  background-color: #10b981 !important;
+}
+
+.swal2-icon.swal2-success .swal2-success-ring {
+  border-color: rgba(16, 185, 129, 0.3) !important;
+}
+
+.swal2-icon.swal2-error {
+  border-color: #ef4444 !important;
+  color: #ef4444 !important;
+}
+
+.swal2-icon.swal2-error [class^='swal2-x-mark-line'] {
+  background-color: #ef4444 !important;
+}
+
+.swal2-icon.swal2-warning {
+  border-color: #f59e0b !important;
+  color: #f59e0b !important;
+}
+
+.swal2-icon.swal2-info {
+  border-color: #003B71 !important;
+  color: #003B71 !important;
 }
