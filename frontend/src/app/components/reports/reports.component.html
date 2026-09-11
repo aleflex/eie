@@ -68,36 +68,16 @@
       </div>
 
       <div class="header-actions">
-        <!-- Filtro Rápido Directo de Calificaciones / Notas en Barra Superior (Visible siempre) -->
-        <div class="d-flex align-items-center gap-1 bg-white border border-primary-subtle rounded-3 px-2 py-1 shadow-sm" title="Filtro rápido por estado de notas">
-          <i class="material-icons-outlined text-primary" style="font-size: 19px;">grade</i>
-          <select class="form-select form-select-sm border-0 bg-transparent fw-bold text-dark py-0" style="width: auto; cursor: pointer;" [(ngModel)]="filters.filtro_nota" (change)="onFilterChange()">
-            <option *ngFor="let fn of filtrosNotas" [value]="fn.id">{{ fn.nombre }}</option>
-          </select>
-        </div>
-
         <button class="btn btn-outline-primary btn-filter-toggle" (click)="toggleFilterSidebar()">
           <i class="material-icons-outlined">filter_list</i>
           Filtros Multi-criterio
         </button>
 
-        <!-- Botones de Exportación Blob (RF 20 - HU 20) -->
+        <!-- Botones de Exportación General (RF 20 - HU 20) -->
         <button class="btn btn-outline-success" (click)="exportExcel()" [disabled]="isDownloadingExcel" title="Exportar Relación Nominal Estadísticas generales">
           <i class="material-icons-outlined" *ngIf="!isDownloadingExcel">table_view</i>
           <span class="spinner-border spinner-border-sm" *ngIf="isDownloadingExcel"></span>
           Excel General
-        </button>
-
-        <button class="btn btn-success" (click)="exportNotasExcel()" [disabled]="isDownloadingNotasExcel" title="Exportar Planilla Oficial de Notas en Excel">
-          <i class="material-icons-outlined" *ngIf="!isDownloadingNotasExcel">grade</i>
-          <span class="spinner-border spinner-border-sm" *ngIf="isDownloadingNotasExcel"></span>
-          Notas (Excel)
-        </button>
-
-        <button class="btn btn-outline-danger" (click)="exportNotasPdf()" [disabled]="isDownloadingNotasPdf" title="Exportar Planilla Oficial de Notas en PDF">
-          <i class="material-icons-outlined" *ngIf="!isDownloadingNotasPdf">picture_as_pdf</i>
-          <span class="spinner-border spinner-border-sm" *ngIf="isDownloadingNotasPdf"></span>
-          Notas (PDF)
         </button>
 
         <button class="btn btn-primary btn-export-pdf" (click)="exportPdf()" [disabled]="isDownloadingPdf" title="Exportar Reporte Estadístico Oficial en PDF">
@@ -107,44 +87,6 @@
         </button>
       </div>
     </header>
-
-    <!-- BARRA PROMINENTE Y DIRECTA DE FILTROS DE NOTAS (RF 21 - HU 21) -->
-    <div class="grades-quick-filter-bar mb-3 p-3 bg-white border rounded-3 shadow-sm d-flex justify-content-between align-items-center flex-wrap gap-2 animate-fade-in">
-      <div class="d-flex align-items-center gap-2">
-        <div class="p-2 rounded-circle shadow-sm" style="width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; background-color: #dbeafe; color: #1d4ed8;">
-          <i class="material-icons-outlined fs-5">filter_alt</i>
-        </div>
-        <div>
-          <strong class="d-block text-dark fs-6">Filtro Rápido por Calificación y Rendimiento:</strong>
-          <small class="text-muted">Filtra estudiantes, kardex y centralizadores al instante con un solo clic.</small>
-        </div>
-      </div>
-      <div class="btn-group btn-group-sm flex-wrap shadow-sm" role="group">
-        <button type="button" class="btn" [ngClass]="filters.filtro_nota === '' ? 'btn-primary text-white fw-bold shadow-sm' : 'btn-outline-secondary'" (click)="setNotaFilter('')">
-          Todas las Notas ({{ gradesSummaryStats.total }})
-        </button>
-        <button type="button" class="btn" [ngClass]="filters.filtro_nota === 'aprobados' ? 'btn-success text-white fw-bold shadow-sm' : 'btn-outline-success'" (click)="setNotaFilter('aprobados')">
-          <i class="material-icons-outlined align-middle" style="font-size: 14px;">check_circle</i>
-          Aprobados ≥71 ({{ gradesSummaryStats.aprobados }})
-        </button>
-        <button type="button" class="btn" [ngClass]="filters.filtro_nota === 'reprobados' ? 'btn-danger text-white fw-bold shadow-sm' : 'btn-outline-danger'" (click)="setNotaFilter('reprobados')">
-          <i class="material-icons-outlined align-middle" style="font-size: 14px;">cancel</i>
-          Reprobados &lt;71 ({{ gradesSummaryStats.reprobados }})
-        </button>
-        <button type="button" class="btn" [ngClass]="filters.filtro_nota === 'riesgo' ? 'btn-warning text-dark fw-bold shadow-sm' : 'btn-outline-warning text-dark'" (click)="setNotaFilter('riesgo')">
-          <i class="material-icons-outlined align-middle" style="font-size: 14px;">warning</i>
-          En Riesgo (71-79) ({{ gradesSummaryStats.enRiesgo }})
-        </button>
-        <button type="button" class="btn" [ngClass]="filters.filtro_nota === 'excelentes' ? 'btn-info text-white fw-bold shadow-sm' : 'btn-outline-info'" (click)="setNotaFilter('excelentes')">
-          <i class="material-icons-outlined align-middle" style="font-size: 14px;">star</i>
-          Excelentes ≥90 ({{ gradesSummaryStats.excelentes }})
-        </button>
-        <button type="button" class="btn" [ngClass]="filters.filtro_nota === 'sin_notas' ? 'btn-secondary text-white fw-bold shadow-sm' : 'btn-outline-secondary'" (click)="setNotaFilter('sin_notas')">
-          <i class="material-icons-outlined align-middle" style="font-size: 14px;">help_outline</i>
-          Sin Notas ({{ gradesSummaryStats.sinNotas }})
-        </button>
-      </div>
-    </div>
 
     <!-- Panel Lateral de Filtros Colapsable (RF 21 - HU 21) -->
     <div class="filter-panel animate-fade-in" *ngIf="isFilterSidebarOpen">
@@ -221,28 +163,21 @@
           </select>
         </div>
 
-        <!-- 8. Filtro por Rango / Rendimiento de Notas -->
-        <div class="col-md-3">
-          <label class="form-label fw-bold text-primary">Filtro por Calificación / Nota</label>
-          <select class="form-select border-primary" [(ngModel)]="filters.filtro_nota" (change)="onFilterChange()">
-            <option *ngFor="let fn of filtrosNotas" [value]="fn.id">{{ fn.nombre }}</option>
-          </select>
-        </div>
-
-        <!-- 9. Fechas -->
+        <!-- 8. Fecha Desde -->
         <div class="col-md-3">
           <label class="form-label">Fecha Desde</label>
           <input type="date" class="form-control" [(ngModel)]="filters.fecha_desde" (change)="onFilterChange()">
         </div>
 
+        <!-- 9. Fecha Hasta -->
         <div class="col-md-3">
           <label class="form-label">Fecha Hasta</label>
           <input type="date" class="form-control" [(ngModel)]="filters.fecha_hasta" (change)="onFilterChange()">
         </div>
 
-        <div class="col-md-6 d-flex align-items-end gap-2">
-          <button class="btn btn-secondary" (click)="resetFilters()">
-            <i class="material-icons-outlined align-middle">restart_alt</i> Limpiar Filtros
+        <div class="col-md-3 d-flex align-items-end">
+          <button class="btn btn-outline-secondary w-100" (click)="resetFilters()">
+            <i class="material-icons-outlined">refresh</i> Limpiar Filtros
           </button>
         </div>
       </div>
