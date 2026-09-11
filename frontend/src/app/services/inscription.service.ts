@@ -99,16 +99,24 @@ export class InscriptionService {
       // Error del lado del servidor
       if (error.status === 422) {
         // Error de validación de Laravel
+        const validationErrors = error.error?.errors || error.error?.errores || {};
         return throwError(() => ({
           status: 422,
-          mensaje: 'Error de validación',
-          errores: error.error.errors
+          mensaje: error.error?.mensaje || error.error?.message || 'Error de validación',
+          message: error.error?.message || error.error?.mensaje || 'Error de validación',
+          errores: validationErrors,
+          errors: validationErrors
         }));
       }
-      mensajeError = `Código de error: ${error.status}\nMensaje: ${error.message}`;
+      mensajeError = error.error?.message || error.error?.mensaje || `Código de error: ${error.status}\nMensaje: ${error.message}`;
     }
 
-    return throwError(() => mensajeError);
+    return throwError(() => ({
+      status: error.status,
+      mensaje: mensajeError,
+      message: mensajeError,
+      error: error.error
+    }));
   }
 
   // Métodos heredados para compatibilidad

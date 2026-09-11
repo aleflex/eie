@@ -69,6 +69,20 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
     carnetMilitarDoc: ''
   };
 
+  // Reglas de longitud y formato de celular por país
+  phoneCountryRules: { [prefix: string]: { min: number; max: number; country: string; placeholder: string } } = {
+    '+591': { min: 8, max: 8, country: 'Bolivia', placeholder: 'Ej. 70000000 (8 dígitos)' },
+    '+54':  { min: 10, max: 10, country: 'Argentina', placeholder: 'Ej. 1123456789 (10 dígitos)' },
+    '+55':  { min: 10, max: 11, country: 'Brasil', placeholder: 'Ej. 11987654321 (10 u 11 dígitos)' },
+    '+56':  { min: 9, max: 9, country: 'Chile', placeholder: 'Ej. 912345678 (9 dígitos)' },
+    '+51':  { min: 9, max: 9, country: 'Perú', placeholder: 'Ej. 912345678 (9 dígitos)' },
+    '+57':  { min: 10, max: 10, country: 'Colombia', placeholder: 'Ej. 3001234567 (10 dígitos)' },
+    '+34':  { min: 9, max: 9, country: 'España', placeholder: 'Ej. 612345678 (9 dígitos)' },
+    '+1':   { min: 10, max: 10, country: 'EE.UU. / Canadá', placeholder: 'Ej. 2025550123 (10 dígitos)' }
+  };
+
+  currentPhoneRule = this.phoneCountryRules['+591'];
+
   constructor(
     private fb: FormBuilder,
     private inscriptionService: InscriptionService,
@@ -369,7 +383,7 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
     this.inscriptionForm = this.fb.group({
       userType: ['normal', Validators.required],
       nombres: ['', [Validators.required, Validators.minLength(3), Validators.pattern(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'\-]+$/)]],
-      apellidos: ['', [Validators.required, Validators.pattern(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ']{2,}(?:\s+[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ']{1,})*$/)]],
+      apellidos: ['', [Validators.required, Validators.minLength(2), Validators.pattern(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'\-]+$/)]],
       gradoAcademico: [''],
       armaEspecialidad: [''],
       lugarNacimiento: ['', Validators.required],
@@ -382,8 +396,8 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
       estadoCivil: ['', Validators.required],
       grupoSanguineo: ['', Validators.required],
       celularPrefix: ['+591', Validators.required],
-      celular: ['', [Validators.required, Validators.pattern(/^[0-9]{7,10}$/)]],
-      anioBachiller: ['', [Validators.required, Validators.min(1950), Validators.max(2026)]],
+      celular: ['', [Validators.required, Validators.pattern(/^[0-9]{8}$/)]],
+      anioBachiller: ['', [Validators.required, Validators.pattern(/^(19[5-9]\d|20[0-2]\d)$/)]],
       edad: ['', [Validators.required, Validators.min(5), Validators.max(60)]],
       email: ['', [Validators.required, Validators.email]],
       domicilio: ['', Validators.required],
@@ -423,26 +437,25 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
       }
     });
 
-    this.inscriptionForm.get('nombres')?.valueChanges.subscribe(val => {
-      if (val && /[0-9]/.test(val)) {
-        const clean = val.replace(/[0-9]/g, '');
-        this.inscriptionForm.get('nombres')?.setValue(clean, { emitEvent: false });
-      }
+    // Escuchar cambios de nombres y apellidos para COSSMIL
+    this.inscriptionForm.get('nombres')?.valueChanges.subscribe(() => {
       this.autoGenerateCossmil();
     });
 
-    this.inscriptionForm.get('apellidos')?.valueChanges.subscribe(val => {
-      if (val && /[0-9]/.test(val)) {
-        const clean = val.replace(/[0-9]/g, '');
-        this.inscriptionForm.get('apellidos')?.setValue(clean, { emitEvent: false });
-      }
+    this.inscriptionForm.get('apellidos')?.valueChanges.subscribe(() => {
       this.autoGenerateCossmil();
     });
 
-    this.inscriptionForm.get('nombrePadres')?.valueChanges.subscribe(val => {
-      if (val && /[0-9]/.test(val)) {
-        const clean = val.replace(/[0-9]/g, '');
-        this.inscriptionForm.get('nombrePadres')?.setValue(clean, { emitEvent: false });
+    // Escuchar cambio de país para adaptar el límite y validación del número de celular
+    this.inscriptionForm.get('celularPrefix')?.valueChanges.subscribe(prefix => {
+      this.currentPhoneRule = this.phoneCountryRules[prefix] || { min: 7, max: 12, country: 'Internacional', placeholder: 'Número de celular' };
+      const celularCtrl = this.inscriptionForm.get('celular');
+      if (celularCtrl) {
+        celularCtrl.setValidators([
+          Validators.required,
+          Validators.pattern(new RegExp(`^[0-9]{${this.currentPhoneRule.min},${this.currentPhoneRule.max}}$`))
+        ]);
+        celularCtrl.updateValueAndValidity();
       }
     });
 
@@ -530,9 +543,13 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
    * Bloquea terminantemente teclas numéricas físicas y del teclado numérico
    */
   blockNumbers(event: KeyboardEvent) {
-    if (event.ctrlKey || event.altKey || event.metaKey || event.key === 'Backspace' || event.key === 'Tab' || event.key === 'Enter' || event.key === 'ArrowLeft' || event.key === 'ArrowRight' || event.key === 'Delete') {
+    if (event.ctrlKey || event.altKey || event.metaKey) {
       return;
     }
+    if (['Backspace', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight', 'Delete', 'Home', 'End'].includes(event.key)) {
+      return;
+    }
+    // Detectar números 0-9 tanto en teclado superior como en numpad
     if ((event.key >= '0' && event.key <= '9') || (event.code && event.code.startsWith('Numpad') && !['NumpadEnter'].includes(event.code))) {
       event.preventDefault();
       event.stopPropagation();
@@ -550,16 +567,34 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
   }
 
   /**
-   * Limpia y sanitiza en tiempo real eliminando dígitos del valor del input
+   * Limita el año de bachiller a exactamente 4 dígitos numéricos en tiempo real
    */
-  onInputSanitize(event: any, controlName: string) {
+  onYearInput(event: any) {
     const input = event.target as HTMLInputElement;
-    if (!input) return;
-    const cleanValue = input.value.replace(/[0-9]/g, '');
-    if (input.value !== cleanValue) {
-      input.value = cleanValue;
+    if (input && input.value) {
+      const clean = input.value.replace(/[^0-9]/g, '').slice(0, 4);
+      if (input.value !== clean) {
+        input.value = clean;
+      }
+      this.inscriptionForm.get('anioBachiller')?.setValue(clean);
+      this.inscriptionForm.get('anioBachiller')?.markAsDirty();
     }
-    this.inscriptionForm.get(controlName)?.setValue(cleanValue, { emitEvent: false });
+  }
+
+  /**
+   * Limita el número de celular a la cantidad máxima permitida por el país seleccionado
+   */
+  onPhoneInput(event: any) {
+    const input = event.target as HTMLInputElement;
+    if (input && input.value) {
+      const max = this.currentPhoneRule.max || 10;
+      const clean = input.value.replace(/[^0-9]/g, '').slice(0, max);
+      if (input.value !== clean) {
+        input.value = clean;
+      }
+      this.inscriptionForm.get('celular')?.setValue(clean);
+      this.inscriptionForm.get('celular')?.markAsDirty();
+    }
   }
 
   /**
@@ -577,6 +612,8 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
       const updated = current.substring(0, start) + clean + current.substring(end);
       input.value = updated;
       this.inscriptionForm.get(controlName)?.setValue(updated);
+      this.inscriptionForm.get(controlName)?.markAsDirty();
+      this.inscriptionForm.get(controlName)?.markAsTouched();
     }
   }
 
@@ -585,7 +622,18 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
   }
 
   filterLetters(event: Event, controlName: string) {
-    this.onInputSanitize(event, controlName);
+    const input = event.target as HTMLInputElement;
+    if (!input) return;
+    const clean = input.value.replace(/[0-9]/g, '');
+    if (input.value !== clean) {
+      input.value = clean;
+      this.inscriptionForm.get(controlName)?.setValue(clean);
+      this.inscriptionForm.get(controlName)?.markAsDirty();
+    }
+  }
+
+  onInputSanitize(event: any, controlName: string) {
+    this.filterLetters(event, controlName);
   }
 
   // Easy access to form fields
@@ -691,6 +739,129 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
   }
 
   /**
+   * Obtiene la lista descriptiva de errores y campos vacíos del paso indicado
+   */
+  getStepErrors(step: number): string[] {
+    const errors: string[] = [];
+    const f = this.inscriptionForm.controls;
+
+    if (step === 1) {
+      if (f['nombres'].errors) {
+        if (f['nombres'].errors['required']) errors.push('• Nombres: Campo obligatorio.');
+        else if (f['nombres'].errors['minlength']) errors.push('• Nombres: Mínimo 3 letras.');
+        else if (f['nombres'].errors['pattern']) errors.push('• Nombres: Solo se permiten letras (no se admiten números).');
+      }
+      if (f['apellidos'].errors) {
+        if (f['apellidos'].errors['required']) errors.push('• Apellidos: Campo obligatorio.');
+        else if (f['apellidos'].errors['minlength']) errors.push('• Apellidos: Mínimo 2 letras.');
+        else if (f['apellidos'].errors['pattern']) errors.push('• Apellidos: Solo se permiten letras (no se admiten números).');
+      }
+      if (f['ci'].errors) {
+        errors.push('• Cédula de Identidad: Debe contener entre 7 y 8 dígitos numéricos.');
+      }
+      if (f['expedido'].errors) {
+        errors.push('• Lugar de Expedición: Debes seleccionar el departamento emisor.');
+      }
+      if (f['lugarNacimiento'].errors) {
+        errors.push('• Lugar de Nacimiento: Debes seleccionar tu lugar de nacimiento.');
+      }
+      if (f['fechaNacimiento'].errors) {
+        errors.push('• Fecha de Nacimiento: Campo obligatorio.');
+      }
+      if (f['estadoCivil'].errors) {
+        errors.push('• Estado Civil: Debes seleccionar una opción.');
+      }
+      if (this.userType !== 'militar') {
+        if (f['nombrePadres'].errors) {
+          if (f['nombrePadres'].errors['required']) errors.push('• Nombres de los Padres / Tutor: Campo obligatorio.');
+          else if (f['nombrePadres'].errors['pattern']) errors.push('• Nombres de los Padres / Tutor: Solo se permiten letras (no números).');
+          else if (f['nombrePadres'].errors['minlength']) errors.push('• Nombres de los Padres / Tutor: Mínimo 6 caracteres.');
+        }
+        if (f['ciTutor'].errors) {
+          errors.push('• C.I. del Tutor: Debe contener 7 u 8 dígitos numéricos.');
+        }
+      }
+      if (f['contactoEmergencia'].errors) {
+        errors.push('• Contacto de Emergencia: Campo obligatorio (mínimo 4 caracteres).');
+      }
+    } else if (step === 2) {
+      if (f['email'].errors) {
+        errors.push('• Correo Electrónico: Ingresa un correo válido (ej. usuario@ejemplo.com).');
+      }
+      if (f['celular'].errors) {
+        const rule = this.currentPhoneRule;
+        errors.push(`• Celular: Para ${rule.country} (${f['celularPrefix'].value}), debe tener ${rule.min === rule.max ? ('exactamente ' + rule.min) : ('entre ' + rule.min + ' y ' + rule.max)} dígitos numéricos.`);
+      }
+      if (f['domicilio'].errors) {
+        errors.push('• Domicilio (Zona y Calle): Campo obligatorio (puedes seleccionarlo en el mapa).');
+      }
+      if (f['grupoSanguineo'].errors) {
+        errors.push('• Grupo Sanguíneo: Debes seleccionar una opción.');
+      }
+      if (f['anioBachiller'].errors) {
+        errors.push('• Año Bachiller: Debe ser un año de 4 dígitos entre 1950 y 2026 (Ej. 2020).');
+      }
+      if (f['tipoCurso'].errors) {
+        errors.push('• Modalidad del Curso: Campo obligatorio.');
+      }
+      if (f['idioma'].errors) {
+        errors.push('• Idioma: Campo obligatorio.');
+      }
+      if (f['nivel'].errors) {
+        errors.push('• Nivel: Debes seleccionar un nivel de estudio.');
+      }
+      if (f['horario'].errors) {
+        errors.push('• Horario: Debes seleccionar un horario.');
+      }
+    }
+    return errors;
+  }
+
+  /**
+   * Obtiene la lista de documentos que aún no se han subido en el paso 3
+   */
+  getMissingDocuments(): string[] {
+    const missing: string[] = [];
+    const archivosGroup = this.inscriptionForm.get('archivos') as FormGroup;
+    if (!archivosGroup) return missing;
+
+    if (archivosGroup.get('foto')?.invalid) {
+      missing.push('• Fotografía Personal 4x4: Obligatorio (Solo imagen JPG o PNG, fondo rojo)');
+    }
+    if (archivosGroup.get('carnet')?.invalid) {
+      missing.push('• Carnet de Identidad: Obligatorio (PDF o Foto)');
+    }
+    if (archivosGroup.get('titulo')?.invalid) {
+      missing.push('• Título de Bachiller: Obligatorio (PDF o Foto)');
+    }
+    if (archivosGroup.get('nacimiento')?.invalid) {
+      missing.push('• Certificado de Nacimiento: Obligatorio (PDF o Foto)');
+    }
+    if (this.userType === 'emi') {
+      if (archivosGroup.get('credencialEmi')?.invalid) {
+        missing.push('• Credencial o Factura EMI: Obligatorio para estudiantes EMI');
+      }
+      if (archivosGroup.get('deposito')?.invalid) {
+        missing.push('• Boleta de Pago / Depósito EMI: Obligatorio');
+      }
+    }
+    if (this.userType === 'militar') {
+      if (archivosGroup.get('carnetCossmil')?.invalid) {
+        missing.push('• Carnet de COSSMIL: Obligatorio para postulante militar');
+      }
+      if (archivosGroup.get('carnetMilitarDoc')?.invalid) {
+        missing.push('• Carnet Militar / Credencial: Obligatorio para postulante militar');
+      }
+    }
+    if (this.userType === 'hijo_militar') {
+      if (archivosGroup.get('carnetCossmil')?.invalid) {
+        missing.push('• Carnet de COSSMIL: Obligatorio para hijo de militar');
+      }
+    }
+    return missing;
+  }
+
+  /**
    * Avanza al siguiente paso del formulario de inscripción si el paso actual es completamente válido.
    */
   nextStep() {
@@ -703,6 +874,11 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
           setTimeout(() => this.initMap(), 400);
         }
       }
+    } else {
+      const stepErrors = this.getStepErrors(this.currentStep);
+      this.modalType = 'error';
+      this.modalMessage = `Por favor revisa y completa los siguientes campos del Paso ${this.currentStep}:\n\n` + stepErrors.join('\n');
+      this.showModal = true;
     }
   }
 
@@ -734,6 +910,10 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
     } else if (step > this.currentStep) {
       for (let s = this.currentStep; s < step; s++) {
         if (!this.validateStep(s)) {
+          const stepErrors = this.getStepErrors(s);
+          this.modalType = 'error';
+          this.modalMessage = `No puedes avanzar al Paso ${step} sin completar correctamente el Paso ${s}:\n\n` + stepErrors.join('\n');
+          this.showModal = true;
           return;
         }
       }
@@ -999,15 +1179,22 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
     console.log('Submitting final form...', this.inscriptionForm.value);
 
     if (!this.validateStep(3)) {
+      const missingDocs = this.getMissingDocuments();
       this.modalType = 'error';
-      this.modalMessage = 'Por favor, carga todos los documentos obligatorios en este paso para continuar.';
+      this.modalMessage = 'No se puede enviar la inscripción porque faltan documentos obligatorios:\n\n' + missingDocs.join('\n');
       this.showModal = true;
       return;
     }
 
-    if (this.inscriptionForm.invalid) {
+    if (!this.validateStep(1) || !this.validateStep(2) || this.inscriptionForm.invalid) {
+      const allErrors: string[] = [];
+      const s1 = this.getStepErrors(1);
+      const s2 = this.getStepErrors(2);
+      if (s1.length > 0) allErrors.push('--- PASO 1 (Datos Personales) ---', ...s1);
+      if (s2.length > 0) allErrors.push('--- PASO 2 (Contacto y Curso) ---', ...s2);
+
       this.modalType = 'error';
-      this.modalMessage = 'Hay algunos campos inválidos en los pasos anteriores. Por favor, revísalos.';
+      this.modalMessage = 'Hay campos obligatorios incompletos o con formato incorrecto:\n\n' + allErrors.join('\n');
       this.showModal = true;
       return;
     }
@@ -1040,12 +1227,14 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
           userType: 'normal',
           tipoCurso: 'presencial',
           idioma: 'Inglés',
+          celularPrefix: '+591',
           archivos: { carnet: null, titulo: null, nacimiento: null, deposito: null, foto: null, credencialEmi: null, carnetCossmil: null, carnetMilitarDoc: null }
         });
 
         // Reiniciar nombres de archivos y valores reales de entrada
         Object.keys(this.fileNames).forEach(key => {
           this.fileNames[key] = '';
+          this.fileWarnings[key] = '';
           const fileInput = document.getElementById('file_' + key) as HTMLInputElement;
           if (fileInput) {
             fileInput.value = '';
@@ -1056,16 +1245,35 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
         this.currentStep = 1;
         window.scrollTo({ top: 0, behavior: 'smooth' });
       },
-      error: (err) => {
+      error: (err: any) => {
         this.isLoading = false;
         console.error('Submission error:', err);
         this.modalType = 'error';
-        if (err.status === 422 && err.error && err.error.errors) {
-          const validationErrors = Object.values(err.error.errors).flat().join('\n');
-          this.modalMessage = 'Errores de validación del servidor:\n' + validationErrors;
+
+        const errObj = err || {};
+        const errorList: string[] = [];
+
+        // Extraer lista de errores del backend (soporta claves en español e inglés)
+        const rawErrors = errObj.errores || errObj.errors || errObj.error?.errors || errObj.error?.errores;
+        if (rawErrors && typeof rawErrors === 'object') {
+          Object.keys(rawErrors).forEach(field => {
+            const val = rawErrors[field];
+            if (Array.isArray(val)) {
+              errorList.push(...val);
+            } else if (typeof val === 'string') {
+              errorList.push(val);
+            }
+          });
+        }
+
+        const generalMsg = errObj.mensaje || errObj.message || errObj.error?.message || errObj.error?.mensaje;
+
+        if (errorList.length > 0) {
+          this.modalMessage = 'El servidor detectó las siguientes observaciones en el formulario:\n\n• ' + errorList.join('\n• ');
+        } else if (generalMsg && !generalMsg.includes('Error del servidor')) {
+          this.modalMessage = generalMsg;
         } else {
-          const serverDetail = err.error?.detalle ? `\nDetalle: ${err.error.detalle}` : '';
-          this.modalMessage = 'Hubo un problema al enviar tu formulario: ' + (err.error?.message || err.message || 'Error del servidor') + serverDetail;
+          this.modalMessage = 'No se pudo enviar la inscripción. Por favor revisa que todos los campos y documentos cumplan con los requisitos.';
         }
         this.showModal = true;
       }

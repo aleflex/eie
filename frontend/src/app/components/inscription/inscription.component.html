@@ -101,29 +101,26 @@
           <div class="col-md-4 form-group">
             <label for="nombres">Nombres *</label>
             <input type="text" id="nombres" formControlName="nombres" class="form-control"
-                   (keydown)="blockNumbers($event)" (beforeinput)="blockNumbersBeforeInput($event)"
-                   (input)="onInputSanitize($event, 'nombres')" (paste)="onPasteSanitize($event, 'nombres')"
-                   oninput="this.value = this.value.replace(/[0-9]/g, '')"
-                   onkeydown="if(!event.ctrlKey && !event.metaKey && ((event.key >= '0' && event.key <= '9') || (event.code && event.code.startsWith('Numpad') && event.code !== 'NumpadEnter'))) event.preventDefault();"
+                   (keydown)="blockNumbers($event)" (keypress)="blockNumbers($event)" (beforeinput)="blockNumbersBeforeInput($event)"
+                   (paste)="onPasteSanitize($event, 'nombres')"
                    inputmode="text"
-                   [class.is-invalid]="(isSubmitted || f['nombres'].touched) && f['nombres'].errors" placeholder="Ej. Juan">
-            <div *ngIf="(isSubmitted || f['nombres'].touched) && f['nombres'].errors" class="error-msg">
+                   [class.is-invalid]="(isSubmitted || f['nombres'].touched || f['nombres'].dirty) && f['nombres'].errors" placeholder="Ej. Juan Carlos">
+            <div *ngIf="(isSubmitted || f['nombres'].touched || f['nombres'].dirty) && f['nombres'].errors" class="error-msg">
               <small *ngIf="f['nombres'].errors['required']">El nombre es obligatorio.</small>
-              <small *ngIf="f['nombres'].errors['minlength']">Mínimo 3 caracteres.</small>
-              <small *ngIf="f['nombres'].errors['pattern']">No se permiten números en el nombre (solo letras).</small>
+              <small *ngIf="f['nombres'].errors['minlength']">Mínimo 3 letras.</small>
+              <small *ngIf="f['nombres'].errors['pattern']">Ingrese un nombre válido (solo letras, sin números).</small>
             </div>
           </div>
           <div class="col-md-4 form-group">
             <label for="apellidos">Apellidos *</label>
             <input type="text" id="apellidos" formControlName="apellidos" class="form-control"
-                   (keydown)="blockNumbers($event)" (beforeinput)="blockNumbersBeforeInput($event)"
-                   (input)="onInputSanitize($event, 'apellidos')" (paste)="onPasteSanitize($event, 'apellidos')"
-                   oninput="this.value = this.value.replace(/[0-9]/g, '')"
-                   onkeydown="if(!event.ctrlKey && !event.metaKey && ((event.key >= '0' && event.key <= '9') || (event.code && event.code.startsWith('Numpad') && event.code !== 'NumpadEnter'))) event.preventDefault();"
+                   (keydown)="blockNumbers($event)" (keypress)="blockNumbers($event)" (beforeinput)="blockNumbersBeforeInput($event)"
+                   (paste)="onPasteSanitize($event, 'apellidos')"
                    inputmode="text"
-                   [class.is-invalid]="(isSubmitted || f['apellidos'].touched) && f['apellidos'].errors" placeholder="Ej. Pérez o Pérez Mamani">
-            <div *ngIf="(isSubmitted || f['apellidos'].touched) && f['apellidos'].errors" class="error-msg">
+                   [class.is-invalid]="(isSubmitted || f['apellidos'].touched || f['apellidos'].dirty) && f['apellidos'].errors" placeholder="Ej. Pérez o Pérez Mamani">
+            <div *ngIf="(isSubmitted || f['apellidos'].touched || f['apellidos'].dirty) && f['apellidos'].errors" class="error-msg">
               <small *ngIf="f['apellidos'].errors['required']">Los apellidos son obligatorios.</small>
+              <small *ngIf="f['apellidos'].errors['minlength']">Mínimo 2 letras.</small>
               <small *ngIf="f['apellidos'].errors['pattern']">Ingrese un apellido válido (solo letras, sin números).</small>
             </div>
           </div>
@@ -279,16 +276,14 @@
           <div class="col-md-6 form-group">
             <label for="nombrePadres">Nombres y Apellidos de los Padres / Tutor <span *ngIf="userType !== 'militar'">*</span></label>
             <input type="text" id="nombrePadres" formControlName="nombrePadres" class="form-control"
-                   (keydown)="blockNumbers($event)" (beforeinput)="blockNumbersBeforeInput($event)"
-                   (input)="onInputSanitize($event, 'nombrePadres')" (paste)="onPasteSanitize($event, 'nombrePadres')"
-                   oninput="this.value = this.value.replace(/[0-9]/g, '')"
-                   onkeydown="if(!event.ctrlKey && !event.metaKey && ((event.key >= '0' && event.key <= '9') || (event.code && event.code.startsWith('Numpad') && event.code !== 'NumpadEnter'))) event.preventDefault();"
+                   (keydown)="blockNumbers($event)" (keypress)="blockNumbers($event)" (beforeinput)="blockNumbersBeforeInput($event)"
+                   (paste)="onPasteSanitize($event, 'nombrePadres')"
                    inputmode="text"
-                   [class.is-invalid]="(isSubmitted || f['nombrePadres'].touched) && f['nombrePadres'].errors" placeholder="Nombre completo del tutor o padres">
-            <div *ngIf="(isSubmitted || f['nombrePadres'].touched) && f['nombrePadres'].errors" class="error-msg">
+                   [class.is-invalid]="(isSubmitted || f['nombrePadres'].touched || f['nombrePadres'].dirty) && f['nombrePadres'].errors" placeholder="Nombre completo del tutor o padres">
+            <div *ngIf="(isSubmitted || f['nombrePadres'].touched || f['nombrePadres'].dirty) && f['nombrePadres'].errors" class="error-msg">
               <small *ngIf="f['nombrePadres'].errors['required']">El nombre del tutor o padres es obligatorio.</small>
-              <small *ngIf="f['nombrePadres'].errors['minlength']">Mínimo 6 caracteres.</small>
-              <small *ngIf="f['nombrePadres'].errors['pattern']">Solo se permiten letras en el nombre de los padres (sin números).</small>
+              <small *ngIf="f['nombrePadres'].errors['minlength']">Mínimo 6 letras.</small>
+              <small *ngIf="f['nombrePadres'].errors['pattern']">Ingrese nombres y apellidos válidos (solo letras, sin números).</small>
             </div>
           </div>
           <div class="col-md-6 form-group">
@@ -335,7 +330,7 @@
             </div>
           </div>
           <div class="col-md-6 form-group">
-            <label for="celular">Celular *</label>
+            <label for="celular">Celular * <span class="text-muted" style="font-size: 11px; font-weight: normal;">({{ currentPhoneRule.country }}: {{ currentPhoneRule.min === currentPhoneRule.max ? (currentPhoneRule.min + ' dígitos') : (currentPhoneRule.min + ' a ' + currentPhoneRule.max + ' dígitos') }})</span></label>
             <div class="input-group-phone">
               <select formControlName="celularPrefix" class="prefix-select" title="Prefijo de país" aria-label="Prefijo de país">
                 <option value="+591">+591 (BO)</option>
@@ -348,12 +343,14 @@
                 <option value="+1">+1 (US/CA)</option>
               </select>
               <input type="tel" id="celular" formControlName="celular" class="form-control phone-input"
-                     (keypress)="onlyNumbers($event)"
-                     [class.is-invalid]="(isSubmitted || f['celular'].touched) && f['celular'].errors" placeholder="Ej. 70000000">
+                     (keypress)="onlyNumbers($event)" (input)="onPhoneInput($event)"
+                     [attr.maxlength]="currentPhoneRule.max"
+                     [class.is-invalid]="(isSubmitted || f['celular'].touched || f['celular'].dirty) && f['celular'].errors"
+                     [placeholder]="currentPhoneRule.placeholder">
             </div>
-            <div *ngIf="(isSubmitted || f['celular'].touched) && f['celular'].errors" class="error-msg">
+            <div *ngIf="(isSubmitted || f['celular'].touched || f['celular'].dirty) && f['celular'].errors" class="error-msg">
               <small *ngIf="f['celular'].errors['required']">El celular es obligatorio.</small>
-              <small *ngIf="f['celular'].errors['pattern']">Debe tener entre 7 y 10 dígitos.</small>
+              <small *ngIf="f['celular'].errors['pattern']">Para {{ currentPhoneRule.country }} ({{ f['celularPrefix'].value }}), el celular debe tener {{ currentPhoneRule.min === currentPhoneRule.max ? ('exactamente ' + currentPhoneRule.min) : ('entre ' + currentPhoneRule.min + ' y ' + currentPhoneRule.max) }} dígitos numéricos.</small>
             </div>
           </div>
         </div>
@@ -438,11 +435,12 @@
           </div>
           <div class="col-md-4 form-group">
             <label for="anioBachiller">Año Bachiller *</label>
-            <input type="number" id="anioBachiller" formControlName="anioBachiller" class="form-control"
-                   [class.is-invalid]="(isSubmitted || f['anioBachiller'].touched) && f['anioBachiller'].errors" placeholder="Ej. 2018">
-            <div *ngIf="(isSubmitted || f['anioBachiller'].touched) && f['anioBachiller'].errors" class="error-msg">
-              <small *ngIf="f['anioBachiller'].errors['required']">Campo obligatorio.</small>
-              <small *ngIf="f['anioBachiller'].errors['min'] || f['anioBachiller'].errors['max']">Año inválido (1950-2026).</small>
+            <input type="text" id="anioBachiller" formControlName="anioBachiller" class="form-control"
+                   inputmode="numeric" maxlength="4" (keypress)="onlyNumbers($event)" (input)="onYearInput($event)"
+                   [class.is-invalid]="(isSubmitted || f['anioBachiller'].touched || f['anioBachiller'].dirty) && f['anioBachiller'].errors" placeholder="Ej. 2020">
+            <div *ngIf="(isSubmitted || f['anioBachiller'].touched || f['anioBachiller'].dirty) && f['anioBachiller'].errors" class="error-msg">
+              <small *ngIf="f['anioBachiller'].errors['required']">El año de bachiller es obligatorio.</small>
+              <small *ngIf="f['anioBachiller'].errors['pattern']">Debe ser un año de 4 dígitos válido (entre 1950 y 2026, Ej. 2020).</small>
             </div>
           </div>
         </div>
@@ -835,12 +833,12 @@
   <div class="modal-card animate-zoom-in" [class.success]="modalType === 'success'" [class.error]="modalType === 'error'" (click)="$event.stopPropagation()">
     <div class="modal-header-icon">
       <i class="material-icons" *ngIf="modalType === 'success'">check_circle</i>
-      <i class="material-icons" *ngIf="modalType === 'error'">error</i>
+      <i class="material-icons" *ngIf="modalType === 'error'">error_outline</i>
     </div>
-    <h2 class="modal-title">{{ modalType === 'success' ? '¡Inscripción Exitosa!' : '¡Ha ocurrido un error!' }}</h2>
-    <p class="modal-body-text">{{ modalMessage }}</p>
+    <h2 class="modal-title">{{ modalType === 'success' ? '¡Inscripción Exitosa!' : 'Atención / Validación de Datos' }}</h2>
+    <div class="modal-body-text">{{ modalMessage }}</div>
     <div class="modal-footer-btn">
-      <button type="button" class="btn-modal-close" (click)="closeModal()">Aceptar</button>
+      <button type="button" class="btn-modal-close" (click)="closeModal()">Entendido</button>
     </div>
   </div>
 </div>
