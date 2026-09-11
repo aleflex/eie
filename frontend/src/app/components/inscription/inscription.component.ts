@@ -6,6 +6,7 @@ import { FooterComponent } from '../footer/footer.component';
 import { InscriptionService } from '../../services/inscription.service';
 import { ImageCompressorService } from '../../services/image-compressor.service';
 import { environment } from '../../../environments/environment';
+import { Capacitor } from '@capacitor/core';
 import { Geolocation } from '@capacitor/geolocation';
 
 declare var L: any;
@@ -152,33 +153,31 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
   async usarUbicacionGps() {
     this.isGeolocating = true;
     try {
-      // 1. Solicitar permisos nativos si es necesario en Android/iOS
-      const permStatus = await Geolocation.checkPermissions();
-      if (permStatus.location !== 'granted') {
-        await Geolocation.requestPermissions();
+      if (Capacitor.isNativePlatform()) {
+        const permStatus = await Geolocation.checkPermissions();
+        if (permStatus.location !== 'granted') {
+          await Geolocation.requestPermissions();
+        }
+
+        const position = await Geolocation.getCurrentPosition({
+          enableHighAccuracy: true,
+          timeout: 10000
+        });
+
+        this.isGeolocating = false;
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+
+        if (!this.map) this.initMap();
+        if (this.map && this.marker) {
+          this.map.setView([lat, lng], 17);
+          this.marker.setLatLng([lat, lng]);
+          this.reverseGeocode(lat, lng);
+        }
+        return;
       }
 
-      const position = await Geolocation.getCurrentPosition({
-        enableHighAccuracy: true,
-        timeout: 10000
-      });
-
-      this.isGeolocating = false;
-      const lat = position.coords.latitude;
-      const lng = position.coords.longitude;
-
-      if (!this.map) {
-        this.initMap();
-      }
-
-      if (this.map && this.marker) {
-        this.map.setView([lat, lng], 17);
-        this.marker.setLatLng([lat, lng]);
-        this.reverseGeocode(lat, lng);
-      }
-    } catch (e: any) {
-      console.warn('Fallo Geolocation nativo, probando navegador:', e);
-      // Fallback clásico a navigator.geolocation
+      // En la web del navegador, usar directamente navigator.geolocation
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           (pos) => {
@@ -194,15 +193,18 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
           },
           (err) => {
             this.isGeolocating = false;
-            console.warn('Error GPS fallback:', err);
-            alert('Asegúrate de activar la Ubicación (GPS) en los ajustes de tu teléfono y permitir el acceso de ubicación a la app.');
+            console.warn('Aviso geolocalización web:', err.message || err);
+            alert('Asegúrate de permitir el acceso de ubicación a la página en tu navegador.');
           },
           { enableHighAccuracy: true, timeout: 10000 }
         );
       } else {
         this.isGeolocating = false;
-        alert('No se pudo acceder a tu ubicación GPS. Asegúrate de tener el GPS encendido.');
+        alert('Tu navegador no soporta geolocalización GPS.');
       }
+    } catch (e: any) {
+      this.isGeolocating = false;
+      console.warn('Aviso geolocalización:', e.message || e);
     }
   }
 
