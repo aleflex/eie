@@ -11,21 +11,7 @@ use App\Http\Controllers\Api\AccesoController;
 
 // Ping de salud para Railway / Render
 Route::get('/ping', function () {
-    try {
-        $res = app(\App\Http\Controllers\Api\InscriptionController::class)->index();
-        return response()->json([
-            'status' => 'ok',
-            'count' => count($res->getData())
-        ]);
-    } catch (\Throwable $e) {
-        return response()->json([
-            'status' => 'error',
-            'error' => $e->getMessage(),
-            'file' => $e->getFile(),
-            'line' => $e->getLine(),
-            'trace' => array_slice(explode("\n", $e->getTraceAsString()), 0, 10)
-        ], 200);
-    }
+    return response()->json(['status' => 'ok', 'time' => now()]);
 });
 
 Route::post('/login', [AuthController::class, 'login']);

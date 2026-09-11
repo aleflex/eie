@@ -15,7 +15,7 @@ class InscriptionController extends Controller
 {
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $validationRules = [
             'nombres' => ['required', 'string', 'min:2', 'max:255', 'regex:/^[\pL\s\.\'\-]+$/u'],
             'apellidos' => ['required', 'string', 'max:255', 'regex:/^[\pL\s\.\'\-]+$/u'],
             'ci' => 'required|string|min:5|max:30',
