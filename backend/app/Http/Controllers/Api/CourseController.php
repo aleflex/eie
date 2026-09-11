@@ -16,19 +16,26 @@ class CourseController extends Controller
      */
     public function index()
     {
-        $cursos = Curso::with(['idioma', 'nivelRel', 'modalidadRel'])->withCount('inscripciones')->get()->map(function($curso) {
-            return [
-                'id_curso' => $curso->id_curso,
-                'id' => $curso->id_curso, // Fallback para compatibilidad con el frontend
-                'idioma' => $curso->idioma ? ($curso->idioma->nombre_idioma ?? $curso->idioma->nombre) : '',
-                'nivel' => $curso->nivel,
-                'modalidad' => $curso->modalidad,
-                'cupo_minimo' => $curso->cupo_minimo,
-                'cupo_maximo' => $curso->cupo_maximo,
-                'inscripciones_count' => $curso->inscripciones_count
-            ];
-        });
-        return response()->json($cursos);
+        try {
+            $cursos = Curso::with(['idioma', 'nivelRel', 'modalidadRel'])->withCount('inscripciones')->get()->map(function($curso) {
+                return [
+                    'id_curso' => $curso->id_curso,
+                    'id' => $curso->id_curso, // Fallback para compatibilidad con el frontend
+                    'idioma' => $curso->idioma ? ($curso->idioma->nombre_idioma ?? $curso->idioma->nombre) : '',
+                    'nivel' => $curso->nivel,
+                    'modalidad' => $curso->modalidad,
+                    'cupo_minimo' => $curso->cupo_minimo,
+                    'cupo_maximo' => $curso->cupo_maximo,
+                    'inscripciones_count' => $curso->inscripciones_count
+                ];
+            });
+            return response()->json($cursos);
+        } catch (\Throwable $e) {
+            \Log::error("Error en CourseController@index: " . $e->getMessage());
+            return response()->json([
+                'message' => 'Error al obtener cursos: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -164,6 +171,7 @@ class CourseController extends Controller
                 'message' => 'Error al eliminar el curso.',
                 'error' => $e->getMessage()
             ], 500);
+        }
     }
 
     /**
@@ -171,7 +179,11 @@ class CourseController extends Controller
      */
     public function getIdiomas()
     {
-        return response()->json(Idioma::orderBy('id_idioma')->get());
+        try {
+            return response()->json(Idioma::orderBy('id_idioma')->get());
+        } catch (\Throwable $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 
     /**
@@ -179,6 +191,10 @@ class CourseController extends Controller
      */
     public function getNiveles()
     {
-        return response()->json(Nivel::orderBy('id_nivel')->get());
+        try {
+            return response()->json(Nivel::orderBy('id_nivel')->get());
+        } catch (\Throwable $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 }

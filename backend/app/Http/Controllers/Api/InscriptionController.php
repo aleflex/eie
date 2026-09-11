@@ -400,61 +400,71 @@ class InscriptionController extends Controller
 
     public function index()
     {
-        $inscripciones = Inscripcion::with([
-            'estudiante.user',
-            'estudiante.gradoRel',
-            'estudiante.armaRel',
-            'curso.idioma',
-            'paralelo'
-        ])->get()->map(function($ins) {
-            return [
-                'id_inscripcion' => $ins->id_inscripcion,
-                'id' => $ins->id_inscripcion, // fallback
-                'estudiante_id' => $ins->id_estudiante,
-                'curso_id' => $ins->id_curso,
-                'paralelo_id' => $ins->id_paralelo,
-                'fecha_registro' => $ins->fecha_registro,
-                'estado' => $ins->estado,
-                'estudiante' => $ins->estudiante ? [
-                    'id' => $ins->estudiante->id_estudiante,
-                    'id_estudiante' => $ins->estudiante->id_estudiante,
-                    'nombres' => $ins->estudiante->user->nombres ?? '',
-                    'apellidos' => $ins->estudiante->user->apellidos ?? '',
-                    'ci' => $ins->estudiante->user->ci ?? '',
-                    'correo_electronico' => $ins->estudiante->user->correo_institucional ?? $ins->estudiante->user->correo_electronico ?? $ins->estudiante->correo_electronico ?? '',
-                    'celular' => $ins->estudiante->celular,
-                    'fecha_nacimiento' => $ins->estudiante->fecha_nacimiento,
-                    'lugar_nacimiento' => $ins->estudiante->lugar_nacimiento,
-                    'anio_egreso_bachiller' => $ins->estudiante->anio_egreso_bachiller,
-                    'estado_civil' => $ins->estudiante->estado_civil,
-                    'grupo_sanguineo' => $ins->estudiante->grupo_sanguineo,
-                    'domicilio' => $ins->estudiante->domicilio,
-                    'carnet_militar' => $ins->estudiante->carnet_militar,
-                    'carnet_cossmil' => $ins->estudiante->carnet_cossmil,
-                    'nombre_padres' => $ins->estudiante->nombre_padres,
-                    'ci_tutor' => $ins->estudiante->ci_tutor,
-                    'hermanos_inscritos' => $ins->estudiante->hermanos_inscritos,
-                    'contacto_emergencia' => $ins->estudiante->contacto_emergencia,
-                    'foto_4x4_url' => $ins->estudiante->foto_4x4_url,
-                    'grado_academico' => $ins->estudiante->grado_academico ?? '',
-                    'arma_especialidad' => $ins->estudiante->arma_especialidad ?? '',
-                ] : null,
-                'curso' => $ins->curso ? [
-                    'id' => $ins->curso->id_curso,
-                    'id_curso' => $ins->curso->id_curso,
-                    'idioma' => $ins->curso->idioma->nombre_idioma ?? '',
-                    'nivel' => $ins->curso->nivel ?? '',
-                    'modalidad' => $ins->curso->modalidad ?? '',
-                ] : null,
-                'paralelo' => $ins->paralelo ? [
-                    'id' => $ins->paralelo->id_paralelo,
-                    'id_paralelo' => $ins->paralelo->id_paralelo,
-                    'nombre' => $ins->paralelo->nombre_paralelo,
-                ] : null,
-            ];
-        });
+        try {
+            $inscripciones = Inscripcion::with([
+                'estudiante.user',
+                'estudiante.gradoRel',
+                'estudiante.armaRel',
+                'curso.idioma',
+                'curso.nivelRel',
+                'curso.modalidadRel',
+                'paralelo'
+            ])->get()->map(function($ins) {
+                return [
+                    'id_inscripcion' => $ins->id_inscripcion,
+                    'id' => $ins->id_inscripcion, // fallback
+                    'estudiante_id' => $ins->id_estudiante,
+                    'curso_id' => $ins->id_curso,
+                    'paralelo_id' => $ins->id_paralelo,
+                    'fecha_registro' => $ins->fecha_registro,
+                    'estado' => $ins->estado,
+                    'estudiante' => $ins->estudiante ? [
+                        'id' => $ins->estudiante->id_estudiante,
+                        'id_estudiante' => $ins->estudiante->id_estudiante,
+                        'nombres' => $ins->estudiante->user?->nombres ?? $ins->estudiante->nombres ?? '',
+                        'apellidos' => $ins->estudiante->user?->apellidos ?? $ins->estudiante->apellidos ?? '',
+                        'ci' => $ins->estudiante->user?->ci ?? $ins->estudiante->ci ?? '',
+                        'correo_electronico' => $ins->estudiante->user?->correo_institucional ?? $ins->estudiante->user?->correo_electronico ?? $ins->estudiante->correo_electronico ?? '',
+                        'celular' => $ins->estudiante->celular,
+                        'fecha_nacimiento' => $ins->estudiante->fecha_nacimiento,
+                        'lugar_nacimiento' => $ins->estudiante->lugar_nacimiento,
+                        'anio_egreso_bachiller' => $ins->estudiante->anio_egreso_bachiller,
+                        'estado_civil' => $ins->estudiante->estado_civil,
+                        'grupo_sanguineo' => $ins->estudiante->grupo_sanguineo,
+                        'domicilio' => $ins->estudiante->domicilio,
+                        'carnet_militar' => $ins->estudiante->carnet_militar,
+                        'carnet_cossmil' => $ins->estudiante->carnet_cossmil,
+                        'nombre_padres' => $ins->estudiante->nombre_padres,
+                        'ci_tutor' => $ins->estudiante->ci_tutor,
+                        'hermanos_inscritos' => $ins->estudiante->hermanos_inscritos,
+                        'contacto_emergencia' => $ins->estudiante->contacto_emergencia,
+                        'foto_4x4_url' => $ins->estudiante->foto_4x4_url,
+                        'grado_academico' => $ins->estudiante->grado_academico ?? '',
+                        'arma_especialidad' => $ins->estudiante->arma_especialidad ?? '',
+                    ] : null,
+                    'curso' => $ins->curso ? [
+                        'id' => $ins->curso->id_curso,
+                        'id_curso' => $ins->curso->id_curso,
+                        'idioma' => $ins->curso->idioma?->nombre_idioma ?? $ins->curso->idioma?->nombre ?? '',
+                        'nivel' => $ins->curso->nivel ?? '',
+                        'modalidad' => $ins->curso->modalidad ?? '',
+                    ] : null,
+                    'paralelo' => $ins->paralelo ? [
+                        'id' => $ins->paralelo->id_paralelo,
+                        'id_paralelo' => $ins->paralelo->id_paralelo,
+                        'nombre' => $ins->paralelo->nombre_paralelo ?? $ins->paralelo->nombre ?? '',
+                    ] : null,
+                ];
+            });
 
-        return response()->json($inscripciones);
+            return response()->json($inscripciones);
+        } catch (\Throwable $e) {
+            \Log::error("Error en InscriptionController@index: " . $e->getMessage() . " en " . $e->getFile() . ":" . $e->getLine());
+            return response()->json([
+                'message' => 'Error al obtener inscripciones: ' . $e->getMessage(),
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
