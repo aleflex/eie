@@ -75,6 +75,7 @@ return [
                     ? (file_exists(base_path(env('MYSQL_ATTR_SSL_CA'))) ? base_path(env('MYSQL_ATTR_SSL_CA')) : env('MYSQL_ATTR_SSL_CA')) 
                     : (file_exists(base_path('storage/ca.pem')) ? base_path('storage/ca.pem') : null),
                 PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => false,
+                PDO::ATTR_EMULATE_PREPARES => false,
             ]) : [],
         ],
 
