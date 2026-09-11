@@ -825,8 +825,8 @@
                           </div>
                         </td>
                         <td class="td-score text-center">
-                          <span class="grade-score-pill" [ngClass]="nota.nota >= 51 ? 'score-approved' : 'score-reproved'">
-                            <i class="material-icons-outlined grade-state-icon">{{ nota.nota >= 51 ? 'check_circle' : 'error' }}</i>
+                          <span class="grade-score-pill" [ngClass]="nota.nota >= 71 ? 'score-approved' : 'score-reproved'">
+                            <i class="material-icons-outlined grade-state-icon">{{ nota.nota >= 71 ? 'check_circle' : 'error' }}</i>
                             <strong>{{ nota.nota }}</strong>
                             <span class="score-base">/100</span>
                           </span>
@@ -848,9 +848,9 @@
                     <i class="material-icons-outlined">insights</i>
                     <span>Promedio General:</span>
                   </div>
-                  <div class="avg-value-pill" [ngClass]="getCourseAverage(item.notas)! >= 51 ? 'avg-approved' : 'avg-reproved'">
+                  <div class="avg-value-pill" [ngClass]="getCourseAverage(item.notas)! >= 71 ? 'avg-approved' : 'avg-reproved'">
                     <strong>{{ getCourseAverage(item.notas) }} / 100</strong>
-                    <span class="avg-state-text">({{ getCourseAverage(item.notas)! >= 51 ? 'Aprobado' : 'Reprobado' }})</span>
+                    <span class="avg-state-text">({{ getCourseAverage(item.notas)! >= 71 ? 'Aprobado' : 'Reprobado' }})</span>
                   </div>
                 </div>
               </div>

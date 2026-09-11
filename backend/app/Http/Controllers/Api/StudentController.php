@@ -77,7 +77,7 @@ class StudentController extends Controller
             $notas = $ins->notas ?? collect();
             $avg = $notas->count() > 0 ? round($notas->avg('nota'), 1) : null;
             $ins->promedio = $avg;
-            $ins->rendimiento = $avg !== null ? ($avg >= 51 ? 'Aprobado' : 'Reprobado') : 'Sin Notas';
+            $ins->rendimiento = $avg !== null ? ($avg >= 71 ? 'Aprobado' : 'Reprobado') : 'Sin Notas';
             return $ins;
         });
 
@@ -186,6 +186,7 @@ class StudentController extends Controller
         if ($request->has('arma_especialidad')) {
             $estudiante->arma_especialidad = $request->input('arma_especialidad');
         }
+        
         if ($request->has('estado_civil')) {
             $estudiante->estado_civil = $request->input('estado_civil');
         }

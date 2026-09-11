@@ -115,10 +115,10 @@ export class ReportsComponent implements OnInit, AfterViewInit {
 
   filtrosNotas: any[] = [
     { id: '', nombre: 'Todas las Calificaciones' },
-    { id: 'aprobados', nombre: 'Aprobados (≥ 51 pts)' },
-    { id: 'reprobados', nombre: 'Reprobados (< 51 pts)' },
+    { id: 'aprobados', nombre: 'Aprobados (≥ 71 pts)' },
+    { id: 'reprobados', nombre: 'Reprobados (< 71 pts)' },
     { id: 'excelentes', nombre: 'Excelente / Honor (≥ 90 pts)' },
-    { id: 'riesgo', nombre: 'En Riesgo / Regular (51 - 69 pts)' },
+    { id: 'riesgo', nombre: 'En Riesgo / Regular (71 - 79 pts)' },
     { id: 'sin_notas', nombre: 'Sin Calificaciones Registradas' }
   ];
 
@@ -379,8 +379,8 @@ export class ReportsComponent implements OnInit, AfterViewInit {
             if (numericProm >= 90) {
               estadoRendimiento = 'Excelente / Honor';
               badgeClass = 'bg-primary';
-            } else if (numericProm >= 51) {
-              if (numericProm < 70) {
+            } else if (numericProm >= 71) {
+              if (numericProm < 80) {
                 estadoRendimiento = 'Aprobado (En Riesgo)';
                 badgeClass = 'bg-warning text-dark';
               } else {
@@ -425,10 +425,10 @@ export class ReportsComponent implements OnInit, AfterViewInit {
     if (this.filters.filtro_nota) {
       const fn = this.filters.filtro_nota;
       result = result.filter(e => {
-        if (fn === 'aprobados') return e.numericProm >= 51 && e.promedio !== 'Sin Notas';
-        if (fn === 'reprobados') return e.numericProm < 51 && e.promedio !== 'Sin Notas';
+        if (fn === 'aprobados') return e.numericProm >= 71 && e.promedio !== 'Sin Notas';
+        if (fn === 'reprobados') return e.numericProm < 71 && e.promedio !== 'Sin Notas';
         if (fn === 'excelentes') return e.numericProm >= 90;
-        if (fn === 'riesgo') return e.numericProm >= 51 && e.numericProm < 70;
+        if (fn === 'riesgo') return e.numericProm >= 71 && e.numericProm < 80;
         if (fn === 'sin_notas') return e.promedio === 'Sin Notas';
         return true;
       });
@@ -501,10 +501,10 @@ export class ReportsComponent implements OnInit, AfterViewInit {
     const conNotas = list.filter(e => e.promedio !== 'Sin Notas');
     const sum = conNotas.reduce((acc, curr) => acc + curr.numericProm, 0);
     const promedioGroup = conNotas.length > 0 ? Math.round((sum / conNotas.length) * 10) / 10 : 0;
-    const aprobados = list.filter(e => e.numericProm >= 51 && e.promedio !== 'Sin Notas').length;
-    const reprobados = list.filter(e => e.numericProm < 51 && e.promedio !== 'Sin Notas').length;
+    const aprobados = list.filter(e => e.numericProm >= 71 && e.promedio !== 'Sin Notas').length;
+    const reprobados = list.filter(e => e.numericProm < 71 && e.promedio !== 'Sin Notas').length;
     const excelentes = list.filter(e => e.numericProm >= 90).length;
-    const enRiesgo = list.filter(e => e.numericProm >= 51 && e.numericProm < 70).length;
+    const enRiesgo = list.filter(e => e.numericProm >= 71 && e.numericProm < 80).length;
     const sinNotas = list.filter(e => e.promedio === 'Sin Notas').length;
 
     return {

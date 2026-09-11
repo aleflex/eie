@@ -247,7 +247,7 @@
                 <tbody>
                   <tr *ngFor="let nota of item.notas">
                     <td class="ps-3 fw-semibold text-dark">{{ nota.periodo || nota.descripcion || 'Evaluación' }}</td>
-                    <td class="text-center fw-bold" [class.text-danger]="nota.nota < 51" [class.text-success]="nota.nota >= 51">
+                    <td class="text-center fw-bold" [class.text-danger]="nota.nota < 71" [class.text-success]="nota.nota >= 71">
                       {{ nota.nota }} / 100
                     </td>
                   </tr>

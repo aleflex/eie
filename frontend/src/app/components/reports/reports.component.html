@@ -125,15 +125,15 @@
         </button>
         <button type="button" class="btn" [ngClass]="filters.filtro_nota === 'aprobados' ? 'btn-success text-white fw-bold shadow-sm' : 'btn-outline-success'" (click)="setNotaFilter('aprobados')">
           <i class="material-icons-outlined align-middle" style="font-size: 14px;">check_circle</i>
-          Aprobados ≥51 ({{ gradesSummaryStats.aprobados }})
+          Aprobados ≥71 ({{ gradesSummaryStats.aprobados }})
         </button>
         <button type="button" class="btn" [ngClass]="filters.filtro_nota === 'reprobados' ? 'btn-danger text-white fw-bold shadow-sm' : 'btn-outline-danger'" (click)="setNotaFilter('reprobados')">
           <i class="material-icons-outlined align-middle" style="font-size: 14px;">cancel</i>
-          Reprobados &lt;51 ({{ gradesSummaryStats.reprobados }})
+          Reprobados &lt;71 ({{ gradesSummaryStats.reprobados }})
         </button>
         <button type="button" class="btn" [ngClass]="filters.filtro_nota === 'riesgo' ? 'btn-warning text-dark fw-bold shadow-sm' : 'btn-outline-warning text-dark'" (click)="setNotaFilter('riesgo')">
           <i class="material-icons-outlined align-middle" style="font-size: 14px;">warning</i>
-          En Riesgo (51-69) ({{ gradesSummaryStats.enRiesgo }})
+          En Riesgo (71-79) ({{ gradesSummaryStats.enRiesgo }})
         </button>
         <button type="button" class="btn" [ngClass]="filters.filtro_nota === 'excelentes' ? 'btn-info text-white fw-bold shadow-sm' : 'btn-outline-info'" (click)="setNotaFilter('excelentes')">
           <i class="material-icons-outlined align-middle" style="font-size: 14px;">star</i>
@@ -515,7 +515,7 @@
                               </ng-template>
                             </td>
                             <td>
-                              <strong [ngClass]="{'text-success': est.promedio >= 51, 'text-danger': est.promedio < 51 && est.promedio !== 'Sin Notas'}">
+                              <strong [ngClass]="{'text-success': est.promedio >= 71, 'text-danger': est.promedio < 71 && est.promedio !== 'Sin Notas'}">
                                 {{ est.promedio }} {{ est.promedio !== 'Sin Notas' ? 'pts' : '' }}
                               </strong>
                             </td>
@@ -726,7 +726,7 @@
                   </ng-template>
                 </td>
                 <td>
-                  <strong [ngClass]="{'text-success': est.promedio >= 51, 'text-danger': est.promedio < 51 && est.promedio !== 'Sin Notas'}">
+                  <strong [ngClass]="{'text-success': est.promedio >= 71, 'text-danger': est.promedio < 71 && est.promedio !== 'Sin Notas'}">
                     {{ est.promedio }} {{ est.promedio !== 'Sin Notas' ? 'pts' : '' }}
                   </strong>
                 </td>
@@ -780,7 +780,7 @@
             </div>
             <div class="report-card-row mt-2">
               <span class="report-card-label">Promedio Final:</span>
-              <strong class="fs-6" [ngClass]="{'text-success': est.promedio >= 51, 'text-danger': est.promedio < 51 && est.promedio !== 'Sin Notas'}">
+              <strong class="fs-6" [ngClass]="{'text-success': est.promedio >= 71, 'text-danger': est.promedio < 71 && est.promedio !== 'Sin Notas'}">
                 {{ est.promedio }} {{ est.promedio !== 'Sin Notas' ? 'pts' : '' }}
               </strong>
             </div>
@@ -966,19 +966,19 @@
           </div>
           <div class="col-6 col-md-2">
             <div class="p-2 bg-light rounded text-center border border-success clickable shadow-sm" (click)="setNotaFilter('aprobados')" title="Filtrar aprobados" style="cursor: pointer;" [style.box-shadow]="filters.filtro_nota === 'aprobados' ? '0 0 0 2px #15803d' : 'none'">
-              <small class="text-success fw-bold d-block">Aprobados (≥51)</small>
+              <small class="text-success fw-bold d-block">Aprobados (≥71)</small>
               <strong class="fs-5 text-success">{{ gradesSummaryStats.aprobados }}</strong>
             </div>
           </div>
           <div class="col-6 col-md-2">
             <div class="p-2 bg-light rounded text-center border border-danger clickable shadow-sm" (click)="setNotaFilter('reprobados')" title="Filtrar reprobados" style="cursor: pointer;" [style.box-shadow]="filters.filtro_nota === 'reprobados' ? '0 0 0 2px #b91c1c' : 'none'">
-              <small class="text-danger fw-bold d-block">Reprobados (&lt;51)</small>
+              <small class="text-danger fw-bold d-block">Reprobados (&lt;71)</small>
               <strong class="fs-5 text-danger">{{ gradesSummaryStats.reprobados }}</strong>
             </div>
           </div>
           <div class="col-6 col-md-2">
             <div class="p-2 bg-light rounded text-center border border-warning clickable shadow-sm" (click)="setNotaFilter('riesgo')" title="Filtrar en riesgo" style="cursor: pointer;" [style.box-shadow]="filters.filtro_nota === 'riesgo' ? '0 0 0 2px #d97706' : 'none'">
-              <small class="text-warning text-dark fw-bold d-block">En Riesgo (51-69)</small>
+              <small class="text-warning text-dark fw-bold d-block">En Riesgo (71-79)</small>
               <strong class="fs-5 text-warning text-dark">{{ gradesSummaryStats.enRiesgo }}</strong>
             </div>
           </div>
@@ -1046,7 +1046,7 @@
                 <td class="text-center">{{ est.book4 }}</td>
                 <td class="text-center">{{ est.examenFinal }}</td>
                 <td class="text-center">
-                  <strong class="fs-6" [ngClass]="{'text-success': est.numericProm >= 51, 'text-danger': est.numericProm < 51 && est.promedio !== 'Sin Notas'}">
+                  <strong class="fs-6" [ngClass]="{'text-success': est.numericProm >= 71, 'text-danger': est.numericProm < 71 && est.promedio !== 'Sin Notas'}">
                     {{ est.promedio }} {{ est.promedio !== 'Sin Notas' ? 'pts' : '' }}
                   </strong>
                 </td>
@@ -1105,7 +1105,7 @@
             </div>
             <div class="report-card-row mt-2 pt-2 border-top">
               <span class="report-card-label fw-bold">Promedio Final:</span>
-              <strong class="fs-5" [ngClass]="{'text-success': est.numericProm >= 51, 'text-danger': est.numericProm < 51 && est.promedio !== 'Sin Notas'}">
+              <strong class="fs-5" [ngClass]="{'text-success': est.numericProm >= 71, 'text-danger': est.numericProm < 71 && est.promedio !== 'Sin Notas'}">
                 {{ est.promedio }} {{ est.promedio !== 'Sin Notas' ? 'pts' : '' }}
               </strong>
             </div>
@@ -1198,12 +1198,12 @@
                           <i class="material-icons-outlined align-middle text-primary me-1" style="font-size: 16px;">edit_note</i>
                           {{ nota.periodo || nota.descripcion || 'Evaluación' }}
                         </td>
-                        <td class="text-center fw-bold fs-6" [ngClass]="nota.nota >= 51 ? 'text-success' : 'text-danger'">
+                        <td class="text-center fw-bold fs-6" [ngClass]="nota.nota >= 71 ? 'text-success' : 'text-danger'">
                           {{ nota.nota }} / 100
                         </td>
                         <td class="text-center">
-                          <span class="badge" [ngClass]="nota.nota >= 51 ? 'bg-success' : 'bg-danger'">
-                            {{ nota.nota >= 51 ? 'Aprobado' : 'Reprobado' }}
+                          <span class="badge" [ngClass]="nota.nota >= 71 ? 'bg-success' : 'bg-danger'">
+                            {{ nota.nota >= 71 ? 'Aprobado' : 'Reprobado' }}
                           </span>
                         </td>
                       </tr>
@@ -1219,14 +1219,14 @@
 
                 <!-- Promedio General del Curso -->
                 <div *ngIf="getCourseAverage(item.notas) !== null" class="d-flex justify-content-between align-items-center p-2 rounded-2 mt-2"
-                     [ngClass]="getCourseAverage(item.notas)! >= 51 ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-danger-subtle text-danger border border-danger-subtle'">
+                     [ngClass]="getCourseAverage(item.notas)! >= 71 ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-danger-subtle text-danger border border-danger-subtle'">
                   <div class="fw-bold d-flex align-items-center gap-1">
                     <i class="material-icons-outlined">insights</i>
                     <span>Promedio General del Nivel:</span>
                   </div>
                   <div class="fw-bold fs-5">
                     {{ getCourseAverage(item.notas) }} / 100
-                    <span class="fs-6 fw-normal ms-1">({{ getCourseAverage(item.notas)! >= 51 ? 'APROBADO' : 'REPROBADO' }})</span>
+                    <span class="fs-6 fw-normal ms-1">({{ getCourseAverage(item.notas)! >= 71 ? 'APROBADO' : 'REPROBADO' }})</span>
                   </div>
                 </div>
               </div>

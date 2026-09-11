@@ -154,13 +154,13 @@ class Inscripcion extends Model
                 $query->whereHas('notas', function ($q) {
                     $q->select(\DB::raw(1))
                       ->groupBy('id_inscripcion')
-                      ->havingRaw('AVG(nota) >= 51');
+                      ->havingRaw('AVG(nota) >= 71');
                 });
             } elseif ($fn === 'reprobados') {
                 $query->whereHas('notas', function ($q) {
                     $q->select(\DB::raw(1))
                       ->groupBy('id_inscripcion')
-                      ->havingRaw('AVG(nota) < 51');
+                      ->havingRaw('AVG(nota) < 71');
                 });
             } elseif ($fn === 'excelentes') {
                 $query->whereHas('notas', function ($q) {
@@ -172,7 +172,7 @@ class Inscripcion extends Model
                 $query->whereHas('notas', function ($q) {
                     $q->select(\DB::raw(1))
                       ->groupBy('id_inscripcion')
-                      ->havingRaw('AVG(nota) >= 51 AND AVG(nota) < 70');
+                      ->havingRaw('AVG(nota) >= 71 AND AVG(nota) < 80');
                 });
             } elseif ($fn === 'sin_notas') {
                 $query->doesntHave('notas');

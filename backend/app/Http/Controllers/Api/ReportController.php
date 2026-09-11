@@ -94,7 +94,7 @@ class ReportController extends Controller
                             ->from('notas')
                             ->whereColumn('notas.id_inscripcion', 'inscripciones.id_inscripcion')
                             ->groupBy('notas.id_inscripcion')
-                            ->havingRaw('AVG(notas.nota) >= 51');
+                            ->havingRaw('AVG(notas.nota) >= 71');
                     });
                 } elseif ($fn === 'reprobados') {
                     $query->whereExists(function ($sub) {
@@ -102,7 +102,7 @@ class ReportController extends Controller
                             ->from('notas')
                             ->whereColumn('notas.id_inscripcion', 'inscripciones.id_inscripcion')
                             ->groupBy('notas.id_inscripcion')
-                            ->havingRaw('AVG(notas.nota) < 51');
+                            ->havingRaw('AVG(notas.nota) < 71');
                     });
                 } elseif ($fn === 'excelentes') {
                     $query->whereExists(function ($sub) {
@@ -118,7 +118,7 @@ class ReportController extends Controller
                             ->from('notas')
                             ->whereColumn('notas.id_inscripcion', 'inscripciones.id_inscripcion')
                             ->groupBy('notas.id_inscripcion')
-                            ->havingRaw('AVG(notas.nota) >= 51 AND AVG(notas.nota) < 70');
+                            ->havingRaw('AVG(notas.nota) >= 71 AND AVG(notas.nota) < 80');
                     });
                 } elseif ($fn === 'sin_notas') {
                     $query->whereNotExists(function ($sub) {
@@ -672,7 +672,7 @@ class ReportController extends Controller
                 }
                 $avg = $notasCol->count() > 0 ? round($notasCol->avg('nota'), 1) : null;
                 $pfStr = $avg !== null ? (string)$avg : '-';
-                $rendimiento = $avg !== null ? ($avg >= 90 ? 'EXCELENTE' : ($avg >= 51 ? ($avg < 70 ? 'EN RIESGO' : 'APROBADO') : 'REPROBADO')) : 'SIN NOTAS';
+                $rendimiento = $avg !== null ? ($avg >= 90 ? 'EXCELENTE' : ($avg >= 71 ? ($avg < 80 ? 'EN RIESGO' : 'APROBADO') : 'REPROBADO')) : 'SIN NOTAS';
 
                 $rows[] = [
                     ['val' => $idx++, 'style' => 0],
@@ -904,7 +904,7 @@ class ReportController extends Controller
                 }
                 $avg = $notasCol->count() > 0 ? round($notasCol->avg('nota'), 1) : null;
                 $pfStr = $avg !== null ? (string)$avg : '-';
-                $rendimiento = $avg !== null ? ($avg >= 90 ? 'EXCELENTE' : ($avg >= 51 ? ($avg < 70 ? 'EN RIESGO' : 'APROBADO') : 'REPROBADO')) : 'SIN NOTAS';
+                $rendimiento = $avg !== null ? ($avg >= 90 ? 'EXCELENTE' : ($avg >= 71 ? ($avg < 80 ? 'EN RIESGO' : 'APROBADO') : 'REPROBADO')) : 'SIN NOTAS';
 
                 echo '<tr>';
                 echo '<td>' . $idx++ . '</td>';
@@ -1324,7 +1324,7 @@ class ReportController extends Controller
                     $avg = $notasCollection->count() > 0 ? round($notasCollection->avg('nota'), 1) : null;
                     $pf = $avg !== null ? (string)$avg : '-';
                     $promNum = floatval($pf);
-                    $estadoAprob = $avg !== null ? ($promNum >= 51 ? 'APROBADO' : 'REPROBADO') : 'SIN NOTAS';
+                    $estadoAprob = $avg !== null ? ($promNum >= 71 ? 'APROBADO' : 'REPROBADO') : 'SIN NOTAS';
 
                     $rows[] = [
                         ['val' => $idx++, 'style' => 0],
@@ -1430,7 +1430,7 @@ class ReportController extends Controller
                     }
 
                     $avgNotas = $notasCollection->avg('nota') ?? 0;
-                    $estadoTexto = $avgNotas >= 51 ? 'APROBADO' : ($avgNotas > 0 ? 'REPROBADO' : 'EN CURSO');
+                    $estadoTexto = $avgNotas >= 71 ? 'APROBADO' : ($avgNotas > 0 ? 'REPROBADO' : 'EN CURSO');
 
                     echo '<tr>';
                     echo '<td>' . $i++ . '</td>';
