@@ -217,7 +217,7 @@
             <option value="">Todos los Estados</option>
             <option value="activo">Habilitado / Activo</option>
             <option value="pendiente">Pendiente</option>
-            <option value="retirado">De Baja / Retirado</option>
+            <option value="baja">De Baja / Retirado</option>
           </select>
         </div>
 
@@ -332,6 +332,22 @@
         </div>
         <div class="chart-body">
           <canvas #classroomCanvas width="480" height="240"></canvas>
+        </div>
+      </div>
+
+      <!-- Gráfico 3: Rendimiento Académico y Calificaciones / Promedios -->
+      <div class="chart-card">
+        <div class="chart-header d-flex justify-content-between align-items-start">
+          <div>
+            <h2><i class="material-icons-outlined">grade</i> Rendimiento Académico y Notas</h2>
+            <p>Aprobados, reprobados, en riesgo y promedios de calificación</p>
+          </div>
+          <span class="badge bg-primary text-white px-2 py-1 fw-bold" style="font-size: 0.8rem; white-space: nowrap;">
+            Promedio: {{ summaryData.promedio_notas || gradesSummaryStats.promedioGroup }} pts
+          </span>
+        </div>
+        <div class="chart-body">
+          <canvas #gradesCanvas width="480" height="240"></canvas>
         </div>
       </div>
     </section>

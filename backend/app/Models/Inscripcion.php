@@ -104,7 +104,14 @@ class Inscripcion extends Model
         }
 
         if (!empty($filters['estado'])) {
-            $query->where('estado', strtolower($filters['estado']));
+            $est = strtolower($filters['estado']);
+            if ($est === 'retirado' || $est === 'baja' || $est === 'inactivo') {
+                $query->whereIn('estado', ['baja', 'retirado', 'inactivo']);
+            } elseif ($est === 'activo' || $est === 'habilitado') {
+                $query->whereIn('estado', ['activo', 'habilitado']);
+            } else {
+                $query->where('estado', $est);
+            }
         }
 
         if (!empty($filters['fecha_desde'])) {

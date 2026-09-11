@@ -164,6 +164,21 @@ class CourseController extends Controller
                 'message' => 'Error al eliminar el curso.',
                 'error' => $e->getMessage()
             ], 500);
-        }
+    }
+
+    /**
+     * Obtiene el listado completo de idiomas registrados en la BD
+     */
+    public function getIdiomas()
+    {
+        return response()->json(Idioma::orderBy('id_idioma')->get());
+    }
+
+    /**
+     * Obtiene el listado completo de niveles registrados en la BD
+     */
+    public function getNiveles()
+    {
+        return response()->json(Nivel::orderBy('id_nivel')->get());
     }
 }

@@ -29,7 +29,9 @@ Route::apiResource('estudiantes', StudentController::class);
 Route::get('/estudiantes/{id}/historial', [StudentController::class, 'history']);
 
 
-// Cursos (CRUD)
+// Cursos (CRUD) y Catálogos Académicos
+Route::get('/idiomas', [CourseController::class, 'getIdiomas']);
+Route::get('/niveles', [CourseController::class, 'getNiveles']);
 Route::apiResource('cursos', CourseController::class);
 
 // Inscripciones

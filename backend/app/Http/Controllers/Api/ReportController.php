@@ -40,7 +40,14 @@ class ReportController extends Controller
                 $query->where('inscripciones.id_paralelo', $filters['id_paralelo']);
             }
             if (!empty($filters['estado'])) {
-                $query->where('inscripciones.estado', strtolower($filters['estado']));
+                $est = strtolower($filters['estado']);
+                if ($est === 'retirado' || $est === 'baja' || $est === 'inactivo') {
+                    $query->whereIn('inscripciones.estado', ['baja', 'retirado', 'inactivo']);
+                } elseif ($est === 'activo' || $est === 'habilitado') {
+                    $query->whereIn('inscripciones.estado', ['activo', 'habilitado']);
+                } else {
+                    $query->where('inscripciones.estado', $est);
+                }
             }
             if (!empty($filters['fecha_desde'])) {
                 $query->whereDate('inscripciones.fecha_registro', '>=', $filters['fecha_desde']);
@@ -473,9 +480,9 @@ class ReportController extends Controller
             $inscripcionesQuery = Inscripcion::query()->filterMultiCriteria($filters);
 
             $totalInscritos = (clone $inscripcionesQuery)->count();
-            $totalHabilitados = (clone $inscripcionesQuery)->where('estado', 'activo')->count();
+            $totalHabilitados = (clone $inscripcionesQuery)->whereIn('estado', ['activo', 'habilitado'])->count();
             $totalPendientes = (clone $inscripcionesQuery)->where('estado', 'pendiente')->count();
-            $totalRetirados = (clone $inscripcionesQuery)->where('estado', 'retirado')->count();
+            $totalRetirados = (clone $inscripcionesQuery)->whereIn('estado', ['baja', 'retirado', 'inactivo'])->count();
 
             // Promedio general de notas
             $promedioNotas = 0;
@@ -1472,7 +1479,7 @@ class ReportController extends Controller
             $summary = $this->getDashboardSummary($request)->getData(true);
             $langStats = $this->getLanguageStatistics($request)->getData(true);
             $occStats = $this->getClassroomOccupancy($request)->getData(true);
-            $inscripciones = Inscripcion::with(['estudiante.user', 'curso.idioma', 'curso.nivelRel', 'paralelo'])
+            $inscripciones = Inscripcion::with(['estudiante.user', 'curso.idioma', 'curso.nivelRel', 'paralelo', 'notas'])
                 ->filterMultiCriteria($filters)
                 ->get();
 
@@ -1484,7 +1491,7 @@ class ReportController extends Controller
                 'fecha' => date('d/m/Y')
             ]);
 
-            $pdf->setPaper('letter', 'portrait');
+            $pdf->setPaper('letter', 'landscape');
 
             return $pdf->download('Reporte_Estadistico_EIE_' . date('Ymd') . '.pdf');
         } catch (\Throwable $e) {

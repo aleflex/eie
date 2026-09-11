@@ -5,14 +5,14 @@
     <title>Informe Estadístico y Resumen Ejecutivo EIE</title>
     <style>
         @page {
-            margin: 1.2cm 1.8cm;
+            margin: 0.8cm 1.2cm;
         }
         body {
             font-family: 'Courier', 'Times New Roman', 'Arial', sans-serif;
-            font-size: 10px;
+            font-size: 9.5px;
             color: #000000;
             background-color: #ffffff;
-            line-height: 1.35;
+            line-height: 1.3;
             margin: 0;
             padding: 0;
         }
@@ -241,28 +241,81 @@
         </tbody>
     </table>
 
-    <!-- 4. DETALLE DE MATRÍCULAS -->
-    <div class="section-title">4. Detalle de Estudiantes Matriculados ({{ count($inscripciones) }} Registros)</div>
+    <!-- 4. DETALLE DE MATRÍCULAS Y CALIFICACIONES (KARDEX ACADÉMICO) -->
+    <div class="section-title">4. Detalle de Matrículas y Calificaciones Académicas (Kardex General - {{ count($inscripciones) }} Registros)</div>
     <table class="table-list">
         <thead>
             <tr>
-                <th style="width: 5%;">Nro</th>
-                <th style="width: 15%;">C.I.</th>
-                <th class="left" style="width: 38%;">Apellidos y Nombres</th>
-                <th style="width: 18%;">Idioma</th>
+                <th style="width: 3%;">Nro</th>
+                <th style="width: 8%;">C.I.</th>
+                <th class="left" style="width: 22%;">Apellidos y Nombres</th>
+                <th style="width: 8%;">Idioma</th>
                 <th style="width: 12%;">Nivel</th>
-                <th style="width: 12%;">Estado</th>
+                <th style="width: 8%;">Paralelo</th>
+                <th style="width: 5%;">Book 1</th>
+                <th style="width: 5%;">Book 2</th>
+                <th style="width: 5%;">Book 3</th>
+                <th style="width: 5%;">Book 4</th>
+                <th style="width: 6%;">Ex. Final</th>
+                <th style="width: 6%;">Promedio</th>
+                <th style="width: 7%;">Rendimiento</th>
             </tr>
         </thead>
         <tbody>
             @forelse($inscripciones as $idx => $insc)
                 @php
                     $est = $insc->estudiante;
-                    $nombre = $est ? trim(($est->apellidos ?? '') . ' ' . ($est->nombres ?? '')) : ($est->user->name ?? 'N/A');
-                    $ci = $est->ci ?? 'N/A';
+                    $user = $est ? ($est->user ?? null) : null;
+                    $nombre = $user ? trim(($user->apellidos ?? '') . ' ' . ($user->nombres ?? '')) : ($est ? trim(($est->apellidos ?? '') . ' ' . ($est->nombres ?? '')) : 'N/A');
+                    $ci = $user->ci ?? ($est->ci ?? 'N/A');
                     $idioma = $insc->curso && $insc->curso->idioma ? ($insc->curso->idioma->nombre_idioma ?? $insc->curso->idioma->nombre ?? 'N/A') : 'N/A';
-                    $nivel = $insc->curso->nivel ?? 'N/A';
+                    $nivel = $insc->curso ? ($insc->curso->nivelRel->nombre_nivel ?? $insc->curso->nivel ?? 'N/A') : 'N/A';
+                    $paralelo = $insc->paralelo ? ($insc->paralelo->nombre_paralelo ?? $insc->paralelo->nombre ?? 'Sin Paralelo') : 'Sin Paralelo';
                     $estado = strtoupper($insc->estado ?? 'ACTIVO');
+
+                    $b1 = '-'; $b2 = '-'; $b3 = '-'; $b4 = '-'; $ex = '-';
+                    $notasCol = $insc->notas ?: collect();
+                    foreach ($notasCol as $nt) {
+                        $p = strtolower(trim($nt->periodo ?? $nt->descripcion ?? ''));
+                        $val = (string)$nt->nota;
+                        if (str_contains($p, 'examen') || str_contains($p, 'final') || str_contains($p, 'nivel')) {
+                            $ex = $val;
+                        } elseif (preg_match('/(?:book|parcial|libro|unidad)\s*1\b/i', $p) || $p === 'b1') {
+                            $b1 = $val;
+                        } elseif (preg_match('/(?:book|parcial|libro|unidad)\s*2\b/i', $p) || $p === 'b2') {
+                            $b2 = $val;
+                        } elseif (preg_match('/(?:book|parcial|libro|unidad)\s*3\b/i', $p) || $p === 'b3') {
+                            $b3 = $val;
+                        } elseif (preg_match('/(?:book|parcial|libro|unidad)\s*4\b/i', $p) || $p === 'b4') {
+                            $b4 = $val;
+                        }
+                    }
+                    $avg = $notasCol->count() > 0 ? round($notasCol->avg('nota'), 1) : null;
+                    $promStr = $avg !== null ? (string)$avg : '-';
+
+                    if (in_array($estado, ['BAJA', 'RETIRADO'])) {
+                        $rendimiento = 'DE BAJA';
+                        $rendColor = '#dc2626';
+                    } elseif ($avg !== null) {
+                        if ($avg >= 90) {
+                            $rendimiento = 'EXCELENTE';
+                            $rendColor = '#2563eb';
+                        } elseif ($avg >= 71) {
+                            if ($avg < 80) {
+                                $rendimiento = 'EN RIESGO';
+                                $rendColor = '#d97706';
+                            } else {
+                                $rendimiento = 'APROBADO';
+                                $rendColor = '#16a34a';
+                            }
+                        } else {
+                            $rendimiento = 'REPROBADO';
+                            $rendColor = '#dc2626';
+                        }
+                    } else {
+                        $rendimiento = ($estado === 'PENDIENTE') ? 'PENDIENTE' : 'SIN NOTAS';
+                        $rendColor = '#6b7280';
+                    }
                 @endphp
                 <tr>
                     <td>{{ $idx + 1 }}</td>
@@ -270,11 +323,18 @@
                     <td class="left"><strong>{{ mb_strtoupper($nombre, 'UTF-8') }}</strong></td>
                     <td>{{ strtoupper($idioma) }}</td>
                     <td>{{ strtoupper($nivel) }}</td>
-                    <td>{{ $estado }}</td>
+                    <td>{{ strtoupper($paralelo) }}</td>
+                    <td>{{ $b1 }}</td>
+                    <td>{{ $b2 }}</td>
+                    <td>{{ $b3 }}</td>
+                    <td>{{ $b4 }}</td>
+                    <td>{{ $ex }}</td>
+                    <td><strong>{{ $promStr }}</strong></td>
+                    <td style="color: {{ $rendColor }}; font-weight: bold;">{{ $rendimiento }}</td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="6">No se encontraron matrículas con los filtros aplicados.</td>
+                    <td colspan="13">No se encontraron matrículas con los filtros aplicados.</td>
                 </tr>
             @endforelse
         </tbody>

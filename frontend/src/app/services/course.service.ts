@@ -99,4 +99,18 @@ export class CourseService {
   deleteCourse(id: number): Observable<any> {
     return this.eliminarCurso(id);
   }
+
+  /**
+   * Obtiene la lista completa de idiomas desde la base de datos
+   */
+  obtenerIdiomas(): Observable<any[]> {
+    return this.http.get<any[]>(`${environment.apiUrl}/api/idiomas`);
+  }
+
+  /**
+   * Obtiene la lista completa de niveles (con correlación de libros) desde la base de datos
+   */
+  obtenerNiveles(): Observable<any[]> {
+    return this.http.get<any[]>(`${environment.apiUrl}/api/niveles`);
+  }
 }

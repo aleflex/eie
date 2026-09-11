@@ -20,6 +20,7 @@ import { downloadFile } from '../../utils/file-downloader';
 export class ReportsComponent implements OnInit, AfterViewInit {
   @ViewChild('languageCanvas') languageCanvas!: ElementRef<HTMLCanvasElement>;
   @ViewChild('classroomCanvas') classroomCanvas!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('gradesCanvas') gradesCanvas!: ElementRef<HTMLCanvasElement>;
 
   user: any = null;
   isLoading: boolean = true;
@@ -83,7 +84,7 @@ export class ReportsComponent implements OnInit, AfterViewInit {
       this.activeTableView = 'estudiantes';
       this.searchTermStudent = '';
     } else if (type === 'retirados') {
-      this.filters.estado = 'retirado';
+      this.filters.estado = 'baja';
       this.activeTableView = 'estudiantes';
       this.onFilterChange();
       return;
@@ -125,17 +126,19 @@ export class ReportsComponent implements OnInit, AfterViewInit {
   idiomasList: any[] = [
     { id: 1, nombre: 'Inglés' },
     { id: 2, nombre: 'Francés' },
-    { id: 3, nombre: 'Alemán' },
-    { id: 4, nombre: 'Ruso' },
-    { id: 5, nombre: 'Chino' },
+    { id: 3, nombre: 'Chino Mandarín' },
+    { id: 4, nombre: 'Alemán' },
+    { id: 5, nombre: 'Quechua' },
     { id: 6, nombre: 'Aymara' },
-    { id: 7, nombre: 'Quechua' }
+    { id: 7, nombre: 'Portugués' }
   ];
   nivelesList: any[] = [
-    { id: 1, nombre: 'Básico' },
-    { id: 2, nombre: 'Intermedio' },
-    { id: 3, nombre: 'Avanzado' },
-    { id: 4, nombre: 'Especializado' }
+    { id: 1, nombre: 'NIVEL I (BOOK 1-6)' },
+    { id: 2, nombre: 'NIVEL II (BOOK 7-12)' },
+    { id: 3, nombre: 'NIVEL III (BOOK 13-18)' },
+    { id: 4, nombre: 'AVANZADO I (BOOK 19-24)' },
+    { id: 5, nombre: 'AVANZADO II' },
+    { id: 6, nombre: 'NIVEL V (BOOK 25-30)' }
   ];
 
   // Datos Resumen KPIs (RF 18 & RF 19)
@@ -304,6 +307,30 @@ export class ReportsComponent implements OnInit, AfterViewInit {
       error: (err: any) => console.error('Error cargando cursos', err)
     });
 
+    this.courseService.obtenerIdiomas().subscribe({
+      next: (data: any[]) => {
+        if (data && data.length > 0) {
+          this.idiomasList = data.map(i => ({
+            id: i.id_idioma || i.id,
+            nombre: i.nombre_idioma || i.nombre
+          }));
+        }
+      },
+      error: (err: any) => console.error('Error cargando idiomas', err)
+    });
+
+    this.courseService.obtenerNiveles().subscribe({
+      next: (data: any[]) => {
+        if (data && data.length > 0) {
+          this.nivelesList = data.map(n => ({
+            id: n.id_nivel || n.id,
+            nombre: n.nombre_nivel || n.nombre
+          }));
+        }
+      },
+      error: (err: any) => console.error('Error cargando niveles', err)
+    });
+
     this.paraleloService.obtenerParalelos().subscribe({
       next: (data: any[]) => this.paralelosList = data,
       error: (err: any) => console.error('Error cargando paralelos', err)
@@ -349,6 +376,7 @@ export class ReportsComponent implements OnInit, AfterViewInit {
         });
         this.isLoading = false;
         this.renderClassroomChart();
+        setTimeout(() => this.renderGradesChart(), 80);
       },
       error: (err: any) => {
         console.error('Error cargando ocupación de aulas', err);
@@ -617,6 +645,7 @@ export class ReportsComponent implements OnInit, AfterViewInit {
   renderCharts() {
     this.renderLanguageChart();
     this.renderClassroomChart();
+    this.renderGradesChart();
   }
 
   /**
@@ -779,6 +808,105 @@ export class ReportsComponent implements OnInit, AfterViewInit {
       ctx.font = '10px Inter, sans-serif';
       const label = item.nombre_paralelo ? `${item.aula} (${item.nombre_paralelo})` : item.aula;
       ctx.fillText(label.slice(0, 10), x + (barWidth / 2), canvas.height - paddingBottom + 15);
+    });
+  }
+
+  /**
+   * Renderizado de Gráfico de Rendimiento Académico y Calificaciones (Canvas 2D)
+   */
+  renderGradesChart() {
+    if (!this.gradesCanvas) return;
+    const canvas = this.gradesCanvas.nativeElement;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const stats = this.gradesSummaryStats;
+    const totalConNotas = stats.aprobados + stats.reprobados;
+
+    if (totalConNotas === 0 && stats.sinNotas === 0) {
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '14px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Sin calificaciones registradas para los filtros aplicados', canvas.width / 2, canvas.height / 2);
+      return;
+    }
+
+    const paddingLeft = 45;
+    const paddingBottom = 45;
+    const chartWidth = canvas.width - paddingLeft - 20;
+    const chartHeight = canvas.height - paddingBottom - 35;
+
+    // Categorías de distribución
+    const categories = [
+      { label: 'Aprobados (≥71)', count: stats.aprobados, color: '#10B981' },
+      { label: 'Reprobados (<71)', count: stats.reprobados, color: '#EF4444' },
+      { label: 'En Riesgo (71-79)', count: stats.enRiesgo, color: '#F59E0B' },
+      { label: 'Excelentes (≥90)', count: stats.excelentes, color: '#3B82F6' },
+      { label: 'Sin Notas', count: stats.sinNotas, color: '#94A3B8' }
+    ];
+
+    const maxVal = Math.max(1, ...categories.map(c => c.count));
+    const stepVal = Math.ceil(maxVal / 4);
+    const yMax = Math.max(stepVal * 4, 4);
+
+    // Eje Y y cuadrícula horizontal tenue
+    ctx.strokeStyle = '#f1f5f9';
+    ctx.lineWidth = 1;
+
+    for (let i = 0; i <= 4; i++) {
+      const y = canvas.height - paddingBottom - (i * (chartHeight / 4));
+      const val = Math.round(i * (yMax / 4));
+
+      ctx.beginPath();
+      ctx.moveTo(paddingLeft, y);
+      ctx.lineTo(canvas.width - 15, y);
+      ctx.stroke();
+
+      ctx.fillStyle = '#64748b';
+      ctx.font = '10px Inter, sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText(`${val}`, paddingLeft - 8, y + 3);
+    }
+
+    // Dibujar Barras
+    const barCount = categories.length;
+    const slotWidth = chartWidth / barCount;
+    const barWidth = Math.min(38, slotWidth - 12);
+
+    categories.forEach((cat, index) => {
+      const x = paddingLeft + (index * slotWidth) + ((slotWidth - barWidth) / 2);
+      const h = yMax > 0 ? (cat.count / yMax) * chartHeight : 0;
+      const y = canvas.height - paddingBottom - h;
+
+      // Barra con esquinas redondeadas
+      ctx.fillStyle = cat.color;
+      ctx.beginPath();
+      if (typeof (ctx as any).roundRect === 'function') {
+        (ctx as any).roundRect(x, y, barWidth, h, [5, 5, 0, 0]);
+      } else {
+        ctx.rect(x, y, barWidth, h);
+      }
+      ctx.fill();
+
+      // Cantidad encima de la barra
+      ctx.fillStyle = '#1e293b';
+      ctx.font = 'bold 11px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      const pctText = stats.total > 0 ? ` (${Math.round((cat.count / stats.total) * 100)}%)` : '';
+      ctx.fillText(`${cat.count}${pctText}`, x + (barWidth / 2), y - 6);
+
+      // Label eje X
+      ctx.fillStyle = '#475569';
+      ctx.font = '9.5px Inter, sans-serif';
+      const parts = cat.label.split(' ');
+      if (parts.length > 1) {
+        ctx.fillText(parts[0], x + (barWidth / 2), canvas.height - paddingBottom + 14);
+        ctx.fillText(parts.slice(1).join(' '), x + (barWidth / 2), canvas.height - paddingBottom + 26);
+      } else {
+        ctx.fillText(cat.label, x + (barWidth / 2), canvas.height - paddingBottom + 16);
+      }
     });
   }
 }
