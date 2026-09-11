@@ -515,7 +515,18 @@
       <!-- PASO 3: DOCUMENTACIÓN Y SUBIDA DE ARCHIVOS -->
       <div *ngIf="currentStep === 3" class="step-content animate-slide-right">
         <div class="section-title">Documentos Requeridos (Fotos / Escaneos)</div>
-        <div class="highlight-req">
+        
+        <div class="highlight-req mb-3" *ngIf="userType === 'normal'">
+          <p class="mb-1 text-danger font-weight-bold"><i class="material-icons align-middle mr-1">verified</i> Requisitos Obligatorios para Usuario Normal:</p>
+          <ul class="mb-0 pl-3" style="line-height: 1.6;">
+            <li><strong>1. Carnet de Identidad *</strong> (PDF o Imagen)</li>
+            <li><strong>2. Título de Bachiller *</strong> (PDF o Imagen)</li>
+            <li><strong>3. Certificado de Nacimiento *</strong> (PDF o Imagen)</li>
+            <li><strong>4. Fotografía Personal 4x4 con Fondo Rojo *</strong> (Imagen JPG o PNG)</li>
+          </ul>
+        </div>
+
+        <div class="highlight-req" *ngIf="userType !== 'normal'">
           <p class="mb-0"><strong>Nota Importante:</strong> Todos los documentos cargados deben ser legibles y nítidos. Los formatos aceptados son imágenes (JPG, PNG) y documentos PDF (máximo 5MB por archivo).</p>
         </div>
 
@@ -666,16 +677,16 @@
 
           <!-- Fotografía Personal 4x4 -->
           <div class="col-md-6 form-group mt-3">
-            <label class="field-label-drop">Fotografía Personal 4x4 *</label>
+            <label class="field-label-drop">Fotografía Personal 4x4 (Fondo Rojo Obligatorio) *</label>
             <div class="custom-dropzone"
                  [class.has-file]="fileNames['foto']"
-                 [class.is-invalid]="(isSubmitted || inscriptionForm.get('archivos.foto')?.touched) && inscriptionForm.get('archivos.foto')?.invalid">
-              <input id="file_foto" type="file" (change)="onFileSelected($event, 'foto')" class="real-file-input" accept="image/*" title="Subir Foto 4x4" aria-label="Subir Foto 4x4">
+                 [class.is-invalid]="(isSubmitted || inscriptionForm.get('archivos.foto')?.touched) && (inscriptionForm.get('archivos.foto')?.invalid || !isPhotoFondoRojoValid)">
+              <input id="file_foto" type="file" (change)="onFileSelected($event, 'foto')" class="real-file-input" accept="image/*" title="Subir Foto 4x4 Fondo Rojo" aria-label="Subir Foto 4x4 Fondo Rojo">
 
               <div class="dropzone-content" *ngIf="!fileNames['foto']">
                 <i class="material-icons cloud-icon">account_circle</i>
                 <span class="upload-title">Seleccionar Fotografía</span>
-                <span class="upload-subtitle">Foto formal fondo blanco 4x4 cm</span>
+                <span class="upload-subtitle">Foto formal 4x4 cm con fondo rojo obligatorio</span>
               </div>
 
               <div class="dropzone-preview animate-fade-in" *ngIf="fileNames['foto']">
@@ -689,15 +700,18 @@
                 </button>
               </div>
             </div>
-            <!-- Advertencia Inteligente de Coherencia -->
+            <!-- Advertencia Inteligente de Coherencia o Fondo Rojo -->
             <div *ngIf="fileWarnings['foto']" class="warning-msg mt-2 animate-fade-in">
               <i class="material-icons align-middle text-warning-icon">warning</i>
               <small class="align-middle ml-1">{{ fileWarnings['foto'] }}</small>
             </div>
             <div *ngIf="(isSubmitted || inscriptionForm.get('archivos.foto')?.touched) && inscriptionForm.get('archivos.foto')?.invalid" class="error-msg">
-              <small>La Fotografía 4x4 es obligatoria.</small>
+              <small>La Fotografía Personal 4x4 con fondo rojo es obligatoria.</small>
             </div>
-            <small class="text-muted mt-1">Formatos: Imagen (JPG, PNG).</small>
+            <div *ngIf="fileNames['foto'] && !isPhotoFondoRojoValid" class="error-msg">
+              <small>⚠️ La fotografía seleccionada no cumple con el fondo rojo obligatorio.</small>
+            </div>
+            <small class="text-muted mt-1">Formatos: Imagen (JPG, PNG) con fondo rojo.</small>
           </div>
 
           <!-- Carnet COSSMIL (Solo para militares e hijos de militar) -->

@@ -15,6 +15,7 @@ export interface ModuloInfo {
   providedIn: 'root'
 })
 export class RoleService {
+
   private apiUrl = `${environment.apiUrl}/api/roles`;
 
   public readonly MODULOS_SISTEMA: ModuloInfo[] = [
@@ -35,7 +36,7 @@ export class RoleService {
     // Cargar desde localStorage PRIMERO para disponibilidad inmediata (antes de la respuesta HTTP)
     const stored = localStorage.getItem('eie_roles_permisos');
     if (stored) {
-      try { this.cachedPermisos = JSON.parse(stored); } catch (e) {}
+      try { this.cachedPermisos = JSON.parse(stored); } catch (e) { }
     }
     // Luego sincronizar con el servidor en segundo plano
     this.recargarPermisos();
@@ -51,7 +52,7 @@ export class RoleService {
         if (!this.cachedPermisos) {
           const stored = localStorage.getItem('eie_roles_permisos');
           if (stored) {
-            try { this.cachedPermisos = JSON.parse(stored); } catch (e) {}
+            try { this.cachedPermisos = JSON.parse(stored); } catch (e) { }
           }
         }
       }
@@ -112,7 +113,7 @@ export class RoleService {
       if (stored) {
         try {
           this.cachedPermisos = JSON.parse(stored);
-        } catch (e) {}
+        } catch (e) { }
       }
     }
 

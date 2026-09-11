@@ -82,6 +82,7 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
   };
 
   currentPhoneRule = this.phoneCountryRules['+591'];
+  isPhotoFondoRojoValid: boolean = true;
 
   constructor(
     private fb: FormBuilder,
@@ -348,6 +349,12 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
    * Inicializa el formulario reactivo con todos sus campos y reglas de validación (obligatorio, longitud, etc.).
    */
   autoGenerateCossmil() {
+    // Si no es militar ni hijo_militar, NO generar Cossmil y mantenerlo vacío
+    if (this.userType !== 'militar' && this.userType !== 'hijo_militar') {
+      this.inscriptionForm.get('carnetCossmil')?.patchValue('', { emitEvent: false });
+      return;
+    }
+
     const fecha = this.inscriptionForm.get('fechaNacimiento')?.value;
     const nombres = (this.inscriptionForm.get('nombres')?.value || '').trim();
     const apellidosStr = (this.inscriptionForm.get('apellidos')?.value || '').trim();
@@ -707,21 +714,37 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
           depositoCtrl?.setValidators(Validators.required);
           cossmilCtrl?.clearValidators();
           militarDocCtrl?.clearValidators();
+          cossmilCtrl?.reset(null);
+          militarDocCtrl?.reset(null);
         } else if (this.userType === 'militar') {
           cossmilCtrl?.setValidators(Validators.required);
           militarDocCtrl?.setValidators(Validators.required);
           credencialCtrl?.clearValidators();
           depositoCtrl?.clearValidators();
+          credencialCtrl?.reset(null);
+          depositoCtrl?.reset(null);
         } else if (this.userType === 'hijo_militar') {
           cossmilCtrl?.setValidators(Validators.required);
           militarDocCtrl?.clearValidators();
           credencialCtrl?.clearValidators();
           depositoCtrl?.clearValidators();
+          militarDocCtrl?.reset(null);
+          credencialCtrl?.reset(null);
+          depositoCtrl?.reset(null);
         } else {
+          // Usuario normal / civil: Ningún documento militar ni de EMI
           credencialCtrl?.clearValidators();
           depositoCtrl?.clearValidators();
           cossmilCtrl?.clearValidators();
           militarDocCtrl?.clearValidators();
+          credencialCtrl?.reset(null);
+          depositoCtrl?.reset(null);
+          cossmilCtrl?.reset(null);
+          militarDocCtrl?.reset(null);
+          this.fileNames['carnetCossmil'] = '';
+          this.fileNames['carnetMilitarDoc'] = '';
+          this.fileNames['credencialEmi'] = '';
+          this.fileNames['deposito'] = '';
         }
 
         credencialCtrl?.updateValueAndValidity({ emitEvent: false });
@@ -741,6 +764,12 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
             isValid = false;
           }
         });
+
+        // La foto debe tener fondo rojo
+        if (!this.isPhotoFondoRojoValid) {
+          isValid = false;
+        }
+
         return isValid;
       }
       return false;
@@ -836,36 +865,57 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
     const archivosGroup = this.inscriptionForm.get('archivos') as FormGroup;
     if (!archivosGroup) return missing;
 
-    if (archivosGroup.get('foto')?.invalid) {
-      missing.push('• Fotografía Personal 4x4: Obligatorio (Solo imagen JPG o PNG, fondo rojo)');
+    if (this.userType === 'normal') {
+      // Validación estricta de los 4 requisitos de Usuario Normal
+      if (archivosGroup.get('carnet')?.invalid || !this.fileNames['carnet']) {
+        missing.push('• Carnet de Identidad * (Requisito Obligatorio: PDF o Foto)');
+      }
+      if (archivosGroup.get('titulo')?.invalid || !this.fileNames['titulo']) {
+        missing.push('• Título de Bachiller * (Requisito Obligatorio: PDF o Foto)');
+      }
+      if (archivosGroup.get('nacimiento')?.invalid || !this.fileNames['nacimiento']) {
+        missing.push('• Certificado de Nacimiento * (Requisito Obligatorio: PDF o Foto)');
+      }
+      if (archivosGroup.get('foto')?.invalid || !this.fileNames['foto']) {
+        missing.push('• Fotografía Personal 4x4 * (Requisito Obligatorio: Foto 4x4 con fondo rojo)');
+      } else if (!this.isPhotoFondoRojoValid) {
+        missing.push('• Fotografía Personal 4x4 * (No cumple con el requisito de fondo ROJO obligatorio)');
+      }
+      return missing;
     }
-    if (archivosGroup.get('carnet')?.invalid) {
+
+    if (archivosGroup.get('foto')?.invalid || !this.fileNames['foto']) {
+      missing.push('• Fotografía Personal 4x4: Obligatorio (Solo imagen JPG o PNG, fondo rojo)');
+    } else if (!this.isPhotoFondoRojoValid) {
+      missing.push('• Fotografía Personal 4x4: No cumple con el fondo ROJO obligatorio');
+    }
+    if (archivosGroup.get('carnet')?.invalid || !this.fileNames['carnet']) {
       missing.push('• Carnet de Identidad: Obligatorio (PDF o Foto)');
     }
-    if (archivosGroup.get('titulo')?.invalid) {
+    if (archivosGroup.get('titulo')?.invalid || !this.fileNames['titulo']) {
       missing.push('• Título de Bachiller: Obligatorio (PDF o Foto)');
     }
-    if (archivosGroup.get('nacimiento')?.invalid) {
+    if (archivosGroup.get('nacimiento')?.invalid || !this.fileNames['nacimiento']) {
       missing.push('• Certificado de Nacimiento: Obligatorio (PDF o Foto)');
     }
     if (this.userType === 'emi') {
-      if (archivosGroup.get('credencialEmi')?.invalid) {
+      if (archivosGroup.get('credencialEmi')?.invalid || !this.fileNames['credencialEmi']) {
         missing.push('• Credencial o Factura EMI: Obligatorio para estudiantes EMI');
       }
-      if (archivosGroup.get('deposito')?.invalid) {
+      if (archivosGroup.get('deposito')?.invalid || !this.fileNames['deposito']) {
         missing.push('• Boleta de Pago / Depósito EMI: Obligatorio');
       }
     }
     if (this.userType === 'militar') {
-      if (archivosGroup.get('carnetCossmil')?.invalid) {
+      if (archivosGroup.get('carnetCossmil')?.invalid || !this.fileNames['carnetCossmil']) {
         missing.push('• Carnet de COSSMIL: Obligatorio para postulante militar');
       }
-      if (archivosGroup.get('carnetMilitarDoc')?.invalid) {
+      if (archivosGroup.get('carnetMilitarDoc')?.invalid || !this.fileNames['carnetMilitarDoc']) {
         missing.push('• Carnet Militar / Credencial: Obligatorio para postulante militar');
       }
     }
     if (this.userType === 'hijo_militar') {
-      if (archivosGroup.get('carnetCossmil')?.invalid) {
+      if (archivosGroup.get('carnetCossmil')?.invalid || !this.fileNames['carnetCossmil']) {
         missing.push('• Carnet de COSSMIL: Obligatorio para hijo de militar');
       }
     }
@@ -1141,11 +1191,14 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
             const rightRed = isRed(rightPixel);
 
             if (!leftRed && !rightRed) {
+              this.isPhotoFondoRojoValid = false;
               if (this.fileWarnings['foto']) {
                 this.fileWarnings['foto'] += ' Además, el color de fondo no parece ser ROJO. Recuerda que es obligatorio fondo rojo para la inscripción.';
               } else {
                 this.fileWarnings['foto'] = '⚠️ El color de fondo no parece ser ROJO. Recuerda que es obligatorio subir una foto con fondo rojo.';
               }
+            } else {
+              this.isPhotoFondoRojoValid = true;
             }
           }
           resolve();
@@ -1166,6 +1219,9 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
     archivos.get(fieldName)?.markAsTouched();
     this.fileNames[fieldName] = '';
     this.fileWarnings[fieldName] = ''; // Reiniciar advertencia
+    if (fieldName === 'foto') {
+      this.isPhotoFondoRojoValid = true;
+    }
 
     const fileInput = document.getElementById('file_' + fieldName) as HTMLInputElement;
     if (fileInput) {
@@ -1189,10 +1245,14 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
     this.isSubmitted = true;
     console.log('Submitting final form...', this.inscriptionForm.value);
 
-    if (!this.validateStep(3)) {
-      const missingDocs = this.getMissingDocuments();
+    const missingDocs = this.getMissingDocuments();
+    if (missingDocs.length > 0 || !this.validateStep(3)) {
       this.modalType = 'error';
-      this.modalMessage = 'No se puede enviar la inscripción porque faltan documentos obligatorios:\n\n' + missingDocs.join('\n');
+      if (this.userType === 'normal') {
+        this.modalMessage = 'No cumple con los requisitos obligatorios para la inscripción:\n\n' + missingDocs.join('\n') + '\n\nPara completar su registro como Usuario Normal debe presentar obligatoriamente: Carnet de Identidad, Título de Bachiller, Certificado de Nacimiento y Fotografía Personal 4x4 con fondo rojo.';
+      } else {
+        this.modalMessage = 'No se puede enviar la inscripción porque faltan documentos obligatorios o no cumplen con los requisitos:\n\n' + missingDocs.join('\n');
+      }
       this.showModal = true;
       return;
     }
@@ -1213,16 +1273,40 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
     this.isLoading = true;
 
     const formData = new FormData();
-    Object.keys(this.inscriptionForm.value).forEach(key => {
+    const formVal = this.inscriptionForm.value;
+
+    // Solo anexar campos de texto que apliquen y que no estén vacíos
+    Object.keys(formVal).forEach(key => {
       if (key !== 'archivos') {
-        formData.append(key, this.inscriptionForm.value[key]);
+        const val = formVal[key];
+        // Si es usuario normal, excluir campos militares
+        if (this.userType === 'normal' && (key === 'carnetCossmil' || key === 'carnetMilitar' || key === 'carnetMilitarSerie' || key === 'gradoAcademico' || key === 'armaEspecialidad')) {
+          return;
+        }
+        if (val !== null && val !== undefined && val !== '') {
+          formData.append(key, val);
+        }
       }
     });
 
-    const archivos = this.inscriptionForm.value.archivos;
+    const archivos = formVal.archivos || {};
     Object.keys(archivos).forEach(key => {
-      if (archivos[key]) {
-        formData.append(key, archivos[key]);
+      const file = archivos[key];
+      if (file instanceof File || file instanceof Blob) {
+        // Excluir archivos que no correspondan al tipo de usuario
+        if (this.userType === 'normal' && (key === 'carnetCossmil' || key === 'carnetMilitarDoc' || key === 'credencialEmi' || key === 'deposito')) {
+          return;
+        }
+        if (this.userType !== 'emi' && (key === 'credencialEmi' || key === 'deposito')) {
+          return;
+        }
+        if (this.userType !== 'militar' && this.userType !== 'hijo_militar' && key === 'carnetCossmil') {
+          return;
+        }
+        if (this.userType !== 'militar' && key === 'carnetMilitarDoc') {
+          return;
+        }
+        formData.append(key, file);
       }
     });
 
@@ -1241,6 +1325,8 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
           celularPrefix: '+591',
           archivos: { carnet: null, titulo: null, nacimiento: null, deposito: null, foto: null, credencialEmi: null, carnetCossmil: null, carnetMilitarDoc: null }
         });
+
+        this.isPhotoFondoRojoValid = true;
 
         // Reiniciar nombres de archivos y valores reales de entrada
         Object.keys(this.fileNames).forEach(key => {

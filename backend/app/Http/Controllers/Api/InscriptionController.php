@@ -36,27 +36,47 @@ class InscriptionController extends Controller
             'nivel' => 'required|string',
             'horario' => 'required|string',
             'tipoCurso' => 'required|string',
-            'foto' => 'nullable|file|mimes:jpeg,jpg,png,webp|max:5120',
-            'carnet' => 'nullable|file|mimes:pdf,jpeg,jpg,png,webp|max:5120',
-            'titulo' => 'nullable|file|mimes:pdf,jpeg,jpg,png,webp|max:5120',
-            'nacimiento' => 'nullable|file|mimes:pdf,jpeg,jpg,png,webp|max:5120',
-            'deposito' => 'nullable|file|mimes:pdf,jpeg,jpg,png,webp|max:5120',
-            'credencialEmi' => 'nullable|file|mimes:pdf,jpeg,jpg,png,webp|max:5120',
-            'carnetCossmil' => 'nullable|file|mimes:pdf,jpeg,jpg,png,webp|max:5120',
-            'carnetMilitarDoc' => 'nullable|file|mimes:pdf,jpeg,jpg,png,webp|max:5120',
-        ], [
+            'carnetCossmil' => 'nullable|string|max:50',
+            'carnetMilitar' => 'nullable|string|max:50',
+            'carnetMilitarSerie' => 'nullable|string|max:50',
+        ];
+
+        // Reglas condicionales de archivos:
+        // Para usuario normal se exigen obligatoriamente los 4 requisitos
+        if ($request->userType === 'normal') {
+            $validationRules['carnet'] = 'required|file|mimes:pdf,jpeg,jpg,png,webp|max:5120';
+            $validationRules['titulo'] = 'required|file|mimes:pdf,jpeg,jpg,png,webp|max:5120';
+            $validationRules['nacimiento'] = 'required|file|mimes:pdf,jpeg,jpg,png,webp|max:5120';
+            $validationRules['foto'] = 'required|file|mimes:jpeg,jpg,png,webp|max:5120';
+        } else {
+            if ($request->hasFile('foto')) $validationRules['foto'] = 'file|mimes:jpeg,jpg,png,webp|max:5120';
+            if ($request->hasFile('carnet')) $validationRules['carnet'] = 'file|mimes:pdf,jpeg,jpg,png,webp|max:5120';
+            if ($request->hasFile('titulo')) $validationRules['titulo'] = 'file|mimes:pdf,jpeg,jpg,png,webp|max:5120';
+            if ($request->hasFile('nacimiento')) $validationRules['nacimiento'] = 'file|mimes:pdf,jpeg,jpg,png,webp|max:5120';
+        }
+
+        if ($request->hasFile('deposito')) $validationRules['deposito'] = 'file|mimes:pdf,jpeg,jpg,png,webp|max:5120';
+        if ($request->hasFile('credencialEmi')) $validationRules['credencialEmi'] = 'file|mimes:pdf,jpeg,jpg,png,webp|max:5120';
+        if ($request->hasFile('carnetCossmilDoc')) $validationRules['carnetCossmilDoc'] = 'file|mimes:pdf,jpeg,jpg,png,webp|max:5120';
+        if ($request->hasFile('carnetMilitarDoc')) $validationRules['carnetMilitarDoc'] = 'file|mimes:pdf,jpeg,jpg,png,webp|max:5120';
+
+        $request->validate($validationRules, [
             'nombres.min' => 'El nombre debe tener al menos 2 caracteres.',
             'nombres.regex' => 'El nombre solo debe contener letras (no se permiten números).',
             'apellidos.regex' => 'Los apellidos solo deben contener letras (no se permiten números).',
             'ci.min' => 'El carnet de identidad debe tener al menos 5 caracteres.',
             'lugarNacimiento.min' => 'El lugar de nacimiento debe tener al menos 2 caracteres.',
-            'foto.mimes' => 'La Fotografía Personal 4x4 debe ser una imagen (JPG o PNG). No se permite formato PDF.',
+            'carnet.required' => 'El Carnet de Identidad es un requisito obligatorio.',
+            'titulo.required' => 'El Título de Bachiller es un requisito obligatorio.',
+            'nacimiento.required' => 'El Certificado de Nacimiento es un requisito obligatorio.',
+            'foto.required' => 'La Fotografía Personal 4x4 con fondo rojo es un requisito obligatorio.',
+            'foto.mimes' => 'La Fotografía Personal 4x4 debe ser una imagen (JPG o PNG con fondo rojo). No se permite formato PDF.',
             'carnet.mimes' => 'El Carnet de Identidad debe ser un archivo PDF o una imagen (JPG, PNG).',
             'titulo.mimes' => 'El Título de Bachiller debe ser un archivo PDF o una imagen (JPG, PNG).',
             'nacimiento.mimes' => 'El Certificado de Nacimiento debe ser un archivo PDF o una imagen (JPG, PNG).',
             'deposito.mimes' => 'La Boleta de Pago debe ser un archivo PDF o una imagen (JPG, PNG).',
             'credencialEmi.mimes' => 'La Credencial EMI debe ser un archivo PDF o una imagen (JPG, PNG).',
-            'carnetCossmil.mimes' => 'El Carnet COSSMIL debe ser un archivo PDF o una imagen (JPG, PNG).',
+            'carnetCossmilDoc.mimes' => 'El Carnet COSSMIL debe ser un archivo PDF o una imagen (JPG, PNG).',
             'carnetMilitarDoc.mimes' => 'El Carnet Militar debe ser un archivo PDF o una imagen (JPG, PNG).',
         ]);
 
@@ -64,7 +84,7 @@ class InscriptionController extends Controller
         if ($request->hasFile('foto')) {
             $this->validateSecureFile($request->file('foto'), true);
         }
-        foreach (['carnet', 'titulo', 'nacimiento', 'deposito', 'credencialEmi', 'carnetCossmil', 'carnetMilitarDoc'] as $key) {
+        foreach (['carnet', 'titulo', 'nacimiento', 'deposito', 'credencialEmi', 'carnetCossmil', 'carnetCossmilDoc', 'carnetMilitarDoc'] as $key) {
             if ($request->hasFile($key)) {
                 $this->validateSecureFile($request->file($key), false);
             }
@@ -207,6 +227,7 @@ class InscriptionController extends Controller
                     'deposito' => 'COMPROBANTE DE PAGO',
                     'credencialEmi' => 'CREDENCIAL EMI',
                     'carnetCossmil' => 'CARNET COSSMIL',
+                    'carnetCossmilDoc' => 'CARNET COSSMIL',
                     'carnetMilitarDoc' => 'CARNET MILITAR'
                 ];
 
