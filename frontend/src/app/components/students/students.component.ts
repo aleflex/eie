@@ -322,17 +322,21 @@ export class StudentsComponent implements OnInit, OnDestroy {
   }
 
   blockNumbers(event: KeyboardEvent) {
-    if (event.ctrlKey || event.altKey || event.metaKey || event.key === 'Backspace' || event.key === 'Tab' || event.key === 'Enter' || event.key === 'ArrowLeft' || event.key === 'ArrowRight' || event.key === 'Delete') {
+    this.onlyLetters(event);
+  }
+
+  onlyLetters(event: KeyboardEvent) {
+    if (event.ctrlKey || event.altKey || event.metaKey || event.key === 'Backspace' || event.key === 'Tab' || event.key === 'Enter' || event.key === 'ArrowLeft' || event.key === 'ArrowRight' || event.key === 'Delete' || event.key === 'Home' || event.key === 'End' || event.key === 'Escape') {
       return;
     }
-    if ((event.key >= '0' && event.key <= '9') || (event.code && event.code.startsWith('Numpad') && !['NumpadEnter'].includes(event.code))) {
+    if (event.key && event.key.length === 1 && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]$/.test(event.key)) {
       event.preventDefault();
       event.stopPropagation();
     }
   }
 
   blockNumbersBeforeInput(event: any) {
-    if (event.data && /[0-9]/.test(event.data)) {
+    if (event.data && /[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]/.test(event.data)) {
       event.preventDefault();
       event.stopPropagation();
     }
@@ -341,15 +345,11 @@ export class StudentsComponent implements OnInit, OnDestroy {
   onInputSanitize(event: any, field: 'nombres' | 'apellidos' | 'nombre_padres') {
     const input = event.target as HTMLInputElement;
     if (!input || !this.selectedStudent) return;
-    const cleanValue = input.value.replace(/[0-9]/g, '');
+    const cleanValue = input.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]/g, '');
     if (input.value !== cleanValue) {
       input.value = cleanValue;
     }
     this.selectedStudent[field] = cleanValue;
-  }
-
-  onlyLetters(event: KeyboardEvent) {
-    this.blockNumbers(event);
   }
 
   filterLetters(event: Event, field: 'nombres' | 'apellidos' | 'nombre_padres') {

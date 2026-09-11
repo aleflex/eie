@@ -236,17 +236,17 @@ export class SettingsComponent implements OnInit {
   }
 
   blockNumbers(event: KeyboardEvent) {
-    if (event.ctrlKey || event.altKey || event.metaKey || event.key === 'Backspace' || event.key === 'Tab' || event.key === 'Enter' || event.key === 'ArrowLeft' || event.key === 'ArrowRight' || event.key === 'Delete') {
+    if (event.ctrlKey || event.altKey || event.metaKey || event.key === 'Backspace' || event.key === 'Tab' || event.key === 'Enter' || event.key === 'ArrowLeft' || event.key === 'ArrowRight' || event.key === 'Delete' || event.key === 'Home' || event.key === 'End' || event.key === 'Escape') {
       return;
     }
-    if ((event.key >= '0' && event.key <= '9') || (event.code && event.code.startsWith('Numpad') && !['NumpadEnter'].includes(event.code))) {
+    if (event.key && event.key.length === 1 && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]$/.test(event.key)) {
       event.preventDefault();
       event.stopPropagation();
     }
   }
 
   blockNumbersBeforeInput(event: any) {
-    if (event.data && /[0-9]/.test(event.data)) {
+    if (event.data && /[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]/.test(event.data)) {
       event.preventDefault();
       event.stopPropagation();
     }
@@ -255,7 +255,7 @@ export class SettingsComponent implements OnInit {
   cleanProfileName(event: any) {
     const input = event.target as HTMLInputElement;
     if (!input) return;
-    const clean = input.value.replace(/[0-9]/g, '');
+    const clean = input.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]/g, '');
     if (input.value !== clean) {
       input.value = clean;
     }

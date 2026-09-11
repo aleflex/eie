@@ -382,8 +382,8 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
   initForm() {
     this.inscriptionForm = this.fb.group({
       userType: ['normal', Validators.required],
-      nombres: ['', [Validators.required, Validators.minLength(3), Validators.pattern(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'\-]+$/)]],
-      apellidos: ['', [Validators.required, Validators.minLength(2), Validators.pattern(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'\-]+$/)]],
+      nombres: ['', [Validators.required, Validators.minLength(3), Validators.pattern(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/)]],
+      apellidos: ['', [Validators.required, Validators.minLength(2), Validators.pattern(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/)]],
       gradoAcademico: [''],
       armaEspecialidad: [''],
       lugarNacimiento: ['', Validators.required],
@@ -405,7 +405,7 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
       nivel: ['', Validators.required],
       idioma: ['Inglés', Validators.required],
       tipoCurso: ['regular', Validators.required],
-      nombrePadres: ['', [Validators.required, Validators.minLength(6), Validators.pattern(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'\-]+$/)]],
+      nombrePadres: ['', [Validators.required, Validators.minLength(6), Validators.pattern(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/)]],
       ciTutor: ['', [Validators.required, Validators.pattern(/^[0-9]{7,8}$/)]],
       hermanosInscritos: [''],
       contactoEmergencia: ['', [Validators.required, Validators.minLength(4)]],
@@ -540,27 +540,35 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
   }
 
   /**
-   * Bloquea terminantemente teclas numéricas físicas y del teclado numérico
+   * Bloquea terminantemente números, guiones, símbolos y caracteres especiales, permitiendo ÚNICAMENTE letras y espacios
    */
   blockNumbers(event: KeyboardEvent) {
+    this.onlyLetters(event);
+  }
+
+  onlyLetters(event: KeyboardEvent) {
     if (event.ctrlKey || event.altKey || event.metaKey) {
       return;
     }
-    if (['Backspace', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight', 'Delete', 'Home', 'End'].includes(event.key)) {
+    if (['Backspace', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight', 'Delete', 'Home', 'End', 'Escape'].includes(event.key)) {
       return;
     }
-    // Detectar números 0-9 tanto en teclado superior como en numpad
-    if ((event.key >= '0' && event.key <= '9') || (event.code && event.code.startsWith('Numpad') && !['NumpadEnter'].includes(event.code))) {
+    // Permitir estrictamente letras mayúsculas, minúsculas, tildes, diéresis, ñ y espacios
+    if (event.key && event.key.length === 1 && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]$/.test(event.key)) {
       event.preventDefault();
       event.stopPropagation();
     }
   }
 
   /**
-   * Bloquea en Android / teclados móviles virtuales la inserción de números antes de que entren al DOM
+   * Bloquea en Android / teclados móviles virtuales la inserción de cualquier carácter no alfabético
    */
   blockNumbersBeforeInput(event: any) {
-    if (event.data && /[0-9]/.test(event.data)) {
+    this.onlyLettersBeforeInput(event);
+  }
+
+  onlyLettersBeforeInput(event: any) {
+    if (event.data && /[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]/.test(event.data)) {
       event.preventDefault();
       event.stopPropagation();
     }
@@ -598,13 +606,13 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
   }
 
   /**
-   * Bloquea números al pegar texto desde el portapapeles
+   * Sanitiza el texto al pegar desde el portapapeles permitiendo ÚNICAMENTE letras y espacios
    */
   onPasteSanitize(event: ClipboardEvent, controlName: string) {
     const pasted = event.clipboardData?.getData('text') || '';
-    if (/[0-9]/.test(pasted)) {
+    if (/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]/.test(pasted)) {
       event.preventDefault();
-      const clean = pasted.replace(/[0-9]/g, '');
+      const clean = pasted.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]/g, '');
       const input = event.target as HTMLInputElement;
       const start = input.selectionStart || 0;
       const end = input.selectionEnd || 0;
@@ -617,19 +625,22 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
     }
   }
 
-  onlyLetters(event: KeyboardEvent) {
-    this.blockNumbers(event);
-  }
-
+  /**
+   * Filtra en tiempo real (evento input) para asegurar que el valor contenga ÚNICAMENTE letras y espacios
+   */
   filterLetters(event: Event, controlName: string) {
     const input = event.target as HTMLInputElement;
     if (!input) return;
-    const clean = input.value.replace(/[0-9]/g, '');
+    const clean = input.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]/g, '');
     if (input.value !== clean) {
       input.value = clean;
       this.inscriptionForm.get(controlName)?.setValue(clean);
       this.inscriptionForm.get(controlName)?.markAsDirty();
     }
+  }
+
+  onLetterInput(event: any, controlName: string) {
+    this.filterLetters(event, controlName);
   }
 
   onInputSanitize(event: any, controlName: string) {
