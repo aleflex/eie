@@ -1314,7 +1314,7 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
       next: (response) => {
         this.isLoading = false;
         this.modalType = 'success';
-        this.modalMessage = '¡Inscripción registrada con éxito! En breve recibirás un correo electrónico de confirmación con los siguientes pasos de tu proceso.';
+        this.modalMessage = '¡Inscripción enviada con éxito! Tu solicitud ha sido registrada correctamente y pasará a revisión por el área académica/administrativa.';
         this.showModal = true;
 
         // Reiniciar formulario
