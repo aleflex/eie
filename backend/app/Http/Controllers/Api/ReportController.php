@@ -86,6 +86,49 @@ class ReportController extends Controller
                 });
             }
 
+            if (!empty($filters['filtro_nota'])) {
+                $fn = strtolower($filters['filtro_nota']);
+                if ($fn === 'aprobados') {
+                    $query->whereExists(function ($sub) {
+                        $sub->select(DB::raw(1))
+                            ->from('notas')
+                            ->whereColumn('notas.id_inscripcion', 'inscripciones.id_inscripcion')
+                            ->groupBy('notas.id_inscripcion')
+                            ->havingRaw('AVG(notas.nota) >= 51');
+                    });
+                } elseif ($fn === 'reprobados') {
+                    $query->whereExists(function ($sub) {
+                        $sub->select(DB::raw(1))
+                            ->from('notas')
+                            ->whereColumn('notas.id_inscripcion', 'inscripciones.id_inscripcion')
+                            ->groupBy('notas.id_inscripcion')
+                            ->havingRaw('AVG(notas.nota) < 51');
+                    });
+                } elseif ($fn === 'excelentes') {
+                    $query->whereExists(function ($sub) {
+                        $sub->select(DB::raw(1))
+                            ->from('notas')
+                            ->whereColumn('notas.id_inscripcion', 'inscripciones.id_inscripcion')
+                            ->groupBy('notas.id_inscripcion')
+                            ->havingRaw('AVG(notas.nota) >= 90');
+                    });
+                } elseif ($fn === 'riesgo') {
+                    $query->whereExists(function ($sub) {
+                        $sub->select(DB::raw(1))
+                            ->from('notas')
+                            ->whereColumn('notas.id_inscripcion', 'inscripciones.id_inscripcion')
+                            ->groupBy('notas.id_inscripcion')
+                            ->havingRaw('AVG(notas.nota) >= 51 AND AVG(notas.nota) < 70');
+                    });
+                } elseif ($fn === 'sin_notas') {
+                    $query->whereNotExists(function ($sub) {
+                        $sub->select(DB::raw(1))
+                            ->from('notas')
+                            ->whereColumn('notas.id_inscripcion', 'inscripciones.id_inscripcion');
+                    });
+                }
+            }
+
             $stats = $query->select(
                 'idiomas.id_idioma',
                 'idiomas.nombre_idioma as idioma',
@@ -209,6 +252,32 @@ class ReportController extends Controller
                     $notas = ($ins->relationLoaded('notas') && $ins->notas) ? $ins->notas->pluck('nota')->toArray() : [];
                     $prom = count($notas) > 0 ? round(array_sum($notas) / count($notas), 1) : null;
 
+                    $notasDetalle = [];
+                    $notasMap = ['book1' => '-', 'book2' => '-', 'book3' => '-', 'book4' => '-', 'examenFinal' => '-'];
+                    if ($ins->relationLoaded('notas') && $ins->notas) {
+                        foreach ($ins->notas as $nt) {
+                            $p = strtolower(trim($nt->periodo ?? ''));
+                            $val = (float)$nt->nota;
+                            $notasDetalle[] = [
+                                'id_nota' => $nt->id_nota,
+                                'periodo' => $nt->periodo ?: 'Evaluación',
+                                'nota' => $val,
+                                'observacion' => $nt->observacion
+                            ];
+                            if (str_contains($p, 'examen') || str_contains($p, 'final') || str_contains($p, 'nivel')) {
+                                $notasMap['examenFinal'] = (string)$val;
+                            } elseif (preg_match('/(?:book|parcial|libro|unidad)\s*1\b/i', $p) || $p === 'b1') {
+                                $notasMap['book1'] = (string)$val;
+                            } elseif (preg_match('/(?:book|parcial|libro|unidad)\s*2\b/i', $p) || $p === 'b2') {
+                                $notasMap['book2'] = (string)$val;
+                            } elseif (preg_match('/(?:book|parcial|libro|unidad)\s*3\b/i', $p) || $p === 'b3') {
+                                $notasMap['book3'] = (string)$val;
+                            } elseif (preg_match('/(?:book|parcial|libro|unidad)\s*4\b/i', $p) || $p === 'b4') {
+                                $notasMap['book4'] = (string)$val;
+                            }
+                        }
+                    }
+
                     return [
                         'id_inscripcion' => $ins->id_inscripcion,
                         'id_estudiante' => $ins->id_estudiante,
@@ -221,6 +290,8 @@ class ReportController extends Controller
                         'docente' => $docentesNombres,
                         'horario' => $horariosDesc,
                         'notas' => $notas,
+                        'notas_map' => $notasMap,
+                        'notas_detalle' => $notasDetalle,
                         'promedio' => $prom !== null ? $prom : 'Sin Notas'
                     ];
                 })->values();
@@ -279,6 +350,32 @@ class ReportController extends Controller
                     $notas = ($ins->relationLoaded('notas') && $ins->notas) ? $ins->notas->pluck('nota')->toArray() : [];
                     $prom = count($notas) > 0 ? round(array_sum($notas) / count($notas), 1) : null;
 
+                    $notasDetalle = [];
+                    $notasMap = ['book1' => '-', 'book2' => '-', 'book3' => '-', 'book4' => '-', 'examenFinal' => '-'];
+                    if ($ins->relationLoaded('notas') && $ins->notas) {
+                        foreach ($ins->notas as $nt) {
+                            $p = strtolower(trim($nt->periodo ?? ''));
+                            $val = (float)$nt->nota;
+                            $notasDetalle[] = [
+                                'id_nota' => $nt->id_nota,
+                                'periodo' => $nt->periodo ?: 'Evaluación',
+                                'nota' => $val,
+                                'observacion' => $nt->observacion
+                            ];
+                            if (str_contains($p, 'examen') || str_contains($p, 'final') || str_contains($p, 'nivel')) {
+                                $notasMap['examenFinal'] = (string)$val;
+                            } elseif (preg_match('/(?:book|parcial|libro|unidad)\s*1\b/i', $p) || $p === 'b1') {
+                                $notasMap['book1'] = (string)$val;
+                            } elseif (preg_match('/(?:book|parcial|libro|unidad)\s*2\b/i', $p) || $p === 'b2') {
+                                $notasMap['book2'] = (string)$val;
+                            } elseif (preg_match('/(?:book|parcial|libro|unidad)\s*3\b/i', $p) || $p === 'b3') {
+                                $notasMap['book3'] = (string)$val;
+                            } elseif (preg_match('/(?:book|parcial|libro|unidad)\s*4\b/i', $p) || $p === 'b4') {
+                                $notasMap['book4'] = (string)$val;
+                            }
+                        }
+                    }
+
                     return [
                         'id_inscripcion' => $ins->id_inscripcion,
                         'id_estudiante' => $ins->id_estudiante,
@@ -291,6 +388,8 @@ class ReportController extends Controller
                         'docente' => 'Sin Docente Asignado',
                         'horario' => 'Pendiente de Turno',
                         'notas' => $notas,
+                        'notas_map' => $notasMap,
+                        'notas_detalle' => $notasDetalle,
                         'promedio' => $prom !== null ? $prom : 'Sin Notas'
                     ];
                 });
@@ -440,7 +539,7 @@ class ReportController extends Controller
         $langStats = $this->getLanguageStatistics($request)->getData(true);
         $occStats = $this->getClassroomOccupancy($request)->getData(true);
         
-        $inscripciones = Inscripcion::with(['estudiante.user', 'curso.idioma', 'curso.nivelRel', 'paralelo'])
+        $inscripciones = Inscripcion::with(['estudiante.user', 'curso.idioma', 'curso.nivelRel', 'paralelo', 'notas'])
             ->filterMultiCriteria($filters)
             ->get();
 
@@ -519,7 +618,7 @@ class ReportController extends Controller
             }
 
             $rows[] = [''];
-            $rows[] = [['val' => '4. DETALLE DE MATRÍCULAS FILTRADAS', 'style' => 2]];
+            $rows[] = [['val' => '4. DETALLE DE MATRÍCULAS Y CALIFICACIONES (KARDEX GENERAL)', 'style' => 2]];
             $rows[] = [
                 ['val' => 'Nro', 'style' => 1],
                 ['val' => 'C.I.', 'style' => 1],
@@ -528,6 +627,13 @@ class ReportController extends Controller
                 ['val' => 'Nivel', 'style' => 1],
                 ['val' => 'Paralelo', 'style' => 1],
                 ['val' => 'Estado', 'style' => 1],
+                ['val' => 'Book 1', 'style' => 1],
+                ['val' => 'Book 2', 'style' => 1],
+                ['val' => 'Book 3', 'style' => 1],
+                ['val' => 'Book 4', 'style' => 1],
+                ['val' => 'Examen Nivel', 'style' => 1],
+                ['val' => 'Promedio Final', 'style' => 1],
+                ['val' => 'Rendimiento', 'style' => 1],
             ];
 
             $idx = 1;
@@ -541,6 +647,33 @@ class ReportController extends Controller
                 $nombreCompleto = $user ? trim(($user->apellidos ?? '') . ' ' . ($user->nombres ?? '')) : ($est ? trim(($est->apellidos ?? '') . ' ' . ($est->nombres ?? '')) : 'N/A');
                 $ciVal = $user->ci ?? ($est->ci ?? 'N/A');
 
+                $notasCol = $insc->notas ?: collect();
+                $b1 = '-'; $b2 = '-'; $b3 = '-'; $b4 = '-'; $ex = '-';
+                foreach ($notasCol as $nt) {
+                    $p = strtolower(trim($nt->periodo ?? $nt->descripcion ?? ''));
+                    $val = (string)$nt->nota;
+                    if (str_contains($p, 'examen') || str_contains($p, 'final') || str_contains($p, 'nivel')) {
+                        $ex = $val;
+                    } elseif (preg_match('/(?:book|parcial|libro|unidad)\s*1\b/i', $p) || $p === 'b1') {
+                        $b1 = $val;
+                    } elseif (preg_match('/(?:book|parcial|libro|unidad)\s*2\b/i', $p) || $p === 'b2') {
+                        $b2 = $val;
+                    } elseif (preg_match('/(?:book|parcial|libro|unidad)\s*3\b/i', $p) || $p === 'b3') {
+                        $b3 = $val;
+                    } elseif (preg_match('/(?:book|parcial|libro|unidad)\s*4\b/i', $p) || $p === 'b4') {
+                        $b4 = $val;
+                    } else {
+                        if ($b1 === '-') $b1 = $val;
+                        elseif ($b2 === '-') $b2 = $val;
+                        elseif ($b3 === '-') $b3 = $val;
+                        elseif ($b4 === '-') $b4 = $val;
+                        elseif ($ex === '-') $ex = $val;
+                    }
+                }
+                $avg = $notasCol->count() > 0 ? round($notasCol->avg('nota'), 1) : null;
+                $pfStr = $avg !== null ? (string)$avg : '-';
+                $rendimiento = $avg !== null ? ($avg >= 90 ? 'EXCELENTE' : ($avg >= 51 ? ($avg < 70 ? 'EN RIESGO' : 'APROBADO') : 'REPROBADO')) : 'SIN NOTAS';
+
                 $rows[] = [
                     ['val' => $idx++, 'style' => 0],
                     ['val' => $ciVal, 'style' => 0],
@@ -549,6 +682,13 @@ class ReportController extends Controller
                     ['val' => $cur->nivel ?? 'N/A', 'style' => 0],
                     ['val' => $par ? ($par->nombre_paralelo ?? $par->nombre ?? 'N/A') : 'Sin Paralelo (Por Asignar)', 'style' => 0],
                     ['val' => strtoupper($insc->estado ?? 'PENDIENTE'), 'style' => 0],
+                    ['val' => $b1, 'style' => 0],
+                    ['val' => $b2, 'style' => 0],
+                    ['val' => $b3, 'style' => 0],
+                    ['val' => $b4, 'style' => 0],
+                    ['val' => $ex, 'style' => 0],
+                    ['val' => $pfStr, 'style' => 3],
+                    ['val' => $rendimiento, 'style' => 0],
                 ];
             }
 
@@ -708,9 +848,9 @@ class ReportController extends Controller
             }
             echo '</table><br>';
 
-            // TABLA 4: DETALLE GENERAL DE MATRÍCULAS
+            // TABLA 4: DETALLE GENERAL DE MATRÍCULAS Y CALIFICACIONES (KARDEX GENERAL)
             echo '<table>';
-            echo '<tr><th colspan="7" class="section-title">4. DETALLE DE MATRÍCULAS FILTRADAS</th></tr>';
+            echo '<tr><th colspan="14" class="section-title">4. DETALLE DE MATRÍCULAS Y CALIFICACIONES (KARDEX GENERAL)</th></tr>';
             echo '<tr>';
             echo '<th>Nro</th>';
             echo '<th>C.I.</th>';
@@ -719,6 +859,13 @@ class ReportController extends Controller
             echo '<th>Nivel</th>';
             echo '<th>Paralelo</th>';
             echo '<th>Estado</th>';
+            echo '<th>Book 1</th>';
+            echo '<th>Book 2</th>';
+            echo '<th>Book 3</th>';
+            echo '<th>Book 4</th>';
+            echo '<th>Examen Nivel</th>';
+            echo '<th>Promedio</th>';
+            echo '<th>Rendimiento</th>';
             echo '</tr>';
 
             $idx = 1;
@@ -732,6 +879,33 @@ class ReportController extends Controller
                 $nombreCompleto = $user ? trim(($user->apellidos ?? '') . ' ' . ($user->nombres ?? '')) : ($est ? trim(($est->apellidos ?? '') . ' ' . ($est->nombres ?? '')) : 'N/A');
                 $ciVal = $user->ci ?? ($est->ci ?? 'N/A');
 
+                $notasCol = $insc->notas ?: collect();
+                $b1 = '-'; $b2 = '-'; $b3 = '-'; $b4 = '-'; $ex = '-';
+                foreach ($notasCol as $nt) {
+                    $p = strtolower(trim($nt->periodo ?? $nt->descripcion ?? ''));
+                    $val = (string)$nt->nota;
+                    if (str_contains($p, 'examen') || str_contains($p, 'final') || str_contains($p, 'nivel')) {
+                        $ex = $val;
+                    } elseif (preg_match('/(?:book|parcial|libro|unidad)\s*1\b/i', $p) || $p === 'b1') {
+                        $b1 = $val;
+                    } elseif (preg_match('/(?:book|parcial|libro|unidad)\s*2\b/i', $p) || $p === 'b2') {
+                        $b2 = $val;
+                    } elseif (preg_match('/(?:book|parcial|libro|unidad)\s*3\b/i', $p) || $p === 'b3') {
+                        $b3 = $val;
+                    } elseif (preg_match('/(?:book|parcial|libro|unidad)\s*4\b/i', $p) || $p === 'b4') {
+                        $b4 = $val;
+                    } else {
+                        if ($b1 === '-') $b1 = $val;
+                        elseif ($b2 === '-') $b2 = $val;
+                        elseif ($b3 === '-') $b3 = $val;
+                        elseif ($b4 === '-') $b4 = $val;
+                        elseif ($ex === '-') $ex = $val;
+                    }
+                }
+                $avg = $notasCol->count() > 0 ? round($notasCol->avg('nota'), 1) : null;
+                $pfStr = $avg !== null ? (string)$avg : '-';
+                $rendimiento = $avg !== null ? ($avg >= 90 ? 'EXCELENTE' : ($avg >= 51 ? ($avg < 70 ? 'EN RIESGO' : 'APROBADO') : 'REPROBADO')) : 'SIN NOTAS';
+
                 echo '<tr>';
                 echo '<td>' . $idx++ . '</td>';
                 echo '<td>' . htmlspecialchars($ciVal) . '</td>';
@@ -740,6 +914,13 @@ class ReportController extends Controller
                 echo '<td>' . htmlspecialchars($cur->nivel ?? 'N/A') . '</td>';
                 echo '<td>' . htmlspecialchars($par ? ($par->nombre_paralelo ?? $par->nombre ?? 'N/A') : 'Sin Paralelo (Por Asignar)') . '</td>';
                 echo '<td>' . htmlspecialchars(strtoupper($insc->estado ?? 'PENDIENTE')) . '</td>';
+                echo '<td>' . htmlspecialchars($b1) . '</td>';
+                echo '<td>' . htmlspecialchars($b2) . '</td>';
+                echo '<td>' . htmlspecialchars($b3) . '</td>';
+                echo '<td>' . htmlspecialchars($b4) . '</td>';
+                echo '<td>' . htmlspecialchars($ex) . '</td>';
+                echo '<td><strong>' . htmlspecialchars($pfStr) . '</strong></td>';
+                echo '<td>' . htmlspecialchars($rendimiento) . '</td>';
                 echo '</tr>';
             }
             echo '</table>';
@@ -1116,26 +1297,34 @@ class ReportController extends Controller
                     $ciStr = $user->ci ?? ($est->ci ?? 'N/A');
                     $nombreCompleto = $user ? trim(($user->apellidos ?? '') . ' ' . ($user->nombres ?? '')) : ($est ? trim(($est->apellidos ?? '') . ' ' . ($est->nombres ?? '')) : 'N/A');
 
-                    $b1 = '-'; $b2 = '-'; $b3 = '-'; $b4 = '-'; $ex = '-'; $pf = '-';
-                    if ($insc->notas && $insc->notas->count() > 0) {
-                        $notasMap = [];
-                        foreach ($insc->notas as $nt) {
-                            if (!empty($nt->periodo)) {
-                                $notasMap[strtolower(trim($nt->periodo))] = $nt->nota;
-                            }
+                    $notasCollection = $insc->notas ?: collect();
+                    $b1 = '-'; $b2 = '-'; $b3 = '-'; $b4 = '-'; $ex = '-';
+                    foreach ($notasCollection as $nt) {
+                        $p = strtolower(trim($nt->periodo ?? $nt->descripcion ?? ''));
+                        $val = (string)$nt->nota;
+                        if (str_contains($p, 'examen') || str_contains($p, 'final') || str_contains($p, 'nivel')) {
+                            $ex = $val;
+                        } elseif (preg_match('/(?:book|parcial|libro|unidad)\s*1\b/i', $p) || $p === 'b1') {
+                            $b1 = $val;
+                        } elseif (preg_match('/(?:book|parcial|libro|unidad)\s*2\b/i', $p) || $p === 'b2') {
+                            $b2 = $val;
+                        } elseif (preg_match('/(?:book|parcial|libro|unidad)\s*3\b/i', $p) || $p === 'b3') {
+                            $b3 = $val;
+                        } elseif (preg_match('/(?:book|parcial|libro|unidad)\s*4\b/i', $p) || $p === 'b4') {
+                            $b4 = $val;
+                        } else {
+                            if ($b1 === '-') $b1 = $val;
+                            elseif ($b2 === '-') $b2 = $val;
+                            elseif ($b3 === '-') $b3 = $val;
+                            elseif ($b4 === '-') $b4 = $val;
+                            elseif ($ex === '-') $ex = $val;
                         }
-                        $b1 = isset($notasMap['book 1']) ? (string)$notasMap['book 1'] : (isset($notasMap['parcial 1']) ? (string)$notasMap['parcial 1'] : '-');
-                        $b2 = isset($notasMap['book 2']) ? (string)$notasMap['book 2'] : (isset($notasMap['parcial 2']) ? (string)$notasMap['parcial 2'] : '-');
-                        $b3 = isset($notasMap['book 3']) ? (string)$notasMap['book 3'] : (isset($notasMap['parcial 3']) ? (string)$notasMap['parcial 3'] : '-');
-                        $b4 = isset($notasMap['book 4']) ? (string)$notasMap['book 4'] : (isset($notasMap['parcial 4']) ? (string)$notasMap['parcial 4'] : '-');
-                        $ex = isset($notasMap['examen final']) ? (string)$notasMap['examen final'] : (isset($notasMap['final']) ? (string)$notasMap['final'] : (isset($notasMap['examen nivel']) ? (string)$notasMap['examen nivel'] : '-'));
-
-                        $promVal = $insc->notas->avg('nota');
-                        $pf = $promVal !== null ? (string)round($promVal, 1) : '-';
                     }
 
+                    $avg = $notasCollection->count() > 0 ? round($notasCollection->avg('nota'), 1) : null;
+                    $pf = $avg !== null ? (string)$avg : '-';
                     $promNum = floatval($pf);
-                    $estadoAprob = $promNum >= 51 ? 'APROBADO' : ($promNum > 0 ? 'REPROBADO' : 'EN CURSO');
+                    $estadoAprob = $avg !== null ? ($promNum >= 51 ? 'APROBADO' : 'REPROBADO') : 'SIN NOTAS';
 
                     $rows[] = [
                         ['val' => $idx++, 'style' => 0],

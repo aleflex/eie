@@ -760,8 +760,14 @@
               </small>
             </div>
           </div>
-          <button type="button" class="btn-close btn-close-white" (click)="closeHistoryModal()" aria-label="Cerrar"
-            title="Cerrar"></button>
+          <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-light btn-sm d-inline-flex align-items-center gap-1 shadow-sm fw-semibold" (click)="printKardex()" title="Imprimir Kardex Oficial">
+              <i class="material-icons-outlined" style="font-size: 16px;">print</i>
+              <span>Imprimir Kardex</span>
+            </button>
+            <button type="button" class="btn-close btn-close-white" (click)="closeHistoryModal()" aria-label="Cerrar"
+              title="Cerrar"></button>
+          </div>
         </div>
 
         <div class="modal-body history-modal-body">
@@ -815,12 +821,12 @@
                         <td class="td-activity">
                           <div class="activity-info">
                             <i class="material-icons-outlined activity-bullet">edit_note</i>
-                            <span class="activity-text">{{ nota.descripcion }}</span>
+                            <span class="activity-text">{{ nota.periodo || nota.descripcion || 'Evaluación' }}</span>
                           </div>
                         </td>
                         <td class="td-score text-center">
-                          <span class="grade-score-pill" [ngClass]="nota.nota >= 71 ? 'score-approved' : 'score-reproved'">
-                            <i class="material-icons-outlined grade-state-icon">{{ nota.nota >= 71 ? 'check_circle' : 'error' }}</i>
+                          <span class="grade-score-pill" [ngClass]="nota.nota >= 51 ? 'score-approved' : 'score-reproved'">
+                            <i class="material-icons-outlined grade-state-icon">{{ nota.nota >= 51 ? 'check_circle' : 'error' }}</i>
                             <strong>{{ nota.nota }}</strong>
                             <span class="score-base">/100</span>
                           </span>
@@ -842,9 +848,9 @@
                     <i class="material-icons-outlined">insights</i>
                     <span>Promedio General:</span>
                   </div>
-                  <div class="avg-value-pill" [ngClass]="getCourseAverage(item.notas)! >= 71 ? 'avg-approved' : 'avg-reproved'">
+                  <div class="avg-value-pill" [ngClass]="getCourseAverage(item.notas)! >= 51 ? 'avg-approved' : 'avg-reproved'">
                     <strong>{{ getCourseAverage(item.notas) }} / 100</strong>
-                    <span class="avg-state-text">({{ getCourseAverage(item.notas)! >= 71 ? 'Aprobado' : 'Reprobado' }})</span>
+                    <span class="avg-state-text">({{ getCourseAverage(item.notas)! >= 51 ? 'Aprobado' : 'Reprobado' }})</span>
                   </div>
                 </div>
               </div>

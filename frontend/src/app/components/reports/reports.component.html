@@ -68,6 +68,14 @@
       </div>
 
       <div class="header-actions">
+        <!-- Filtro Rápido Directo de Calificaciones / Notas en Barra Superior (Visible siempre) -->
+        <div class="d-flex align-items-center gap-1 bg-white border border-primary-subtle rounded-3 px-2 py-1 shadow-sm" title="Filtro rápido por estado de notas">
+          <i class="material-icons-outlined text-primary" style="font-size: 19px;">grade</i>
+          <select class="form-select form-select-sm border-0 bg-transparent fw-bold text-dark py-0" style="width: auto; cursor: pointer;" [(ngModel)]="filters.filtro_nota" (change)="onFilterChange()">
+            <option *ngFor="let fn of filtrosNotas" [value]="fn.id">{{ fn.nombre }}</option>
+          </select>
+        </div>
+
         <button class="btn btn-outline-primary btn-filter-toggle" (click)="toggleFilterSidebar()">
           <i class="material-icons-outlined">filter_list</i>
           Filtros Multi-criterio
@@ -99,6 +107,44 @@
         </button>
       </div>
     </header>
+
+    <!-- BARRA PROMINENTE Y DIRECTA DE FILTROS DE NOTAS (RF 21 - HU 21) -->
+    <div class="grades-quick-filter-bar mb-3 p-3 bg-white border rounded-3 shadow-sm d-flex justify-content-between align-items-center flex-wrap gap-2 animate-fade-in">
+      <div class="d-flex align-items-center gap-2">
+        <div class="p-2 rounded-circle shadow-sm" style="width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; background-color: #dbeafe; color: #1d4ed8;">
+          <i class="material-icons-outlined fs-5">filter_alt</i>
+        </div>
+        <div>
+          <strong class="d-block text-dark fs-6">Filtro Rápido por Calificación y Rendimiento:</strong>
+          <small class="text-muted">Filtra estudiantes, kardex y centralizadores al instante con un solo clic.</small>
+        </div>
+      </div>
+      <div class="btn-group btn-group-sm flex-wrap shadow-sm" role="group">
+        <button type="button" class="btn" [ngClass]="filters.filtro_nota === '' ? 'btn-primary text-white fw-bold shadow-sm' : 'btn-outline-secondary'" (click)="setNotaFilter('')">
+          Todas las Notas ({{ gradesSummaryStats.total }})
+        </button>
+        <button type="button" class="btn" [ngClass]="filters.filtro_nota === 'aprobados' ? 'btn-success text-white fw-bold shadow-sm' : 'btn-outline-success'" (click)="setNotaFilter('aprobados')">
+          <i class="material-icons-outlined align-middle" style="font-size: 14px;">check_circle</i>
+          Aprobados ≥51 ({{ gradesSummaryStats.aprobados }})
+        </button>
+        <button type="button" class="btn" [ngClass]="filters.filtro_nota === 'reprobados' ? 'btn-danger text-white fw-bold shadow-sm' : 'btn-outline-danger'" (click)="setNotaFilter('reprobados')">
+          <i class="material-icons-outlined align-middle" style="font-size: 14px;">cancel</i>
+          Reprobados &lt;51 ({{ gradesSummaryStats.reprobados }})
+        </button>
+        <button type="button" class="btn" [ngClass]="filters.filtro_nota === 'riesgo' ? 'btn-warning text-dark fw-bold shadow-sm' : 'btn-outline-warning text-dark'" (click)="setNotaFilter('riesgo')">
+          <i class="material-icons-outlined align-middle" style="font-size: 14px;">warning</i>
+          En Riesgo (51-69) ({{ gradesSummaryStats.enRiesgo }})
+        </button>
+        <button type="button" class="btn" [ngClass]="filters.filtro_nota === 'excelentes' ? 'btn-info text-white fw-bold shadow-sm' : 'btn-outline-info'" (click)="setNotaFilter('excelentes')">
+          <i class="material-icons-outlined align-middle" style="font-size: 14px;">star</i>
+          Excelentes ≥90 ({{ gradesSummaryStats.excelentes }})
+        </button>
+        <button type="button" class="btn" [ngClass]="filters.filtro_nota === 'sin_notas' ? 'btn-secondary text-white fw-bold shadow-sm' : 'btn-outline-secondary'" (click)="setNotaFilter('sin_notas')">
+          <i class="material-icons-outlined align-middle" style="font-size: 14px;">help_outline</i>
+          Sin Notas ({{ gradesSummaryStats.sinNotas }})
+        </button>
+      </div>
+    </div>
 
     <!-- Panel Lateral de Filtros Colapsable (RF 21 - HU 21) -->
     <div class="filter-panel animate-fade-in" *ngIf="isFilterSidebarOpen">
@@ -646,6 +692,7 @@
                 <th>Estado</th>
                 <th>Calificaciones</th>
                 <th>Promedio</th>
+                <th class="text-center">Kardex</th>
               </tr>
             </thead>
             <tbody>
@@ -683,9 +730,15 @@
                     {{ est.promedio }} {{ est.promedio !== 'Sin Notas' ? 'pts' : '' }}
                   </strong>
                 </td>
+                <td class="text-center">
+                  <button type="button" class="btn btn-sm btn-outline-primary py-1 px-2 d-inline-flex align-items-center gap-1 shadow-sm" (click)="viewStudentKardex(est.id_estudiante)" title="Ver Kardex Académico">
+                    <i class="material-icons-outlined" style="font-size: 15px;">school</i>
+                    <span>Kardex</span>
+                  </button>
+                </td>
               </tr>
               <tr *ngIf="allFilteredStudents.length === 0">
-                <td colspan="10" class="text-center py-4 text-muted">
+                <td colspan="11" class="text-center py-4 text-muted">
                   No se encontraron estudiantes con los filtros seleccionados.
                 </td>
               </tr>
@@ -730,6 +783,11 @@
               <strong class="fs-6" [ngClass]="{'text-success': est.promedio >= 51, 'text-danger': est.promedio < 51 && est.promedio !== 'Sin Notas'}">
                 {{ est.promedio }} {{ est.promedio !== 'Sin Notas' ? 'pts' : '' }}
               </strong>
+            </div>
+            <div class="mt-2 pt-2 border-top">
+              <button class="btn btn-sm btn-outline-primary w-100 d-flex align-items-center justify-content-center gap-1 shadow-sm" (click)="viewStudentKardex(est.id_estudiante)">
+                <i class="material-icons-outlined" style="font-size: 16px;">school</i> Ver Kardex Académico
+              </button>
             </div>
           </div>
         </div>
@@ -892,40 +950,40 @@
           </div>
         </div>
 
-        <!-- Tarjetas KPI Resumen del Grupo de Notas Filtrado -->
+        <!-- Tarjetas KPI Resumen del Grupo de Notas Filtrado (Interactivas) -->
         <div class="row g-2 mb-3">
           <div class="col-6 col-md-2">
-            <div class="p-2 bg-light rounded text-center border">
+            <div class="p-2 bg-light rounded text-center border clickable shadow-sm" (click)="setNotaFilter('')" title="Ver todas las notas" style="cursor: pointer;" [class.border-primary]="filters.filtro_nota === ''">
               <small class="text-muted d-block">Promedio Grupo</small>
               <strong class="fs-5 text-primary">{{ gradesSummaryStats.promedioGroup }} / 100</strong>
             </div>
           </div>
           <div class="col-6 col-md-2">
-            <div class="p-2 bg-light rounded text-center border">
+            <div class="p-2 bg-light rounded text-center border clickable shadow-sm" (click)="setNotaFilter('')" title="Ver todos los alumnos" style="cursor: pointer;" [class.border-primary]="filters.filtro_nota === ''">
               <small class="text-muted d-block">Total Alumnos</small>
               <strong class="fs-5 text-dark">{{ gradesSummaryStats.total }}</strong>
             </div>
           </div>
           <div class="col-6 col-md-2">
-            <div class="p-2 bg-light rounded text-center border border-success">
+            <div class="p-2 bg-light rounded text-center border border-success clickable shadow-sm" (click)="setNotaFilter('aprobados')" title="Filtrar aprobados" style="cursor: pointer;" [style.box-shadow]="filters.filtro_nota === 'aprobados' ? '0 0 0 2px #15803d' : 'none'">
               <small class="text-success fw-bold d-block">Aprobados (≥51)</small>
               <strong class="fs-5 text-success">{{ gradesSummaryStats.aprobados }}</strong>
             </div>
           </div>
           <div class="col-6 col-md-2">
-            <div class="p-2 bg-light rounded text-center border border-danger">
+            <div class="p-2 bg-light rounded text-center border border-danger clickable shadow-sm" (click)="setNotaFilter('reprobados')" title="Filtrar reprobados" style="cursor: pointer;" [style.box-shadow]="filters.filtro_nota === 'reprobados' ? '0 0 0 2px #b91c1c' : 'none'">
               <small class="text-danger fw-bold d-block">Reprobados (&lt;51)</small>
               <strong class="fs-5 text-danger">{{ gradesSummaryStats.reprobados }}</strong>
             </div>
           </div>
           <div class="col-6 col-md-2">
-            <div class="p-2 bg-light rounded text-center border border-warning">
+            <div class="p-2 bg-light rounded text-center border border-warning clickable shadow-sm" (click)="setNotaFilter('riesgo')" title="Filtrar en riesgo" style="cursor: pointer;" [style.box-shadow]="filters.filtro_nota === 'riesgo' ? '0 0 0 2px #d97706' : 'none'">
               <small class="text-warning text-dark fw-bold d-block">En Riesgo (51-69)</small>
               <strong class="fs-5 text-warning text-dark">{{ gradesSummaryStats.enRiesgo }}</strong>
             </div>
           </div>
           <div class="col-6 col-md-2">
-            <div class="p-2 bg-light rounded text-center border">
+            <div class="p-2 bg-light rounded text-center border clickable shadow-sm" (click)="setNotaFilter('sin_notas')" title="Filtrar sin notas" style="cursor: pointer;" [style.box-shadow]="filters.filtro_nota === 'sin_notas' ? '0 0 0 2px #64748b' : 'none'">
               <small class="text-muted d-block">Sin Notas</small>
               <strong class="fs-5 text-secondary">{{ gradesSummaryStats.sinNotas }}</strong>
             </div>
@@ -969,6 +1027,7 @@
                 <th class="text-center bg-secondary">Examen Nivel</th>
                 <th class="text-center">Promedio Final</th>
                 <th class="text-center">Estado Rendimiento</th>
+                <th class="text-center" style="width: 90px;">Kardex</th>
               </tr>
             </thead>
             <tbody>
@@ -996,9 +1055,15 @@
                     {{ est.estadoRendimiento }}
                   </span>
                 </td>
+                <td class="text-center">
+                  <button type="button" class="btn btn-sm btn-outline-primary py-1 px-2 d-inline-flex align-items-center gap-1 shadow-sm" (click)="viewStudentKardex(est.id_estudiante)" title="Ver Kardex Académico Oficial">
+                    <i class="material-icons-outlined" style="font-size: 15px;">school</i>
+                    <span>Kardex</span>
+                  </button>
+                </td>
               </tr>
               <tr *ngIf="allGradesList.length === 0">
-                <td colspan="13" class="text-center py-4 text-muted">
+                <td colspan="14" class="text-center py-4 text-muted">
                   No se encontraron calificaciones registradas con los filtros aplicados.
                 </td>
               </tr>
@@ -1044,9 +1109,139 @@
                 {{ est.promedio }} {{ est.promedio !== 'Sin Notas' ? 'pts' : '' }}
               </strong>
             </div>
+            <div class="mt-2 pt-2 border-top">
+              <button class="btn btn-sm btn-outline-primary w-100 d-flex align-items-center justify-content-center gap-1 shadow-sm" (click)="viewStudentKardex(est.id_estudiante)">
+                <i class="material-icons-outlined" style="font-size: 16px;">school</i> Ver Kardex Académico
+              </button>
+            </div>
           </div>
         </div>
       </div>
     </section>
   </main>
+
+  <!-- MODAL DE KARDEX ACADÉMICO EN REPORTES -->
+  <div class="modal-backdrop fade show" *ngIf="showKardexModal" style="z-index: 1050; background-color: rgba(0,0,0,0.5);"></div>
+  <div class="modal fade show d-block" *ngIf="showKardexModal" tabindex="-1" style="z-index: 1055;">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; overflow: hidden;">
+        <div class="modal-header bg-primary text-white py-3">
+          <div class="d-flex align-items-center gap-2">
+            <i class="material-icons-outlined fs-3">school</i>
+            <div>
+              <h5 class="modal-title mb-0 fw-bold">Kardex Académico Oficial</h5>
+              <small class="text-white-50">
+                {{ selectedStudentKardex?.estudiante?.nombres }} {{ selectedStudentKardex?.estudiante?.apellidos }}
+                <span *ngIf="selectedStudentKardex?.estudiante?.ci"> (C.I.: {{ selectedStudentKardex.estudiante.ci }})</span>
+                <span *ngIf="selectedStudentKardex?.estudiante?.grado"> • {{ selectedStudentKardex.estudiante.grado }}</span>
+              </small>
+            </div>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-light btn-sm d-inline-flex align-items-center gap-1 shadow-sm fw-semibold" (click)="printKardex()" title="Imprimir Kardex Oficial">
+              <i class="material-icons-outlined" style="font-size: 16px;">print</i>
+              <span>Imprimir</span>
+            </button>
+            <button type="button" class="btn-close btn-close-white" (click)="closeKardexModal()" aria-label="Cerrar"></button>
+          </div>
+        </div>
+
+        <div class="modal-body p-4 bg-light">
+          <div *ngIf="kardexLoading" class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2 text-muted fw-semibold">Cargando registros académicos del estudiante...</p>
+          </div>
+
+          <div *ngIf="!kardexLoading && selectedStudentKardex">
+            <div *ngIf="!selectedStudentKardex.historial || selectedStudentKardex.historial.length === 0" class="text-center py-5 text-muted bg-white rounded-3 border p-4">
+              <i class="material-icons-outlined fs-1 text-secondary mb-2">menu_book</i>
+              <p class="mb-0">El estudiante no cuenta con inscripciones académicas registradas.</p>
+            </div>
+
+            <div *ngIf="selectedStudentKardex.historial && selectedStudentKardex.historial.length > 0">
+              <div *ngFor="let item of selectedStudentKardex.historial" class="mb-3 p-3 bg-white rounded-3 border shadow-sm">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3 pb-2 border-bottom">
+                  <div>
+                    <h5 class="mb-1 text-primary fw-bold">
+                      {{ item.curso?.idioma?.nombre_idioma || item.curso?.idioma || 'Idioma' }} — 
+                      {{ item.curso?.nivelRel?.nombre_nivel || item.curso?.nivel || 'Nivel' }}
+                    </h5>
+                    <span *ngIf="item.paralelo" class="badge bg-secondary me-2">
+                      Paralelo: {{ item.paralelo?.nombre_paralelo || item.paralelo?.nombre || 'N/A' }}
+                    </span>
+                    <small class="text-muted d-inline-block">Inscripción: {{ item.fecha_registro | date:'mediumDate' }}</small>
+                  </div>
+                  <div>
+                    <span class="badge rounded-pill px-3 py-2" [ngClass]="{
+                      'bg-success': item.estado === 'activo' || item.estado === 'habilitado',
+                      'bg-warning text-dark': item.estado === 'pendiente',
+                      'bg-danger': item.estado === 'retirado' || item.estado === 'baja'
+                    }">
+                      {{ item.estado === 'activo' ? 'Habilitado' : item.estado === 'pendiente' ? 'Pendiente' : item.estado }}
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Tabla de Calificaciones del Curso -->
+                <div class="table-responsive">
+                  <table class="table table-hover table-bordered table-sm align-middle mb-2">
+                    <thead class="table-light">
+                      <tr>
+                        <th>Evaluación / Periodo</th>
+                        <th class="text-center" style="width: 140px;">Calificación</th>
+                        <th class="text-center" style="width: 140px;">Estado</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let nota of item.notas">
+                        <td class="fw-semibold">
+                          <i class="material-icons-outlined align-middle text-primary me-1" style="font-size: 16px;">edit_note</i>
+                          {{ nota.periodo || nota.descripcion || 'Evaluación' }}
+                        </td>
+                        <td class="text-center fw-bold fs-6" [ngClass]="nota.nota >= 51 ? 'text-success' : 'text-danger'">
+                          {{ nota.nota }} / 100
+                        </td>
+                        <td class="text-center">
+                          <span class="badge" [ngClass]="nota.nota >= 51 ? 'bg-success' : 'bg-danger'">
+                            {{ nota.nota >= 51 ? 'Aprobado' : 'Reprobado' }}
+                          </span>
+                        </td>
+                      </tr>
+                      <tr *ngIf="!item.notas || item.notas.length === 0">
+                        <td colspan="3" class="text-center text-muted py-3">
+                          <i class="material-icons-outlined align-middle me-1" style="font-size: 16px;">info</i>
+                          Aún no hay calificaciones parciales registradas para este curso.
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <!-- Promedio General del Curso -->
+                <div *ngIf="getCourseAverage(item.notas) !== null" class="d-flex justify-content-between align-items-center p-2 rounded-2 mt-2"
+                     [ngClass]="getCourseAverage(item.notas)! >= 51 ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-danger-subtle text-danger border border-danger-subtle'">
+                  <div class="fw-bold d-flex align-items-center gap-1">
+                    <i class="material-icons-outlined">insights</i>
+                    <span>Promedio General del Nivel:</span>
+                  </div>
+                  <div class="fw-bold fs-5">
+                    {{ getCourseAverage(item.notas) }} / 100
+                    <span class="fs-6 fw-normal ms-1">({{ getCourseAverage(item.notas)! >= 51 ? 'APROBADO' : 'REPROBADO' }})</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer bg-white">
+          <button type="button" class="btn btn-outline-secondary" (click)="closeKardexModal()">Cerrar</button>
+          <button type="button" class="btn btn-primary d-inline-flex align-items-center gap-1" (click)="printKardex()">
+            <i class="material-icons-outlined" style="font-size: 16px;">print</i>
+            <span>Imprimir Kardex</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>

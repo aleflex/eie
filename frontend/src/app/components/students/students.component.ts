@@ -289,6 +289,10 @@ export class StudentsComponent implements OnInit, OnDestroy {
     return Math.round(sum / validNotas.length);
   }
 
+  printKardex() {
+    window.print();
+  }
+
   adminPhotoFile: File | null = null;
   adminPhotoFileName: string = '';
 

@@ -6,6 +6,7 @@ import { ReportService } from '../../services/report.service';
 import { CourseService } from '../../services/course.service';
 import { ParaleloService } from '../../services/paralelo.service';
 import { DocenteService } from '../../services/docente.service';
+import { StudentService } from '../../services/student.service';
 import { AuthService } from '../../services/auth.service';
 import { downloadFile } from '../../utils/file-downloader';
 
@@ -277,6 +278,7 @@ export class ReportsComponent implements OnInit, AfterViewInit {
     private courseService: CourseService,
     private paraleloService: ParaleloService,
     private docenteService: DocenteService,
+    private studentService: StudentService,
     private authService: AuthService
   ) {}
 
@@ -367,6 +369,7 @@ export class ReportsComponent implements OnInit, AfterViewInit {
       if (aula.estudiantes && Array.isArray(aula.estudiantes)) {
         for (const est of aula.estudiantes) {
           const notasArr = est.notas || [];
+          const nMap = est.notas_map || {};
           const prom = est.promedio;
           const numericProm = typeof prom === 'number' ? prom : (parseFloat(prom) || 0);
 
@@ -390,6 +393,12 @@ export class ReportsComponent implements OnInit, AfterViewInit {
             }
           }
 
+          const b1 = (nMap['book1'] && nMap['book1'] !== '-') ? nMap['book1'] : (notasArr[0] ?? '-');
+          const b2 = (nMap['book2'] && nMap['book2'] !== '-') ? nMap['book2'] : (notasArr[1] ?? '-');
+          const b3 = (nMap['book3'] && nMap['book3'] !== '-') ? nMap['book3'] : (notasArr[2] ?? '-');
+          const b4 = (nMap['book4'] && nMap['book4'] !== '-') ? nMap['book4'] : (notasArr[3] ?? '-');
+          const ex = (nMap['examenFinal'] && nMap['examenFinal'] !== '-') ? nMap['examenFinal'] : (notasArr[4] ?? (notasArr.length > 4 ? notasArr[notasArr.length - 1] : '-'));
+
           list.push({
             ...est,
             aula_nombre: aula.aula || 'Sin Aula',
@@ -400,11 +409,11 @@ export class ReportsComponent implements OnInit, AfterViewInit {
             numericProm,
             estadoRendimiento,
             badgeClass,
-            book1: notasArr[0] ?? '-',
-            book2: notasArr[1] ?? '-',
-            book3: notasArr[2] ?? '-',
-            book4: notasArr[3] ?? '-',
-            examenFinal: notasArr[4] ?? (notasArr.length > 4 ? notasArr[notasArr.length - 1] : '-')
+            book1: b1,
+            book2: b2,
+            book3: b3,
+            book4: b4,
+            examenFinal: ex
           });
         }
       }
@@ -437,6 +446,53 @@ export class ReportsComponent implements OnInit, AfterViewInit {
     }
 
     return result;
+  }
+
+  setNotaFilter(filterId: string) {
+    this.filters.filtro_nota = filterId;
+    this.onFilterChange();
+  }
+
+  // Kardex modal en Reportes
+  showKardexModal: boolean = false;
+  kardexLoading: boolean = false;
+  selectedStudentKardex: any = null;
+
+  viewStudentKardex(studentId: number) {
+    if (!studentId) return;
+    this.kardexLoading = true;
+    this.showKardexModal = true;
+    this.studentService.obtenerHistorial(studentId).subscribe({
+      next: (res: any) => {
+        this.selectedStudentKardex = res;
+        this.kardexLoading = false;
+      },
+      error: (err: any) => {
+        console.error('Error cargando kardex del estudiante', err);
+        alert('No se pudo cargar el Kardex del estudiante seleccionado');
+        this.closeKardexModal();
+      }
+    });
+  }
+
+  closeKardexModal() {
+    this.showKardexModal = false;
+    this.selectedStudentKardex = null;
+    this.kardexLoading = false;
+  }
+
+  printKardex() {
+    window.print();
+  }
+
+  getCourseAverage(notas: any[]): number | null {
+    if (!notas || !Array.isArray(notas) || notas.length === 0) return null;
+    const validNotas = notas
+      .map(n => Number(n?.nota))
+      .filter(n => !isNaN(n) && n !== null && n !== undefined);
+    if (validNotas.length === 0) return null;
+    const sum = validNotas.reduce((acc, curr) => acc + curr, 0);
+    return Math.round(sum / validNotas.length);
   }
 
   // KPIs Resumen de Calificaciones y Rendimiento

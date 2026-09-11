@@ -59,21 +59,37 @@ class StudentController extends Controller
      */
     public function history($id)
     {
-        $estudiante = Estudiante::with(['user', 'inscripciones.curso', 'inscripciones.paralelo.curso', 'inscripciones.notas'])
-            ->find($id);
+        $estudiante = Estudiante::with([
+            'user',
+            'inscripciones.curso.idioma',
+            'inscripciones.curso.nivelRel',
+            'inscripciones.paralelo.curso',
+            'inscripciones.paralelo.docentes.user',
+            'inscripciones.notas'
+        ])->find($id);
 
         if (!$estudiante) {
             return response()->json(['message' => 'Estudiante no encontrado'], 404);
         }
 
+        $user = $estudiante->user;
+        $historial = $estudiante->inscripciones->map(function ($ins) {
+            $notas = $ins->notas ?? collect();
+            $avg = $notas->count() > 0 ? round($notas->avg('nota'), 1) : null;
+            $ins->promedio = $avg;
+            $ins->rendimiento = $avg !== null ? ($avg >= 51 ? 'Aprobado' : 'Reprobado') : 'Sin Notas';
+            return $ins;
+        });
+
         return response()->json([
             'estudiante' => [
                 'id_estudiante' => $estudiante->id_estudiante,
-                'nombres' => $estudiante->nombres ?? '',
-                'apellidos' => $estudiante->apellidos ?? '',
-                'ci' => $estudiante->ci ?? '',
+                'nombres' => $user->nombres ?? ($estudiante->nombres ?? ''),
+                'apellidos' => $user->apellidos ?? ($estudiante->apellidos ?? ''),
+                'ci' => $user->ci ?? ($estudiante->ci ?? ''),
+                'grado' => $estudiante->grado_academico ?: (is_object($estudiante->grado ?? null) ? ($estudiante->grado->nombre ?? 'Civil') : 'Civil')
             ],
-            'historial' => $estudiante->inscripciones
+            'historial' => $historial
         ]);
     }
 
