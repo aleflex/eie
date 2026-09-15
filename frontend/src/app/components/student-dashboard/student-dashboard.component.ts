@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
-import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { DomSanitizer, SafeResourceUrl, Title } from '@angular/platform-browser';
 import { Subscription, interval } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { StudentService } from '../../services/student.service';
@@ -95,10 +95,13 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
     private inscriptionService: InscriptionService,
     private router: Router,
     private sanitizer: DomSanitizer,
+    private titleService: Title,
     private imageCompressor: ImageCompressorService
   ) {}
 
   ngOnInit() {
+    this.titleService.setTitle('Estudiante - Escuela de Idiomas del Ejército');
+
     if (!this.authService.isLoggedIn()) {
       this.router.navigate(['/login']);
       return;

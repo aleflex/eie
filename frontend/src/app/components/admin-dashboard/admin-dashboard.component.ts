@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
+import { Title } from '@angular/platform-browser';
 import { InscriptionService } from '../../services/inscription.service';
 import { AuthService } from '../../services/auth.service';
 import { Subscription, interval } from 'rxjs';
@@ -45,10 +46,13 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   constructor(
     private inscriptionService: InscriptionService,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private titleService: Title
   ) {}
 
   ngOnInit() {
+    this.titleService.setTitle('Administrador - Escuela de Idiomas del Ejército');
+
     if (!this.authService.isLoggedIn()) {
       this.router.navigate(['/login']);
       return;
