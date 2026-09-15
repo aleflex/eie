@@ -117,8 +117,8 @@
 
     <div class="meta-box">
         <strong>PARALELO:</strong> {{ strtoupper($paralelo->nombre_paralelo ?? $paralelo->nombre ?? 'A') }} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-        <strong>IDIOMA Y NIVEL:</strong> {{ strtoupper(($curso->idioma->nombre_idioma ?? $curso->idioma ?? 'INGLÉS') . ' - ' . ($curso->nivel ?? 'NIVEL I')) }}<br>
-        <strong>AULA:</strong> {{ $paralelo->aula ? ($paralelo->aula->nombre_aula ?? $paralelo->aula->nombre) : 'Sin Aula' }} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        <strong>IDIOMA Y NIVEL:</strong> {{ strtoupper((is_object($curso->idioma ?? null) ? ($curso->idioma->nombre_idioma ?? $curso->idioma->nombre ?? 'INGLÉS') : ($curso->idioma ?? 'INGLÉS')) . ' - ' . ($curso->nivel ?? 'NIVEL I')) }}<br>
+        <strong>AULA:</strong> {{ !empty($paralelo->aula) ? ($paralelo->aula->nombre_aula ?? $paralelo->aula->nombre ?? 'Sin Aula') : 'Sin Aula' }} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
         <strong>FECHA:</strong> {{ date('d/m/Y') }}
     </div>
 
@@ -141,11 +141,11 @@
             @php $idx = 1; @endphp
             @foreach ($inscripciones as $insc)
                 @php 
-                    $est = $insc->estudiante; 
+                    $est = $insc->estudiante ?? null; 
                     $b1 = 0; $b2 = 0; $b3 = 0; $b4 = 0; $ex = 0; $prom = 0;
-                    if ($insc->notas && $insc->notas->count() > 0) {
+                    if (!empty($insc->notas) && $insc->notas->count() > 0) {
                         foreach ($insc->notas as $n) {
-                            $per = strtolower(trim($n->periodo ?? ''));
+                            $per = strtolower(trim((string)($n->periodo ?? '')));
                             $val = floatval($n->nota ?? 0);
                             if (str_contains($per, '1') || str_contains($per, 'book 1') || str_contains($per, 'parcial 1')) $b1 = $val;
                             elseif (str_contains($per, '2') || str_contains($per, 'book 2') || str_contains($per, 'parcial 2')) $b2 = $val;
@@ -159,9 +159,9 @@
                 @endphp
                 <tr>
                     <td>{{ $idx++ }}</td>
-                    <td>{{ $est->ci ?? 'N/A' }}</td>
-                    <td>{{ strtoupper($est->grado_academico ?? $est->grado ?? 'SR') }}</td>
-                    <td class="left"><strong>{{ mb_strtoupper(trim(($est->apellidos ?? '') . ' ' . ($est->nombres ?? '')), 'UTF-8') }}</strong></td>
+                    <td>{{ $est?->ci ?? 'N/A' }}</td>
+                    <td>{{ mb_convert_case($est?->grado_academico ?? $est?->grado ?? 'Civil', MB_CASE_TITLE, 'UTF-8') }}</td>
+                    <td class="left"><strong>{{ mb_convert_case(trim(($est?->apellidos ?? '') . ' ' . ($est?->nombres ?? '')), MB_CASE_TITLE, 'UTF-8') }}</strong></td>
                     <td>{{ $b1 > 0 ? $b1 : '—' }}</td>
                     <td>{{ $b2 > 0 ? $b2 : '—' }}</td>
                     <td>{{ $b3 > 0 ? $b3 : '—' }}</td>

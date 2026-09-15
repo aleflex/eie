@@ -117,8 +117,8 @@
 
     <div class="meta-box">
         <strong>PARALELO:</strong> {{ strtoupper($paralelo->nombre_paralelo ?? $paralelo->nombre ?? 'A') }} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-        <strong>IDIOMA Y NIVEL:</strong> {{ strtoupper(($curso->idioma->nombre_idioma ?? $curso->idioma ?? 'INGLÉS') . ' - ' . ($curso->nivel ?? 'NIVEL I')) }}<br>
-        <strong>AULA:</strong> {{ $paralelo->aula ? ($paralelo->aula->nombre_aula ?? $paralelo->aula->nombre) : 'Sin Aula' }} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        <strong>IDIOMA Y NIVEL:</strong> {{ strtoupper((is_object($curso->idioma ?? null) ? ($curso->idioma->nombre_idioma ?? $curso->idioma->nombre ?? 'INGLÉS') : ($curso->idioma ?? 'INGLÉS')) . ' - ' . ($curso->nivel ?? 'NIVEL I')) }}<br>
+        <strong>AULA:</strong> {{ !empty($paralelo->aula) ? ($paralelo->aula->nombre_aula ?? $paralelo->aula->nombre ?? 'Sin Aula') : 'Sin Aula' }} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
         <strong>FECHA:</strong> {{ date('d/m/Y') }}
     </div>
 
@@ -138,16 +138,16 @@
             @php $idx = 1; @endphp
             @foreach ($inscripciones as $insc)
                 @php 
-                    $est = $insc->estudiante; 
-                    $totalSesiones = $insc->asistencias ? $insc->asistencias->count() : 0;
-                    $presentes = $insc->asistencias ? $insc->asistencias->where('estado', 'presente')->count() : 0;
+                    $est = $insc->estudiante ?? null; 
+                    $totalSesiones = !empty($insc->asistencias) ? $insc->asistencias->count() : 0;
+                    $presentes = !empty($insc->asistencias) ? $insc->asistencias->where('estado', 'presente')->count() : 0;
                     $pct = $totalSesiones > 0 ? round(($presentes / $totalSesiones) * 100, 1) : 100;
                 @endphp
                 <tr>
                     <td>{{ $idx++ }}</td>
-                    <td>{{ $est->ci ?? 'N/A' }}</td>
-                    <td>{{ strtoupper($est->grado_academico ?? $est->grado ?? 'SR') }}</td>
-                    <td class="left"><strong>{{ mb_strtoupper(trim(($est->apellidos ?? '') . ' ' . ($est->nombres ?? '')), 'UTF-8') }}</strong></td>
+                    <td>{{ $est?->ci ?? 'N/A' }}</td>
+                    <td>{{ mb_convert_case($est?->grado_academico ?? $est?->grado ?? 'Civil', MB_CASE_TITLE, 'UTF-8') }}</td>
+                    <td class="left"><strong>{{ mb_convert_case(trim(($est?->apellidos ?? '') . ' ' . ($est?->nombres ?? '')), MB_CASE_TITLE, 'UTF-8') }}</strong></td>
                     <td>{{ $totalSesiones }}</td>
                     <td>{{ $presentes }}</td>
                     <td><strong>{{ $pct }}%</strong></td>

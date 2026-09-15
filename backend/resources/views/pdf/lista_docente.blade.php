@@ -117,8 +117,8 @@
 
     <div class="meta-box">
         <strong>PARALELO:</strong> {{ strtoupper($paralelo->nombre_paralelo ?? $paralelo->nombre ?? 'A') }} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-        <strong>IDIOMA Y NIVEL:</strong> {{ strtoupper(($curso->idioma->nombre_idioma ?? $curso->idioma ?? 'INGLÉS') . ' - ' . ($curso->nivel ?? 'NIVEL I')) }}<br>
-        <strong>AULA:</strong> {{ $paralelo->aula ? ($paralelo->aula->nombre_aula ?? $paralelo->aula->nombre) : 'Sin Aula' }} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        <strong>IDIOMA Y NIVEL:</strong> {{ strtoupper((is_object($curso->idioma ?? null) ? ($curso->idioma->nombre_idioma ?? $curso->idioma->nombre ?? 'INGLÉS') : ($curso->idioma ?? 'INGLÉS')) . ' - ' . ($curso->nivel ?? 'NIVEL I')) }}<br>
+        <strong>AULA:</strong> {{ !empty($paralelo->aula) ? ($paralelo->aula->nombre_aula ?? $paralelo->aula->nombre ?? 'Sin Aula') : 'Sin Aula' }} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
         <strong>FECHA:</strong> {{ date('d/m/Y') }}
     </div>
 
@@ -136,14 +136,14 @@
         <tbody>
             @php $idx = 1; @endphp
             @foreach ($inscripciones as $insc)
-                @php $est = $insc->estudiante; @endphp
+                @php $est = $insc->estudiante ?? null; @endphp
                 <tr>
                     <td>{{ $idx++ }}</td>
-                    <td>{{ $est->ci ?? 'N/A' }}</td>
-                    <td>{{ strtoupper($est->grado_academico ?? 'SR') }}</td>
-                    <td class="left"><strong>{{ mb_strtoupper(trim(($est->apellidos ?? '') . ' ' . ($est->nombres ?? '')), 'UTF-8') }}</strong></td>
-                    <td>{{ $est->celular ?: '—' }}</td>
-                    <td>{{ strtoupper($insc->estado ?? 'CONFIRMADO') }}</td>
+                    <td>{{ $est?->ci ?? 'N/A' }}</td>
+                    <td>{{ mb_convert_case($est?->grado_academico ?? 'Civil', MB_CASE_TITLE, 'UTF-8') }}</td>
+                    <td class="left"><strong>{{ mb_convert_case(trim(($est?->apellidos ?? '') . ' ' . ($est?->nombres ?? '')), MB_CASE_TITLE, 'UTF-8') }}</strong></td>
+                    <td>{{ $est?->celular ?: '—' }}</td>
+                    <td>{{ mb_convert_case($insc->estado ?? 'Confirmado', MB_CASE_TITLE, 'UTF-8') }}</td>
                 </tr>
             @endforeach
         </tbody>

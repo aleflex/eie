@@ -1515,7 +1515,7 @@ class ReportController extends Controller
                 $paralelo = Paralelo::with(['curso.idioma', 'aula'])->find($filters['id_paralelo']);
             }
 
-            $inscripciones = Inscripcion::with(['estudiante.user', 'curso.idioma', 'paralelo', 'notas', 'asistencias'])
+            $inscripciones = Inscripcion::with(['estudiante.user', 'curso.idioma', 'paralelo.aula', 'notas', 'asistencias'])
                 ->when($idParalelo, function($q) use ($idParalelo) {
                     $q->where('id_paralelo', $idParalelo);
                 })
@@ -1523,12 +1523,23 @@ class ReportController extends Controller
                 ->get();
 
             $curso = $paralelo ? $paralelo->curso : ($inscripciones->first() ? $inscripciones->first()->curso : null);
-            $nombreParalelo = $paralelo ? ($paralelo->nombre_paralelo ?: $paralelo->nombre) : 'Paralelo';
+            $nombreParalelo = $paralelo ? ($paralelo->nombre_paralelo ?: $paralelo->nombre) : 'General';
+
+            $safeParalelo = $paralelo ?: (object)[
+                'nombre_paralelo' => 'General',
+                'nombre' => 'General',
+                'aula' => (object)['nombre_aula' => 'Sin Aula', 'nombre' => 'Sin Aula']
+            ];
+
+            $safeCurso = $curso ?: (object)[
+                'nivel' => 'NIVEL I',
+                'idioma' => (object)['nombre_idioma' => 'INGLÉS', 'nombre' => 'INGLÉS']
+            ];
 
             if ($tipo === 'notas') {
                 $pdf = Pdf::loadView('pdf.notas_docente', [
-                    'paralelo' => $paralelo ?: (object)['nombre_paralelo' => 'A'],
-                    'curso' => $curso ?: (object)['nivel' => 'NIVEL I'],
+                    'paralelo' => $safeParalelo,
+                    'curso' => $safeCurso,
                     'inscripciones' => $inscripciones,
                     'fecha' => date('d/m/Y')
                 ]);
@@ -1538,8 +1549,8 @@ class ReportController extends Controller
 
             if ($tipo === 'asistencia') {
                 $pdf = Pdf::loadView('pdf.asistencias_docente', [
-                    'paralelo' => $paralelo ?: (object)['nombre_paralelo' => 'A'],
-                    'curso' => $curso ?: (object)['nivel' => 'NIVEL I'],
+                    'paralelo' => $safeParalelo,
+                    'curso' => $safeCurso,
                     'inscripciones' => $inscripciones,
                     'fecha' => date('d/m/Y')
                 ]);
@@ -1548,8 +1559,8 @@ class ReportController extends Controller
             }
 
             $pdf = Pdf::loadView('pdf.lista_docente', [
-                'paralelo' => $paralelo ?: (object)['nombre_paralelo' => 'A'],
-                'curso' => $curso ?: (object)['nivel' => 'NIVEL I'],
+                'paralelo' => $safeParalelo,
+                'curso' => $safeCurso,
                 'inscripciones' => $inscripciones,
                 'fecha' => date('d/m/Y')
             ]);
