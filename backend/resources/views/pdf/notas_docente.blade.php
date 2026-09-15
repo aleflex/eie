@@ -116,8 +116,8 @@
     <div class="title">PLANILLA OFICIAL DE CALIFICACIONES DE ALUMNOS</div>
 
     <div class="meta-box">
-        <strong>PARALELO:</strong> {{ strtoupper($paralelo->nombre_paralelo ?? $paralelo->nombre ?? 'A') }} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-        <strong>IDIOMA Y NIVEL:</strong> {{ strtoupper((is_object($curso->idioma ?? null) ? ($curso->idioma->nombre_idioma ?? $curso->idioma->nombre ?? 'INGLÉS') : ($curso->idioma ?? 'INGLÉS')) . ' - ' . ($curso->nivel ?? 'NIVEL I')) }}<br>
+        <strong>PARALELO:</strong> {{ mb_strtoupper($paralelo->nombre_paralelo ?? $paralelo->nombre ?? 'A', 'UTF-8') }} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        <strong>IDIOMA Y NIVEL:</strong> {{ mb_strtoupper((is_object($curso->idioma ?? null) ? ($curso->idioma->nombre_idioma ?? $curso->idioma->nombre ?? 'INGLÉS') : ($curso->idioma ?? 'INGLÉS')) . ' - ' . ($curso->nivel ?? 'NIVEL I'), 'UTF-8') }}<br>
         <strong>AULA:</strong> {{ !empty($paralelo->aula) ? ($paralelo->aula->nombre_aula ?? $paralelo->aula->nombre ?? 'Sin Aula') : 'Sin Aula' }} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
         <strong>FECHA:</strong> {{ date('d/m/Y') }}
     </div>

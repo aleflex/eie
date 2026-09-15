@@ -113,10 +113,10 @@
         </tr>
     </table>
 
-    <div class="title">{{ strtoupper($titulo ?? 'REPORTE ACADÉMICO OFICIAL') }}</div>
+    <div class="title">{{ mb_strtoupper($titulo ?? 'REPORTE ACADÉMICO OFICIAL', 'UTF-8') }}</div>
 
     <div class="meta-box">
-        <strong>TIPO DE REPORTE:</strong> {{ strtoupper($subtitulo ?? 'ESTADÍSTICAS GENERALES') }} &nbsp;&nbsp;&nbsp;&nbsp;
+        <strong>TIPO DE REPORTE:</strong> {{ mb_strtoupper($subtitulo ?? 'ESTADÍSTICAS GENERALES', 'UTF-8') }} &nbsp;&nbsp;&nbsp;&nbsp;
         <strong>FECHA:</strong> {{ $fecha ?? date('d/m/Y') }}
     </div>
 

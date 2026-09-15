@@ -625,7 +625,7 @@ class ReportController extends Controller
             }
 
             $rows[] = [''];
-            $rows[] = [['val' => '4. DETALLE DE MATRÍCULAS Y CALIFICACIONES (KARDEX GENERAL)', 'style' => 2]];
+            $rows[] = [['val' => '4. DETALLE DE MATRÍCULAS (KARDEX GENERAL)', 'style' => 2]];
             $rows[] = [
                 ['val' => 'Nro', 'style' => 1],
                 ['val' => 'C.I.', 'style' => 1],
@@ -634,13 +634,6 @@ class ReportController extends Controller
                 ['val' => 'Nivel', 'style' => 1],
                 ['val' => 'Paralelo', 'style' => 1],
                 ['val' => 'Estado', 'style' => 1],
-                ['val' => 'Book 1', 'style' => 1],
-                ['val' => 'Book 2', 'style' => 1],
-                ['val' => 'Book 3', 'style' => 1],
-                ['val' => 'Book 4', 'style' => 1],
-                ['val' => 'Examen Nivel', 'style' => 1],
-                ['val' => 'Promedio Final', 'style' => 1],
-                ['val' => 'Rendimiento', 'style' => 1],
             ];
 
             $idx = 1;
@@ -653,49 +646,19 @@ class ReportController extends Controller
 
                 $nombreCompleto = $user ? trim(($user->apellidos ?? '') . ' ' . ($user->nombres ?? '')) : ($est ? trim(($est->apellidos ?? '') . ' ' . ($est->nombres ?? '')) : 'N/A');
                 $ciVal = $user->ci ?? ($est->ci ?? 'N/A');
-
-                $notasCol = $insc->notas ?: collect();
-                $b1 = '-'; $b2 = '-'; $b3 = '-'; $b4 = '-'; $ex = '-';
-                foreach ($notasCol as $nt) {
-                    $p = strtolower(trim($nt->periodo ?? $nt->descripcion ?? ''));
-                    $val = (string)$nt->nota;
-                    if (str_contains($p, 'examen') || str_contains($p, 'final') || str_contains($p, 'nivel')) {
-                        $ex = $val;
-                    } elseif (preg_match('/(?:book|parcial|libro|unidad)\s*1\b/i', $p) || $p === 'b1') {
-                        $b1 = $val;
-                    } elseif (preg_match('/(?:book|parcial|libro|unidad)\s*2\b/i', $p) || $p === 'b2') {
-                        $b2 = $val;
-                    } elseif (preg_match('/(?:book|parcial|libro|unidad)\s*3\b/i', $p) || $p === 'b3') {
-                        $b3 = $val;
-                    } elseif (preg_match('/(?:book|parcial|libro|unidad)\s*4\b/i', $p) || $p === 'b4') {
-                        $b4 = $val;
-                    } else {
-                        if ($b1 === '-') $b1 = $val;
-                        elseif ($b2 === '-') $b2 = $val;
-                        elseif ($b3 === '-') $b3 = $val;
-                        elseif ($b4 === '-') $b4 = $val;
-                        elseif ($ex === '-') $ex = $val;
-                    }
-                }
-                $avg = $notasCol->count() > 0 ? round($notasCol->avg('nota'), 1) : null;
-                $pfStr = $avg !== null ? (string)$avg : '-';
-                $rendimiento = $avg !== null ? ($avg >= 90 ? 'EXCELENTE' : ($avg >= 71 ? ($avg < 80 ? 'EN RIESGO' : 'APROBADO') : 'REPROBADO')) : 'SIN NOTAS';
+                $idiomaNombre = $idm ? ($idm->nombre_idioma ?? $idm->nombre ?? 'N/A') : 'N/A';
+                $nivelNombre = $cur ? ($cur->nivelRel->nombre_nivel ?? $cur->nivel ?? 'N/A') : 'N/A';
+                $paraleloNombre = $par ? ($par->nombre_paralelo ?? $par->nombre ?? 'N/A') : 'Sin Paralelo (Por Asignar)';
+                $estadoNombre = $insc->estado ?? 'Pendiente';
 
                 $rows[] = [
                     ['val' => $idx++, 'style' => 0],
                     ['val' => $ciVal, 'style' => 0],
-                    ['val' => strtoupper($nombreCompleto), 'style' => 0],
-                    ['val' => $idm->nombre_idioma ?? $idm->nombre ?? 'N/A', 'style' => 0],
-                    ['val' => $cur->nivel ?? 'N/A', 'style' => 0],
-                    ['val' => $par ? ($par->nombre_paralelo ?? $par->nombre ?? 'N/A') : 'Sin Paralelo (Por Asignar)', 'style' => 0],
-                    ['val' => strtoupper($insc->estado ?? 'PENDIENTE'), 'style' => 0],
-                    ['val' => $b1, 'style' => 0],
-                    ['val' => $b2, 'style' => 0],
-                    ['val' => $b3, 'style' => 0],
-                    ['val' => $b4, 'style' => 0],
-                    ['val' => $ex, 'style' => 0],
-                    ['val' => $pfStr, 'style' => 3],
-                    ['val' => $rendimiento, 'style' => 0],
+                    ['val' => mb_convert_case($nombreCompleto, MB_CASE_TITLE, 'UTF-8'), 'style' => 0],
+                    ['val' => mb_convert_case($idiomaNombre, MB_CASE_TITLE, 'UTF-8'), 'style' => 0],
+                    ['val' => mb_convert_case($nivelNombre, MB_CASE_TITLE, 'UTF-8'), 'style' => 0],
+                    ['val' => mb_convert_case($paraleloNombre, MB_CASE_TITLE, 'UTF-8'), 'style' => 0],
+                    ['val' => mb_convert_case($estadoNombre, MB_CASE_TITLE, 'UTF-8'), 'style' => 0],
                 ];
             }
 
@@ -732,10 +695,10 @@ class ReportController extends Controller
                     $rows[] = [
                         ['val' => $pIdx++, 'style' => 0],
                         ['val' => $pCi, 'style' => 0],
-                        ['val' => strtoupper($pNombre), 'style' => 0],
-                        ['val' => $pIdm->nombre_idioma ?? $pIdm->nombre ?? 'N/A', 'style' => 0],
-                        ['val' => $pCur->nivel ?? 'N/A', 'style' => 0],
-                        ['val' => $pPar ? ($pPar->nombre_paralelo ?? $pPar->nombre ?? 'N/A') : 'Sin Paralelo (Por Asignar)', 'style' => 0],
+                        ['val' => mb_convert_case($pNombre, MB_CASE_TITLE, 'UTF-8'), 'style' => 0],
+                        ['val' => mb_convert_case($pIdm->nombre_idioma ?? $pIdm->nombre ?? 'N/A', MB_CASE_TITLE, 'UTF-8'), 'style' => 0],
+                        ['val' => mb_convert_case($pCur->nivel ?? 'N/A', MB_CASE_TITLE, 'UTF-8'), 'style' => 0],
+                        ['val' => mb_convert_case($pPar ? ($pPar->nombre_paralelo ?? $pPar->nombre ?? 'N/A') : 'Sin Paralelo (Por Asignar)', MB_CASE_TITLE, 'UTF-8'), 'style' => 0],
                         ['val' => $p->fecha_registro ?? 'N/A', 'style' => 0],
                         ['val' => 'PENDIENTE', 'style' => 0],
                     ];
@@ -855,9 +818,9 @@ class ReportController extends Controller
             }
             echo '</table><br>';
 
-            // TABLA 4: DETALLE GENERAL DE MATRÍCULAS Y CALIFICACIONES (KARDEX GENERAL)
+            // TABLA 4: DETALLE GENERAL DE MATRÍCULAS (KARDEX GENERAL)
             echo '<table>';
-            echo '<tr><th colspan="14" class="section-title">4. DETALLE DE MATRÍCULAS Y CALIFICACIONES (KARDEX GENERAL)</th></tr>';
+            echo '<tr><th colspan="7" class="section-title">4. DETALLE DE MATRÍCULAS (KARDEX GENERAL)</th></tr>';
             echo '<tr>';
             echo '<th>Nro</th>';
             echo '<th>C.I.</th>';
@@ -866,13 +829,6 @@ class ReportController extends Controller
             echo '<th>Nivel</th>';
             echo '<th>Paralelo</th>';
             echo '<th>Estado</th>';
-            echo '<th>Book 1</th>';
-            echo '<th>Book 2</th>';
-            echo '<th>Book 3</th>';
-            echo '<th>Book 4</th>';
-            echo '<th>Examen Nivel</th>';
-            echo '<th>Promedio</th>';
-            echo '<th>Rendimiento</th>';
             echo '</tr>';
 
             $idx = 1;
@@ -885,49 +841,19 @@ class ReportController extends Controller
 
                 $nombreCompleto = $user ? trim(($user->apellidos ?? '') . ' ' . ($user->nombres ?? '')) : ($est ? trim(($est->apellidos ?? '') . ' ' . ($est->nombres ?? '')) : 'N/A');
                 $ciVal = $user->ci ?? ($est->ci ?? 'N/A');
-
-                $notasCol = $insc->notas ?: collect();
-                $b1 = '-'; $b2 = '-'; $b3 = '-'; $b4 = '-'; $ex = '-';
-                foreach ($notasCol as $nt) {
-                    $p = strtolower(trim($nt->periodo ?? $nt->descripcion ?? ''));
-                    $val = (string)$nt->nota;
-                    if (str_contains($p, 'examen') || str_contains($p, 'final') || str_contains($p, 'nivel')) {
-                        $ex = $val;
-                    } elseif (preg_match('/(?:book|parcial|libro|unidad)\s*1\b/i', $p) || $p === 'b1') {
-                        $b1 = $val;
-                    } elseif (preg_match('/(?:book|parcial|libro|unidad)\s*2\b/i', $p) || $p === 'b2') {
-                        $b2 = $val;
-                    } elseif (preg_match('/(?:book|parcial|libro|unidad)\s*3\b/i', $p) || $p === 'b3') {
-                        $b3 = $val;
-                    } elseif (preg_match('/(?:book|parcial|libro|unidad)\s*4\b/i', $p) || $p === 'b4') {
-                        $b4 = $val;
-                    } else {
-                        if ($b1 === '-') $b1 = $val;
-                        elseif ($b2 === '-') $b2 = $val;
-                        elseif ($b3 === '-') $b3 = $val;
-                        elseif ($b4 === '-') $b4 = $val;
-                        elseif ($ex === '-') $ex = $val;
-                    }
-                }
-                $avg = $notasCol->count() > 0 ? round($notasCol->avg('nota'), 1) : null;
-                $pfStr = $avg !== null ? (string)$avg : '-';
-                $rendimiento = $avg !== null ? ($avg >= 90 ? 'EXCELENTE' : ($avg >= 71 ? ($avg < 80 ? 'EN RIESGO' : 'APROBADO') : 'REPROBADO')) : 'SIN NOTAS';
+                $idiomaNombre = $idm ? ($idm->nombre_idioma ?? $idm->nombre ?? 'N/A') : 'N/A';
+                $nivelNombre = $cur ? ($cur->nivelRel->nombre_nivel ?? $cur->nivel ?? 'N/A') : 'N/A';
+                $paraleloNombre = $par ? ($par->nombre_paralelo ?? $par->nombre ?? 'N/A') : 'Sin Paralelo (Por Asignar)';
+                $estadoNombre = $insc->estado ?? 'Pendiente';
 
                 echo '<tr>';
                 echo '<td>' . $idx++ . '</td>';
                 echo '<td>' . htmlspecialchars($ciVal) . '</td>';
-                echo '<td class="left">' . htmlspecialchars(strtoupper($nombreCompleto)) . '</td>';
-                echo '<td>' . htmlspecialchars($idm->nombre_idioma ?? $idm->nombre ?? 'N/A') . '</td>';
-                echo '<td>' . htmlspecialchars($cur->nivel ?? 'N/A') . '</td>';
-                echo '<td>' . htmlspecialchars($par ? ($par->nombre_paralelo ?? $par->nombre ?? 'N/A') : 'Sin Paralelo (Por Asignar)') . '</td>';
-                echo '<td>' . htmlspecialchars(strtoupper($insc->estado ?? 'PENDIENTE')) . '</td>';
-                echo '<td>' . htmlspecialchars($b1) . '</td>';
-                echo '<td>' . htmlspecialchars($b2) . '</td>';
-                echo '<td>' . htmlspecialchars($b3) . '</td>';
-                echo '<td>' . htmlspecialchars($b4) . '</td>';
-                echo '<td>' . htmlspecialchars($ex) . '</td>';
-                echo '<td><strong>' . htmlspecialchars($pfStr) . '</strong></td>';
-                echo '<td>' . htmlspecialchars($rendimiento) . '</td>';
+                echo '<td class="left">' . htmlspecialchars(mb_convert_case($nombreCompleto, MB_CASE_TITLE, 'UTF-8')) . '</td>';
+                echo '<td>' . htmlspecialchars(mb_convert_case($idiomaNombre, MB_CASE_TITLE, 'UTF-8')) . '</td>';
+                echo '<td>' . htmlspecialchars(mb_convert_case($nivelNombre, MB_CASE_TITLE, 'UTF-8')) . '</td>';
+                echo '<td>' . htmlspecialchars(mb_convert_case($paraleloNombre, MB_CASE_TITLE, 'UTF-8')) . '</td>';
+                echo '<td>' . htmlspecialchars(mb_convert_case($estadoNombre, MB_CASE_TITLE, 'UTF-8')) . '</td>';
                 echo '</tr>';
             }
             echo '</table>';
@@ -963,10 +889,10 @@ class ReportController extends Controller
                     echo '<tr>';
                     echo '<td>' . $pIdx++ . '</td>';
                     echo '<td>' . htmlspecialchars($pCi) . '</td>';
-                    echo '<td class="left">' . htmlspecialchars(strtoupper($pNombre)) . '</td>';
-                    echo '<td>' . htmlspecialchars($pIdm->nombre_idioma ?? $pIdm->nombre ?? 'N/A') . '</td>';
-                    echo '<td>' . htmlspecialchars($pCur->nivel ?? 'N/A') . '</td>';
-                    echo '<td>' . htmlspecialchars($pPar ? ($pPar->nombre_paralelo ?? $pPar->nombre ?? 'N/A') : 'Sin Paralelo (Por Asignar)') . '</td>';
+                    echo '<td class="left">' . htmlspecialchars(mb_convert_case($pNombre, MB_CASE_TITLE, 'UTF-8')) . '</td>';
+                    echo '<td>' . htmlspecialchars(mb_convert_case($pIdm->nombre_idioma ?? $pIdm->nombre ?? 'N/A', MB_CASE_TITLE, 'UTF-8')) . '</td>';
+                    echo '<td>' . htmlspecialchars(mb_convert_case($pCur->nivel ?? 'N/A', MB_CASE_TITLE, 'UTF-8')) . '</td>';
+                    echo '<td>' . htmlspecialchars(mb_convert_case($pPar ? ($pPar->nombre_paralelo ?? $pPar->nombre ?? 'N/A') : 'Sin Paralelo (Por Asignar)', MB_CASE_TITLE, 'UTF-8')) . '</td>';
                     echo '<td style="background-color: #fef3c7; color: #92400e; font-weight: bold;">PENDIENTE</td>';
                     echo '</tr>';
                 }
@@ -1064,20 +990,20 @@ class ReportController extends Controller
                     $parStr = $par ? ($par->nombre_paralelo ?? $par->nombre ?? 'N/A') : 'Sin Paralelo';
                     $celularStr = $est->celular ?? ($user->telefono ?? '—');
                     $emailStr = $user->email ?? ($est->correo_electronico ?? '—');
-                    $estadoStr = strtoupper($insc->estado ?? 'ACTIVO');
+                    $estadoStr = mb_strtoupper($insc->estado ?? 'ACTIVO', 'UTF-8');
 
                     if ($isLista) {
                         $rows[] = [
                             ['val' => $idx++, 'style' => 0],
                             ['val' => $ciStr, 'style' => 0],
                             ['val' => $gradoStr, 'style' => 0],
-                            ['val' => strtoupper($apellidosStr), 'style' => 0],
-                            ['val' => strtoupper($nombresStr), 'style' => 0],
+                            ['val' => mb_convert_case($apellidosStr, MB_CASE_TITLE, 'UTF-8'), 'style' => 0],
+                            ['val' => mb_convert_case($nombresStr, MB_CASE_TITLE, 'UTF-8'), 'style' => 0],
                             ['val' => $celularStr, 'style' => 0],
                             ['val' => $emailStr, 'style' => 0],
-                            ['val' => $idmStr, 'style' => 0],
-                            ['val' => $nivelStr, 'style' => 0],
-                            ['val' => $parStr, 'style' => 0],
+                            ['val' => mb_convert_case($idmStr, MB_CASE_TITLE, 'UTF-8'), 'style' => 0],
+                            ['val' => mb_convert_case($nivelStr, MB_CASE_TITLE, 'UTF-8'), 'style' => 0],
+                            ['val' => mb_convert_case($parStr, MB_CASE_TITLE, 'UTF-8'), 'style' => 0],
                             ['val' => $estadoStr, 'style' => 0],
                         ];
                     } else {
@@ -1085,11 +1011,11 @@ class ReportController extends Controller
                             ['val' => $idx++, 'style' => 0],
                             ['val' => $ciStr, 'style' => 0],
                             ['val' => $gradoStr, 'style' => 0],
-                            ['val' => strtoupper($apellidosStr), 'style' => 0],
-                            ['val' => strtoupper($nombresStr), 'style' => 0],
-                            ['val' => $idmStr, 'style' => 0],
-                            ['val' => $nivelStr, 'style' => 0],
-                            ['val' => $parStr, 'style' => 0],
+                            ['val' => mb_convert_case($apellidosStr, MB_CASE_TITLE, 'UTF-8'), 'style' => 0],
+                            ['val' => mb_convert_case($nombresStr, MB_CASE_TITLE, 'UTF-8'), 'style' => 0],
+                            ['val' => mb_convert_case($idmStr, MB_CASE_TITLE, 'UTF-8'), 'style' => 0],
+                            ['val' => mb_convert_case($nivelStr, MB_CASE_TITLE, 'UTF-8'), 'style' => 0],
+                            ['val' => mb_convert_case($parStr, MB_CASE_TITLE, 'UTF-8'), 'style' => 0],
                             ['val' => $totalSesiones, 'style' => 0],
                             ['val' => $presentes, 'style' => 0],
                             ['val' => $faltas, 'style' => 0],
@@ -1145,7 +1071,7 @@ class ReportController extends Controller
                 echo '<tr><td colspan="31" class="header-title"><u>BOLIVIA</u></td></tr>';
                 echo '<tr><td colspan="31" class="header-title">&nbsp;</td></tr>';
                 echo '<tr><td colspan="31" class="header-title">RELACION NOMINAL DEL PERSONAL DE ALUMNOS (REGISTRO DE ASISTENCIA)</td></tr>';
-                echo '<tr><td colspan="31" class="header-title">IDIOMA: ' . strtoupper($idiomaName) . ' | ' . strtoupper($nivelName) . ' | PARALELO: ' . strtoupper($paraleloName) . ' | FILIAL: COCHABAMBA</td></tr>';
+                echo '<tr><td colspan="31" class="header-title">IDIOMA: ' . mb_strtoupper($idiomaName, 'UTF-8') . ' | ' . mb_strtoupper($nivelName, 'UTF-8') . ' | PARALELO: ' . mb_strtoupper($paraleloName, 'UTF-8') . ' | FILIAL: COCHABAMBA</td></tr>';
                 echo '<tr><td colspan="31" class="header-title">&nbsp;</td></tr>';
 
                 echo '<tr>';
@@ -1193,10 +1119,10 @@ class ReportController extends Controller
 
                     echo '<tr>';
                     echo '<td>' . $i++ . '</td>';
-                    echo '<td>' . htmlspecialchars(strtoupper($grado)) . '</td>';
-                    echo '<td class="left">' . htmlspecialchars(strtoupper($paterno)) . '</td>';
-                    echo '<td class="left">' . htmlspecialchars(strtoupper($materno)) . '</td>';
-                    echo '<td class="left">' . htmlspecialchars(strtoupper($nombres)) . '</td>';
+                    echo '<td>' . htmlspecialchars(mb_strtoupper($grado, 'UTF-8')) . '</td>';
+                    echo '<td class="left">' . htmlspecialchars(mb_convert_case($paterno, MB_CASE_TITLE, 'UTF-8')) . '</td>';
+                    echo '<td class="left">' . htmlspecialchars(mb_convert_case($materno, MB_CASE_TITLE, 'UTF-8')) . '</td>';
+                    echo '<td class="left">' . htmlspecialchars(mb_convert_case($nombres, MB_CASE_TITLE, 'UTF-8')) . '</td>';
 
                     $asistenciasList = $insc->asistencias ? $insc->asistencias->sortBy('fecha')->values() : collect();
                     for ($a = 0; $a < 14; $a++) {
@@ -1337,10 +1263,10 @@ class ReportController extends Controller
                         ['val' => $idx++, 'style' => 0],
                         ['val' => $ciStr, 'style' => 0],
                         ['val' => $gradoStr, 'style' => 0],
-                        ['val' => strtoupper($nombreCompleto), 'style' => 0],
-                        ['val' => $idm ? ($idm->nombre_idioma ?? $idm->nombre ?? 'N/A') : 'N/A', 'style' => 0],
-                        ['val' => $cur ? ($cur->nivel ?? 'N/A') : 'N/A', 'style' => 0],
-                        ['val' => $par ? ($par->nombre_paralelo ?? $par->nombre ?? 'N/A') : 'Sin Paralelo', 'style' => 0],
+                        ['val' => mb_convert_case($nombreCompleto, MB_CASE_TITLE, 'UTF-8'), 'style' => 0],
+                        ['val' => mb_convert_case($idm ? ($idm->nombre_idioma ?? $idm->nombre ?? 'N/A') : 'N/A', MB_CASE_TITLE, 'UTF-8'), 'style' => 0],
+                        ['val' => mb_convert_case($cur ? ($cur->nivel ?? 'N/A') : 'N/A', MB_CASE_TITLE, 'UTF-8'), 'style' => 0],
+                        ['val' => mb_convert_case($par ? ($par->nombre_paralelo ?? $par->nombre ?? 'N/A') : 'Sin Paralelo', MB_CASE_TITLE, 'UTF-8'), 'style' => 0],
                         ['val' => $b1, 'style' => 0],
                         ['val' => $b2, 'style' => 0],
                         ['val' => $b3, 'style' => 0],
@@ -1392,7 +1318,7 @@ class ReportController extends Controller
                 echo '<table>';
                 echo '<tr><td colspan="13" class="header-title">ESCUELA DE IDIOMAS DEL EJÉRCITO - COCHABAMBA</td></tr>';
                 echo '<tr><td colspan="13" class="header-title">PLANILLA OFICIAL DE CALIFICACIONES DE ALUMNOS REGISTRADAS EN SISTEMA</td></tr>';
-                echo '<tr><td colspan="13" class="header-title">IDIOMA: ' . strtoupper($idiomaName) . ' | ' . strtoupper($nivelName) . ' | PARALELO: ' . strtoupper($paraleloName) . ' | FECHA: ' . date('d/m/Y') . '</td></tr>';
+                echo '<tr><td colspan="13" class="header-title">IDIOMA: ' . mb_strtoupper($idiomaName, 'UTF-8') . ' | ' . mb_strtoupper($nivelName, 'UTF-8') . ' | PARALELO: ' . mb_strtoupper($paraleloName, 'UTF-8') . ' | FECHA: ' . date('d/m/Y') . '</td></tr>';
                 echo '<tr><td colspan="13">&nbsp;</td></tr>';
 
                 echo '<tr>';
@@ -1442,8 +1368,8 @@ class ReportController extends Controller
                     echo '<tr>';
                     echo '<td>' . $i++ . '</td>';
                     echo '<td>' . htmlspecialchars($ciStr) . '</td>';
-                    echo '<td>' . htmlspecialchars(strtoupper($gradoStr)) . '</td>';
-                    echo '<td class="left">' . htmlspecialchars(strtoupper($nombreCompleto)) . '</td>';
+                    echo '<td>' . htmlspecialchars(mb_strtoupper($gradoStr, 'UTF-8')) . '</td>';
+                    echo '<td class="left">' . htmlspecialchars(mb_convert_case($nombreCompleto, MB_CASE_TITLE, 'UTF-8')) . '</td>';
                     echo '<td>' . ($notasLibros[1] > 0 ? $notasLibros[1] : '-') . '</td>';
                     echo '<td>' . ($notasLibros[2] > 0 ? $notasLibros[2] : '-') . '</td>';
                     echo '<td>' . ($notasLibros[3] > 0 ? $notasLibros[3] : '-') . '</td>';
