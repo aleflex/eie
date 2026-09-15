@@ -126,12 +126,16 @@
         <thead>
             <tr>
                 <th style="width: 5%;">Nro</th>
-                <th style="width: 15%;">C.I.</th>
-                <th style="width: 14%;">Grado</th>
-                <th style="width: 38%;" class="left">Apellidos y Nombres</th>
-                <th style="width: 9%;">Clases</th>
-                <th style="width: 9%;">Presente</th>
-                <th style="width: 10%;">% Asist.</th>
+                <th style="width: 14%;">C.I.</th>
+                <th style="width: 12%;">Grado</th>
+                <th style="width: {{ !empty($isGeneral) ? '25%' : '38%' }};" class="left">Apellidos y Nombres</th>
+                @if(!empty($isGeneral))
+                    <th style="width: 16%;">Idioma / Nivel</th>
+                    <th style="width: 10%;">Paralelo</th>
+                @endif
+                <th style="width: 6%;">Clases</th>
+                <th style="width: 6%;">Presente</th>
+                <th style="width: 6%;">% Asist.</th>
             </tr>
         </thead>
         <tbody>
@@ -142,12 +146,19 @@
                     $totalSesiones = !empty($insc->asistencias) ? $insc->asistencias->count() : 0;
                     $presentes = !empty($insc->asistencias) ? $insc->asistencias->where('estado', 'presente')->count() : 0;
                     $pct = $totalSesiones > 0 ? round(($presentes / $totalSesiones) * 100, 1) : 100;
+                    $idmRow = $insc->curso && $insc->curso->idioma ? ($insc->curso->idioma->nombre_idioma ?? $insc->curso->idioma->nombre ?? 'N/A') : 'N/A';
+                    $nvlRow = $insc->curso ? ($insc->curso->nivelRel->nombre_nivel ?? $insc->curso->nivel ?? '') : '';
+                    $parRow = $insc->paralelo ? ($insc->paralelo->nombre_paralelo ?? $insc->paralelo->nombre ?? 'Sin Paralelo') : 'Sin Paralelo';
                 @endphp
                 <tr>
                     <td>{{ $idx++ }}</td>
                     <td>{{ $est?->ci ?? 'N/A' }}</td>
                     <td>{{ mb_convert_case($est?->grado_academico ?? $est?->grado ?? 'Civil', MB_CASE_TITLE, 'UTF-8') }}</td>
                     <td class="left"><strong>{{ mb_convert_case(trim(($est?->apellidos ?? '') . ' ' . ($est?->nombres ?? '')), MB_CASE_TITLE, 'UTF-8') }}</strong></td>
+                    @if(!empty($isGeneral))
+                        <td>{{ mb_convert_case($idmRow . ($nvlRow ? ' - ' . $nvlRow : ''), MB_CASE_TITLE, 'UTF-8') }}</td>
+                        <td>{{ mb_convert_case($parRow, MB_CASE_TITLE, 'UTF-8') }}</td>
+                    @endif
                     <td>{{ $totalSesiones }}</td>
                     <td>{{ $presentes }}</td>
                     <td><strong>{{ $pct }}%</strong></td>

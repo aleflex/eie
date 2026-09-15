@@ -354,34 +354,11 @@ class ReportController extends Controller
                     $user = $est ? ($est->user ?? null) : null;
                     $nombreCompleto = $user ? trim(($user->nombres ?? '') . ' ' . ($user->apellidos ?? '')) : ($est ? trim(($est->nombres ?? '') . ' ' . ($est->apellidos ?? '')) : 'Estudiante N/A');
                     $ci = $user->ci ?? ($est->ci ?? 'N/A');
-                    $notas = ($ins->relationLoaded('notas') && $ins->notas) ? $ins->notas->pluck('nota')->toArray() : [];
-                    $prom = count($notas) > 0 ? round(array_sum($notas) / count($notas), 1) : null;
-
+                    // Estudiantes sin paralelo asignado no tienen calificaciones de aula/curso
+                    $notas = [];
+                    $prom = null;
                     $notasDetalle = [];
                     $notasMap = ['book1' => '-', 'book2' => '-', 'book3' => '-', 'book4' => '-', 'examenFinal' => '-'];
-                    if ($ins->relationLoaded('notas') && $ins->notas) {
-                        foreach ($ins->notas as $nt) {
-                            $p = strtolower(trim($nt->periodo ?? ''));
-                            $val = (float)$nt->nota;
-                            $notasDetalle[] = [
-                                'id_nota' => $nt->id_nota,
-                                'periodo' => $nt->periodo ?: 'Evaluación',
-                                'nota' => $val,
-                                'observacion' => $nt->observacion
-                            ];
-                            if (str_contains($p, 'examen') || str_contains($p, 'final') || str_contains($p, 'nivel')) {
-                                $notasMap['examenFinal'] = (string)$val;
-                            } elseif (preg_match('/(?:book|parcial|libro|unidad)\s*1\b/i', $p) || $p === 'b1') {
-                                $notasMap['book1'] = (string)$val;
-                            } elseif (preg_match('/(?:book|parcial|libro|unidad)\s*2\b/i', $p) || $p === 'b2') {
-                                $notasMap['book2'] = (string)$val;
-                            } elseif (preg_match('/(?:book|parcial|libro|unidad)\s*3\b/i', $p) || $p === 'b3') {
-                                $notasMap['book3'] = (string)$val;
-                            } elseif (preg_match('/(?:book|parcial|libro|unidad)\s*4\b/i', $p) || $p === 'b4') {
-                                $notasMap['book4'] = (string)$val;
-                            }
-                        }
-                    }
 
                     return [
                         'id_inscripcion' => $ins->id_inscripcion,
@@ -1448,25 +1425,53 @@ class ReportController extends Controller
                 ->filterMultiCriteria($filters)
                 ->get();
 
-            $curso = $paralelo ? $paralelo->curso : ($inscripciones->first() ? $inscripciones->first()->curso : null);
-            $nombreParalelo = $paralelo ? ($paralelo->nombre_paralelo ?: $paralelo->nombre) : 'General';
+            $uniqueIdiomas = $inscripciones->map(function($i) {
+                return $i->curso && $i->curso->idioma ? ($i->curso->idioma->nombre_idioma ?? $i->curso->idioma->nombre) : null;
+            })->filter()->unique()->values();
 
-            $safeParalelo = $paralelo ?: (object)[
-                'nombre_paralelo' => 'General',
-                'nombre' => 'General',
-                'aula' => (object)['nombre_aula' => 'Sin Aula', 'nombre' => 'Sin Aula']
-            ];
-
-            $safeCurso = $curso ?: (object)[
-                'nivel' => 'NIVEL I',
-                'idioma' => (object)['nombre_idioma' => 'INGLÉS', 'nombre' => 'INGLÉS']
-            ];
+            $isGeneral = false;
+            if ($paralelo) {
+                $safeParalelo = $paralelo;
+                $safeCurso = $paralelo->curso;
+                $nombreParalelo = $paralelo->nombre_paralelo ?: $paralelo->nombre;
+            } elseif (!empty($filters['id_curso'])) {
+                $c = \App\Models\Curso::with('idioma')->find($filters['id_curso']);
+                $safeCurso = $c ?: (object)['nivel' => 'General', 'idioma' => (object)['nombre_idioma' => 'Curso General', 'nombre' => 'Curso General']];
+                $safeParalelo = (object)['nombre_paralelo' => 'Todos los Paralelos', 'nombre' => 'Todos los Paralelos', 'aula' => (object)['nombre_aula' => 'Varios / General', 'nombre' => 'Varios']];
+                $nombreParalelo = 'Curso_' . ($c?->nivel ?? 'General');
+            } elseif (!empty($filters['id_idioma'])) {
+                $idm = \App\Models\Idioma::find($filters['id_idioma']);
+                $idmNom = $idm ? ($idm->nombre_idioma ?? $idm->nombre) : 'Idioma';
+                $safeCurso = (object)['nivel' => 'Todos los Niveles', 'idioma' => (object)['nombre_idioma' => $idmNom, 'nombre' => $idmNom]];
+                $safeParalelo = (object)['nombre_paralelo' => 'General', 'nombre' => 'General', 'aula' => (object)['nombre_aula' => 'Varios / General', 'nombre' => 'Varios']];
+                $nombreParalelo = $idmNom;
+            } else {
+                $isGeneral = true;
+                $nombreParalelo = 'General';
+                $safeParalelo = (object)[
+                    'nombre_paralelo' => 'General',
+                    'nombre' => 'General',
+                    'aula' => (object)['nombre_aula' => 'Todas las Aulas', 'nombre' => 'Todas las Aulas']
+                ];
+                if ($uniqueIdiomas->count() === 1) {
+                    $safeCurso = (object)[
+                        'nivel' => 'Todos los Niveles',
+                        'idioma' => (object)['nombre_idioma' => $uniqueIdiomas->first(), 'nombre' => $uniqueIdiomas->first()]
+                    ];
+                } else {
+                    $safeCurso = (object)[
+                        'nivel' => 'TODOS LOS NIVELES',
+                        'idioma' => (object)['nombre_idioma' => 'CONSOLIDADO GENERAL (TODOS LOS IDIOMAS)', 'nombre' => 'CONSOLIDADO GENERAL (TODOS LOS IDIOMAS)']
+                    ];
+                }
+            }
 
             if ($tipo === 'notas') {
                 $pdf = Pdf::loadView('pdf.notas_docente', [
                     'paralelo' => $safeParalelo,
                     'curso' => $safeCurso,
                     'inscripciones' => $inscripciones,
+                    'isGeneral' => $isGeneral,
                     'fecha' => date('d/m/Y')
                 ]);
                 $pdf->setPaper('letter', 'portrait');
@@ -1478,6 +1483,7 @@ class ReportController extends Controller
                     'paralelo' => $safeParalelo,
                     'curso' => $safeCurso,
                     'inscripciones' => $inscripciones,
+                    'isGeneral' => $isGeneral,
                     'fecha' => date('d/m/Y')
                 ]);
                 $pdf->setPaper('letter', 'portrait');
@@ -1488,6 +1494,7 @@ class ReportController extends Controller
                 'paralelo' => $safeParalelo,
                 'curso' => $safeCurso,
                 'inscripciones' => $inscripciones,
+                'isGeneral' => $isGeneral,
                 'fecha' => date('d/m/Y')
             ]);
 

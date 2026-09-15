@@ -44,6 +44,12 @@ class NotaAsistenciaController extends Controller
     {
         $inscripcion = Inscripcion::findOrFail($inscripcionId);
 
+        if (empty($inscripcion->id_paralelo)) {
+            return response()->json([
+                'message' => 'No se pueden registrar calificaciones a un estudiante sin paralelo asignado.'
+            ], 422);
+        }
+
         $validated = $request->validate([
             'nota'       => 'required|numeric|min:0|max:100',
             'periodo'    => 'required|string|max:50',

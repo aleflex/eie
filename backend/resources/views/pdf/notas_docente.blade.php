@@ -126,15 +126,19 @@
         <thead>
             <tr>
                 <th style="width: 4%;">Nro</th>
-                <th style="width: 14%;">C.I.</th>
-                <th style="width: 12%;">Grado</th>
-                <th style="width: 32%;" class="left">Apellidos y Nombres</th>
-                <th style="width: 6%;">B1</th>
-                <th style="width: 6%;">B2</th>
-                <th style="width: 6%;">B3</th>
-                <th style="width: 6%;">B4</th>
-                <th style="width: 7%;">Ex. Fin</th>
-                <th style="width: 7%;">Prom.</th>
+                <th style="width: 12%;">C.I.</th>
+                <th style="width: 10%;">Grado</th>
+                <th style="width: {{ !empty($isGeneral) ? '24%' : '32%' }};" class="left">Apellidos y Nombres</th>
+                @if(!empty($isGeneral))
+                    <th style="width: 15%;">Idioma / Nivel</th>
+                    <th style="width: 9%;">Paralelo</th>
+                @endif
+                <th style="width: {{ !empty($isGeneral) ? '5%' : '6%' }};">B1</th>
+                <th style="width: {{ !empty($isGeneral) ? '5%' : '6%' }};">B2</th>
+                <th style="width: {{ !empty($isGeneral) ? '5%' : '6%' }};">B3</th>
+                <th style="width: {{ !empty($isGeneral) ? '5%' : '6%' }};">B4</th>
+                <th style="width: {{ !empty($isGeneral) ? '5%' : '7%' }};">Ex. Fin</th>
+                <th style="width: {{ !empty($isGeneral) ? '6%' : '7%' }};">Prom.</th>
             </tr>
         </thead>
         <tbody>
@@ -143,7 +147,8 @@
                 @php 
                     $est = $insc->estudiante ?? null; 
                     $b1 = 0; $b2 = 0; $b3 = 0; $b4 = 0; $ex = 0; $prom = 0;
-                    if (!empty($insc->notas) && $insc->notas->count() > 0) {
+                    // Solo estudiantes con paralelo asignado computan calificaciones de aula
+                    if (!empty($insc->id_paralelo) && !empty($insc->notas) && $insc->notas->count() > 0) {
                         foreach ($insc->notas as $n) {
                             $per = strtolower(trim((string)($n->periodo ?? '')));
                             $val = floatval($n->nota ?? 0);
@@ -156,12 +161,19 @@
                         $registradas = array_filter([$b1, $b2, $b3, $b4, $ex], fn($v) => $v > 0);
                         $prom = count($registradas) > 0 ? round(array_sum($registradas) / count($registradas), 1) : 0;
                     }
+                    $idmRow = $insc->curso && $insc->curso->idioma ? ($insc->curso->idioma->nombre_idioma ?? $insc->curso->idioma->nombre ?? 'N/A') : 'N/A';
+                    $nvlRow = $insc->curso ? ($insc->curso->nivelRel->nombre_nivel ?? $insc->curso->nivel ?? '') : '';
+                    $parRow = $insc->paralelo ? ($insc->paralelo->nombre_paralelo ?? $insc->paralelo->nombre ?? 'Sin Paralelo') : 'Sin Paralelo';
                 @endphp
                 <tr>
                     <td>{{ $idx++ }}</td>
                     <td>{{ $est?->ci ?? 'N/A' }}</td>
                     <td>{{ mb_convert_case($est?->grado_academico ?? $est?->grado ?? 'Civil', MB_CASE_TITLE, 'UTF-8') }}</td>
                     <td class="left"><strong>{{ mb_convert_case(trim(($est?->apellidos ?? '') . ' ' . ($est?->nombres ?? '')), MB_CASE_TITLE, 'UTF-8') }}</strong></td>
+                    @if(!empty($isGeneral))
+                        <td>{{ mb_convert_case($idmRow . ($nvlRow ? ' - ' . $nvlRow : ''), MB_CASE_TITLE, 'UTF-8') }}</td>
+                        <td>{{ mb_convert_case($parRow, MB_CASE_TITLE, 'UTF-8') }}</td>
+                    @endif
                     <td>{{ $b1 > 0 ? $b1 : '—' }}</td>
                     <td>{{ $b2 > 0 ? $b2 : '—' }}</td>
                     <td>{{ $b3 > 0 ? $b3 : '—' }}</td>

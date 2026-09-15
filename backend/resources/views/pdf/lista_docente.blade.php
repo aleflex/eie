@@ -126,22 +126,35 @@
         <thead>
             <tr>
                 <th style="width: 5%;">Nro</th>
-                <th style="width: 15%;">C.I.</th>
-                <th style="width: 15%;">Grado</th>
-                <th style="width: 40%;" class="left">Apellidos y Nombres</th>
-                <th style="width: 13%;">Celular</th>
-                <th style="width: 12%;">Estado</th>
+                <th style="width: 14%;">C.I.</th>
+                <th style="width: 12%;">Grado</th>
+                <th style="width: {{ !empty($isGeneral) ? '27%' : '40%' }};" class="left">Apellidos y Nombres</th>
+                @if(!empty($isGeneral))
+                    <th style="width: 18%;">Idioma / Nivel</th>
+                    <th style="width: 12%;">Paralelo</th>
+                @endif
+                <th style="width: 12%;">Celular</th>
+                <th style="width: {{ !empty($isGeneral) ? '12%' : '12%' }};">Estado</th>
             </tr>
         </thead>
         <tbody>
             @php $idx = 1; @endphp
             @foreach ($inscripciones as $insc)
-                @php $est = $insc->estudiante ?? null; @endphp
+                @php 
+                    $est = $insc->estudiante ?? null; 
+                    $idmRow = $insc->curso && $insc->curso->idioma ? ($insc->curso->idioma->nombre_idioma ?? $insc->curso->idioma->nombre ?? 'N/A') : 'N/A';
+                    $nvlRow = $insc->curso ? ($insc->curso->nivelRel->nombre_nivel ?? $insc->curso->nivel ?? '') : '';
+                    $parRow = $insc->paralelo ? ($insc->paralelo->nombre_paralelo ?? $insc->paralelo->nombre ?? 'Sin Paralelo') : 'Sin Paralelo';
+                @endphp
                 <tr>
                     <td>{{ $idx++ }}</td>
                     <td>{{ $est?->ci ?? 'N/A' }}</td>
                     <td>{{ mb_convert_case($est?->grado_academico ?? 'Civil', MB_CASE_TITLE, 'UTF-8') }}</td>
                     <td class="left"><strong>{{ mb_convert_case(trim(($est?->apellidos ?? '') . ' ' . ($est?->nombres ?? '')), MB_CASE_TITLE, 'UTF-8') }}</strong></td>
+                    @if(!empty($isGeneral))
+                        <td>{{ mb_convert_case($idmRow . ($nvlRow ? ' - ' . $nvlRow : ''), MB_CASE_TITLE, 'UTF-8') }}</td>
+                        <td>{{ mb_convert_case($parRow, MB_CASE_TITLE, 'UTF-8') }}</td>
+                    @endif
                     <td>{{ $est?->celular ?: '—' }}</td>
                     <td>{{ mb_convert_case($insc->estado ?? 'Confirmado', MB_CASE_TITLE, 'UTF-8') }}</td>
                 </tr>
