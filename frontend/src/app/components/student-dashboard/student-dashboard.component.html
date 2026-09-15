@@ -3,7 +3,10 @@
   <aside class="sidebar" [class.mobile-open]="isMobileMenuOpen">
     <div class="sidebar-header">
       <img src="assets/imagenes/logo.jpg" alt="Logo EIE" class="sidebar-logo">
-      <span>EIE PORTAL</span>
+      <div class="sidebar-brand-text">
+        <span class="sidebar-portal-name">EIE PORTAL</span>
+        <span class="sidebar-user-role-badge">Estudiante</span>
+      </div>
       <button type="button" class="mobile-hamburger-btn d-lg-none" (click)="toggleMobileMenu()" aria-label="Abrir menú mobile">
         <i class="material-icons-outlined">{{ isMobileMenuOpen ? 'close' : 'menu' }}</i>
       </button>
@@ -86,6 +89,12 @@
             </div>
             
             <h2 class="profile-name-tag">{{ student.nombres }} {{ student.apellidos }}</h2>
+            <div class="profile-role-tag-container mb-2">
+              <span class="profile-role-badge">
+                <i class="material-icons-outlined" style="font-size: 14px;">school</i>
+                Estudiante
+              </span>
+            </div>
             <span class="profile-ci-tag">C.I. {{ student.ci }}</span>
             
             <div class="profile-photo-change mt-4">

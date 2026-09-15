@@ -3,7 +3,10 @@
   <aside class="sidebar" [class.collapsed]="isSidebarCollapsed" [class.mobile-open]="isMobileMenuOpen">
     <div class="sidebar-header">
       <img src="assets/imagenes/logo.jpg" alt="Logo EIE" class="sidebar-logo">
-      <span *ngIf="!isSidebarCollapsed">EIE PANEL</span>
+      <div class="sidebar-brand-text" *ngIf="!isSidebarCollapsed">
+        <span class="sidebar-portal-name">EIE PANEL</span>
+        <span class="sidebar-user-role-badge">Administrador</span>
+      </div>
       <button type="button" class="mobile-hamburger-btn" (click)="toggleMobileMenu()" aria-label="Abrir menú mobile">
         <i class="material-icons-outlined">{{ isMobileMenuOpen ? 'close' : 'menu' }}</i>
       </button>

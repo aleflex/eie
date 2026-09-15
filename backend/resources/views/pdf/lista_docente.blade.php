@@ -8,7 +8,7 @@
             margin: 1.2cm 1.8cm;
         }
         body {
-            font-family: 'Courier', 'Times New Roman', 'Arial', sans-serif;
+            font-family: 'Helvetica', 'Arial', sans-serif;
             font-size: 10px;
             color: #000000;
             background-color: #ffffff;

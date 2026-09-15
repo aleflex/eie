@@ -113,6 +113,36 @@ body {
   display: inline-block !important;
 }
 
+/* Sidebar Brand and User Role Tag */
+.sidebar-brand-text {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  margin-right: auto !important;
+  line-height: 1.15 !important;
+}
+
+.sidebar-portal-name {
+  font-size: 1.05rem !important;
+  font-weight: 800 !important;
+  color: #ffffff !important;
+  letter-spacing: 0.5px !important;
+}
+
+.sidebar-user-role-badge {
+  font-size: 0.7rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.5px !important;
+  color: #93c5fd !important;
+  background: rgba(255, 255, 255, 0.15) !important;
+  padding: 1px 7px !important;
+  border-radius: 4px !important;
+  display: inline-block !important;
+  width: fit-content !important;
+  margin-top: 2px !important;
+  text-transform: capitalize !important;
+}
+
 h1, h2, h3, h4, h5, h6 {
   font-family: 'Outfit', sans-serif;
   font-weight: 700;

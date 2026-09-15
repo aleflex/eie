@@ -8,7 +8,7 @@
             margin: 1.2cm 1.8cm;
         }
         body {
-            font-family: 'Courier', 'Times New Roman', 'Arial', sans-serif;
+            font-family: 'Helvetica', 'Arial', sans-serif;
             font-size: 10px;
             color: #000000;
             background-color: #ffffff;
@@ -42,14 +42,12 @@
             font-weight: bold;
             color: #000000;
             margin: 14px 0;
-            text-transform: uppercase;
             letter-spacing: 0.5px;
         }
         .section-title {
             font-size: 10px;
             font-weight: bold;
             color: #000000;
-            text-transform: uppercase;
             margin-top: 12px;
             margin-bottom: 4px;
             border-bottom: 1px solid #000000;
@@ -129,9 +127,9 @@
         </tr>
     </table>
 
-    <div class="title">CONTRATO Y CONSTANCIA DE INSCRIPCIÓN</div>
+    <div class="title">Contrato y Constancia de Inscripción</div>
 
-    <div class="section-title">1. DATOS PERSONALES DEL ESTUDIANTE</div>
+    <div class="section-title">1. Datos Personales del Estudiante</div>
     <table class="info-table">
         <tr>
             <td class="label">Cédula de Identidad (C.I.):</td>
@@ -139,11 +137,11 @@
         </tr>
         <tr>
             <td class="label">Apellidos y Nombres:</td>
-            <td class="value"><strong>{{ mb_strtoupper(trim($estudiante->apellidos . ' ' . $estudiante->nombres), 'UTF-8') }}</strong></td>
+            <td class="value"><strong>{{ mb_convert_case(trim($estudiante->apellidos . ' ' . $estudiante->nombres), MB_CASE_TITLE, 'UTF-8') }}</strong></td>
         </tr>
         <tr>
             <td class="label">Grado / Ocupación:</td>
-            <td class="value">{{ $estudiante->grado_academico ?: 'ESTUDIANTE' }}</td>
+            <td class="value">{{ mb_convert_case($estudiante->grado_academico ?: 'Estudiante', MB_CASE_TITLE, 'UTF-8') }}</td>
         </tr>
         <tr>
             <td class="label">Teléfono / Celular:</td>
@@ -155,11 +153,11 @@
         </tr>
     </table>
 
-    <div class="section-title">2. DATOS DE LOS PADRES / TUTOR / EMERGENCIA</div>
+    <div class="section-title">2. Datos de los Padres / Tutor / Emergencia</div>
     <table class="info-table">
         <tr>
             <td class="label">Nombre de los Padres / Tutor:</td>
-            <td class="value"><strong>{{ $estudiante->nombre_padres ?: 'N/A' }}</strong></td>
+            <td class="value"><strong>{{ mb_convert_case($estudiante->nombre_padres ?: 'N/A', MB_CASE_TITLE, 'UTF-8') }}</strong></td>
         </tr>
         <tr>
             <td class="label">Contacto de Emergencia:</td>
@@ -167,19 +165,19 @@
         </tr>
     </table>
 
-    <div class="section-title">3. DATOS DEL CURSO Y HORARIO</div>
+    <div class="section-title">3. Datos del Curso y Horario</div>
     <table class="info-table">
         <tr>
             <td class="label">Idioma Registrado:</td>
-            <td class="value"><strong>{{ strtoupper($curso->idioma ?? 'INGLÉS') }}</strong></td>
+            <td class="value"><strong>{{ mb_convert_case($curso->idioma ?? 'Inglés', MB_CASE_TITLE, 'UTF-8') }}</strong></td>
         </tr>
         <tr>
             <td class="label">Nivel de Estudio:</td>
-            <td class="value"><strong>{{ strtoupper($curso->nivel ?? 'NIVEL 1') }}</strong></td>
+            <td class="value"><strong>{{ mb_convert_case($curso->nivel ?? 'Nivel 1', MB_CASE_TITLE, 'UTF-8') }}</strong></td>
         </tr>
         <tr>
             <td class="label">Paralelo Asignado:</td>
-            <td class="value">{{ strtoupper($paralelo->nombre ?? 'A') }}</td>
+            <td class="value">{{ mb_convert_case($paralelo->nombre ?? 'A', MB_CASE_TITLE, 'UTF-8') }}</td>
         </tr>
         <tr>
             <td class="label">Horario de Clases:</td>
@@ -187,7 +185,7 @@
         </tr>
         <tr>
             <td class="label">Modalidad:</td>
-            <td class="value">{{ strtoupper($curso->modalidad ?? 'PRESENCIAL') }}</td>
+            <td class="value">{{ mb_convert_case($curso->modalidad ?? 'Presencial', MB_CASE_TITLE, 'UTF-8') }}</td>
         </tr>
         <tr>
             <td class="label">Fecha de Inscripción:</td>
@@ -195,7 +193,7 @@
         </tr>
         <tr>
             <td class="label">Estado de Inscripción:</td>
-            <td class="value"><strong>{{ strtoupper($inscripcion->estado ?: 'CONFIRMADO') }}</strong></td>
+            <td class="value"><strong>{{ mb_convert_case($inscripcion->estado ?: 'Confirmado', MB_CASE_TITLE, 'UTF-8') }}</strong></td>
         </tr>
     </table>
 
@@ -203,22 +201,22 @@
         <tr>
             <td style="width: 45%;">
                 <div class="sig-line">
-                    FIRMA DEL ESTUDIANTE / TUTOR<br>
+                    Firma del Estudiante / Tutor<br>
                     C.I. {{ $estudiante->ci }}
                 </div>
             </td>
             <td style="width: 10%;"></td>
             <td style="width: 45%;">
                 <div class="sig-line">
-                    SELLO Y FIRMA DE RECEPCIÓN<br>
-                    ESCUELA DE IDIOMAS DEL EJÉRCITO
+                    Sello y Firma de Recepción<br>
+                    Escuela de Idiomas del Ejército
                 </div>
             </td>
         </tr>
     </table>
 
     <div class="qr-section">
-        CÓDIGO DE VERIFICACIÓN<br>
+        Código de Verificación<br>
         EIE-INSCRIPCIÓN-{{ $inscripcion->id_inscripcion ?: '1' }}<br>
         CI: {{ $estudiante->ci }}
     </div>
