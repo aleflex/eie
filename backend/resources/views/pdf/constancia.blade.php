@@ -90,19 +90,8 @@
             border-top: 1px solid #000000;
             padding-top: 4px;
         }
-        .qr-section {
-            margin-top: 15px;
-            float: left;
-            border: 1px solid #000000;
-            padding: 4px 8px;
-            text-align: center;
-            font-size: 7.5px;
-            font-weight: bold;
-            background-color: #ffffff;
-            color: #000000;
-        }
         .footer-note {
-            margin-top: 20px;
+            margin-top: 25px;
             font-size: 8px;
             color: #000000;
             text-align: center;
@@ -214,12 +203,6 @@
             </td>
         </tr>
     </table>
-
-    <div class="qr-section">
-        Código de Verificación<br>
-        EIE-INSCRIPCIÓN-{{ $inscripcion->id_inscripcion ?: '1' }}<br>
-        CI: {{ $estudiante->ci }}
-    </div>
 
     <div class="footer-note">
         Documento Oficial de Registro de Inscripción emitido por el Sistema de Gestión Académica EIE. Cochabamba, Bolivia.

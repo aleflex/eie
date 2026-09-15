@@ -87,19 +87,8 @@
             border-top: 1px solid #000000;
             padding-top: 4px;
         }
-        .qr-section {
-            margin-top: 15px;
-            float: left;
-            border: 1px solid #000000;
-            padding: 4px 8px;
-            text-align: center;
-            font-size: 7.5px;
-            font-weight: bold;
-            background-color: #ffffff;
-            color: #000000;
-        }
         .footer-note {
-            margin-top: 20px;
+            margin-top: 25px;
             font-size: 8px;
             color: #000000;
             text-align: center;
@@ -201,12 +190,6 @@
             </td>
         </tr>
     </table>
-
-    <div class="qr-section">
-        CÓDIGO DE VERIFICACIÓN<br>
-        EIE-DOCENTE-PARALELO-{{ $paralelo->id_paralelo ?? $paralelo->id ?? '1' }}<br>
-        FECHA: {{ date('d/m/Y') }}
-    </div>
 
     <div class="footer-note">
         Documento Oficial emitido por el Sistema de Gestión Académica EIE. Filial Cochabamba, Bolivia.
