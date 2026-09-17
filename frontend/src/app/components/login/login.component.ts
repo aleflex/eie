@@ -6,6 +6,7 @@ import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../services/auth.service';
 import { environment } from '../../../environments/environment';
 import { Capacitor } from '@capacitor/core';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-login',
@@ -255,11 +256,20 @@ export class LoginComponent implements OnInit {
 
     this.servicioAutenticacion.cambiarPassword(this.nuevaPassword).subscribe({
       next: (res) => {
-        alert('✅ Contraseña cambiada con éxito.');
         this.showMustChangePasswordModal = false;
-        const usuario = this.pendingUserResponse?.user || this.servicioAutenticacion.obtenerUsuario();
-        this.ngZone.run(() => {
-          this.redireccionarSegunRol(usuario?.rol, usuario?.id_rol);
+        Swal.fire({
+          title: '¡Operación Exitosa!',
+          html: '<div style="text-align: center; color: #334155; font-size: 1rem; line-height: 1.55;">Contraseña cambiada con éxito.</div>',
+          icon: 'success',
+          confirmButtonText: 'Entendido',
+          confirmButtonColor: '#003B71',
+          buttonsStyling: true,
+          heightAuto: false
+        }).then(() => {
+          const usuario = this.pendingUserResponse?.user || this.servicioAutenticacion.obtenerUsuario();
+          this.ngZone.run(() => {
+            this.redireccionarSegunRol(usuario?.rol, usuario?.id_rol);
+          });
         });
       },
       error: (err) => {

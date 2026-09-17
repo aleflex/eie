@@ -60,7 +60,7 @@ if (typeof window !== 'undefined') {
       title = 'Aviso Importante';
     }
 
-    Swal.fire({
+    return Swal.fire({
       title: title,
       html: `<div style="text-align: center; color: #334155; font-size: 1rem; line-height: 1.55;">${rawMsg.replace(/\n/g, '<br>')}</div>`,
       icon: icon,
@@ -68,7 +68,7 @@ if (typeof window !== 'undefined') {
       confirmButtonColor: '#003B71',
       buttonsStyling: true,
       heightAuto: false
-    });
+    }) as any;
   };
 }
 
