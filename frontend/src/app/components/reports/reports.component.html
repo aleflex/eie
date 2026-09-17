@@ -249,13 +249,13 @@
       </div>
     </section>
 
-    <!-- Gráficos de Dashboards (RF 19 - HU 19 - T3) -->
+    <!-- Gráficos de Dashboards -->
     <section class="charts-grid animate-fade-in delay-1">
       <!-- Gráfico 1: Torta (Doughnut) de Idiomas -->
       <div class="chart-card">
         <div class="chart-header">
-          <h2><i class="material-icons-outlined">pie_chart</i> Distribución por Idioma (RF 18)</h2>
-          <p>Proporción y total de estudiantes por cada idioma</p>
+          <h2><i class="material-icons-outlined">pie_chart</i> {{ languageChartTitle }}</h2>
+          <p>{{ languageChartSubtitle }}</p>
         </div>
         <div class="chart-body">
           <canvas #languageCanvas width="480" height="240"></canvas>
@@ -265,7 +265,7 @@
       <!-- Gráfico 2: Barras de Ocupación de Aulas -->
       <div class="chart-card">
         <div class="chart-header">
-          <h2><i class="material-icons-outlined">bar_chart</i> Porcentaje de Ocupación de Aulas (RF 19)</h2>
+          <h2><i class="material-icons-outlined">bar_chart</i> {{ classroomChartTitle }}</h2>
           <p>Capacidad asignada vs. estudiantes inscritos por aula/paralelo</p>
         </div>
         <div class="chart-body">
@@ -277,7 +277,7 @@
       <div class="chart-card">
         <div class="chart-header d-flex justify-content-between align-items-start">
           <div>
-            <h2><i class="material-icons-outlined">grade</i> Rendimiento Académico y Notas</h2>
+            <h2><i class="material-icons-outlined">grade</i> {{ gradesChartTitle }}</h2>
             <p>Aprobados, reprobados, en riesgo y promedios de calificación</p>
           </div>
           <span class="badge bg-primary text-white px-2 py-1 fw-bold" style="font-size: 0.8rem; white-space: nowrap;">

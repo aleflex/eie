@@ -237,7 +237,7 @@
             <tr>
                 <th style="width: 4%;">Nro</th>
                 <th style="width: 14%;">C.I.</th>
-                <th class="left" style="width: 32%;">Apellidos y Nombres</th>
+                <th class="left" style="width: 32%;">Nombres y Apellidos</th>
                 <th style="width: 14%;">Idioma</th>
                 <th style="width: 14%;">Nivel</th>
                 <th style="width: 11%;">Paralelo</th>
@@ -249,7 +249,7 @@
                 @php
                     $est = $insc->estudiante;
                     $user = $est ? ($est->user ?? null) : null;
-                    $nombre = $user ? trim(($user->apellidos ?? '') . ' ' . ($user->nombres ?? '')) : ($est ? trim(($est->apellidos ?? '') . ' ' . ($est->nombres ?? '')) : 'N/A');
+                    $nombre = $user ? trim(($user->nombres ?? '') . ' ' . ($user->apellidos ?? '')) : ($est ? trim(($est->nombres ?? '') . ' ' . ($est->apellidos ?? '')) : 'N/A');
                     $ci = $user->ci ?? ($est->ci ?? 'N/A');
                     $idioma = $insc->curso && $insc->curso->idioma ? ($insc->curso->idioma->nombre_idioma ?? $insc->curso->idioma->nombre ?? 'N/A') : 'N/A';
                     $nivel = $insc->curso ? ($insc->curso->nivelRel->nombre_nivel ?? $insc->curso->nivel ?? 'N/A') : 'N/A';

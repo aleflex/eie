@@ -128,7 +128,7 @@
                 <th style="width: 5%;">Nro</th>
                 <th style="width: 14%;">C.I.</th>
                 <th style="width: 12%;">Grado</th>
-                <th style="width: {{ !empty($isGeneral) ? '27%' : '40%' }};" class="left">Apellidos y Nombres</th>
+                <th style="width: {{ !empty($isGeneral) ? '27%' : '40%' }};" class="left">Nombres y Apellidos</th>
                 @if(!empty($isGeneral))
                     <th style="width: 18%;">Idioma / Nivel</th>
                     <th style="width: 12%;">Paralelo</th>
@@ -150,7 +150,7 @@
                     <td>{{ $idx++ }}</td>
                     <td>{{ $est?->ci ?? 'N/A' }}</td>
                     <td>{{ mb_convert_case($est?->grado_academico ?? 'Civil', MB_CASE_TITLE, 'UTF-8') }}</td>
-                    <td class="left"><strong>{{ mb_convert_case(trim(($est?->apellidos ?? '') . ' ' . ($est?->nombres ?? '')), MB_CASE_TITLE, 'UTF-8') }}</strong></td>
+                    <td class="left"><strong>{{ mb_convert_case(trim(($est?->nombres ?? '') . ' ' . ($est?->apellidos ?? '')), MB_CASE_TITLE, 'UTF-8') }}</strong></td>
                     @if(!empty($isGeneral))
                         <td>{{ mb_convert_case($idmRow . ($nvlRow ? ' - ' . $nvlRow : ''), MB_CASE_TITLE, 'UTF-8') }}</td>
                         <td>{{ mb_convert_case($parRow, MB_CASE_TITLE, 'UTF-8') }}</td>

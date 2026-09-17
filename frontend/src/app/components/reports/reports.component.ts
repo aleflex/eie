@@ -182,18 +182,18 @@ export class ReportsComponent implements OnInit, AfterViewInit {
       }
     }
 
-    if (!this.searchTermStudent || !this.searchTermStudent.trim()) {
-      return list;
-    }
+    const finalResult = (!this.searchTermStudent || !this.searchTermStudent.trim())
+      ? list
+      : list.filter(e => {
+          const term = this.searchTermStudent.toLowerCase().trim();
+          return (e.nombre_completo && e.nombre_completo.toLowerCase().includes(term)) ||
+            (e.ci && e.ci.toLowerCase().includes(term)) ||
+            (e.paralelo_nombre && e.paralelo_nombre.toLowerCase().includes(term)) ||
+            (e.curso_nombre && e.curso_nombre.toLowerCase().includes(term)) ||
+            (e.docente_nombre && e.docente_nombre.toLowerCase().includes(term));
+        });
 
-    const term = this.searchTermStudent.toLowerCase().trim();
-    return list.filter(e =>
-      (e.nombre_completo && e.nombre_completo.toLowerCase().includes(term)) ||
-      (e.ci && e.ci.toLowerCase().includes(term)) ||
-      (e.paralelo_nombre && e.paralelo_nombre.toLowerCase().includes(term)) ||
-      (e.curso_nombre && e.curso_nombre.toLowerCase().includes(term)) ||
-      (e.docente_nombre && e.docente_nombre.toLowerCase().includes(term))
-    );
+    return finalResult.sort((a, b) => (a.nombre_completo || '').localeCompare(b.nombre_completo || '', 'es', { sensitivity: 'base' }));
   }
 
   // Lista consolidada de estudiantes en estado pendiente (con o sin paralelo)
@@ -218,18 +218,18 @@ export class ReportsComponent implements OnInit, AfterViewInit {
       }
     }
 
-    if (!this.searchTermPending || !this.searchTermPending.trim()) {
-      return list;
-    }
+    const finalResult = (!this.searchTermPending || !this.searchTermPending.trim())
+      ? list
+      : list.filter(e => {
+          const term = this.searchTermPending.toLowerCase().trim();
+          return (e.nombre_completo && e.nombre_completo.toLowerCase().includes(term)) ||
+            (e.ci && e.ci.toLowerCase().includes(term)) ||
+            (e.paralelo_nombre && e.paralelo_nombre.toLowerCase().includes(term)) ||
+            (e.curso_nombre && e.curso_nombre.toLowerCase().includes(term)) ||
+            (e.docente_nombre && e.docente_nombre.toLowerCase().includes(term));
+        });
 
-    const term = this.searchTermPending.toLowerCase().trim();
-    return list.filter(e =>
-      (e.nombre_completo && e.nombre_completo.toLowerCase().includes(term)) ||
-      (e.ci && e.ci.toLowerCase().includes(term)) ||
-      (e.paralelo_nombre && e.paralelo_nombre.toLowerCase().includes(term)) ||
-      (e.curso_nombre && e.curso_nombre.toLowerCase().includes(term)) ||
-      (e.docente_nombre && e.docente_nombre.toLowerCase().includes(term))
-    );
+    return finalResult.sort((a, b) => (a.nombre_completo || '').localeCompare(b.nombre_completo || '', 'es', { sensitivity: 'base' }));
   }
 
   toggleParaleloExpand(id_paralelo: number) {
@@ -250,14 +250,17 @@ export class ReportsComponent implements OnInit, AfterViewInit {
   getFilteredStudents(item: any): any[] {
     if (!item || !item.estudiantes) return [];
     const filter = this.studentFilterByParalelo[item.id_paralelo] || 'todos';
-    if (filter === 'todos') return item.estudiantes;
-    return item.estudiantes.filter((e: any) => {
-      const st = (e.estado || '').toLowerCase();
-      if (filter === 'activo') return st.includes('act') || st.includes('hab');
-      if (filter === 'pendiente') return st.includes('pen');
-      if (filter === 'baja') return st.includes('ret') || st.includes('baj') || st.includes('inac');
-      return true;
-    });
+    let filtered = item.estudiantes;
+    if (filter !== 'todos') {
+      filtered = item.estudiantes.filter((e: any) => {
+        const st = (e.estado || '').toLowerCase();
+        if (filter === 'activo') return st.includes('act') || st.includes('hab');
+        if (filter === 'pendiente') return st.includes('pen');
+        if (filter === 'baja') return st.includes('ret') || st.includes('baj') || st.includes('inac');
+        return true;
+      });
+    }
+    return [...filtered].sort((a, b) => (a.nombre_completo || '').localeCompare(b.nombre_completo || '', 'es', { sensitivity: 'base' }));
   }
 
   calculateStudentCounts(estudiantes: any[]) {
@@ -473,7 +476,8 @@ export class ReportsComponent implements OnInit, AfterViewInit {
       );
     }
 
-    return result;
+    // Ordenar alfabéticamente de la A a la Z por nombre del alumno
+    return result.sort((a, b) => (a.nombre_completo || '').localeCompare(b.nombre_completo || '', 'es', { sensitivity: 'base' }));
   }
 
   setNotaFilter(filterId: string) {
@@ -544,6 +548,104 @@ export class ReportsComponent implements OnInit, AfterViewInit {
       enRiesgo,
       sinNotas
     };
+  }
+
+  // ============ Títulos Dinámicos de Reportes de acuerdo a Filtros ============
+
+  getIdiomaFilterName(): string {
+    if (!this.filters.id_idioma) return '';
+    const found = this.idiomasList.find(i =>
+      String(i.id_idioma || i.id) === String(this.filters.id_idioma)
+    );
+    return found ? (found.nombre_idioma || found.nombre || '').trim() : '';
+  }
+
+  getParaleloFilterName(): string {
+    if (!this.filters.id_paralelo) return '';
+    const found = this.paralelosList.find(p =>
+      String(p.id_paralelo || p.id) === String(this.filters.id_paralelo)
+    );
+    if (!found) return '';
+    const name = (found.nombre_paralelo || found.nombre || '').trim();
+    if (!name) return '';
+    return name.toLowerCase().startsWith('paralelo') ? name : `Paralelo ${name}`;
+  }
+
+  getNivelFilterName(): string {
+    if (!this.filters.id_nivel) return '';
+    const found = this.nivelesList.find(n =>
+      String(n.id_nivel || n.id) === String(this.filters.id_nivel)
+    );
+    return found ? (found.nombre_nivel || found.nombre || '').trim() : '';
+  }
+
+  getTurnoFilterName(): string {
+    if (!this.filters.turno) return '';
+    const found = this.turnosList.find(t =>
+      String(t.id).toLowerCase() === String(this.filters.turno).toLowerCase()
+    );
+    if (!found) return '';
+    return found.nombre.split('(')[0].trim();
+  }
+
+  getDocenteFilterName(): string {
+    if (!this.filters.id_docente) return '';
+    const found = this.docentesList.find(d =>
+      String(d.id || d.id_docente) === String(this.filters.id_docente)
+    );
+    if (!found) return '';
+    return `${found.nombres || ''} ${found.apellidos || ''}`.trim();
+  }
+
+  /**
+   * Genera el contexto legible del filtro activo (Ej: "Inglés", "Inglés Paralelo A", "Francés", etc.)
+   */
+  getFilterContextText(): string {
+    const mainParts: string[] = [];
+    const idioma = this.getIdiomaFilterName();
+    const paralelo = this.getParaleloFilterName();
+
+    if (idioma && paralelo) {
+      mainParts.push(`${idioma} ${paralelo}`);
+    } else if (idioma) {
+      mainParts.push(idioma);
+    } else if (paralelo) {
+      mainParts.push(paralelo);
+    }
+
+    const secondaryParts: string[] = [];
+    const nivel = this.getNivelFilterName();
+    const turno = this.getTurnoFilterName();
+    const docente = this.getDocenteFilterName();
+    if (nivel) secondaryParts.push(nivel);
+    if (turno) secondaryParts.push(`Turno ${turno}`);
+    if (docente) secondaryParts.push(`Prof. ${docente}`);
+    if (this.filters.gestion) secondaryParts.push(`Gestión ${this.filters.gestion}`);
+
+    const all = [...mainParts, ...secondaryParts];
+    return all.join(' - ');
+  }
+
+  get languageChartTitle(): string {
+    const ctx = this.getFilterContextText();
+    return ctx ? `Distribución por Idioma - ${ctx}` : 'Distribución por Idioma';
+  }
+
+  get languageChartSubtitle(): string {
+    const idioma = this.getIdiomaFilterName();
+    return idioma
+      ? `Proporción y total de estudiantes registrados en ${idioma}`
+      : 'Proporción y total de estudiantes por cada idioma';
+  }
+
+  get classroomChartTitle(): string {
+    const ctx = this.getFilterContextText();
+    return ctx ? `Porcentaje de Ocupación de Aulas - ${ctx}` : 'Porcentaje de Ocupación de Aulas';
+  }
+
+  get gradesChartTitle(): string {
+    const ctx = this.getFilterContextText();
+    return ctx ? `Rendimiento Académico y Notas - ${ctx}` : 'Rendimiento Académico y Notas';
   }
 
   resetFilters() {

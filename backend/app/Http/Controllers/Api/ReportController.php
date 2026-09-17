@@ -301,7 +301,7 @@ class ReportController extends Controller
                         'notas_detalle' => $notasDetalle,
                         'promedio' => $prom !== null ? $prom : 'Sin Notas'
                     ];
-                })->values();
+                })->sortBy('nombre_completo', SORT_NATURAL | SORT_FLAG_CASE)->values();
 
                 $activosCount = $estudiantesDetalle->filter(function ($e) {
                     $st = strtolower($e['estado'] ?? '');
@@ -525,7 +525,13 @@ class ReportController extends Controller
         
         $inscripciones = Inscripcion::with(['estudiante.user', 'curso.idioma', 'curso.nivelRel', 'paralelo', 'notas'])
             ->filterMultiCriteria($filters)
-            ->get();
+            ->get()
+            ->sortBy(function ($insc) {
+                $est = $insc->estudiante;
+                $user = $est ? ($est->user ?? null) : null;
+                $nom = $user ? trim(($user->nombres ?? '') . ' ' . ($user->apellidos ?? '')) : ($est ? trim(($est->nombres ?? '') . ' ' . ($est->apellidos ?? '')) : '');
+                return mb_strtolower($nom, 'UTF-8');
+            }, SORT_NATURAL)->values();
 
         $fileName = 'Reportes_Estadisticos_EIE_' . date('Ymd_His') . '.xlsx';
 
@@ -606,7 +612,7 @@ class ReportController extends Controller
             $rows[] = [
                 ['val' => 'Nro', 'style' => 1],
                 ['val' => 'C.I.', 'style' => 1],
-                ['val' => 'Apellidos y Nombres', 'style' => 1],
+                ['val' => 'Nombres y Apellidos', 'style' => 1],
                 ['val' => 'Idioma', 'style' => 1],
                 ['val' => 'Nivel', 'style' => 1],
                 ['val' => 'Paralelo', 'style' => 1],
@@ -621,7 +627,7 @@ class ReportController extends Controller
                 $idm = $cur ? $cur->idioma : null;
                 $par = $insc->paralelo;
 
-                $nombreCompleto = $user ? trim(($user->apellidos ?? '') . ' ' . ($user->nombres ?? '')) : ($est ? trim(($est->apellidos ?? '') . ' ' . ($est->nombres ?? '')) : 'N/A');
+                $nombreCompleto = $user ? trim(($user->nombres ?? '') . ' ' . ($user->apellidos ?? '')) : ($est ? trim(($est->nombres ?? '') . ' ' . ($est->apellidos ?? '')) : 'N/A');
                 $ciVal = $user->ci ?? ($est->ci ?? 'N/A');
                 $idiomaNombre = $idm ? ($idm->nombre_idioma ?? $idm->nombre ?? 'N/A') : 'N/A';
                 $nivelNombre = $cur ? ($cur->nivelRel->nombre_nivel ?? $cur->nivel ?? 'N/A') : 'N/A';
@@ -801,7 +807,7 @@ class ReportController extends Controller
             echo '<tr>';
             echo '<th>Nro</th>';
             echo '<th>C.I.</th>';
-            echo '<th>Apellidos y Nombres</th>';
+            echo '<th>Nombres y Apellidos</th>';
             echo '<th>Idioma</th>';
             echo '<th>Nivel</th>';
             echo '<th>Paralelo</th>';
@@ -816,7 +822,7 @@ class ReportController extends Controller
                 $idm = $cur ? $cur->idioma : null;
                 $par = $insc->paralelo;
 
-                $nombreCompleto = $user ? trim(($user->apellidos ?? '') . ' ' . ($user->nombres ?? '')) : ($est ? trim(($est->apellidos ?? '') . ' ' . ($est->nombres ?? '')) : 'N/A');
+                $nombreCompleto = $user ? trim(($user->nombres ?? '') . ' ' . ($user->apellidos ?? '')) : ($est ? trim(($est->nombres ?? '') . ' ' . ($est->apellidos ?? '')) : 'N/A');
                 $ciVal = $user->ci ?? ($est->ci ?? 'N/A');
                 $idiomaNombre = $idm ? ($idm->nombre_idioma ?? $idm->nombre ?? 'N/A') : 'N/A';
                 $nivelNombre = $cur ? ($cur->nivelRel->nombre_nivel ?? $cur->nivel ?? 'N/A') : 'N/A';
@@ -893,7 +899,13 @@ class ReportController extends Controller
 
             $inscripciones = Inscripcion::with(['estudiante.user', 'curso.idioma', 'curso.nivelRel', 'paralelo', 'notas', 'asistencias'])
                 ->filterMultiCriteria($filters)
-                ->get();
+                ->get()
+                ->sortBy(function ($insc) {
+                    $est = $insc->estudiante;
+                    $user = $est ? ($est->user ?? null) : null;
+                    $nom = $user ? trim(($user->nombres ?? '') . ' ' . ($user->apellidos ?? '')) : ($est ? trim(($est->nombres ?? '') . ' ' . ($est->apellidos ?? '')) : '');
+                    return mb_strtolower($nom, 'UTF-8');
+                }, SORT_NATURAL)->values();
 
             $paraleloInfo = null;
             if (!empty($filters['id_paralelo'])) {
@@ -1162,7 +1174,13 @@ class ReportController extends Controller
 
             $inscripciones = Inscripcion::with(['estudiante.user', 'curso.idioma', 'curso.nivelRel', 'paralelo', 'notas'])
                 ->filterMultiCriteria($filters)
-                ->get();
+                ->get()
+                ->sortBy(function ($insc) {
+                    $est = $insc->estudiante;
+                    $user = $est ? ($est->user ?? null) : null;
+                    $nom = $user ? trim(($user->nombres ?? '') . ' ' . ($user->apellidos ?? '')) : ($est ? trim(($est->nombres ?? '') . ' ' . ($est->apellidos ?? '')) : '');
+                    return mb_strtolower($nom, 'UTF-8');
+                }, SORT_NATURAL)->values();
 
             $paraleloInfo = null;
             if (!empty($filters['id_paralelo'])) {
@@ -1181,7 +1199,7 @@ class ReportController extends Controller
                         ['val' => 'Nro', 'style' => 1],
                         ['val' => 'C.I.', 'style' => 1],
                         ['val' => 'Grado', 'style' => 1],
-                        ['val' => 'Apellidos y Nombres', 'style' => 1],
+                        ['val' => 'Nombres y Apellidos', 'style' => 1],
                         ['val' => 'Idioma', 'style' => 1],
                         ['val' => 'Nivel', 'style' => 1],
                         ['val' => 'Paralelo', 'style' => 1],
@@ -1205,7 +1223,7 @@ class ReportController extends Controller
 
                     $gradoStr = $est ? ($est->grado_academico ?: (is_object($est->grado ?? null) ? ($est->grado->nombre ?? 'Civil') : 'Civil')) : 'Civil';
                     $ciStr = $user->ci ?? ($est->ci ?? 'N/A');
-                    $nombreCompleto = $user ? trim(($user->apellidos ?? '') . ' ' . ($user->nombres ?? '')) : ($est ? trim(($est->apellidos ?? '') . ' ' . ($est->nombres ?? '')) : 'N/A');
+                    $nombreCompleto = $user ? trim(($user->nombres ?? '') . ' ' . ($user->apellidos ?? '')) : ($est ? trim(($est->nombres ?? '') . ' ' . ($est->apellidos ?? '')) : 'N/A');
 
                     $notasCollection = $insc->notas ?: collect();
                     $b1 = '-'; $b2 = '-'; $b3 = '-'; $b4 = '-'; $ex = '-';
@@ -1302,7 +1320,7 @@ class ReportController extends Controller
                 echo '<th>Nro</th>';
                 echo '<th>C.I.</th>';
                 echo '<th>Grado</th>';
-                echo '<th>Apellidos y Nombres</th>';
+                echo '<th>Nombres y Apellidos</th>';
                 echo '<th>Book 1</th>';
                 echo '<th>Book 2</th>';
                 echo '<th>Book 3</th>';
@@ -1320,7 +1338,7 @@ class ReportController extends Controller
                     $user = $est ? ($est->user ?? null) : null;
                     $gradoStr = $est ? ($est->grado_academico ?: (is_object($est->grado ?? null) ? ($est->grado->nombre ?? 'Civil') : 'Civil')) : 'Civil';
                     $ciStr = $user->ci ?? ($est->ci ?? 'N/A');
-                    $nombreCompleto = $user ? trim(($user->apellidos ?? '') . ' ' . ($user->nombres ?? '')) : ($est ? trim(($est->apellidos ?? '') . ' ' . ($est->nombres ?? '')) : 'N/A');
+                    $nombreCompleto = $user ? trim(($user->nombres ?? '') . ' ' . ($user->apellidos ?? '')) : ($est ? trim(($est->nombres ?? '') . ' ' . ($est->apellidos ?? '')) : 'N/A');
 
                     $notasCollection = $insc->notas ?: collect();
                     $notasLibros = [1 => 0.00, 2 => 0.00, 3 => 0.00, 4 => 0.00, 5 => 0.00, 6 => 0.00];
@@ -1384,7 +1402,13 @@ class ReportController extends Controller
             $occStats = $this->getClassroomOccupancy($request)->getData(true);
             $inscripciones = Inscripcion::with(['estudiante.user', 'curso.idioma', 'curso.nivelRel', 'paralelo', 'notas'])
                 ->filterMultiCriteria($filters)
-                ->get();
+                ->get()
+                ->sortBy(function ($insc) {
+                    $est = $insc->estudiante;
+                    $user = $est ? ($est->user ?? null) : null;
+                    $nom = $user ? trim(($user->nombres ?? '') . ' ' . ($user->apellidos ?? '')) : ($est ? trim(($est->nombres ?? '') . ' ' . ($est->apellidos ?? '')) : '');
+                    return mb_strtolower($nom, 'UTF-8');
+                }, SORT_NATURAL)->values();
 
             $pdf = Pdf::loadView('pdf.reportes', [
                 'summary' => $summary,
@@ -1423,7 +1447,13 @@ class ReportController extends Controller
                     $q->where('id_paralelo', $idParalelo);
                 })
                 ->filterMultiCriteria($filters)
-                ->get();
+                ->get()
+                ->sortBy(function ($insc) {
+                    $est = $insc->estudiante;
+                    $user = $est ? ($est->user ?? null) : null;
+                    $nom = $user ? trim(($user->nombres ?? '') . ' ' . ($user->apellidos ?? '')) : ($est ? trim(($est->nombres ?? '') . ' ' . ($est->apellidos ?? '')) : '');
+                    return mb_strtolower($nom, 'UTF-8');
+                }, SORT_NATURAL)->values();
 
             $uniqueIdiomas = $inscripciones->map(function($i) {
                 return $i->curso && $i->curso->idioma ? ($i->curso->idioma->nombre_idioma ?? $i->curso->idioma->nombre) : null;
