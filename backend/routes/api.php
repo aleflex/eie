@@ -73,6 +73,7 @@ Route::get('/horarios', [\App\Http\Controllers\Api\ParaleloController::class, 'g
 Route::get('/inscripciones/{id}/certificate', [\App\Http\Controllers\Api\PdfController::class, 'generateCertificate']);
 
 // Rutas para Notas y Asistencias (Docente)
+Route::post('/autorizar-modificacion', [\App\Http\Controllers\Api\NotaAsistenciaController::class, 'autorizarModificacion']);
 Route::get('/inscripciones/{id}/notas', [\App\Http\Controllers\Api\NotaAsistenciaController::class, 'getNotas']);
 Route::post('/inscripciones/{id}/notas', [\App\Http\Controllers\Api\NotaAsistenciaController::class, 'saveNota']);
 Route::delete('/notas/{id}', [\App\Http\Controllers\Api\NotaAsistenciaController::class, 'deleteNota']);

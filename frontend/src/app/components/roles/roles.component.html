@@ -207,8 +207,38 @@
               <p class="module-desc">{{ mod.descripcion }}</p>
             </div>
 
-            <!-- Permisos Granulares de Acciones: Ver, Crear, Modificar, Eliminar -->
-            <div class="module-card-footer pt-2">
+            <!-- Permisos Específicos para Configuración del Sistema (Pestañas de Negocio) -->
+            <div class="module-card-footer pt-2" *ngIf="mod.key === 'settings'">
+              <div class="small fw-bold text-muted mb-1" style="font-size: 11px;">Pestañas Permitidas de Configuración:</div>
+              <div class="crud-chips-grid">
+                <label class="crud-chip" [class.active]="isActionAllowed(selectedRoleId, 'settings', 'periodo')" (click)="toggleAction('settings', 'periodo', $event)">
+                  <input type="checkbox" [checked]="isActionAllowed(selectedRoleId, 'settings', 'periodo')" [disabled]="selectedRoleId === 1">
+                  <span class="crud-icon material-icons-outlined">calendar_today</span>
+                  <span>Periodo</span>
+                </label>
+
+                <label class="crud-chip" [class.active]="isActionAllowed(selectedRoleId, 'settings', 'expediente')" (click)="toggleAction('settings', 'expediente', $event)">
+                  <input type="checkbox" [checked]="isActionAllowed(selectedRoleId, 'settings', 'expediente')" [disabled]="selectedRoleId === 1">
+                  <span class="crud-icon material-icons-outlined">cloud_upload</span>
+                  <span>Expediente</span>
+                </label>
+
+                <label class="crud-chip" [class.active]="isActionAllowed(selectedRoleId, 'settings', 'plantel')" (click)="toggleAction('settings', 'plantel', $event)">
+                  <input type="checkbox" [checked]="isActionAllowed(selectedRoleId, 'settings', 'plantel')" [disabled]="selectedRoleId === 1">
+                  <span class="crud-icon material-icons-outlined">account_balance</span>
+                  <span>Plantel & Firmas</span>
+                </label>
+
+                <label class="crud-chip" [class.active]="isActionAllowed(selectedRoleId, 'settings', 'perfil')" (click)="toggleAction('settings', 'perfil', $event)">
+                  <input type="checkbox" [checked]="isActionAllowed(selectedRoleId, 'settings', 'perfil')" [disabled]="selectedRoleId === 1">
+                  <span class="crud-icon material-icons-outlined">person</span>
+                  <span>Mi Perfil</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Permisos Granulares de Acciones: Ver, Crear, Modificar, Eliminar (Demás Módulos) -->
+            <div class="module-card-footer pt-2" *ngIf="mod.key !== 'settings'">
               <div class="small fw-bold text-muted mb-1" style="font-size: 11px;">Acciones Permitidas:</div>
               <div class="crud-chips-grid">
                 <label class="crud-chip" [class.active]="isActionAllowed(selectedRoleId, mod.key, 'ver')" (click)="toggleAction(mod.key, 'ver', $event)">

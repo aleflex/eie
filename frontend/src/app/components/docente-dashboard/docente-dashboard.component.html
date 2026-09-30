@@ -68,10 +68,6 @@
         </div>
       </div>
       <div class="header-right mt-2 mt-sm-0 d-flex align-items-center gap-2">
-        <button type="button" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1 rounded-pill px-3 py-1" (click)="refreshData()" [disabled]="isRefreshing" title="Sincronizar perfil y paralelos en tiempo real">
-          <i class="material-icons-outlined" [style.animation]="isRefreshing ? 'spin 1s linear infinite' : 'none'" style="font-size: 18px;">sync</i>
-          <span style="font-size: 0.82rem; font-weight: 600;">{{ isRefreshing ? 'Sincronizando...' : 'Actualizar' }}</span>
-        </button>
         <div class="user-info-header" *ngIf="user || docente">
           <div class="user-info">
             <span class="user-name">{{ docente?.user?.name || user?.name || 'Instructor EIE' }}</span>
@@ -398,9 +394,54 @@
               <option *ngFor="let p of getPeriodos()" [value]="p">{{ p }}</option>
             </select>
           </div>
-          <button class="btn-save-all" (click)="guardarTodasLasNotas()" [disabled]="savingNotas">
-            <i class="material-icons-outlined">save</i>
-            {{ savingNotas ? 'Guardando...' : 'Guardar Notas' }}
+
+          <!-- Si NO está en modo rectificación con permiso -->
+          <ng-container *ngIf="!modoEdicionConPermisoNotas">
+            <button *ngIf="!todasNotasBloqueadas" class="btn-save-all" (click)="guardarTodasLasNotas()" [disabled]="savingNotas || !hayNotasNuevasPorGuardar">
+              <i class="material-icons-outlined">save</i>
+              {{ savingNotas ? 'Guardando...' : 'Guardar Notas' }}
+            </button>
+            <button *ngIf="todasNotasBloqueadas" class="btn-save-all btn-all-locked" disabled title="Todas las notas de este periodo ya están asentadas y bloqueadas">
+              <i class="material-icons-outlined">lock</i>
+              Notas Asentadas y Bloqueadas
+            </button>
+            <button *ngIf="hayNotasBloqueadas" type="button" class="btn btn-warning d-inline-flex align-items-center gap-1 rounded-pill px-3 py-1 fw-bold text-dark shadow-sm" (click)="activarModoPermisoNotas()" title="Habilitar edición de calificaciones ingresando justificativo">
+              <i class="material-icons-outlined">lock_open</i> Modificar Notas con Permiso
+            </button>
+          </ng-container>
+
+          <!-- Si SÍ está en modo rectificación con permiso -->
+          <ng-container *ngIf="modoEdicionConPermisoNotas">
+            <button class="btn-save-all btn-save-rectificado" (click)="guardarNotasRectificadas()" [disabled]="savingNotas">
+              <i class="material-icons-outlined">check_circle</i>
+              {{ savingNotas ? 'Guardando...' : 'Guardar Notas Rectificadas' }}
+            </button>
+            <button type="button" class="btn btn-outline-secondary rounded-pill px-3" (click)="cancelarModoPermisoNotas()">
+              Cancelar
+            </button>
+          </ng-container>
+        </div>
+
+        <!-- Banner de Regla de Seguridad Académica / Modo Edición -->
+        <div class="lock-notice-banner mb-3" *ngIf="hayNotasBloqueadas && !modoEdicionConPermisoNotas">
+          <i class="material-icons-outlined">verified_user</i>
+          <div class="flex-grow-1">
+            <strong>Normativa Institucional de Registro:</strong>
+            Las calificaciones guardadas quedan asentadas bajo firma del docente. Solo el Administrador puede autorizar rectificaciones usando el botón <strong>"Modificar Notas con Permiso"</strong>.
+          </div>
+          <button type="button" class="btn btn-sm btn-warning fw-bold text-dark rounded-pill px-3" (click)="activarModoPermisoNotas()">
+            <i class="material-icons-outlined" style="font-size: 16px; vertical-align: middle;">admin_panel_settings</i> Solicitar Autorización Admin
+          </button>
+        </div>
+
+        <div class="unlock-active-banner mb-3" *ngIf="modoEdicionConPermisoNotas">
+          <i class="material-icons-outlined">admin_panel_settings</i>
+          <div class="flex-grow-1">
+            <strong>Autorización Concedida por Administrador ({{ adminNombreNotas || 'Administrador' }}):</strong>
+            Puede corregir las calificaciones en la tabla. Justificativo: <em>"{{ justificativoNotasPermiso }}"</em>. Al finalizar presione "Guardar Notas Rectificadas".
+          </div>
+          <button type="button" class="btn btn-sm btn-outline-light rounded-pill px-3" (click)="cancelarModoPermisoNotas()">
+            Cancelar
           </button>
         </div>
 
@@ -422,21 +463,29 @@
                 <td><span class="full-name">{{ insc.estudiante?.nombres }} {{ insc.estudiante?.apellidos }}</span></td>
                 <td>{{ insc.estudiante?.ci }}</td>
                 <td>
-                  <input
-                    type="number" min="0" max="100" step="0.5"
-                    class="nota-input"
-                    [(ngModel)]="notasForm[insc.id + '_' + periodoSeleccionado]"
-                    placeholder="—"
-                    [class.nota-aprobado]="getNotaValor(insc.id) >= 71"
-                    [class.nota-reprobado]="getNotaValor(insc.id) > 0 && getNotaValor(insc.id) < 71"
-                  >
+                  <div class="input-with-lock">
+                    <input
+                      type="number" min="0" max="100" step="0.5"
+                      class="nota-input"
+                      [class.nota-locked]="isNotaBloqueada(insc.id)"
+                      [disabled]="isNotaBloqueada(insc.id)"
+                      [(ngModel)]="notasForm[insc.id + '_' + periodoSeleccionado]"
+                      placeholder="—"
+                      [class.nota-aprobado]="getNotaValor(insc.id) >= 71"
+                      [class.nota-reprobado]="getNotaValor(insc.id) > 0 && getNotaValor(insc.id) < 71"
+                    >
+                    <span *ngIf="isNotaBloqueada(insc.id)" class="badge-locked-nota" title="Calificación asentada y bloqueada para el docente">
+                      <i class="material-icons-outlined">lock</i>
+                    </span>
+                  </div>
                 </td>
                 <td>
                   <input
                     type="text"
                     class="obs-input"
+                    [disabled]="isNotaBloqueada(insc.id)"
                     [(ngModel)]="observacionesForm[insc.id + '_' + periodoSeleccionado]"
-                    placeholder="Opcional..."
+                    [placeholder]="isNotaBloqueada(insc.id) ? 'Bloqueada...' : 'Opcional...'"
                   >
                 </td>
               </tr>
@@ -453,10 +502,17 @@
             </div>
             <div class="mobile-student-body">
               <div class="mb-2">
-                <label class="form-label small fw-bold mb-1">Nota (0 - 100):</label>
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <label class="form-label small fw-bold mb-0">Nota (0 - 100):</label>
+                  <span *ngIf="isNotaBloqueada(insc.id)" class="badge bg-secondary text-white py-1 px-2" style="font-size: 11px;">
+                    <i class="material-icons-outlined" style="font-size: 12px; vertical-align: middle;">lock</i> Bloqueada
+                  </span>
+                </div>
                 <input
                   type="number" min="0" max="100" step="0.5"
                   class="form-control form-control-sm nota-input"
+                  [class.nota-locked]="isNotaBloqueada(insc.id)"
+                  [disabled]="isNotaBloqueada(insc.id)"
                   [(ngModel)]="notasForm[insc.id + '_' + periodoSeleccionado]"
                   placeholder="Ej: 85"
                   [class.nota-aprobado]="getNotaValor(insc.id) >= 71"
@@ -468,8 +524,9 @@
                 <input
                   type="text"
                   class="form-control form-control-sm"
+                  [disabled]="isNotaBloqueada(insc.id)"
                   [(ngModel)]="observacionesForm[insc.id + '_' + periodoSeleccionado]"
-                  placeholder="Opcional..."
+                  [placeholder]="isNotaBloqueada(insc.id) ? 'Bloqueada...' : 'Opcional...'"
                 >
               </div>
             </div>
@@ -487,12 +544,60 @@
         <div class="asistencia-toolbar">
           <div class="fecha-selector">
             <label for="fechaAsistenciaInput"><i class="material-icons-outlined">calendar_today</i> Fecha:</label>
-            <input id="fechaAsistenciaInput" type="date" [(ngModel)]="fechaAsistencia" class="form-input-date"
+            <input id="fechaAsistenciaInput" type="date" [(ngModel)]="fechaAsistencia" (change)="onFechaAsistenciaChange()" class="form-input-date"
                    [max]="today | date:'yyyy-MM-dd'" title="Fecha de asistencia" aria-label="Fecha de asistencia">
           </div>
-          <button class="btn-save-all" (click)="guardarAsistencia()" [disabled]="savingAsistencia">
-            <i class="material-icons-outlined">save</i>
-            {{ savingAsistencia ? 'Guardando...' : 'Guardar Asistencia' }}
+
+          <!-- Si NO está en modo rectificación con permiso -->
+          <ng-container *ngIf="!modoEdicionConPermisoAsistencia">
+            <button *ngIf="!asistenciaBloqueada" class="btn-save-all" (click)="guardarAsistencia()" [disabled]="savingAsistencia">
+              <i class="material-icons-outlined">save</i>
+              {{ savingAsistencia ? 'Guardando...' : 'Guardar Asistencia' }}
+            </button>
+            <button *ngIf="asistenciaBloqueada" class="btn-save-all btn-all-locked" disabled title="La asistencia para esta fecha ya está registrada y bloqueada">
+              <i class="material-icons-outlined">lock</i>
+              Asistencia Asentada y Bloqueada
+            </button>
+            <button *ngIf="asistenciaBloqueada" type="button" class="btn btn-warning d-inline-flex align-items-center gap-1 rounded-pill px-3 py-1 fw-bold text-dark shadow-sm" (click)="activarModoPermisoAsistencia()" title="Habilitar edición de asistencia ingresando justificativo">
+              <i class="material-icons-outlined">lock_open</i> Modificar Asistencia con Permiso
+            </button>
+          </ng-container>
+
+          <!-- Si SÍ está en modo rectificación con permiso -->
+          <ng-container *ngIf="modoEdicionConPermisoAsistencia">
+            <button class="btn-save-all btn-save-rectificado" (click)="guardarAsistenciaRectificada()" [disabled]="savingAsistencia">
+              <i class="material-icons-outlined">check_circle</i>
+              {{ savingAsistencia ? 'Guardando...' : 'Guardar Asistencia Rectificada' }}
+            </button>
+            <button type="button" class="btn btn-outline-secondary rounded-pill px-3" (click)="cancelarModoPermisoAsistencia()">
+              Cancelar
+            </button>
+          </ng-container>
+        </div>
+
+        <!-- Banner de Asistencia Bloqueada -->
+        <div class="lock-notice-banner mb-3" *ngIf="asistenciaBloqueada && !modoEdicionConPermisoAsistencia">
+          <i class="material-icons-outlined">lock</i>
+          <div class="flex-grow-1">
+            <strong>Asistencia Bloqueada:</strong>
+            {{ esFechaPasada && !asistenciaYaGuardada
+                ? 'Esta fecha corresponde a un día pasado. Para registrar asistencia extemporánea con autorización del Administrador, use "Modificar Asistencia con Permiso".'
+                : 'La asistencia para el ' + (fechaAsistencia | date:'dd/MM/yyyy') + ' ya fue asentada. Solo el Administrador puede autorizar correcciones con "Modificar Asistencia con Permiso".' }}
+          </div>
+          <button type="button" class="btn btn-sm btn-warning fw-bold text-dark rounded-pill px-3" (click)="activarModoPermisoAsistencia()">
+            <i class="material-icons-outlined" style="font-size: 16px; vertical-align: middle;">admin_panel_settings</i> Solicitar Autorización Admin
+          </button>
+        </div>
+
+        <!-- Banner de Modo Permiso Activado -->
+        <div class="unlock-active-banner mb-3" *ngIf="modoEdicionConPermisoAsistencia">
+          <i class="material-icons-outlined">admin_panel_settings</i>
+          <div class="flex-grow-1">
+            <strong>Autorización Concedida por Administrador ({{ adminNombreAsistencia || 'Administrador' }}):</strong>
+            Los estados de asistencia (P / A / T / J) están habilitados. Justificativo: <em>"{{ justificativoAsistenciaPermiso }}"</em>. Al finalizar presione "Guardar Asistencia Rectificada".
+          </div>
+          <button type="button" class="btn btn-sm btn-outline-light rounded-pill px-3" (click)="cancelarModoPermisoAsistencia()">
+            Cancelar
           </button>
         </div>
 
@@ -516,23 +621,28 @@
                 <td>
                   <div class="asistencia-btns">
                     <button class="btn-asistencia presente"
+                      [disabled]="asistenciaBloqueada && !modoEdicionConPermisoAsistencia"
                       [class.selected]="asistenciaForm[insc.id] === 'presente'"
                       (click)="setAsistencia(insc.id, 'presente')">P</button>
                     <button class="btn-asistencia ausente"
+                      [disabled]="asistenciaBloqueada && !modoEdicionConPermisoAsistencia"
                       [class.selected]="asistenciaForm[insc.id] === 'ausente'"
                       (click)="setAsistencia(insc.id, 'ausente')">A</button>
                     <button class="btn-asistencia tardanza"
+                      [disabled]="asistenciaBloqueada && !modoEdicionConPermisoAsistencia"
                       [class.selected]="asistenciaForm[insc.id] === 'tardanza'"
                       (click)="setAsistencia(insc.id, 'tardanza')">T</button>
                     <button class="btn-asistencia justificado"
+                      [disabled]="asistenciaBloqueada && !modoEdicionConPermisoAsistencia"
                       [class.selected]="asistenciaForm[insc.id] === 'justificado'"
                       (click)="setAsistencia(insc.id, 'justificado')">J</button>
                   </div>
                 </td>
                 <td>
                   <input type="text" class="obs-input"
+                    [disabled]="asistenciaBloqueada && !modoEdicionConPermisoAsistencia"
                     [(ngModel)]="observacionAsistenciaForm[insc.id]"
-                    placeholder="Opcional...">
+                    [placeholder]="(asistenciaBloqueada && !modoEdicionConPermisoAsistencia) ? 'Bloqueada...' : 'Opcional...'">
                 </td>
               </tr>
             </tbody>
@@ -549,21 +659,26 @@
             <div class="mobile-student-body">
               <div class="asistencia-btns mb-2" style="display: flex; gap: 4px;">
                 <button class="btn-asistencia presente flex-fill py-1"
+                  [disabled]="asistenciaBloqueada && !modoEdicionConPermisoAsistencia"
                   [class.selected]="asistenciaForm[insc.id] === 'presente'"
                   (click)="setAsistencia(insc.id, 'presente')">Presente (P)</button>
                 <button class="btn-asistencia ausente flex-fill py-1"
+                  [disabled]="asistenciaBloqueada && !modoEdicionConPermisoAsistencia"
                   [class.selected]="asistenciaForm[insc.id] === 'ausente'"
                   (click)="setAsistencia(insc.id, 'ausente')">Ausente (A)</button>
                 <button class="btn-asistencia tardanza flex-fill py-1"
+                  [disabled]="asistenciaBloqueada && !modoEdicionConPermisoAsistencia"
                   [class.selected]="asistenciaForm[insc.id] === 'tardanza'"
                   (click)="setAsistencia(insc.id, 'tardanza')">Tardanza (T)</button>
                 <button class="btn-asistencia justificado flex-fill py-1"
+                  [disabled]="asistenciaBloqueada && !modoEdicionConPermisoAsistencia"
                   [class.selected]="asistenciaForm[insc.id] === 'justificado'"
                   (click)="setAsistencia(insc.id, 'justificado')">Justificado (J)</button>
               </div>
               <input type="text" class="form-control form-control-sm"
+                [disabled]="asistenciaBloqueada && !modoEdicionConPermisoAsistencia"
                 [(ngModel)]="observacionAsistenciaForm[insc.id]"
-                placeholder="Observación opcional...">
+                [placeholder]="(asistenciaBloqueada && !modoEdicionConPermisoAsistencia) ? 'Bloqueada...' : 'Observación opcional...'">
             </div>
           </div>
         </div>

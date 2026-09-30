@@ -1,11 +1,15 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { RouterModule, ActivatedRoute } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
+import { of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { ParaleloService } from '../../services/paralelo.service';
 import { CourseService } from '../../services/course.service';
 import { DocenteService } from '../../services/docente.service';
 import { AuthService } from '../../services/auth.service';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-paralelos',
@@ -55,11 +59,15 @@ export class ParalelosComponent implements OnInit {
     capacidad: null
   };
 
+  openAcademicOnLoad = false;
+
   constructor(
     private paraleloService: ParaleloService,
     private courseService: CourseService,
     private docenteService: DocenteService,
-    private authService: AuthService
+    private authService: AuthService,
+    private http: HttpClient,
+    private route: ActivatedRoute
   ) {}
 
   canAccess(module: string): boolean {
@@ -67,6 +75,11 @@ export class ParalelosComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.route.queryParams.subscribe(params => {
+      if (params['open'] === 'academic') {
+        this.openAcademicOnLoad = true;
+      }
+    });
     this.loadData();
   }
 
@@ -87,6 +100,11 @@ export class ParalelosComponent implements OnInit {
           return p;
         });
         this.isLoading = false;
+
+        if (this.openAcademicOnLoad && this.paralelos.length > 0) {
+          this.abrirModalAdminCalificaciones(this.paralelos[0]);
+          this.openAcademicOnLoad = false;
+        }
       },
       error: () => this.isLoading = false
     });
@@ -279,5 +297,193 @@ export class ParalelosComponent implements OnInit {
         error: (err) => alert('Error al eliminar aula: ' + (err.error?.message || err.message))
       });
     }
+  }
+
+  // =========================================================================
+  // GESTIÓN Y RECTIFICACIÓN ACADÉMICA (EXCLUSIVO ADMINISTRADOR CON JUSTIFICATIVO)
+  // =========================================================================
+  showAcademicModal = false;
+  selectedParaleloAdmin: any = null;
+  adminTab: 'notas' | 'asistencia' = 'notas';
+  adminEstudiantes: any[] = [];
+  loadingAdminStudents = false;
+  adminPeriodo = 'Book 1';
+  adminFechaAsistencia: string = new Date().toISOString().split('T')[0];
+  
+  adminNotasForm: { [inscId: number]: number | null } = {};
+  adminObsNotasForm: { [inscId: number]: string } = {};
+  adminJustificativoNotas: { [inscId: number]: string } = {};
+
+  adminAsistenciaForm: { [inscId: number]: string } = {};
+  adminObsAsistenciaForm: { [inscId: number]: string } = {};
+  adminJustificativoAsistencia: { [inscId: number]: string } = {};
+
+  savingAdminItem: { [key: string]: boolean } = {};
+  adminModalMsg = '';
+  adminModalError = false;
+
+  abrirModalAdminCalificacionesDirecto() {
+    if (this.paralelos && this.paralelos.length > 0) {
+      this.abrirModalAdminCalificaciones(this.paralelos[0]);
+    } else {
+      alert('No hay paralelos configurados en el sistema.');
+    }
+  }
+
+  onAdminParaleloChange(paraleloId: any) {
+    const found = this.paralelos.find(p => (p.id == paraleloId || p.id_paralelo == paraleloId));
+    if (found) {
+      this.abrirModalAdminCalificaciones(found);
+    }
+  }
+
+  abrirModalAdminCalificaciones(p: any) {
+    this.selectedParaleloAdmin = p;
+    this.showAcademicModal = true;
+    this.adminTab = 'notas';
+    this.adminModalMsg = '';
+    const periodos = this.getAdminPeriodos();
+    if (periodos.length > 0) this.adminPeriodo = periodos[0];
+    this.cargarEstudiantesParaleloAdmin();
+  }
+
+  cerrarModalAdminCalificaciones() {
+    this.showAcademicModal = false;
+    this.selectedParaleloAdmin = null;
+    this.adminEstudiantes = [];
+  }
+
+  getAdminPeriodos(): string[] {
+    if (!this.selectedParaleloAdmin?.curso?.nivel) {
+      return ['Book 1', 'Book 2', 'Book 3', 'Book 4', 'Book 5', 'Book 6', 'Examen Final'];
+    }
+    const levelStr = this.selectedParaleloAdmin.curso.nivel;
+    const match = levelStr.match(/BOOK\s+(\d+)-(\d+)/i);
+    if (match) {
+      const start = parseInt(match[1], 10);
+      const end = parseInt(match[2], 10);
+      const books: string[] = [];
+      for (let i = start; i <= end; i++) {
+        books.push(`Book ${i}`);
+      }
+      books.push('Examen Final');
+      return books;
+    }
+    return ['Parcial 1', 'Parcial 2', 'Parcial 3', 'Final'];
+  }
+
+  cargarEstudiantesParaleloAdmin() {
+    if (!this.selectedParaleloAdmin) return;
+    this.loadingAdminStudents = true;
+    const id = this.selectedParaleloAdmin.id || this.selectedParaleloAdmin.id_paralelo;
+    this.http.get<any[]>(`${environment.apiUrl}/api/paralelos/${id}/asistencias`).subscribe({
+      next: (data) => {
+        this.adminEstudiantes = data || [];
+        this.cargarNotasAdminPeriodo();
+        this.cargarAsistenciaAdminFecha();
+        this.loadingAdminStudents = false;
+      },
+      error: () => {
+        this.loadingAdminStudents = false;
+      }
+    });
+  }
+
+  cargarNotasAdminPeriodo() {
+    this.adminEstudiantes.forEach(ins => {
+      const inscId = ins.id || ins.id_inscripcion;
+      this.http.get<any[]>(`${environment.apiUrl}/api/inscripciones/${inscId}/notas`).pipe(catchError(() => of([]))).subscribe(notas => {
+        const notaItem = notas.find((n: any) => n.periodo === this.adminPeriodo);
+        if (notaItem && notaItem.nota !== null && notaItem.nota !== undefined) {
+          this.adminNotasForm[inscId] = Number(notaItem.nota);
+          this.adminObsNotasForm[inscId] = notaItem.observacion || '';
+        } else {
+          this.adminNotasForm[inscId] = null;
+          this.adminObsNotasForm[inscId] = '';
+        }
+      });
+    });
+  }
+
+  cargarAsistenciaAdminFecha() {
+    this.adminEstudiantes.forEach(ins => {
+      const inscId = ins.id || ins.id_inscripcion;
+      this.http.get<any[]>(`${environment.apiUrl}/api/inscripciones/${inscId}/asistencias`).pipe(catchError(() => of([]))).subscribe(asists => {
+        const asistItem = asists.find((a: any) => a.fecha?.startsWith(this.adminFechaAsistencia));
+        if (asistItem) {
+          this.adminAsistenciaForm[inscId] = asistItem.estado;
+          this.adminObsAsistenciaForm[inscId] = asistItem.observacion || '';
+        } else {
+          this.adminAsistenciaForm[inscId] = 'presente';
+          this.adminObsAsistenciaForm[inscId] = '';
+        }
+      });
+    });
+  }
+
+  guardarNotaAdmin(ins: any) {
+    const inscId = ins.id || ins.id_inscripcion;
+    const notaVal = this.adminNotasForm[inscId];
+    if (notaVal === null || notaVal === undefined || isNaN(notaVal)) {
+      alert('Por favor ingrese una calificación válida (0-100).');
+      return;
+    }
+    const justificativo = (this.adminJustificativoNotas[inscId] || '').trim();
+    if (!justificativo) {
+      alert('Como Administrador, debe ingresar obligatoriamente el Justificativo del cambio de calificación.');
+      return;
+    }
+
+    const key = `nota_${inscId}`;
+    this.savingAdminItem[key] = true;
+
+    this.http.post(`${environment.apiUrl}/api/inscripciones/${inscId}/notas`, {
+      nota: notaVal,
+      periodo: this.adminPeriodo,
+      observacion: this.adminObsNotasForm[inscId] || null,
+      justificativo: justificativo
+    }).subscribe({
+      next: () => {
+        this.savingAdminItem[key] = false;
+        alert(`✓ Calificación de ${ins.estudiante?.nombres} rectificada con justificativo asentado.`);
+        this.adminJustificativoNotas[inscId] = '';
+        this.cargarNotasAdminPeriodo();
+      },
+      error: (err) => {
+        this.savingAdminItem[key] = false;
+        alert('Error: ' + (err.error?.message || err.message));
+      }
+    });
+  }
+
+  guardarAsistenciaAdmin(ins: any) {
+    const inscId = ins.id || ins.id_inscripcion;
+    const estado = this.adminAsistenciaForm[inscId] || 'presente';
+    const justificativo = (this.adminJustificativoAsistencia[inscId] || '').trim();
+    if (!justificativo) {
+      alert('Como Administrador, debe ingresar obligatoriamente el Justificativo de la modificación o falta justificada.');
+      return;
+    }
+
+    const key = `asist_${inscId}`;
+    this.savingAdminItem[key] = true;
+
+    this.http.post(`${environment.apiUrl}/api/inscripciones/${inscId}/asistencias`, {
+      fecha: this.adminFechaAsistencia,
+      estado: estado,
+      observacion: this.adminObsAsistenciaForm[inscId] || null,
+      justificativo: justificativo
+    }).subscribe({
+      next: () => {
+        this.savingAdminItem[key] = false;
+        alert(`✓ Asistencia de ${ins.estudiante?.nombres} actualizada con justificativo asentado.`);
+        this.adminJustificativoAsistencia[inscId] = '';
+        this.cargarAsistenciaAdminFecha();
+      },
+      error: (err) => {
+        this.savingAdminItem[key] = false;
+        alert('Error: ' + (err.error?.message || err.message));
+      }
+    });
   }
 }

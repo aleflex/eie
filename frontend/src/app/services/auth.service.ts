@@ -119,6 +119,9 @@ export class AuthService {
       tap((respuesta: any) => {
         if (respuesta.user) {
           const userLimpio = this.sanitizarUsuario(respuesta.user);
+          if (respuesta.token) {
+            userLimpio.token = respuesta.token;
+          }
           sessionStorage.setItem('usuario', JSON.stringify(userLimpio));
           if (Capacitor.isNativePlatform()) {
             localStorage.setItem('usuario', JSON.stringify(userLimpio));
@@ -307,8 +310,9 @@ export class AuthService {
         }
       }
 
+      const tokenActivo = user.token || localStorage.getItem('eie_biometric_token') || 'auth_token_active';
       localStorage.setItem('eie_biometric_enabled', 'true');
-      localStorage.setItem('eie_biometric_token', 'auth_token_active');
+      localStorage.setItem('eie_biometric_token', tokenActivo);
       localStorage.setItem('eie_biometric_user', JSON.stringify(user));
       return {
         success: true,
@@ -316,8 +320,9 @@ export class AuthService {
       };
     } catch (e: any) {
       console.warn('Error al activar biometría:', e);
+      const tokenActivo = user.token || localStorage.getItem('eie_biometric_token') || 'auth_token_active';
       localStorage.setItem('eie_biometric_enabled', 'true');
-      localStorage.setItem('eie_biometric_token', 'auth_token_active');
+      localStorage.setItem('eie_biometric_token', tokenActivo);
       localStorage.setItem('eie_biometric_user', JSON.stringify(user));
       return {
         success: true,

@@ -145,6 +145,36 @@ export class RolesComponent implements OnInit {
     }
     this.modulosSistema.forEach(m => {
       const existing = this.rolesPermisos[roleId][m.key];
+      if (m.key === 'settings') {
+        const isFull = roleId === 1;
+        if (existing === undefined || existing === null) {
+          this.rolesPermisos[roleId][m.key] = {
+            ver: isFull,
+            periodo: isFull,
+            expediente: isFull,
+            plantel: isFull,
+            perfil: true
+          };
+        } else if (typeof existing === 'boolean') {
+          this.rolesPermisos[roleId][m.key] = {
+            ver: existing,
+            periodo: existing,
+            expediente: existing,
+            plantel: existing,
+            perfil: true
+          };
+        } else {
+          this.rolesPermisos[roleId][m.key] = {
+            ver: isFull || existing.ver !== false,
+            periodo: isFull || (existing.periodo !== undefined ? !!existing.periodo : !!existing.ver),
+            expediente: isFull || (existing.expediente !== undefined ? !!existing.expediente : !!existing.ver),
+            plantel: isFull || (existing.plantel !== undefined ? !!existing.plantel : !!existing.ver),
+            perfil: true
+          };
+        }
+        return;
+      }
+
       if (existing === undefined || existing === null) {
         if (roleId === 1) {
           this.rolesPermisos[roleId][m.key] = { ver: true, crear: true, editar: true, eliminar: true };
@@ -193,6 +223,9 @@ export class RolesComponent implements OnInit {
     const p = this.rolesPermisos[roleId]?.[moduleKey];
     if (!p) return false;
     if (typeof p === 'boolean') return p;
+    if (moduleKey === 'settings') {
+      return !!p.ver || !!p.periodo || !!p.expediente || !!p.plantel || !!p.perfil;
+    }
     return !!p.ver || !!p.crear || !!p.editar || !!p.eliminar;
   }
 
@@ -201,6 +234,16 @@ export class RolesComponent implements OnInit {
     this.ensureRolePermisosStructure(this.selectedRoleId);
     const curr = this.isModuleEnabled(this.selectedRoleId, moduleKey);
     const nextVal = !curr;
+    if (moduleKey === 'settings') {
+      this.rolesPermisos[this.selectedRoleId]['settings'] = {
+        ver: nextVal,
+        periodo: nextVal,
+        expediente: nextVal,
+        plantel: nextVal,
+        perfil: true
+      };
+      return;
+    }
     this.rolesPermisos[this.selectedRoleId][moduleKey] = {
       ver: nextVal,
       crear: nextVal,
@@ -223,6 +266,12 @@ export class RolesComponent implements OnInit {
     this.ensureRolePermisosStructure(this.selectedRoleId);
     const p = this.rolesPermisos[this.selectedRoleId][moduleKey];
     p[action] = !p[action];
+
+    if (moduleKey === 'settings') {
+      p.ver = !!p.periodo || !!p.expediente || !!p.plantel || !!p.perfil;
+      return;
+    }
+
     if ((action === 'crear' || action === 'editar' || action === 'eliminar') && p[action]) {
       p.ver = true;
     }

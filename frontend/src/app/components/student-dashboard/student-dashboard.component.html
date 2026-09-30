@@ -41,10 +41,6 @@
         </div>
       </div>
       <div class="header-right mt-2 mt-sm-0 d-flex align-items-center gap-2">
-        <button type="button" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1 rounded-pill px-3 py-1" (click)="refreshData()" [disabled]="isRefreshing" title="Sincronizar calificaciones y perfil en tiempo real">
-          <i class="material-icons-outlined" [style.animation]="isRefreshing ? 'spin 1s linear infinite' : 'none'" style="font-size: 18px;">sync</i>
-          <span style="font-size: 0.82rem; font-weight: 600;">{{ isRefreshing ? 'Sincronizando...' : 'Actualizar' }}</span>
-        </button>
         <div class="user-info-header">
           <div class="user-info">
             <span class="user-name">{{ student?.nombres }} {{ student?.apellidos }}</span>
@@ -214,10 +210,6 @@
               <span style="width: 8px; height: 8px; background-color: #22c55e; border-radius: 50%; display: inline-block;"></span>
               Conexión en Vivo
             </span>
-            <button type="button" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1 rounded-pill px-3 py-1" (click)="refreshData()" [disabled]="isRefreshing">
-              <i class="material-icons-outlined" [style.animation]="isRefreshing ? 'spin 1s linear infinite' : 'none'" style="font-size: 16px;">sync</i>
-              <span>{{ isRefreshing ? 'Actualizando...' : 'Refrescar Notas' }}</span>
-            </button>
           </div>
         </div>
 

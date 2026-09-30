@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { SettingsService } from '../../services/settings.service';
 import { AuthService } from '../../services/auth.service';
+import { RoleService } from '../../services/role.service';
 import { ImageCompressorService } from '../../services/image-compressor.service';
 import { environment } from '../../../environments/environment';
 
@@ -28,6 +29,15 @@ export class SettingsComponent implements OnInit {
 
   canAccess(module: string): boolean {
     return this.authService.canAccess(module);
+  }
+
+  canAccessTab(tab: string): boolean {
+    if (!this.user) return true;
+    const roleId = Number(this.user.id_rol || (this.user.rol === 'admin' ? 1 : 0));
+    if (roleId === 1) return true;
+    if (tab === 'profile') return true;
+    const actionKey = tab === 'academic' ? 'periodo' : (tab === 'files' ? 'expediente' : (tab === 'institution' ? 'plantel' : tab));
+    return this.roleService.hasActionPermission(roleId, 'settings', actionKey);
   }
 
   toggleSidebar() {
@@ -70,6 +80,7 @@ export class SettingsComponent implements OnInit {
   constructor(
     private settingsService: SettingsService,
     private authService: AuthService,
+    private roleService: RoleService,
     private router: Router,
     private route: ActivatedRoute,
     private imageCompressor: ImageCompressorService
@@ -90,6 +101,13 @@ export class SettingsComponent implements OnInit {
     if (this.user) {
       this.profileData.name = this.user.name || '';
       this.profileData.email = this.user.email || '';
+    }
+
+    // Asegurar que el tab activo esté permitido para el rol del usuario
+    const availableTabs = ['academic', 'files', 'institution', 'profile'];
+    if (!this.canAccessTab(this.activeTab)) {
+      const firstAllowed = availableTabs.find(t => this.canAccessTab(t));
+      if (firstAllowed) this.activeTab = firstAllowed;
     }
 
     // Suscripción reactiva para sincronización de perfil y foto en tiempo real

@@ -102,9 +102,9 @@
       </div>
 
       <div class="settings-grid" *ngIf="!isLoading">
-        <!-- Sub-pestañas internas -->
+        <!-- Sub-pestañas internas controladas por permisos -->
         <aside class="settings-subnav">
-          <button [class.active]="activeTab === 'academic'" (click)="activeTab = 'academic'">
+          <button *ngIf="canAccessTab('academic')" [class.active]="activeTab === 'academic'" (click)="activeTab = 'academic'">
             <i class="material-icons-outlined text-academic">calendar_today</i>
             <div class="nav-label">
               <strong>Periodo</strong>
@@ -112,7 +112,7 @@
             </div>
           </button>
 
-          <button [class.active]="activeTab === 'files'" (click)="activeTab = 'files'">
+          <button *ngIf="canAccessTab('files')" [class.active]="activeTab === 'files'" (click)="activeTab = 'files'">
             <i class="material-icons-outlined text-files">cloud_upload</i>
             <div class="nav-label">
               <strong>Expediente</strong>
@@ -120,7 +120,7 @@
             </div>
           </button>
 
-          <button [class.active]="activeTab === 'institution'" (click)="activeTab = 'institution'">
+          <button *ngIf="canAccessTab('institution')" [class.active]="activeTab === 'institution'" (click)="activeTab = 'institution'">
             <i class="material-icons-outlined text-inst">account_balance</i>
             <div class="nav-label">
               <strong>Plantel & Firmas</strong>
@@ -128,7 +128,7 @@
             </div>
           </button>
 
-          <button [class.active]="activeTab === 'profile'" (click)="activeTab = 'profile'">
+          <button *ngIf="canAccessTab('profile')" [class.active]="activeTab === 'profile'" (click)="activeTab = 'profile'">
             <i class="material-icons-outlined text-profile">person</i>
             <div class="nav-label">
               <strong>Mi Perfil</strong>
@@ -140,7 +140,7 @@
         <!-- Contenido de Formularios -->
         <div class="settings-pane-content">
           <!-- Pestaña 1: Periodo Académico -->
-          <div *ngIf="activeTab === 'academic'" class="settings-pane animate-fade-in">
+          <div *ngIf="activeTab === 'academic' && canAccessTab('academic')" class="settings-pane animate-fade-in">
             <h2 class="pane-title">📅 Periodo de Inscripción y Matrículas</h2>
             <p class="pane-description">Configura el rango de fechas exactas durante las cuales el portal web estará habilitado para inscripciones de alumnos nuevos y regulares.</p>
 
@@ -167,7 +167,7 @@
           </div>
 
           <!-- Pestaña 2: Expediente Digital -->
-          <div *ngIf="activeTab === 'files'" class="settings-pane animate-fade-in">
+          <div *ngIf="activeTab === 'files' && canAccessTab('files')" class="settings-pane animate-fade-in">
             <h2 class="pane-title">📁 Control de Expediente Digital</h2>
             <p class="pane-description">Regula el peso máximo y compresión de los archivos cargados por los estudiantes desde la web o la cámara de sus teléfonos inteligentes.</p>
 
@@ -210,7 +210,7 @@
           </div>
 
           <!-- Pestaña 3: Datos del Plantel -->
-          <div *ngIf="activeTab === 'institution'" class="settings-pane animate-fade-in">
+          <div *ngIf="activeTab === 'institution' && canAccessTab('institution')" class="settings-pane animate-fade-in">
             <h2 class="pane-title">🏛️ Datos y Firmas Oficiales</h2>
             <p class="pane-description">Configura la información institucional que se imprimirá dinámicamente en los certificados oficiales y constancias académicas generadas por el sistema.</p>
 
@@ -248,7 +248,7 @@
           </div>
 
           <!-- Pestaña 4: Mi Perfil -->
-          <div *ngIf="activeTab === 'profile'" class="settings-pane animate-fade-in">
+          <div *ngIf="activeTab === 'profile' && canAccessTab('profile')" class="settings-pane animate-fade-in">
             <h2 class="pane-title">👤 Configuración de Mi Perfil</h2>
             <p class="pane-description">Actualiza tu fotografía de perfil, nombre visible y credenciales de acceso al sistema.</p>
 

@@ -660,3 +660,108 @@
     font-size: 0.85rem;
   }
 }
+
+/* =========================================
+   BLOQUEOS INSTITUCIONALES Y CANDADOS
+   ========================================= */
+.lock-notice-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-left: 4px solid #003B71;
+  border-radius: 8px;
+  padding: 12px 16px;
+  color: #1e293b;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.lock-notice-banner i {
+  color: #003B71;
+  font-size: 22px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.input-with-lock {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.nota-input.nota-locked {
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  cursor: not-allowed !important;
+  border-color: #cbd5e1 !important;
+  padding-right: 26px !important;
+  font-weight: 700;
+}
+
+.badge-locked-nota {
+  position: absolute;
+  right: 6px;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+}
+
+.badge-locked-nota i {
+  font-size: 15px;
+}
+
+.btn-all-locked {
+  background-color: #64748b !important;
+  color: #ffffff !important;
+  cursor: not-allowed !important;
+  opacity: 0.88;
+}
+
+button.btn-asistencia:disabled {
+  opacity: 0.6;
+  cursor: not-allowed !important;
+}
+
+input.obs-input:disabled {
+  background-color: #f8fafc !important;
+  color: #64748b !important;
+  cursor: not-allowed !important;
+}
+
+.unlock-active-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: linear-gradient(135deg, #065f46 0%, #047857 100%);
+  border: 1px solid #10b981;
+  border-radius: 8px;
+  padding: 12px 18px;
+  color: #ffffff;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+}
+
+.unlock-active-banner i {
+  font-size: 26px;
+  color: #a7f3d0;
+  flex-shrink: 0;
+}
+
+.btn-save-rectificado {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  border: none !important;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3) !important;
+}
+
+.btn-save-rectificado:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+  transform: translateY(-1px);
+}
+

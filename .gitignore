@@ -6,3 +6,4 @@ android/
 node_modules/
 dist/
 .vercel
+backend/scripts/*.py

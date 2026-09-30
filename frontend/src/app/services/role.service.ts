@@ -124,7 +124,7 @@ export class RoleService {
       if (modPerm === false || modPerm === null || modPerm === undefined) return false;
       if (typeof modPerm === 'object') {
         if (action === 'ver') {
-          return modPerm.ver === true || modPerm.crear === true || modPerm.editar === true;
+          return modPerm.ver === true || modPerm.crear === true || modPerm.editar === true || modPerm.periodo === true || modPerm.expediente === true || modPerm.plantel === true || modPerm.perfil === true;
         }
         return modPerm[action] === true;
       }

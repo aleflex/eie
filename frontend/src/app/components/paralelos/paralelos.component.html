@@ -64,13 +64,21 @@
   <!-- Contenido Principal -->
   <main class="main-content">
     <div class="students-container">
-      <div class="header">
-        <h1>Gestión de Paralelos y Horarios</h1>
-        <p>Configura los grupos, aulas y turnos académicos.</p>
-        <button class="btn btn-primary btn-new-paralelo" (click)="showForm = !showForm">
-          <i class="material-icons-outlined">{{ showForm ? 'close' : 'add' }}</i>
-          <span>{{ showForm ? 'CANCELAR' : 'NUEVO PARALELO' }}</span>
-        </button>
+      <div class="header d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div>
+          <h1>Gestión de Paralelos y Horarios</h1>
+          <p>Configura los grupos, aulas y turnos académicos.</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <button class="btn btn-academic-header shadow-sm" (click)="abrirModalAdminCalificacionesDirecto()" title="Abrir panel administrativo de rectificación de notas y asistencias">
+            <i class="material-icons-outlined">verified_user</i>
+            <span>RECTIFICAR NOTAS / ASISTENCIAS</span>
+          </button>
+          <button class="btn btn-primary btn-new-paralelo" (click)="showForm = !showForm">
+            <i class="material-icons-outlined">{{ showForm ? 'close' : 'add' }}</i>
+            <span>{{ showForm ? 'CANCELAR' : 'NUEVO PARALELO' }}</span>
+          </button>
+        </div>
       </div>
 
       <!-- Formulario de Creación/Edición -->
@@ -182,8 +190,12 @@
               </td>
               <td>
                 <div class="actions">
-                  <button (click)="editParalelo(p)" class="btn-edit" title="Editar"><i class="material-icons-outlined">edit</i></button>
-                  <button (click)="deleteParalelo(p.id)" class="btn-delete" title="Eliminar"><i class="material-icons-outlined">delete</i></button>
+                  <button (click)="abrirModalAdminCalificaciones(p)" class="btn-academic-table shadow-sm" title="Rectificar Calificaciones y Asistencias con Justificativo">
+                    <i class="material-icons-outlined">verified_user</i>
+                    <span>Notas / Asistencias</span>
+                  </button>
+                  <button (click)="editParalelo(p)" class="btn-edit" title="Editar Paralelo"><i class="material-icons-outlined">edit</i></button>
+                  <button (click)="deleteParalelo(p.id)" class="btn-delete" title="Eliminar Paralelo"><i class="material-icons-outlined">delete</i></button>
                 </div>
               </td>
             </tr>
@@ -238,6 +250,9 @@
           </div>
 
           <div class="mobile-card-actions">
+            <button (click)="abrirModalAdminCalificaciones(p)" class="btn-mobile-action btn-mobile-academic">
+              <i class="material-icons-outlined">verified</i> NOTAS Y ASISTENCIAS
+            </button>
             <button (click)="editParalelo(p)" class="btn-mobile-action btn-mobile-edit">
               <i class="material-icons-outlined">edit</i> EDITAR
             </button>
@@ -334,6 +349,183 @@
             <button (click)="deleteAula(a.id)" class="btn-mobile-action btn-mobile-delete">
               <i class="material-icons-outlined">delete</i> ELIMINAR
             </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- =========================================================================
+           MODAL DE RECTIFICACIÓN ACADÉMICA (EXCLUSIVO ADMINISTRADOR CON JUSTIFICATIVO)
+           ========================================================================= -->
+      <div *ngIf="showAcademicModal" class="academic-modal-backdrop animate-fade-in">
+        <div class="academic-modal-window">
+          <div class="academic-modal-header">
+            <div class="header-titles">
+              <span class="badge-admin-security"><i class="material-icons-outlined">verified_user</i> DIRECCIÓN ACADÉMICA / ADMINISTRACIÓN</span>
+              <h2>{{ selectedParaleloAdmin?.nombre }} — Rectificación Académica</h2>
+              <p class="subtitle">{{ selectedParaleloAdmin?.curso?.idioma }} - {{ selectedParaleloAdmin?.curso?.nivel }} | Aula: {{ selectedParaleloAdmin?.aula?.nombre || 'Sin Aula' }}</p>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <div class="d-flex align-items-center gap-1 bg-white px-2 py-1 rounded border shadow-sm" *ngIf="paralelos.length > 1">
+                <label for="selectSwitchParalelo" class="small fw-bold text-muted mb-0"><i class="material-icons-outlined" style="font-size: 16px; vertical-align: middle;">class</i> Paralelo:</label>
+                <select id="selectSwitchParalelo" [ngModel]="selectedParaleloAdmin?.id" (ngModelChange)="onAdminParaleloChange($event)" class="form-select form-select-sm border-0" style="font-weight: 700; color: #003B71; font-size: 0.85rem; cursor: pointer;">
+                  <option *ngFor="let p of paralelos" [value]="p.id">{{ p.nombre }} ({{ p.curso?.idioma }} - {{ p.curso?.nivel }})</option>
+                </select>
+              </div>
+              <button (click)="cerrarModalAdminCalificaciones()" class="btn-close-academic" aria-label="Cerrar modal">&times;</button>
+            </div>
+          </div>
+
+          <div class="academic-tabs-bar">
+            <button class="academic-tab-btn" [class.active]="adminTab === 'notas'" (click)="adminTab = 'notas'">
+              <i class="material-icons-outlined">grade</i> Rectificación de Calificaciones
+            </button>
+            <button class="academic-tab-btn" [class.active]="adminTab === 'asistencia'" (click)="adminTab = 'asistencia'">
+              <i class="material-icons-outlined">how_to_reg</i> Rectificación de Asistencias y Faltas
+            </button>
+          </div>
+
+          <div class="academic-modal-body">
+            <!-- TAB CALIFICACIONES -->
+            <div *ngIf="adminTab === 'notas'">
+              <div class="academic-toolbar-panel">
+                <div class="toolbar-filter">
+                  <label for="adminPeriodoSelect">Periodo / Examen:</label>
+                  <select id="adminPeriodoSelect" [(ngModel)]="adminPeriodo" (change)="cargarNotasAdminPeriodo()" class="form-select form-select-sm">
+                    <option *ngFor="let p of getAdminPeriodos()" [value]="p">{{ p }}</option>
+                  </select>
+                </div>
+                <div class="toolbar-notice">
+                  <i class="material-icons-outlined">info</i>
+                  <span>Los docentes tienen las notas bloqueadas. Como <strong>Administrador</strong>, puede rectificar cualquier calificación ingresando el <strong>Justificativo formal obligatorio</strong>.</span>
+                </div>
+              </div>
+
+              <div *ngIf="loadingAdminStudents" class="text-center py-4">
+                <p>Cargando calificaciones de estudiantes...</p>
+              </div>
+
+              <div *ngIf="!loadingAdminStudents && adminEstudiantes.length > 0" class="table-responsive mt-3">
+                <table class="academic-table">
+                  <thead>
+                    <tr>
+                      <th style="width: 45px;">#</th>
+                      <th>Estudiante</th>
+                      <th style="width: 110px;">C.I.</th>
+                      <th style="width: 110px;">Nota (0-100)</th>
+                      <th>Observación</th>
+                      <th>Justificativo Formal (Obligatorio)</th>
+                      <th style="width: 120px;">Acción</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let ins of adminEstudiantes; let i = index">
+                      <td>{{ i + 1 }}</td>
+                      <td><strong>{{ ins.estudiante?.nombres }} {{ ins.estudiante?.apellidos }}</strong></td>
+                      <td>{{ ins.estudiante?.ci }}</td>
+                      <td>
+                        <input type="number" min="0" max="100" step="0.5" class="form-control form-control-sm text-center fw-bold"
+                          [(ngModel)]="adminNotasForm[ins.id || ins.id_inscripcion]" placeholder="—">
+                      </td>
+                      <td>
+                        <input type="text" class="form-control form-control-sm"
+                          [(ngModel)]="adminObsNotasForm[ins.id || ins.id_inscripcion]" placeholder="Opcional...">
+                      </td>
+                      <td>
+                        <input type="text" class="form-control form-control-sm input-justificativo"
+                          [(ngModel)]="adminJustificativoNotas[ins.id || ins.id_inscripcion]"
+                          placeholder="Motivo del cambio (ej. Reclamo aceptado Dirección)...">
+                      </td>
+                      <td>
+                        <button class="btn-rectificar-action"
+                          [disabled]="savingAdminItem['nota_' + (ins.id || ins.id_inscripcion)]"
+                          (click)="guardarNotaAdmin(ins)">
+                          <i class="material-icons-outlined">save</i>
+                          {{ savingAdminItem['nota_' + (ins.id || ins.id_inscripcion)] ? 'Guardando...' : 'Rectificar' }}
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- TAB ASISTENCIAS -->
+            <div *ngIf="adminTab === 'asistencia'">
+              <div class="academic-toolbar-panel">
+                <div class="toolbar-filter">
+                  <label for="adminFechaInput"><i class="material-icons-outlined">calendar_today</i> Fecha:</label>
+                  <input id="adminFechaInput" type="date" [(ngModel)]="adminFechaAsistencia" (change)="cargarAsistenciaAdminFecha()" class="form-control form-control-sm">
+                </div>
+                <div class="toolbar-notice">
+                  <i class="material-icons-outlined">info</i>
+                  <span>Permite modificar asistencias o asentar faltas de ayer o fechas anteriores. Requiere el <strong>Justificativo de falta obligatorio</strong>.</span>
+                </div>
+              </div>
+
+              <div *ngIf="loadingAdminStudents" class="text-center py-4">
+                <p>Cargando asistencias de estudiantes...</p>
+              </div>
+
+              <div *ngIf="!loadingAdminStudents && adminEstudiantes.length > 0" class="table-responsive mt-3">
+                <table class="academic-table">
+                  <thead>
+                    <tr>
+                      <th style="width: 45px;">#</th>
+                      <th>Estudiante</th>
+                      <th style="width: 110px;">C.I.</th>
+                      <th style="width: 160px;">Estado</th>
+                      <th>Observación</th>
+                      <th>Justificativo de Falta / Rectificación (Obligatorio)</th>
+                      <th style="width: 120px;">Acción</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let ins of adminEstudiantes; let i = index">
+                      <td>{{ i + 1 }}</td>
+                      <td><strong>{{ ins.estudiante?.nombres }} {{ ins.estudiante?.apellidos }}</strong></td>
+                      <td>{{ ins.estudiante?.ci }}</td>
+                      <td>
+                        <div class="admin-asist-buttons">
+                          <button type="button" class="btn-asist-chip p-chip"
+                            [class.selected]="adminAsistenciaForm[ins.id || ins.id_inscripcion] === 'presente'"
+                            (click)="adminAsistenciaForm[ins.id || ins.id_inscripcion] = 'presente'">P</button>
+                          <button type="button" class="btn-asist-chip a-chip"
+                            [class.selected]="adminAsistenciaForm[ins.id || ins.id_inscripcion] === 'ausente'"
+                            (click)="adminAsistenciaForm[ins.id || ins.id_inscripcion] = 'ausente'">A</button>
+                          <button type="button" class="btn-asist-chip t-chip"
+                            [class.selected]="adminAsistenciaForm[ins.id || ins.id_inscripcion] === 'tardanza'"
+                            (click)="adminAsistenciaForm[ins.id || ins.id_inscripcion] = 'tardanza'">T</button>
+                          <button type="button" class="btn-asist-chip j-chip"
+                            [class.selected]="adminAsistenciaForm[ins.id || ins.id_inscripcion] === 'justificado'"
+                            (click)="adminAsistenciaForm[ins.id || ins.id_inscripcion] = 'justificado'">J</button>
+                        </div>
+                      </td>
+                      <td>
+                        <input type="text" class="form-control form-control-sm"
+                          [(ngModel)]="adminObsAsistenciaForm[ins.id || ins.id_inscripcion]" placeholder="Observación...">
+                      </td>
+                      <td>
+                        <input type="text" class="form-control form-control-sm input-justificativo"
+                          [(ngModel)]="adminJustificativoAsistencia[ins.id || ins.id_inscripcion]"
+                          placeholder="Justificativo médico / institucional...">
+                      </td>
+                      <td>
+                        <button class="btn-rectificar-action btn-asist-save"
+                          [disabled]="savingAdminItem['asist_' + (ins.id || ins.id_inscripcion)]"
+                          (click)="guardarAsistenciaAdmin(ins)">
+                          <i class="material-icons-outlined">check_circle</i>
+                          {{ savingAdminItem['asist_' + (ins.id || ins.id_inscripcion)] ? 'Guardando...' : 'Asentar' }}
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="academic-modal-footer">
+            <button class="btn-close-bottom" (click)="cerrarModalAdminCalificaciones()">Cerrar Módulo</button>
           </div>
         </div>
       </div>

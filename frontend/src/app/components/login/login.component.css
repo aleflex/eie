@@ -250,7 +250,7 @@
   to { transform: scale(1); opacity: 1; }
 }
 
-/* Botón de acceso biométrico */
+/* Botón de acceso biométrico estilo Banca Móvil */
 .biometric-login-container {
   margin-top: 1.25rem;
 }
@@ -259,7 +259,7 @@
   display: flex;
   align-items: center;
   text-align: center;
-  margin-bottom: 1rem;
+  margin-bottom: 0.85rem;
 }
 
 .biometric-divider::before,
@@ -281,24 +281,119 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
+  gap: 0.85rem;
   width: 100%;
+  padding: 0.85rem 1.1rem;
+  background: #f0fdf4;
+  color: #166534;
+  border: 1.5px solid #86efac;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(22, 101, 52, 0.08);
+}
+
+.btn-biometric-auth:hover,
+.btn-biometric-auth:active {
+  background: #dcfce7;
+  border-color: #4ade80;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(22, 101, 52, 0.16);
+}
+
+.biometric-badge-icon {
+  background: #dcfce7;
+  color: #15803d;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.biometric-badge-icon i {
+  font-size: 1.6rem;
+}
+
+.biometric-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  line-height: 1.25;
+}
+
+.biometric-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #14532d;
+}
+
+.biometric-subtitle {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #166534;
+  opacity: 0.85;
+}
+
+.biometric-unlink-row {
+  text-align: center;
+  margin-top: 0.5rem;
+}
+
+.btn-unlink-biometric {
+  background: none;
+  border: none;
+  color: #64748b;
+  font-size: 0.76rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.5rem;
+  transition: color 0.15s ease;
+}
+
+.btn-unlink-biometric:hover {
+  color: #b91c1c;
+}
+
+.biometric-login-box {
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.btn-biometric {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
   padding: 0.85rem 1.2rem;
   background: #f0fdf4;
   color: #166534;
-  border: 1.5px solid #bbf7d0;
+  border: 1.5px solid #86efac;
   border-radius: 10px;
   font-weight: 700;
   font-size: 0.95rem;
   cursor: pointer;
   transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(22, 101, 52, 0.08);
 }
 
-.btn-biometric-auth:hover {
+.btn-biometric i {
+  font-size: 1.5rem;
+  color: #15803d;
+}
+
+.btn-biometric:hover,
+.btn-biometric:active {
   background: #dcfce7;
-  border-color: #86efac;
+  border-color: #22c55e;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(22, 101, 52, 0.15);
+  box-shadow: 0 4px 12px rgba(22, 101, 52, 0.16);
 }
 
 @media (max-width: 480px) {

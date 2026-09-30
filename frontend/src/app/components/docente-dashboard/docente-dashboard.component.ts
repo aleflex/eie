@@ -12,6 +12,7 @@ import { ReportService } from '../../services/report.service';
 import { downloadFile } from '../../utils/file-downloader';
 
 import { ImageCompressorService } from '../../services/image-compressor.service';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-docente-dashboard',
@@ -28,6 +29,17 @@ export class DocenteDashboardComponent implements OnInit {
   paralelos: any[] = [];
   paraleloActivo: any = null;
   isMobileMenuOpen = false;
+
+  // Variables para Modificación con Permiso / Autorización del Administrador
+  modoEdicionConPermisoAsistencia = false;
+  justificativoAsistenciaPermiso = '';
+  adminPasswordAsistencia = '';
+  adminNombreAsistencia = '';
+
+  modoEdicionConPermisoNotas = false;
+  justificativoNotasPermiso = '';
+  adminPasswordNotas = '';
+  adminNombreNotas = '';
   isLoading = true;
   isRefreshing = false;
 
@@ -52,6 +64,7 @@ export class DocenteDashboardComponent implements OnInit {
   periodoSeleccionado = 'Parcial 1';
   notasForm: { [key: string]: number | null } = {};
   observacionesForm: { [key: string]: string } = {};
+  notasBloqueadas: { [key: string]: boolean } = {};
   savingNotas = false;
   notasMsg = '';
   notasError = false;
@@ -60,6 +73,9 @@ export class DocenteDashboardComponent implements OnInit {
   fechaAsistencia: string = new Date().toISOString().split('T')[0];
   asistenciaForm: { [inscripcionId: number]: string } = {};
   observacionAsistenciaForm: { [inscripcionId: number]: string } = {};
+  asistenciaBloqueada: boolean = false;
+  asistenciaYaGuardada: boolean = false;
+  esFechaPasada: boolean = false;
   savingAsistencia = false;
   asistenciaMsg = '';
   asistenciaError = false;
@@ -263,6 +279,14 @@ export class DocenteDashboardComponent implements OnInit {
     this.observacionAsistenciaForm = {};
     this.notasMsg = '';
     this.asistenciaMsg = '';
+    this.modoEdicionConPermisoAsistencia = false;
+    this.justificativoAsistenciaPermiso = '';
+    this.adminPasswordAsistencia = '';
+    this.adminNombreAsistencia = '';
+    this.modoEdicionConPermisoNotas = false;
+    this.justificativoNotasPermiso = '';
+    this.adminPasswordNotas = '';
+    this.adminNombreNotas = '';
   }
 
   get estudiantesActivos(): any[] {
@@ -294,7 +318,37 @@ export class DocenteDashboardComponent implements OnInit {
 
   // ==================== NOTAS ====================
 
+  isNotaBloqueada(inscripcionId: number): boolean {
+    if (this.modoEdicionConPermisoNotas) return false;
+    const key = `${inscripcionId}_${this.periodoSeleccionado}`;
+    return !!this.notasBloqueadas[key];
+  }
+
+  get hayNotasBloqueadas(): boolean {
+    return this.estudiantesActivos.some(insc => {
+      const key = `${insc.id}_${this.periodoSeleccionado}`;
+      return !!this.notasBloqueadas[key];
+    });
+  }
+
+  get todasNotasBloqueadas(): boolean {
+    if (this.modoEdicionConPermisoNotas) return false;
+    if (this.estudiantesActivos.length === 0) return false;
+    return this.estudiantesActivos.every(insc => {
+      const key = `${insc.id}_${this.periodoSeleccionado}`;
+      return !!this.notasBloqueadas[key];
+    });
+  }
+
+  get hayNotasNuevasPorGuardar(): boolean {
+    return this.estudiantesActivos.some(insc => {
+      const key = `${insc.id}_${this.periodoSeleccionado}`;
+      return !this.notasBloqueadas[key] && this.notasForm[key] !== null && this.notasForm[key] !== undefined && this.notasForm[key] !== ('' as any);
+    });
+  }
+
   cargarNotasDelPeriodo() {
+    this.notasBloqueadas = {};
     const requests = this.estudiantesActivos.map(insc =>
       this.http.get<any[]>(`${this.apiUrl}/inscripciones/${insc.id}/notas`).pipe(catchError(() => of([])))
     );
@@ -304,19 +358,179 @@ export class DocenteDashboardComponent implements OnInit {
         const insc = this.estudiantesActivos[idx];
         const key = `${insc.id}_${this.periodoSeleccionado}`;
         const notaDePeriodo = notas.find((n: any) => n.periodo === this.periodoSeleccionado);
-        if (notaDePeriodo) {
-          this.notasForm[key] = notaDePeriodo.nota;
+        if (notaDePeriodo && notaDePeriodo.nota !== null && notaDePeriodo.nota !== undefined) {
+          this.notasForm[key] = Number(notaDePeriodo.nota);
           this.observacionesForm[key] = notaDePeriodo.observacion || '';
+          this.notasBloqueadas[key] = true; // Bloqueada para el docente
         } else {
           this.notasForm[key] = null;
           this.observacionesForm[key] = '';
+          this.notasBloqueadas[key] = false;
         }
       });
     });
   }
 
   onPeriodoChange() {
+    this.modoEdicionConPermisoNotas = false;
+    this.justificativoNotasPermiso = '';
+    this.adminPasswordNotas = '';
+    this.adminNombreNotas = '';
     this.cargarNotasDelPeriodo();
+  }
+
+  activarModoPermisoNotas() {
+    Swal.fire({
+      title: 'Autorización de Administrador Requerida',
+      html: `
+        <div style="text-align: left; font-size: 14px;">
+          <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 10px 12px; margin-bottom: 16px; border-radius: 6px; color: #92400e; font-size: 13px; line-height: 1.4;">
+            <i class="material-icons-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">security</i>
+            <strong>Control de Dirección:</strong> Solo el Administrador puede autorizar la modificación de calificaciones ya asentadas.
+          </div>
+          <div style="margin-bottom: 12px;">
+            <label style="display: block; font-weight: 600; margin-bottom: 4px; color: #334155; font-size: 13px;">Usuario / Correo de Administrador (Opcional):</label>
+            <input id="swal-admin-user-notas" class="swal2-input" placeholder="admin (o dejar en blanco)" style="margin: 0; width: 100%; box-sizing: border-box; font-size: 14px; height: 38px;">
+          </div>
+          <div style="margin-bottom: 12px;">
+            <label style="display: block; font-weight: 600; margin-bottom: 4px; color: #334155; font-size: 13px;">Contraseña del Administrador: <span style="color: #dc2626;">*</span></label>
+            <input id="swal-admin-pass-notas" type="password" class="swal2-input" placeholder="Ingrese contraseña de Administrador" style="margin: 0; width: 100%; box-sizing: border-box; font-size: 14px; height: 38px;">
+          </div>
+          <div>
+            <label style="display: block; font-weight: 600; margin-bottom: 4px; color: #334155; font-size: 13px;">Motivo / Justificativo de Rectificación: <span style="color: #dc2626;">*</span></label>
+            <textarea id="swal-admin-just-notas" class="swal2-textarea" placeholder="Ej: Rectificación por revisión de examen formal / Memorando de Dirección Académica..." style="margin: 0; width: 100%; box-sizing: border-box; font-size: 13px; height: 75px;"></textarea>
+          </div>
+        </div>
+      `,
+      showCancelButton: true,
+      confirmButtonText: 'Verificar y Habilitar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#003B71',
+      focusConfirm: false,
+      showLoaderOnConfirm: true,
+      preConfirm: () => {
+        const adminUser = (document.getElementById('swal-admin-user-notas') as HTMLInputElement)?.value?.trim() || '';
+        const adminPass = (document.getElementById('swal-admin-pass-notas') as HTMLInputElement)?.value || '';
+        const justificativo = (document.getElementById('swal-admin-just-notas') as HTMLTextAreaElement)?.value?.trim() || '';
+
+        if (!adminPass) {
+          Swal.showValidationMessage('Debe ingresar la contraseña del Administrador.');
+          return false;
+        }
+        if (!justificativo || justificativo.length < 5) {
+          Swal.showValidationMessage('Debe ingresar un justificativo válido de al menos 5 caracteres.');
+          return false;
+        }
+
+        return this.http.post<any>(`${this.apiUrl}/autorizar-modificacion`, {
+          admin_user: adminUser,
+          admin_password: adminPass,
+          justificativo: justificativo,
+          tipo: 'notas'
+        }).toPromise().then(res => {
+          return {
+            admin_user: adminUser,
+            admin_password: adminPass,
+            justificativo: justificativo,
+            admin_name: res?.admin_name || 'Administrador'
+          };
+        }).catch(err => {
+          const msg = err?.error?.message || 'Contraseña de Administrador incorrecta o no autorizada.';
+          Swal.showValidationMessage(msg);
+          return false;
+        });
+      }
+    }).then((result) => {
+      if (result.isConfirmed && result.value) {
+        this.justificativoNotasPermiso = result.value.justificativo;
+        this.adminPasswordNotas = result.value.admin_password;
+        this.adminNombreNotas = result.value.admin_name;
+        this.modoEdicionConPermisoNotas = true;
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Autorización Concedida',
+          html: `El Administrador <strong>${this.adminNombreNotas}</strong> ha otorgado autorización formal.<br><br>Ahora puede editar las calificaciones y presionar <strong>"Guardar Notas Rectificadas"</strong> al finalizar.`,
+          confirmButtonColor: '#003B71'
+        });
+      }
+    });
+  }
+
+  cancelarModoPermisoNotas() {
+    this.modoEdicionConPermisoNotas = false;
+    this.justificativoNotasPermiso = '';
+    this.adminPasswordNotas = '';
+    this.adminNombreNotas = '';
+    this.cargarNotasDelPeriodo();
+  }
+
+  guardarNotasRectificadas() {
+    if (!this.justificativoNotasPermiso || !this.adminPasswordNotas) {
+      this.activarModoPermisoNotas();
+      return;
+    }
+
+    this.savingNotas = true;
+    this.notasMsg = '';
+    this.notasError = false;
+
+    const modificados = this.estudiantesActivos.filter(insc => {
+      const key = `${insc.id}_${this.periodoSeleccionado}`;
+      return this.notasForm[key] !== null && this.notasForm[key] !== undefined && this.notasForm[key] !== ('' as any);
+    });
+
+    if (modificados.length === 0) {
+      this.notasMsg = 'No hay calificaciones ingresadas.';
+      this.notasError = true;
+      this.savingNotas = false;
+      return;
+    }
+
+    const requests = modificados.map(insc => {
+      const key = `${insc.id}_${this.periodoSeleccionado}`;
+      return this.http.post(`${this.apiUrl}/inscripciones/${insc.id}/notas`, {
+        nota: this.notasForm[key],
+        periodo: this.periodoSeleccionado,
+        observacion: this.observacionesForm[key] || null,
+        justificativo: this.justificativoNotasPermiso,
+        admin_password: this.adminPasswordNotas
+      }).pipe(catchError(err => {
+        console.error('Error guardando nota rectificada', err);
+        return of({ error: true, message: err?.error?.message || 'Error al guardar calificación' });
+      }));
+    });
+
+    forkJoin(requests).subscribe({
+      next: (responses: any[]) => {
+        const hasErrors = responses.some(r => r && r.error);
+        if (hasErrors) {
+          const errItem = responses.find(r => r && r.error);
+          this.notasMsg = errItem?.message || 'Error al guardar algunas calificaciones.';
+          this.notasError = true;
+        } else {
+          this.notasMsg = `✓ Calificaciones rectificadas exitosamente con autorización de ${this.adminNombreNotas}.`;
+          this.notasError = false;
+          this.modoEdicionConPermisoNotas = false;
+          this.justificativoNotasPermiso = '';
+          this.adminPasswordNotas = '';
+          this.adminNombreNotas = '';
+          Swal.fire({
+            icon: 'success',
+            title: '¡Calificaciones Rectificadas!',
+            text: 'Las calificaciones han sido actualizadas y auditadas con éxito con la autorización del Administrador.',
+            confirmButtonColor: '#003B71'
+          });
+          this.cargarNotasDelPeriodo();
+        }
+        this.savingNotas = false;
+      },
+      error: (err) => {
+        this.notasMsg = err?.error?.message || 'Error al guardar notas.';
+        this.notasError = true;
+        this.savingNotas = false;
+      }
+    });
   }
 
   getNotaValor(inscripcionId: number): number {
@@ -329,39 +543,55 @@ export class DocenteDashboardComponent implements OnInit {
     this.notasMsg = '';
     this.notasError = false;
 
-    const requests = this.estudiantesActivos
-      .filter(insc => {
-        const key = `${insc.id}_${this.periodoSeleccionado}`;
-        return this.notasForm[key] !== null && this.notasForm[key] !== undefined;
-      })
-      .map(insc => {
-        const key = `${insc.id}_${this.periodoSeleccionado}`;
-        return this.http.post(`${this.apiUrl}/inscripciones/${insc.id}/notas`, {
-          nota: this.notasForm[key],
-          periodo: this.periodoSeleccionado,
-          observacion: this.observacionesForm[key] || null
-        }).pipe(catchError(err => {
-          console.error('Error guardando nota', err);
-          return of(null);
-        }));
-      });
+    // Solo guardar las notas que NO están bloqueadas
+    const nuevos = this.estudiantesActivos.filter(insc => {
+      const key = `${insc.id}_${this.periodoSeleccionado}`;
+      return !this.notasBloqueadas[key] && this.notasForm[key] !== null && this.notasForm[key] !== undefined && this.notasForm[key] !== ('' as any);
+    });
 
-    if (requests.length === 0) {
-      this.notasMsg = 'No hay notas para guardar. Ingrese al menos una nota.';
+    if (nuevos.length === 0) {
+      if (this.todasNotasBloqueadas) {
+        this.notasMsg = 'Todas las notas de este periodo ya están asentadas y bloqueadas. Contacte a Administración si requiere rectificaciones.';
+      } else {
+        this.notasMsg = 'No hay notas nuevas para guardar. Ingrese al menos una calificación en los campos habilitados.';
+      }
       this.notasError = true;
       this.savingNotas = false;
       return;
     }
 
+    const requests = nuevos.map(insc => {
+      const key = `${insc.id}_${this.periodoSeleccionado}`;
+      return this.http.post(`${this.apiUrl}/inscripciones/${insc.id}/notas`, {
+        nota: this.notasForm[key],
+        periodo: this.periodoSeleccionado,
+        observacion: this.observacionesForm[key] || null
+      }).pipe(catchError(err => {
+        console.error('Error guardando nota', err);
+        return of({ error: true, message: err?.error?.message || 'Error al guardar calificación' });
+      }));
+    });
+
     forkJoin(requests).subscribe({
-      next: () => {
-        this.notasMsg = `✓ Notas del ${this.periodoSeleccionado} guardadas correctamente.`;
-        this.notasError = false;
+      next: (responses: any[]) => {
+        const hasErrors = responses.some(r => r && r.error);
+        if (hasErrors) {
+          const errItem = responses.find(r => r && r.error);
+          this.notasMsg = errItem?.message || 'Error al guardar algunas calificaciones.';
+          this.notasError = true;
+        } else {
+          this.notasMsg = `✓ Calificaciones del ${this.periodoSeleccionado} guardadas y bloqueadas correctamente.`;
+          this.notasError = false;
+          nuevos.forEach(insc => {
+            this.notasBloqueadas[`${insc.id}_${this.periodoSeleccionado}`] = true;
+          });
+          setTimeout(() => this.notasMsg = '', 6000);
+        }
         this.savingNotas = false;
-        setTimeout(() => this.notasMsg = '', 4000);
+        this.cargarNotasDelPeriodo();
       },
-      error: () => {
-        this.notasMsg = 'Error al guardar algunas notas.';
+      error: (err) => {
+        this.notasMsg = err?.error?.message || 'Error al guardar notas.';
         this.notasError = true;
         this.savingNotas = false;
       }
@@ -375,26 +605,189 @@ export class DocenteDashboardComponent implements OnInit {
       this.http.get<any[]>(`${this.apiUrl}/inscripciones/${insc.id}/asistencias`).pipe(catchError(() => of([])))
     );
 
+    const hoyStr = new Date().toISOString().split('T')[0];
+    this.esFechaPasada = this.fechaAsistencia < hoyStr;
+
     forkJoin(requests).subscribe(resultados => {
+      let yaRegistrado = false;
       resultados.forEach((asistencias: any[], idx: number) => {
         const insc = this.estudiantesActivos[idx];
         const asistDia = asistencias.find((a: any) => a.fecha?.startsWith(this.fechaAsistencia));
         if (asistDia) {
           this.asistenciaForm[insc.id] = asistDia.estado;
           this.observacionAsistenciaForm[insc.id] = asistDia.observacion || '';
+          yaRegistrado = true;
         } else {
           this.asistenciaForm[insc.id] = 'presente'; // default
           this.observacionAsistenciaForm[insc.id] = '';
         }
       });
+      this.asistenciaYaGuardada = yaRegistrado;
+      // Bloqueada si ya fue guardada O si es una fecha pasada
+      this.asistenciaBloqueada = yaRegistrado || this.esFechaPasada;
     });
   }
 
+  onFechaAsistenciaChange() {
+    this.modoEdicionConPermisoAsistencia = false;
+    this.justificativoAsistenciaPermiso = '';
+    this.adminPasswordAsistencia = '';
+    this.adminNombreAsistencia = '';
+    this.cargarAsistenciaDelDia();
+  }
+
   setAsistencia(inscripcionId: number, estado: string) {
+    if (this.asistenciaBloqueada && !this.modoEdicionConPermisoAsistencia) return;
     this.asistenciaForm[inscripcionId] = estado;
   }
 
+  activarModoPermisoAsistencia() {
+    Swal.fire({
+      title: 'Autorización de Administrador Requerida',
+      html: `
+        <div style="text-align: left; font-size: 14px;">
+          <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 10px 12px; margin-bottom: 16px; border-radius: 6px; color: #92400e; font-size: 13px; line-height: 1.4;">
+            <i class="material-icons-outlined" style="font-size: 18px; vertical-align: middle; margin-right: 4px;">security</i>
+            <strong>Control de Dirección:</strong> Solo el Administrador puede autorizar la modificación o registro de asistencia en fechas consolidadas o pasadas.
+          </div>
+          <div style="margin-bottom: 12px;">
+            <label style="display: block; font-weight: 600; margin-bottom: 4px; color: #334155; font-size: 13px;">Usuario / Correo de Administrador (Opcional):</label>
+            <input id="swal-admin-user-asist" class="swal2-input" placeholder="admin (o dejar en blanco)" style="margin: 0; width: 100%; box-sizing: border-box; font-size: 14px; height: 38px;">
+          </div>
+          <div style="margin-bottom: 12px;">
+            <label style="display: block; font-weight: 600; margin-bottom: 4px; color: #334155; font-size: 13px;">Contraseña del Administrador: <span style="color: #dc2626;">*</span></label>
+            <input id="swal-admin-pass-asist" type="password" class="swal2-input" placeholder="Ingrese contraseña de Administrador" style="margin: 0; width: 100%; box-sizing: border-box; font-size: 14px; height: 38px;">
+          </div>
+          <div>
+            <label style="display: block; font-weight: 600; margin-bottom: 4px; color: #334155; font-size: 13px;">Motivo / Justificativo de Asistencia: <span style="color: #dc2626;">*</span></label>
+            <textarea id="swal-admin-just-asist" class="swal2-textarea" placeholder="Ej: Licencia médica presentada por el estudiante / Autorización de Dirección Académica..." style="margin: 0; width: 100%; box-sizing: border-box; font-size: 13px; height: 75px;"></textarea>
+          </div>
+        </div>
+      `,
+      showCancelButton: true,
+      confirmButtonText: 'Verificar y Habilitar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#003B71',
+      focusConfirm: false,
+      showLoaderOnConfirm: true,
+      preConfirm: () => {
+        const adminUser = (document.getElementById('swal-admin-user-asist') as HTMLInputElement)?.value?.trim() || '';
+        const adminPass = (document.getElementById('swal-admin-pass-asist') as HTMLInputElement)?.value || '';
+        const justificativo = (document.getElementById('swal-admin-just-asist') as HTMLTextAreaElement)?.value?.trim() || '';
+
+        if (!adminPass) {
+          Swal.showValidationMessage('Debe ingresar la contraseña del Administrador.');
+          return false;
+        }
+        if (!justificativo || justificativo.length < 5) {
+          Swal.showValidationMessage('Debe ingresar un justificativo válido de al menos 5 caracteres.');
+          return false;
+        }
+
+        return this.http.post<any>(`${this.apiUrl}/autorizar-modificacion`, {
+          admin_user: adminUser,
+          admin_password: adminPass,
+          justificativo: justificativo,
+          tipo: 'asistencia'
+        }).toPromise().then(res => {
+          return {
+            admin_user: adminUser,
+            admin_password: adminPass,
+            justificativo: justificativo,
+            admin_name: res?.admin_name || 'Administrador'
+          };
+        }).catch(err => {
+          const msg = err?.error?.message || 'Contraseña de Administrador incorrecta o no autorizada.';
+          Swal.showValidationMessage(msg);
+          return false;
+        });
+      }
+    }).then((result) => {
+      if (result.isConfirmed && result.value) {
+        this.justificativoAsistenciaPermiso = result.value.justificativo;
+        this.adminPasswordAsistencia = result.value.admin_password;
+        this.adminNombreAsistencia = result.value.admin_name;
+        this.modoEdicionConPermisoAsistencia = true;
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Autorización Concedida',
+          html: `El Administrador <strong>${this.adminNombreAsistencia}</strong> ha otorgado autorización formal.<br><br>Ahora puede rectificar la asistencia y presionar <strong>"Guardar Asistencia Rectificada"</strong>.`,
+          confirmButtonColor: '#003B71'
+        });
+      }
+    });
+  }
+
+  cancelarModoPermisoAsistencia() {
+    this.modoEdicionConPermisoAsistencia = false;
+    this.justificativoAsistenciaPermiso = '';
+    this.adminPasswordAsistencia = '';
+    this.adminNombreAsistencia = '';
+    this.cargarAsistenciaDelDia();
+  }
+
+  guardarAsistenciaRectificada() {
+    if (!this.justificativoAsistenciaPermiso || !this.adminPasswordAsistencia) {
+      this.activarModoPermisoAsistencia();
+      return;
+    }
+
+    this.savingAsistencia = true;
+    this.asistenciaMsg = '';
+    this.asistenciaError = false;
+
+    const requests = this.estudiantesActivos.map(insc =>
+      this.http.post(`${this.apiUrl}/inscripciones/${insc.id}/asistencias`, {
+        fecha: this.fechaAsistencia,
+        estado: this.asistenciaForm[insc.id] || 'presente',
+        observacion: this.observacionAsistenciaForm[insc.id] || null,
+        justificativo: this.justificativoAsistenciaPermiso,
+        admin_password: this.adminPasswordAsistencia
+      }).pipe(catchError(err => {
+        console.error('Error asistencia rectificada', err);
+        return of({ error: true, message: err?.error?.message || 'Error al rectificar' });
+      }))
+    );
+
+    forkJoin(requests).subscribe({
+      next: (responses: any[]) => {
+        const hasErr = responses.some(r => r && r.error);
+        if (hasErr) {
+          const errObj = responses.find(r => r && r.error);
+          this.asistenciaMsg = errObj?.message || 'Error al rectificar la asistencia.';
+          this.asistenciaError = true;
+        } else {
+          this.asistenciaMsg = `✓ Asistencia del ${this.fechaAsistencia} rectificada con autorización de ${this.adminNombreAsistencia}.`;
+          this.asistenciaError = false;
+          this.modoEdicionConPermisoAsistencia = false;
+          this.justificativoAsistenciaPermiso = '';
+          this.adminPasswordAsistencia = '';
+          this.adminNombreAsistencia = '';
+          Swal.fire({
+            icon: 'success',
+            title: '¡Asistencia Rectificada!',
+            text: 'Los cambios y la auditoría con autorización de Administrador han sido guardados correctamente.',
+            confirmButtonColor: '#003B71'
+          });
+          this.cargarAsistenciaDelDia();
+        }
+        this.savingAsistencia = false;
+      },
+      error: (err) => {
+        this.asistenciaMsg = err?.error?.message || 'Error al rectificar asistencia.';
+        this.asistenciaError = true;
+        this.savingAsistencia = false;
+      }
+    });
+  }
+
   guardarAsistencia() {
+    if (this.asistenciaBloqueada && !this.modoEdicionConPermisoAsistencia) {
+      this.activarModoPermisoAsistencia();
+      return;
+    }
+
     if (!this.fechaAsistencia) {
       this.asistenciaMsg = 'Seleccione una fecha primero.';
       this.asistenciaError = true;
@@ -410,18 +803,30 @@ export class DocenteDashboardComponent implements OnInit {
         fecha: this.fechaAsistencia,
         estado: this.asistenciaForm[insc.id] || 'presente',
         observacion: this.observacionAsistenciaForm[insc.id] || null
-      }).pipe(catchError(err => { console.error('Error asistencia', err); return of(null); }))
+      }).pipe(catchError(err => {
+        console.error('Error asistencia', err);
+        return of({ error: true, message: err?.error?.message || 'Error al guardar' });
+      }))
     );
 
     forkJoin(requests).subscribe({
-      next: () => {
-        this.asistenciaMsg = `✓ Asistencia del ${this.fechaAsistencia} guardada correctamente.`;
-        this.asistenciaError = false;
+      next: (responses: any[]) => {
+        const hasErr = responses.some(r => r && r.error);
+        if (hasErr) {
+          const errObj = responses.find(r => r && r.error);
+          this.asistenciaMsg = errObj?.message || 'Error al guardar la asistencia.';
+          this.asistenciaError = true;
+        } else {
+          this.asistenciaMsg = `✓ Asistencia del ${this.fechaAsistencia} registrada y bloqueada correctamente.`;
+          this.asistenciaError = false;
+          this.asistenciaYaGuardada = true;
+          this.asistenciaBloqueada = true;
+          setTimeout(() => this.asistenciaMsg = '', 6000);
+        }
         this.savingAsistencia = false;
-        setTimeout(() => this.asistenciaMsg = '', 4000);
       },
-      error: () => {
-        this.asistenciaMsg = 'Error al guardar asistencia.';
+      error: (err) => {
+        this.asistenciaMsg = err?.error?.message || 'Error al guardar asistencia.';
         this.asistenciaError = true;
         this.savingAsistencia = false;
       }
