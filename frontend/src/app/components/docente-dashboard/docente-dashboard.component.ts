@@ -212,6 +212,27 @@ export class DocenteDashboardComponent implements OnInit {
     if (periodos.length > 0) {
       this.periodoSeleccionado = periodos[0];
     }
+    this.consultarAutorizacionParalelo();
+  }
+
+  consultarAutorizacionParalelo() {
+    const id = this.paraleloActivo?.id || this.paraleloActivo?.id_paralelo;
+    if (!id) return;
+    this.http.get<any>(`${this.apiUrl}/paralelos/${id}/autorizacion`).subscribe({
+      next: (res) => {
+        if (res?.notas?.autorizado) {
+          this.modoEdicionConPermisoNotas = true;
+          this.adminNombreNotas = res.notas.admin_nombre || 'Administrador';
+          this.justificativoNotasPermiso = res.notas.justificativo || 'Autorizado formalmente por Dirección';
+        }
+        if (res?.asistencias?.autorizado) {
+          this.modoEdicionConPermisoAsistencia = true;
+          this.adminNombreAsistencia = res.asistencias.admin_nombre || 'Administrador';
+          this.justificativoAsistenciaPermiso = res.asistencias.justificativo || 'Autorizado formalmente por Dirección';
+        }
+      },
+      error: () => {}
+    });
   }
 
   setTab(tab: 'perfil' | 'lista' | 'notas' | 'asistencia') {
@@ -219,8 +240,14 @@ export class DocenteDashboardComponent implements OnInit {
     this.notasMsg = '';
     this.asistenciaMsg = '';
 
-    if (tab === 'notas') this.cargarNotasDelPeriodo();
-    if (tab === 'asistencia') this.cargarAsistenciaDelDia();
+    if (tab === 'notas') {
+      this.consultarAutorizacionParalelo();
+      this.cargarNotasDelPeriodo();
+    }
+    if (tab === 'asistencia') {
+      this.consultarAutorizacionParalelo();
+      this.cargarAsistenciaDelDia();
+    }
   }
 
   habilitarDocumentosEstudiante(estudianteId: number) {
@@ -466,7 +493,7 @@ export class DocenteDashboardComponent implements OnInit {
   }
 
   guardarNotasRectificadas() {
-    if (!this.justificativoNotasPermiso || !this.adminPasswordNotas) {
+    if (!this.justificativoNotasPermiso) {
       this.activarModoPermisoNotas();
       return;
     }
@@ -728,7 +755,7 @@ export class DocenteDashboardComponent implements OnInit {
   }
 
   guardarAsistenciaRectificada() {
-    if (!this.justificativoAsistenciaPermiso || !this.adminPasswordAsistencia) {
+    if (!this.justificativoAsistenciaPermiso) {
       this.activarModoPermisoAsistencia();
       return;
     }

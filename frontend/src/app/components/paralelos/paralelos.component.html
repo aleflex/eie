@@ -361,8 +361,8 @@
           <div class="academic-modal-header">
             <div class="header-titles">
               <span class="badge-admin-security"><i class="material-icons-outlined">verified_user</i> DIRECCIÓN ACADÉMICA / ADMINISTRACIÓN</span>
-              <h2>{{ selectedParaleloAdmin?.nombre }} — Rectificación Académica</h2>
-              <p class="subtitle">{{ selectedParaleloAdmin?.curso?.idioma }} - {{ selectedParaleloAdmin?.curso?.nivel }} | Aula: {{ selectedParaleloAdmin?.aula?.nombre || 'Sin Aula' }}</p>
+              <h2>{{ selectedParaleloAdmin?.nombre }} — Autorización Académica a Docentes</h2>
+              <p class="subtitle">{{ selectedParaleloAdmin?.curso?.idioma }} - {{ selectedParaleloAdmin?.curso?.nivel }} | Docente Titular: <strong>{{ getDocenteAsignado(selectedParaleloAdmin) }}</strong> | Aula: {{ selectedParaleloAdmin?.aula?.nombre || 'Sin Aula' }}</p>
             </div>
             <div class="d-flex align-items-center gap-2">
               <div class="d-flex align-items-center gap-1 bg-white px-2 py-1 rounded border shadow-sm" *ngIf="paralelos.length > 1">
@@ -377,16 +377,51 @@
 
           <div class="academic-tabs-bar">
             <button class="academic-tab-btn" [class.active]="adminTab === 'notas'" (click)="adminTab = 'notas'">
-              <i class="material-icons-outlined">grade</i> Rectificación de Calificaciones
+              <i class="material-icons-outlined">grade</i> Autorización de Calificaciones
             </button>
             <button class="academic-tab-btn" [class.active]="adminTab === 'asistencia'" (click)="adminTab = 'asistencia'">
-              <i class="material-icons-outlined">how_to_reg</i> Rectificación de Asistencias y Faltas
+              <i class="material-icons-outlined">how_to_reg</i> Autorización de Asistencias y Faltas
             </button>
           </div>
 
           <div class="academic-modal-body">
             <!-- TAB CALIFICACIONES -->
             <div *ngIf="adminTab === 'notas'">
+              <!-- Card de Control de Autorización al Docente -->
+              <div class="auth-control-card mb-3 p-3 rounded-3" [ngClass]="autorizacionParalelo.notas.autorizado ? 'auth-card-active' : 'auth-card-locked'">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                  <div class="d-flex align-items-center gap-3">
+                    <div class="auth-icon-circle" [ngClass]="autorizacionParalelo.notas.autorizado ? 'bg-success text-white' : 'bg-secondary text-white'">
+                      <i class="material-icons-outlined" style="font-size: 28px;">{{ autorizacionParalelo.notas.autorizado ? 'verified' : 'lock' }}</i>
+                    </div>
+                    <div>
+                      <h4 class="mb-1 fw-bold fs-6">
+                        Autorización de Calificaciones para el Docente:
+                        <span class="badge ms-2" [ngClass]="autorizacionParalelo.notas.autorizado ? 'bg-success' : 'bg-secondary'">
+                          {{ autorizacionParalelo.notas.autorizado ? 'AUTORIZADO PARA EL DOCENTE' : 'BLOQUEADO PARA EL DOCENTE' }}
+                        </span>
+                      </h4>
+                      <div *ngIf="autorizacionParalelo.notas.autorizado" class="small text-dark">
+                        <span><strong>Autorizado por:</strong> {{ autorizacionParalelo.notas.admin_nombre || 'Administración' }} ({{ autorizacionParalelo.notas.fecha }})</span>
+                        <div class="mt-1 text-muted"><strong>Motivo:</strong> <em>"{{ autorizacionParalelo.notas.justificativo }}"</em></div>
+                      </div>
+                      <div *ngIf="!autorizacionParalelo.notas.autorizado" class="small text-muted">
+                        El docente titular tiene las calificaciones bloqueadas y no puede modificarlas sin su previa autorización.
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <button *ngIf="!autorizacionParalelo.notas.autorizado" class="btn btn-primary d-inline-flex align-items-center gap-1 px-3 py-2 fw-bold shadow-sm" (click)="autorizarAlDocente('notas')">
+                      <i class="material-icons-outlined">verified_user</i> Otorgar Autorización al Docente
+                    </button>
+                    <button *ngIf="autorizacionParalelo.notas.autorizado" class="btn btn-outline-danger d-inline-flex align-items-center gap-1 px-3 py-2 fw-bold" (click)="revocarAutorizacionAlDocente('notas')">
+                      <i class="material-icons-outlined">lock</i> Revocar Autorización
+                    </button>
+                  </div>
+                </div>
+              </div>
+
               <div class="academic-toolbar-panel">
                 <div class="toolbar-filter">
                   <label for="adminPeriodoSelect">Periodo / Examen:</label>
@@ -396,25 +431,25 @@
                 </div>
                 <div class="toolbar-notice">
                   <i class="material-icons-outlined">info</i>
-                  <span>Los docentes tienen las notas bloqueadas. Como <strong>Administrador</strong>, puede rectificar cualquier calificación ingresando el <strong>Justificativo formal obligatorio</strong>.</span>
+                  <span>Solo el <strong>Docente</strong> califica y rectifica. Como <strong>Administrador</strong>, otorgue la autorización arriba para habilitar la edición en el panel docente.</span>
                 </div>
               </div>
 
               <div *ngIf="loadingAdminStudents" class="text-center py-4">
-                <p>Cargando calificaciones de estudiantes...</p>
+                <p>Cargando calificaciones del paralelo...</p>
               </div>
 
+              <!-- Tabla de Solo Lectura / Consulta de Calificaciones -->
               <div *ngIf="!loadingAdminStudents && adminEstudiantes.length > 0" class="table-responsive mt-3">
                 <table class="academic-table">
                   <thead>
                     <tr>
                       <th style="width: 45px;">#</th>
                       <th>Estudiante</th>
-                      <th style="width: 110px;">C.I.</th>
-                      <th style="width: 110px;">Nota (0-100)</th>
-                      <th>Observación</th>
-                      <th>Justificativo Formal (Obligatorio)</th>
-                      <th style="width: 120px;">Acción</th>
+                      <th style="width: 120px;">C.I.</th>
+                      <th style="width: 150px; text-align: center;">Calificación Registrada</th>
+                      <th style="width: 130px; text-align: center;">Estado</th>
+                      <th>Observación y Auditoría del Docente</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -422,26 +457,26 @@
                       <td>{{ i + 1 }}</td>
                       <td><strong>{{ ins.estudiante?.nombres }} {{ ins.estudiante?.apellidos }}</strong></td>
                       <td>{{ ins.estudiante?.ci }}</td>
-                      <td>
-                        <input type="number" min="0" max="100" step="0.5" class="form-control form-control-sm text-center fw-bold"
-                          [(ngModel)]="adminNotasForm[ins.id || ins.id_inscripcion]" placeholder="—">
+                      <td style="text-align: center;">
+                        <span *ngIf="adminNotasForm[ins.id || ins.id_inscripcion] !== null" class="badge bg-primary px-3 py-2 fs-6">
+                          {{ adminNotasForm[ins.id || ins.id_inscripcion] }} / 100
+                        </span>
+                        <span *ngIf="adminNotasForm[ins.id || ins.id_inscripcion] === null" class="badge bg-light text-muted border px-2 py-1">
+                          Sin registrar
+                        </span>
+                      </td>
+                      <td style="text-align: center;">
+                        <span *ngIf="adminNotasForm[ins.id || ins.id_inscripcion] !== null" class="badge" [ngClass]="adminNotasForm[ins.id || ins.id_inscripcion]! >= 51 ? 'bg-success' : 'bg-danger'">
+                          {{ adminNotasForm[ins.id || ins.id_inscripcion]! >= 51 ? 'Aprobado' : 'Reprobado' }}
+                        </span>
+                        <span *ngIf="adminNotasForm[ins.id || ins.id_inscripcion] === null" class="text-muted small">
+                          Pendiente
+                        </span>
                       </td>
                       <td>
-                        <input type="text" class="form-control form-control-sm"
-                          [(ngModel)]="adminObsNotasForm[ins.id || ins.id_inscripcion]" placeholder="Opcional...">
-                      </td>
-                      <td>
-                        <input type="text" class="form-control form-control-sm input-justificativo"
-                          [(ngModel)]="adminJustificativoNotas[ins.id || ins.id_inscripcion]"
-                          placeholder="Motivo del cambio (ej. Reclamo aceptado Dirección)...">
-                      </td>
-                      <td>
-                        <button class="btn-rectificar-action"
-                          [disabled]="savingAdminItem['nota_' + (ins.id || ins.id_inscripcion)]"
-                          (click)="guardarNotaAdmin(ins)">
-                          <i class="material-icons-outlined">save</i>
-                          {{ savingAdminItem['nota_' + (ins.id || ins.id_inscripcion)] ? 'Guardando...' : 'Rectificar' }}
-                        </button>
+                        <div class="small text-muted text-break">
+                          {{ adminObsNotasForm[ins.id || ins.id_inscripcion] || 'Sin observaciones registradas' }}
+                        </div>
                       </td>
                     </tr>
                   </tbody>
@@ -451,6 +486,41 @@
 
             <!-- TAB ASISTENCIAS -->
             <div *ngIf="adminTab === 'asistencia'">
+              <!-- Card de Control de Autorización de Asistencias al Docente -->
+              <div class="auth-control-card mb-3 p-3 rounded-3" [ngClass]="autorizacionParalelo.asistencias.autorizado ? 'auth-card-active' : 'auth-card-locked'">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                  <div class="d-flex align-items-center gap-3">
+                    <div class="auth-icon-circle" [ngClass]="autorizacionParalelo.asistencias.autorizado ? 'bg-success text-white' : 'bg-secondary text-white'">
+                      <i class="material-icons-outlined" style="font-size: 28px;">{{ autorizacionParalelo.asistencias.autorizado ? 'verified' : 'lock' }}</i>
+                    </div>
+                    <div>
+                      <h4 class="mb-1 fw-bold fs-6">
+                        Autorización de Asistencias para el Docente:
+                        <span class="badge ms-2" [ngClass]="autorizacionParalelo.asistencias.autorizado ? 'bg-success' : 'bg-secondary'">
+                          {{ autorizacionParalelo.asistencias.autorizado ? 'AUTORIZADO PARA EL DOCENTE' : 'BLOQUEADO PARA EL DOCENTE' }}
+                        </span>
+                      </h4>
+                      <div *ngIf="autorizacionParalelo.asistencias.autorizado" class="small text-dark">
+                        <span><strong>Autorizado por:</strong> {{ autorizacionParalelo.asistencias.admin_nombre || 'Administración' }} ({{ autorizacionParalelo.asistencias.fecha }})</span>
+                        <div class="mt-1 text-muted"><strong>Motivo:</strong> <em>"{{ autorizacionParalelo.asistencias.justificativo }}"</em></div>
+                      </div>
+                      <div *ngIf="!autorizacionParalelo.asistencias.autorizado" class="small text-muted">
+                        El docente tiene bloqueada la modificación de asistencias y faltas de fechas pasadas sin autorización previa.
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <button *ngIf="!autorizacionParalelo.asistencias.autorizado" class="btn btn-primary d-inline-flex align-items-center gap-1 px-3 py-2 fw-bold shadow-sm" (click)="autorizarAlDocente('asistencias')">
+                      <i class="material-icons-outlined">verified_user</i> Otorgar Autorización al Docente
+                    </button>
+                    <button *ngIf="autorizacionParalelo.asistencias.autorizado" class="btn btn-outline-danger d-inline-flex align-items-center gap-1 px-3 py-2 fw-bold" (click)="revocarAutorizacionAlDocente('asistencias')">
+                      <i class="material-icons-outlined">lock</i> Revocar Autorización
+                    </button>
+                  </div>
+                </div>
+              </div>
+
               <div class="academic-toolbar-panel">
                 <div class="toolbar-filter">
                   <label for="adminFechaInput"><i class="material-icons-outlined">calendar_today</i> Fecha:</label>
@@ -458,7 +528,7 @@
                 </div>
                 <div class="toolbar-notice">
                   <i class="material-icons-outlined">info</i>
-                  <span>Permite modificar asistencias o asentar faltas de ayer o fechas anteriores. Requiere el <strong>Justificativo de falta obligatorio</strong>.</span>
+                  <span>Solo el <strong>Docente</strong> asienta o rectifica asistencias. Otorgue la autorización arriba para permitir el registro extemporáneo en el panel docente.</span>
                 </div>
               </div>
 
@@ -466,17 +536,16 @@
                 <p>Cargando asistencias de estudiantes...</p>
               </div>
 
+              <!-- Tabla de Solo Lectura / Consulta de Asistencias -->
               <div *ngIf="!loadingAdminStudents && adminEstudiantes.length > 0" class="table-responsive mt-3">
                 <table class="academic-table">
                   <thead>
                     <tr>
                       <th style="width: 45px;">#</th>
                       <th>Estudiante</th>
-                      <th style="width: 110px;">C.I.</th>
-                      <th style="width: 160px;">Estado</th>
-                      <th>Observación</th>
-                      <th>Justificativo de Falta / Rectificación (Obligatorio)</th>
-                      <th style="width: 120px;">Acción</th>
+                      <th style="width: 120px;">C.I.</th>
+                      <th style="width: 170px; text-align: center;">Estado Registrado</th>
+                      <th>Observación y Justificativo del Docente</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -484,38 +553,24 @@
                       <td>{{ i + 1 }}</td>
                       <td><strong>{{ ins.estudiante?.nombres }} {{ ins.estudiante?.apellidos }}</strong></td>
                       <td>{{ ins.estudiante?.ci }}</td>
+                      <td style="text-align: center;">
+                        <span *ngIf="adminAsistenciaForm[ins.id || ins.id_inscripcion] === 'presente'" class="badge bg-success px-2 py-1">
+                          ✓ Presente (P)
+                        </span>
+                        <span *ngIf="adminAsistenciaForm[ins.id || ins.id_inscripcion] === 'ausente'" class="badge bg-danger px-2 py-1">
+                          ✗ Ausente (A)
+                        </span>
+                        <span *ngIf="adminAsistenciaForm[ins.id || ins.id_inscripcion] === 'tardanza'" class="badge bg-warning text-dark px-2 py-1">
+                          ⏰ Tardanza (T)
+                        </span>
+                        <span *ngIf="adminAsistenciaForm[ins.id || ins.id_inscripcion] === 'justificado'" class="badge bg-info text-dark px-2 py-1">
+                          📋 Justificado (J)
+                        </span>
+                      </td>
                       <td>
-                        <div class="admin-asist-buttons">
-                          <button type="button" class="btn-asist-chip p-chip"
-                            [class.selected]="adminAsistenciaForm[ins.id || ins.id_inscripcion] === 'presente'"
-                            (click)="adminAsistenciaForm[ins.id || ins.id_inscripcion] = 'presente'">P</button>
-                          <button type="button" class="btn-asist-chip a-chip"
-                            [class.selected]="adminAsistenciaForm[ins.id || ins.id_inscripcion] === 'ausente'"
-                            (click)="adminAsistenciaForm[ins.id || ins.id_inscripcion] = 'ausente'">A</button>
-                          <button type="button" class="btn-asist-chip t-chip"
-                            [class.selected]="adminAsistenciaForm[ins.id || ins.id_inscripcion] === 'tardanza'"
-                            (click)="adminAsistenciaForm[ins.id || ins.id_inscripcion] = 'tardanza'">T</button>
-                          <button type="button" class="btn-asist-chip j-chip"
-                            [class.selected]="adminAsistenciaForm[ins.id || ins.id_inscripcion] === 'justificado'"
-                            (click)="adminAsistenciaForm[ins.id || ins.id_inscripcion] = 'justificado'">J</button>
+                        <div class="small text-muted text-break">
+                          {{ adminObsAsistenciaForm[ins.id || ins.id_inscripcion] || 'Sin observaciones' }}
                         </div>
-                      </td>
-                      <td>
-                        <input type="text" class="form-control form-control-sm"
-                          [(ngModel)]="adminObsAsistenciaForm[ins.id || ins.id_inscripcion]" placeholder="Observación...">
-                      </td>
-                      <td>
-                        <input type="text" class="form-control form-control-sm input-justificativo"
-                          [(ngModel)]="adminJustificativoAsistencia[ins.id || ins.id_inscripcion]"
-                          placeholder="Justificativo médico / institucional...">
-                      </td>
-                      <td>
-                        <button class="btn-rectificar-action btn-asist-save"
-                          [disabled]="savingAdminItem['asist_' + (ins.id || ins.id_inscripcion)]"
-                          (click)="guardarAsistenciaAdmin(ins)">
-                          <i class="material-icons-outlined">check_circle</i>
-                          {{ savingAdminItem['asist_' + (ins.id || ins.id_inscripcion)] ? 'Guardando...' : 'Asentar' }}
-                        </button>
                       </td>
                     </tr>
                   </tbody>

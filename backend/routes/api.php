@@ -81,6 +81,8 @@ Route::delete('/notas/{id}', [\App\Http\Controllers\Api\NotaAsistenciaController
 Route::get('/inscripciones/{id}/asistencias', [\App\Http\Controllers\Api\NotaAsistenciaController::class, 'getAsistencias']);
 Route::post('/inscripciones/{id}/asistencias', [\App\Http\Controllers\Api\NotaAsistenciaController::class, 'saveAsistencia']);
 
+Route::get('/paralelos/{id}/autorizacion', [\App\Http\Controllers\Api\NotaAsistenciaController::class, 'getAutorizacionParalelo']);
+Route::post('/paralelos/{id}/autorizacion', [\App\Http\Controllers\Api\NotaAsistenciaController::class, 'setAutorizacionParalelo']);
 Route::get('/paralelos/{id}/asistencias', [\App\Http\Controllers\Api\NotaAsistenciaController::class, 'getAsistenciasParalelo']);
 
 // Configuración General del Sistema

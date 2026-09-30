@@ -843,4 +843,30 @@
     }
 }
 
+.auth-control-card {
+    transition: all 0.3s ease;
+    border: 1px solid #e2e8f0;
+}
+
+.auth-card-locked {
+    background: #f8fafc;
+    border-left: 5px solid #64748b !important;
+}
+
+.auth-card-active {
+    background: #f0fdf4;
+    border-left: 5px solid #16a34a !important;
+    border-color: #bbf7d0;
+}
+
+.auth-icon-circle {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
 

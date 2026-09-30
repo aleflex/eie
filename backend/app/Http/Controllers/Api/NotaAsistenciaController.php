@@ -139,6 +139,105 @@ class NotaAsistenciaController extends Controller
     }
 
     /**
+     * Obtiene el estado de autorización académica (notas y asistencias) de un paralelo
+     */
+    public function getAutorizacionParalelo($paraleloId)
+    {
+        $claveNotas = "permiso_notas_paralelo_{$paraleloId}";
+        $claveAsist = "permiso_asist_paralelo_{$paraleloId}";
+
+        $confNotas = \App\Models\Configuracion::where('clave', $claveNotas)->first();
+        $confAsist = \App\Models\Configuracion::where('clave', $claveAsist)->first();
+
+        $dataNotas = $confNotas ? json_decode($confNotas->valor, true) : null;
+        $dataAsist = $confAsist ? json_decode($confAsist->valor, true) : null;
+
+        return response()->json([
+            'notas' => [
+                'autorizado'    => !empty($dataNotas['autorizado']),
+                'justificativo' => $dataNotas['justificativo'] ?? null,
+                'admin_nombre'  => $dataNotas['admin_nombre'] ?? null,
+                'fecha'         => $dataNotas['fecha'] ?? null,
+            ],
+            'asistencias' => [
+                'autorizado'    => !empty($dataAsist['autorizado']),
+                'justificativo' => $dataAsist['justificativo'] ?? null,
+                'admin_nombre'  => $dataAsist['admin_nombre'] ?? null,
+                'fecha'         => $dataAsist['fecha'] ?? null,
+            ]
+        ]);
+    }
+
+    /**
+     * El Administrador otorga o revoca autorización al docente de un paralelo
+     */
+    public function setAutorizacionParalelo(Request $request, $paraleloId)
+    {
+        $user = $this->getAuthenticatedUser($request);
+        $isAdmin = $this->isUserAdmin($user);
+
+        if (!$isAdmin) {
+            $admin = $this->verifyAdminAuthorization($request);
+            if (!$admin) {
+                return response()->json([
+                    'message' => 'Acceso denegado: Solo un Administrador puede otorgar o revocar autorizaciones a los docentes.'
+                ], 403);
+            }
+            $adminName = $admin->name;
+        } else {
+            $adminName = $user ? $user->name : 'Administrador';
+        }
+
+        $request->validate([
+            'tipo'          => 'required|in:notas,asistencias',
+            'accion'        => 'required|in:autorizar,revocar',
+            'justificativo' => 'nullable|string|max:500'
+        ]);
+
+        $tipo = $request->input('tipo');
+        $accion = $request->input('accion');
+        $justificativo = trim($request->input('justificativo', ''));
+
+        if ($accion === 'autorizar' && (empty($justificativo) || strlen($justificativo) < 5)) {
+            return response()->json([
+                'message' => 'Debe ingresar un justificativo o motivo formal de autorización (mínimo 5 caracteres).'
+            ], 422);
+        }
+
+        $clave = $tipo === 'notas' ? "permiso_notas_paralelo_{$paraleloId}" : "permiso_asist_paralelo_{$paraleloId}";
+
+        if ($accion === 'autorizar') {
+            $valor = json_encode([
+                'autorizado'    => true,
+                'justificativo' => $justificativo,
+                'admin_nombre'  => $adminName,
+                'fecha'         => now()->format('d/m/Y H:i')
+            ]);
+            \App\Models\Configuracion::updateOrCreate(
+                ['clave' => $clave],
+                ['valor' => $valor, 'tipo' => 'json', 'grupo' => 'permisos_academicos']
+            );
+            $msg = "Autorización otorgada al Docente para modificar " . ($tipo === 'notas' ? 'calificaciones' : 'asistencias') . " exitosamente.";
+        } else {
+            $valor = json_encode([
+                'autorizado'     => false,
+                'fecha_revocado' => now()->format('d/m/Y H:i'),
+                'admin_nombre'   => $adminName
+            ]);
+            \App\Models\Configuracion::updateOrCreate(
+                ['clave' => $clave],
+                ['valor' => $valor, 'tipo' => 'json', 'grupo' => 'permisos_academicos']
+            );
+            $msg = "Autorización para el Docente revocada exitosamente. Las " . ($tipo === 'notas' ? 'calificaciones' : 'asistencias') . " quedan bloqueadas.";
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => $msg
+        ]);
+    }
+
+    /**
      * Guardar o actualizar una nota para una inscripción
      */
     public function saveNota(Request $request, $inscripcionId)
@@ -167,30 +266,46 @@ class NotaAsistenciaController extends Controller
             ->first();
 
         if ($existingNota) {
-            // Exigir justificativo de rectificación obligatorio
             $justificativo = trim($request->input('justificativo', ''));
-            if (empty($justificativo)) {
-                return response()->json([
-                    'message' => "La calificación para '{$validated['periodo']}' ya fue registrada previamente. Para modificarla, se requiere autorización formal del Administrador y el justificativo."
-                ], 422);
+
+            // Verificar si el paralelo ya tiene autorización activa de Dirección/Administrador
+            $paraleloAutorizado = false;
+            $adminName = null;
+            if (!empty($inscripcion->id_paralelo)) {
+                $claveNotas = "permiso_notas_paralelo_{$inscripcion->id_paralelo}";
+                $confNotas = \App\Models\Configuracion::where('clave', $claveNotas)->first();
+                $dataNotas = $confNotas ? json_decode($confNotas->valor, true) : null;
+                if (!empty($dataNotas['autorizado'])) {
+                    $paraleloAutorizado = true;
+                    $adminName = $dataNotas['admin_nombre'] ?? 'Administrador';
+                    if (empty($justificativo)) {
+                        $justificativo = $dataNotas['justificativo'] ?? 'Autorizado formalmente por Administración';
+                    }
+                }
             }
 
-            // Si no es admin autenticado, se requiere estrictamente la contraseña del Administrador
-            $adminAuthorizer = null;
-            if (!$isAdmin) {
+            // Si el usuario no es admin y el paralelo no está pre-autorizado, verificar contraseña de admin
+            if (!$isAdmin && !$paraleloAutorizado) {
+                if (empty($justificativo)) {
+                    return response()->json([
+                        'message' => "La calificación para '{$validated['periodo']}' ya fue registrada previamente. Solo el Administrador puede autorizar al docente para modificarla."
+                    ], 422);
+                }
+
                 $adminAuthorizer = $this->verifyAdminAuthorization($request);
                 if (!$adminAuthorizer) {
                     return response()->json([
-                        'message' => 'Acceso Denegado: Solo el Administrador puede permitir la modificación de calificaciones ya asentadas. Se requiere la autorización y contraseña válida del Administrador.'
+                        'message' => 'Acceso Denegado: Solo el Administrador puede autorizar al docente para modificar calificaciones ya asentadas.'
                     ], 403);
                 }
+                $adminName = $adminAuthorizer->name;
             }
 
             $userName = $user ? $user->name : 'Docente';
             if ($isAdmin) {
                 $auditLog = "[Rectificado por Admin ({$userName}): {$justificativo} - " . now()->format('d/m/Y H:i') . "]";
             } else {
-                $adminName = $adminAuthorizer->name;
+                $adminName = $adminName ?: 'Administrador';
                 $auditLog = "[Rectificado por Docente ({$userName}) con Autorización de Admin ({$adminName}): {$justificativo} - " . now()->format('d/m/Y H:i') . "]";
             }
 
@@ -204,7 +319,7 @@ class NotaAsistenciaController extends Controller
             ]);
 
             return response()->json([
-                'message' => 'Calificación rectificada con autorización de Administrador y auditoría registradas.',
+                'message' => 'Calificación rectificada por el Docente con autorización de Administrador.',
                 'nota'    => [
                     'id_nota' => $existingNota->id_nota,
                     'id' => $existingNota->id_nota,
@@ -305,30 +420,45 @@ class NotaAsistenciaController extends Controller
             ->first();
 
         if ($existingAsistencia) {
-            // Exigir justificativo para rectificar
             $justificativo = trim($request->input('justificativo', ''));
-            if (empty($justificativo)) {
-                return response()->json([
-                    'message' => "La asistencia del {$validated['fecha']} ya fue asentada. Para modificarla, se requiere autorización formal del Administrador y el justificativo correspondiente."
-                ], 422);
+
+            // Verificar si el paralelo ya tiene autorización activa para asistencias
+            $paraleloAutorizado = false;
+            $adminName = null;
+            if (!empty($inscripcion->id_paralelo)) {
+                $claveAsist = "permiso_asist_paralelo_{$inscripcion->id_paralelo}";
+                $confAsist = \App\Models\Configuracion::where('clave', $claveAsist)->first();
+                $dataAsist = $confAsist ? json_decode($confAsist->valor, true) : null;
+                if (!empty($dataAsist['autorizado'])) {
+                    $paraleloAutorizado = true;
+                    $adminName = $dataAsist['admin_nombre'] ?? 'Administrador';
+                    if (empty($justificativo)) {
+                        $justificativo = $dataAsist['justificativo'] ?? 'Autorizado formalmente por Administración';
+                    }
+                }
             }
 
-            // Si no es admin autenticado, se requiere estrictamente la contraseña del Administrador
-            $adminAuthorizer = null;
-            if (!$isAdmin) {
+            if (!$isAdmin && !$paraleloAutorizado) {
+                if (empty($justificativo)) {
+                    return response()->json([
+                        'message' => "La asistencia del {$validated['fecha']} ya fue asentada. Solo el Administrador puede autorizar al docente para modificarla."
+                    ], 422);
+                }
+
                 $adminAuthorizer = $this->verifyAdminAuthorization($request);
                 if (!$adminAuthorizer) {
                     return response()->json([
-                        'message' => 'Acceso Denegado: Solo el Administrador puede permitir la modificación de asistencias ya asentadas. Se requiere la autorización y contraseña válida del Administrador.'
+                        'message' => 'Acceso Denegado: Solo el Administrador puede autorizar al docente para modificar asistencias ya asentadas.'
                     ], 403);
                 }
+                $adminName = $adminAuthorizer->name;
             }
 
             $userName = $user ? $user->name : 'Docente';
             if ($isAdmin) {
                 $auditLog = "[Rectificado por Admin ({$userName}): {$justificativo} - " . now()->format('d/m/Y H:i') . "]";
             } else {
-                $adminName = $adminAuthorizer->name;
+                $adminName = $adminName ?: 'Administrador';
                 $auditLog = "[Rectificado por Docente ({$userName}) con Autorización de Admin ({$adminName}): {$justificativo} - " . now()->format('d/m/Y H:i') . "]";
             }
 
@@ -342,7 +472,7 @@ class NotaAsistenciaController extends Controller
             ]);
 
             return response()->json([
-                'message'    => 'Asistencia rectificada con autorización de Administrador y auditoría registradas.',
+                'message'    => 'Asistencia rectificada por el Docente con autorización de Administrador.',
                 'asistencia' => [
                     'id_asistencia' => $existingAsistencia->id_asistencia,
                     'id' => $existingAsistencia->id_asistencia,
@@ -357,20 +487,36 @@ class NotaAsistenciaController extends Controller
         // Si no existe pero es fecha pasada, requerir justificativo y autorización de admin
         $justificativo = trim($request->input('justificativo', ''));
         if ($fechaRegistro->lessThan($hoy)) {
-            if (empty($justificativo)) {
-                return response()->json([
-                    'message' => 'Para registrar asistencia extemporánea de una fecha pasada, se requiere obligatoriamente el justificativo y autorización de Administración.'
-                ], 422);
+            // Verificar si el paralelo ya tiene autorización activa
+            $paraleloAutorizado = false;
+            $adminName = null;
+            if (!empty($inscripcion->id_paralelo)) {
+                $claveAsist = "permiso_asist_paralelo_{$inscripcion->id_paralelo}";
+                $confAsist = \App\Models\Configuracion::where('clave', $claveAsist)->first();
+                $dataAsist = $confAsist ? json_decode($confAsist->valor, true) : null;
+                if (!empty($dataAsist['autorizado'])) {
+                    $paraleloAutorizado = true;
+                    $adminName = $dataAsist['admin_nombre'] ?? 'Administrador';
+                    if (empty($justificativo)) {
+                        $justificativo = $dataAsist['justificativo'] ?? 'Registro extemporáneo autorizado por Administración';
+                    }
+                }
             }
 
-            $adminAuthorizer = null;
-            if (!$isAdmin) {
+            if (!$isAdmin && !$paraleloAutorizado) {
+                if (empty($justificativo)) {
+                    return response()->json([
+                        'message' => 'Para registrar asistencia extemporánea de una fecha pasada, se requiere obligatoriamente el justificativo y autorización del Administrador.'
+                    ], 422);
+                }
+
                 $adminAuthorizer = $this->verifyAdminAuthorization($request);
                 if (!$adminAuthorizer) {
                     return response()->json([
-                        'message' => 'Acceso Denegado: Solo el Administrador puede permitir el registro de asistencia en fechas pasadas. Se requiere la contraseña y autorización del Administrador.'
+                        'message' => 'Acceso Denegado: Solo el Administrador puede autorizar el registro de asistencia en fechas pasadas.'
                     ], 403);
                 }
+                $adminName = $adminAuthorizer->name;
             }
         }
 
@@ -380,7 +526,7 @@ class NotaAsistenciaController extends Controller
             if ($isAdmin) {
                 $auditLog = "[Extemporáneo por Admin ({$userName}): {$justificativo} - " . now()->format('d/m/Y H:i') . "]";
             } else {
-                $adminName = $adminAuthorizer ? $adminAuthorizer->name : 'Administrador';
+                $adminName = $adminName ?: ($adminAuthorizer ? $adminAuthorizer->name : 'Administrador');
                 $auditLog = "[Extemporáneo por Docente ({$userName}) con Autorización de Admin ({$adminName}): {$justificativo} - " . now()->format('d/m/Y H:i') . "]";
             }
             $obsFinal = !empty($obsFinal) ? $obsFinal . " | " . $auditLog : $auditLog;

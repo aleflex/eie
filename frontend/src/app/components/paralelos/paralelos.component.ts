@@ -10,6 +10,7 @@ import { CourseService } from '../../services/course.service';
 import { DocenteService } from '../../services/docente.service';
 import { AuthService } from '../../services/auth.service';
 import { environment } from '../../../environments/environment';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-paralelos',
@@ -322,6 +323,15 @@ export class ParalelosComponent implements OnInit {
   adminModalMsg = '';
   adminModalError = false;
 
+  autorizacionParalelo: {
+    notas: { autorizado: boolean; justificativo: string | null; admin_nombre: string | null; fecha: string | null };
+    asistencias: { autorizado: boolean; justificativo: string | null; admin_nombre: string | null; fecha: string | null };
+  } = {
+    notas: { autorizado: false, justificativo: null, admin_nombre: null, fecha: null },
+    asistencias: { autorizado: false, justificativo: null, admin_nombre: null, fecha: null }
+  };
+  cargandoAutorizacion = false;
+
   abrirModalAdminCalificacionesDirecto() {
     if (this.paralelos && this.paralelos.length > 0) {
       this.abrirModalAdminCalificaciones(this.paralelos[0]);
@@ -344,6 +354,7 @@ export class ParalelosComponent implements OnInit {
     this.adminModalMsg = '';
     const periodos = this.getAdminPeriodos();
     if (periodos.length > 0) this.adminPeriodo = periodos[0];
+    this.cargarEstadoAutorizacion();
     this.cargarEstudiantesParaleloAdmin();
   }
 
@@ -351,6 +362,135 @@ export class ParalelosComponent implements OnInit {
     this.showAcademicModal = false;
     this.selectedParaleloAdmin = null;
     this.adminEstudiantes = [];
+  }
+
+  getDocenteAsignado(p: any): string {
+    if (!p) return 'No asignado';
+    if (p.docentes && p.docentes.length > 0) {
+      const d = p.docentes[0];
+      const nombreCompleto = `${d.nombres || ''} ${d.apellidos || ''}`.trim();
+      return nombreCompleto || 'Docente Titular';
+    }
+    return 'Sin docente asignado';
+  }
+
+  cargarEstadoAutorizacion() {
+    if (!this.selectedParaleloAdmin) return;
+    const id = this.selectedParaleloAdmin.id || this.selectedParaleloAdmin.id_paralelo;
+    this.cargandoAutorizacion = true;
+    this.http.get<any>(`${environment.apiUrl}/api/paralelos/${id}/autorizacion`).subscribe({
+      next: (res) => {
+        if (res) {
+          this.autorizacionParalelo = {
+            notas: res.notas || { autorizado: false, justificativo: null, admin_nombre: null, fecha: null },
+            asistencias: res.asistencias || { autorizado: false, justificativo: null, admin_nombre: null, fecha: null }
+          };
+        }
+        this.cargandoAutorizacion = false;
+      },
+      error: () => {
+        this.cargandoAutorizacion = false;
+      }
+    });
+  }
+
+  autorizarAlDocente(tipo: 'notas' | 'asistencias') {
+    const tipoLabel = tipo === 'notas' ? 'Calificaciones' : 'Asistencias';
+    const docenteNombre = this.getDocenteAsignado(this.selectedParaleloAdmin);
+
+    Swal.fire({
+      title: `Autorizar Modificación de ${tipoLabel}`,
+      html: `
+        <div style="text-align: left; font-size: 14px;">
+          <div style="background-color: #f0fdf4; border-left: 4px solid #16a34a; padding: 10px 12px; margin-bottom: 14px; border-radius: 6px; color: #166534; font-size: 13px;">
+            <i class="material-icons-outlined" style="font-size: 18px; vertical-align: middle;">verified</i>
+            Se otorgará permiso a <strong>${docenteNombre}</strong> para que pueda modificar las ${tipoLabel.toLowerCase()} en su panel.
+          </div>
+          <label style="display: block; font-weight: 600; margin-bottom: 4px; color: #1e293b; font-size: 13px;">
+            Motivo / Justificativo Formal de Dirección: <span style="color: #dc2626;">*</span>
+          </label>
+          <textarea id="swal-just-auth" class="swal2-textarea" placeholder="Ej: Autorizado por Dirección según Memorando 15/2026 tras revisión formal de exámenes..." style="margin: 0; width: 100%; box-sizing: border-box; font-size: 13px; height: 80px;"></textarea>
+        </div>
+      `,
+      showCancelButton: true,
+      confirmButtonText: 'Otorgar Autorización',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#003B71',
+      preConfirm: () => {
+        const just = (document.getElementById('swal-just-auth') as HTMLTextAreaElement)?.value?.trim() || '';
+        if (!just || just.length < 5) {
+          Swal.showValidationMessage('Debe ingresar un motivo o justificativo formal de al menos 5 caracteres.');
+          return false;
+        }
+        return just;
+      }
+    }).then((result) => {
+      if (result.isConfirmed && result.value) {
+        const id = this.selectedParaleloAdmin.id || this.selectedParaleloAdmin.id_paralelo;
+        this.http.post<any>(`${environment.apiUrl}/api/paralelos/${id}/autorizacion`, {
+          tipo: tipo,
+          accion: 'autorizar',
+          justificativo: result.value
+        }).subscribe({
+          next: (res) => {
+            Swal.fire({
+              icon: 'success',
+              title: '¡Autorización Concedida!',
+              text: res.message || 'El docente ahora puede ingresar a su panel y modificar las calificaciones/asistencias.',
+              confirmButtonColor: '#003B71'
+            });
+            this.cargarEstadoAutorizacion();
+          },
+          error: (err) => {
+            Swal.fire({
+              icon: 'error',
+              title: 'Error',
+              text: err.error?.message || 'No se pudo otorgar la autorización.',
+              confirmButtonColor: '#003B71'
+            });
+          }
+        });
+      }
+    });
+  }
+
+  revocarAutorizacionAlDocente(tipo: 'notas' | 'asistencias') {
+    const tipoLabel = tipo === 'notas' ? 'calificaciones' : 'asistencias';
+    Swal.fire({
+      title: '¿Revocar Autorización?',
+      text: `Las ${tipoLabel} del paralelo volverán a quedar bloqueadas para el docente.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, Revocar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#dc2626'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        const id = this.selectedParaleloAdmin.id || this.selectedParaleloAdmin.id_paralelo;
+        this.http.post<any>(`${environment.apiUrl}/api/paralelos/${id}/autorizacion`, {
+          tipo: tipo,
+          accion: 'revocar'
+        }).subscribe({
+          next: (res) => {
+            Swal.fire({
+              icon: 'success',
+              title: 'Autorización Revocada',
+              text: res.message || 'El docente ya no podrá modificar calificaciones/asistencias.',
+              confirmButtonColor: '#003B71'
+            });
+            this.cargarEstadoAutorizacion();
+          },
+          error: (err) => {
+            Swal.fire({
+              icon: 'error',
+              title: 'Error',
+              text: err.error?.message || 'No se pudo revocar la autorización.',
+              confirmButtonColor: '#003B71'
+            });
+          }
+        });
+      }
+    });
   }
 
   getAdminPeriodos(): string[] {
@@ -418,72 +558,6 @@ export class ParalelosComponent implements OnInit {
           this.adminObsAsistenciaForm[inscId] = '';
         }
       });
-    });
-  }
-
-  guardarNotaAdmin(ins: any) {
-    const inscId = ins.id || ins.id_inscripcion;
-    const notaVal = this.adminNotasForm[inscId];
-    if (notaVal === null || notaVal === undefined || isNaN(notaVal)) {
-      alert('Por favor ingrese una calificación válida (0-100).');
-      return;
-    }
-    const justificativo = (this.adminJustificativoNotas[inscId] || '').trim();
-    if (!justificativo) {
-      alert('Como Administrador, debe ingresar obligatoriamente el Justificativo del cambio de calificación.');
-      return;
-    }
-
-    const key = `nota_${inscId}`;
-    this.savingAdminItem[key] = true;
-
-    this.http.post(`${environment.apiUrl}/api/inscripciones/${inscId}/notas`, {
-      nota: notaVal,
-      periodo: this.adminPeriodo,
-      observacion: this.adminObsNotasForm[inscId] || null,
-      justificativo: justificativo
-    }).subscribe({
-      next: () => {
-        this.savingAdminItem[key] = false;
-        alert(`✓ Calificación de ${ins.estudiante?.nombres} rectificada con justificativo asentado.`);
-        this.adminJustificativoNotas[inscId] = '';
-        this.cargarNotasAdminPeriodo();
-      },
-      error: (err) => {
-        this.savingAdminItem[key] = false;
-        alert('Error: ' + (err.error?.message || err.message));
-      }
-    });
-  }
-
-  guardarAsistenciaAdmin(ins: any) {
-    const inscId = ins.id || ins.id_inscripcion;
-    const estado = this.adminAsistenciaForm[inscId] || 'presente';
-    const justificativo = (this.adminJustificativoAsistencia[inscId] || '').trim();
-    if (!justificativo) {
-      alert('Como Administrador, debe ingresar obligatoriamente el Justificativo de la modificación o falta justificada.');
-      return;
-    }
-
-    const key = `asist_${inscId}`;
-    this.savingAdminItem[key] = true;
-
-    this.http.post(`${environment.apiUrl}/api/inscripciones/${inscId}/asistencias`, {
-      fecha: this.adminFechaAsistencia,
-      estado: estado,
-      observacion: this.adminObsAsistenciaForm[inscId] || null,
-      justificativo: justificativo
-    }).subscribe({
-      next: () => {
-        this.savingAdminItem[key] = false;
-        alert(`✓ Asistencia de ${ins.estudiante?.nombres} actualizada con justificativo asentado.`);
-        this.adminJustificativoAsistencia[inscId] = '';
-        this.cargarAsistenciaAdminFecha();
-      },
-      error: (err) => {
-        this.savingAdminItem[key] = false;
-        alert('Error: ' + (err.error?.message || err.message));
-      }
     });
   }
 }
