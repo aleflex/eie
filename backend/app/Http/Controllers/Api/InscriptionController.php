@@ -31,7 +31,7 @@ class InscriptionController extends Controller
             'nombrePadres' => 'nullable|string|max:255',
             'ciTutor' => 'nullable|string|max:30',
             'hermanosInscritos' => 'nullable|string|max:255',
-            'contactoEmergencia' => 'required|string|max:255',
+            'contactoEmergencia' => ['required', 'string', 'regex:/^[0-9]{8}$/'],
             'idioma' => 'required|string',
             'nivel' => 'required|string',
             'horario' => 'required|string',
@@ -41,18 +41,36 @@ class InscriptionController extends Controller
             'carnetMilitarSerie' => 'nullable|string|max:50',
         ];
 
-        // Reglas condicionales de archivos:
-        // Para usuario normal se exigen obligatoriamente los 4 requisitos
+        // Reglas condicionales de archivos por categoría de usuario:
         if ($request->userType === 'normal') {
             $validationRules['carnet'] = 'required|file|mimes:pdf,jpeg,jpg,png,webp|max:5120';
             $validationRules['titulo'] = 'required|file|mimes:pdf,jpeg,jpg,png,webp|max:5120';
             $validationRules['nacimiento'] = 'required|file|mimes:pdf,jpeg,jpg,png,webp|max:5120';
             $validationRules['foto'] = 'required|file|mimes:jpeg,jpg,png,webp|max:5120';
+        } elseif ($request->userType === 'emi') {
+            $validationRules['carnet'] = 'required|file|mimes:pdf,jpeg,jpg,png,webp|max:5120';
+            $validationRules['titulo'] = 'required|file|mimes:pdf,jpeg,jpg,png,webp|max:5120';
+            $validationRules['nacimiento'] = 'required|file|mimes:pdf,jpeg,jpg,png,webp|max:5120';
+            $validationRules['foto'] = 'required|file|mimes:jpeg,jpg,png,webp|max:5120';
+            $validationRules['deposito'] = 'required|file|mimes:pdf,jpeg,jpg,png,webp|max:5120';
+            $validationRules['credencialEmi'] = 'required|file|mimes:pdf,jpeg,jpg,png,webp|max:5120';
+        } elseif ($request->userType === 'militar') {
+            $validationRules['carnet'] = 'required|file|mimes:pdf,jpeg,jpg,png,webp|max:5120';
+            $validationRules['titulo'] = 'required|file|mimes:pdf,jpeg,jpg,png,webp|max:5120';
+            $validationRules['nacimiento'] = 'required|file|mimes:pdf,jpeg,jpg,png,webp|max:5120';
+            $validationRules['foto'] = 'required|file|mimes:jpeg,jpg,png,webp|max:5120';
+            $validationRules['carnetMilitarDoc'] = 'required|file|mimes:pdf,jpeg,jpg,png,webp|max:5120';
+        } elseif ($request->userType === 'hijo_militar') {
+            $validationRules['carnet'] = 'required|file|mimes:pdf,jpeg,jpg,png,webp|max:5120';
+            $validationRules['titulo'] = 'required|file|mimes:pdf,jpeg,jpg,png,webp|max:5120';
+            $validationRules['nacimiento'] = 'required|file|mimes:pdf,jpeg,jpg,png,webp|max:5120';
+            $validationRules['foto'] = 'required|file|mimes:jpeg,jpg,png,webp|max:5120';
+            $validationRules['carnetCossmilDoc'] = 'required|file|mimes:pdf,jpeg,jpg,png,webp|max:5120';
         } else {
-            if ($request->hasFile('foto')) $validationRules['foto'] = 'file|mimes:jpeg,jpg,png,webp|max:5120';
-            if ($request->hasFile('carnet')) $validationRules['carnet'] = 'file|mimes:pdf,jpeg,jpg,png,webp|max:5120';
-            if ($request->hasFile('titulo')) $validationRules['titulo'] = 'file|mimes:pdf,jpeg,jpg,png,webp|max:5120';
-            if ($request->hasFile('nacimiento')) $validationRules['nacimiento'] = 'file|mimes:pdf,jpeg,jpg,png,webp|max:5120';
+            $validationRules['carnet'] = 'required|file|mimes:pdf,jpeg,jpg,png,webp|max:5120';
+            $validationRules['titulo'] = 'required|file|mimes:pdf,jpeg,jpg,png,webp|max:5120';
+            $validationRules['nacimiento'] = 'required|file|mimes:pdf,jpeg,jpg,png,webp|max:5120';
+            $validationRules['foto'] = 'required|file|mimes:jpeg,jpg,png,webp|max:5120';
         }
 
         if ($request->hasFile('deposito')) $validationRules['deposito'] = 'file|mimes:pdf,jpeg,jpg,png,webp|max:5120';
@@ -80,13 +98,13 @@ class InscriptionController extends Controller
             'carnetMilitarDoc.mimes' => 'El Carnet Militar debe ser un archivo PDF o una imagen (JPG, PNG).',
         ]);
 
-        // 0. Inspección estricta de Ciberseguridad de Archivos (Magic Bytes, Extensiones y Detección de Exploits en PDFs)
+        // 0. Inspección estricta de Ciberseguridad de Archivos (Magic Bytes, Extensiones, Coherencia y Detección de Exploits en PDFs)
         if ($request->hasFile('foto')) {
-            $this->validateSecureFile($request->file('foto'), true);
+            $this->validateSecureFile($request->file('foto'), true, 'foto');
         }
         foreach (['carnet', 'titulo', 'nacimiento', 'deposito', 'credencialEmi', 'carnetCossmil', 'carnetCossmilDoc', 'carnetMilitarDoc'] as $key) {
             if ($request->hasFile($key)) {
-                $this->validateSecureFile($request->file($key), false);
+                $this->validateSecureFile($request->file($key), false, $key);
             }
         }
 
@@ -282,6 +300,8 @@ class InscriptionController extends Controller
                 $ciTutor = ($request->filled('ciTutor') && trim($request->ciTutor) !== '') ? trim($request->ciTutor) : null;
                 $id_responsable = null;
 
+                $celularTutor = $request->filled('contactoEmergencia') ? trim($request->contactoEmergencia) : '';
+
                 if ($ciTutor) {
                     $responsable = \DB::table('responsables')->where('ci_responsable', $ciTutor)->first();
                     if ($responsable) {
@@ -290,6 +310,7 @@ class InscriptionController extends Controller
                             'nombres_responsable' => $nombres_resp,
                             'apellido_paterno_responsable' => $paterno_resp,
                             'apellido_materno_responsable' => $materno_resp,
+                            'celular_responsable' => $celularTutor,
                             'updated_at' => now()
                         ]);
                     }
@@ -301,7 +322,7 @@ class InscriptionController extends Controller
                         'apellido_paterno_responsable' => $paterno_resp,
                         'apellido_materno_responsable' => $materno_resp,
                         'ci_responsable' => $ciTutor,
-                        'celular_responsable' => '',
+                        'celular_responsable' => $celularTutor,
                         'direccion_responsable' => '',
                         'created_at' => now(),
                         'updated_at' => now()
@@ -314,28 +335,17 @@ class InscriptionController extends Controller
                 );
             }
 
-            // 10. Guardar información de contactos de emergencia
+            // 10. Guardar información de contactos de emergencia (jala el nombre del tutor)
             if ($request->filled('contactoEmergencia')) {
-                $contactoStr = trim($request->contactoEmergencia);
-                $telefono = '';
-                $nombre_cont = $contactoStr;
-                
-                if (preg_match('/(\+?\d[\d\s-]{6,12})/', $contactoStr, $matches)) {
-                    $telefono = trim($matches[1]);
-                    $nombre_cont = trim(str_replace($telefono, '', $contactoStr));
-                    $nombre_cont = trim($nombre_cont, " \t\n\r\0\x0B-:,");
-                }
-                
-                if (empty($nombre_cont)) {
-                    $nombre_cont = $contactoStr;
-                }
+                $telefonoEmergencia = trim($request->contactoEmergencia);
+                $nombreTutor = trim($request->nombrePadres ?: ($estudiante->nombre_padres ?: 'Padre/Madre/Tutor'));
 
                 \DB::table('contactos_emergencia')->updateOrInsert(
                     ['id_estudiante' => $estudiante->id_estudiante, 'es_principal' => 1],
                     [
-                        'nombre_contacto' => $nombre_cont,
-                        'telefono' => $telefono,
-                        'relacion' => 'Familiar',
+                        'nombre_contacto' => $nombreTutor,
+                        'telefono' => $telefonoEmergencia,
+                        'relacion' => 'Padre/Madre/Tutor',
                         'updated_at' => now()
                     ]
                 );
@@ -379,6 +389,34 @@ class InscriptionController extends Controller
 
             DB::commit();
 
+            // Emitir evento en tiempo real vía WebSockets (cero polling)
+            \App\Services\WebSocketService::broadcast('inscripciones', 'nueva_inscripcion', [
+                'id_inscripcion' => $inscripcion->id_inscripcion,
+                'id' => $inscripcion->id_inscripcion,
+                'estudiante_id' => $estudiante->id_estudiante,
+                'curso_id' => $curso->id_curso,
+                'paralelo_id' => null,
+                'fecha_registro' => $inscripcion->fecha_registro,
+                'estado' => $inscripcion->estado,
+                'estudiante' => [
+                    'id' => $estudiante->id_estudiante,
+                    'id_estudiante' => $estudiante->id_estudiante,
+                    'nombres' => $user->nombres,
+                    'apellidos' => $user->apellidos,
+                    'ci' => $user->ci,
+                    'correo_electronico' => $user->correo_institucional,
+                    'celular' => $estudiante->celular,
+                    'tipo_usuario' => $estudiante->tipo_usuario
+                ],
+                'curso' => [
+                    'id' => $curso->id_curso,
+                    'id_curso' => $curso->id_curso,
+                    'idioma' => $curso->idioma?->nombre_idioma ?? $curso->idioma?->nombre ?? '',
+                    'nivel' => $curso->nivel ?? '',
+                    'modalidad' => $curso->modalidad ?? ''
+                ]
+            ]);
+
             return response()->json([
                 'message' => 'Inscripción registrada con éxito',
                 'id' => $inscripcion->id_inscripcion,
@@ -401,7 +439,7 @@ class InscriptionController extends Controller
     public function index()
     {
         try {
-            $inscripciones = Inscripcion::with([
+            $rawInscripciones = Inscripcion::with([
                 'estudiante.user',
                 'estudiante.gradoRel',
                 'estudiante.armaRel',
@@ -409,7 +447,12 @@ class InscriptionController extends Controller
                 'curso.nivelRel',
                 'curso.modalidadRel',
                 'paralelo'
-            ])->get()->map(function($ins) {
+            ])->orderBy('id_inscripcion', 'desc')->get();
+
+            $inscripciones = $rawInscripciones->map(function($ins) {
+                $est = $ins->estudiante;
+                $user = $est?->user;
+
                 return [
                     'id_inscripcion' => $ins->id_inscripcion,
                     'id' => $ins->id_inscripcion, // fallback
@@ -418,29 +461,15 @@ class InscriptionController extends Controller
                     'paralelo_id' => $ins->id_paralelo,
                     'fecha_registro' => $ins->fecha_registro,
                     'estado' => $ins->estado,
-                    'estudiante' => $ins->estudiante ? [
-                        'id' => $ins->estudiante->id_estudiante,
-                        'id_estudiante' => $ins->estudiante->id_estudiante,
-                        'nombres' => $ins->estudiante->user?->nombres ?? $ins->estudiante->nombres ?? '',
-                        'apellidos' => $ins->estudiante->user?->apellidos ?? $ins->estudiante->apellidos ?? '',
-                        'ci' => $ins->estudiante->user?->ci ?? $ins->estudiante->ci ?? '',
-                        'correo_electronico' => $ins->estudiante->user?->correo_institucional ?? $ins->estudiante->user?->correo_electronico ?? $ins->estudiante->correo_electronico ?? '',
-                        'celular' => $ins->estudiante->celular,
-                        'fecha_nacimiento' => $ins->estudiante->fecha_nacimiento,
-                        'lugar_nacimiento' => $ins->estudiante->lugar_nacimiento,
-                        'anio_egreso_bachiller' => $ins->estudiante->anio_egreso_bachiller,
-                        'estado_civil' => $ins->estudiante->estado_civil,
-                        'grupo_sanguineo' => $ins->estudiante->grupo_sanguineo,
-                        'domicilio' => $ins->estudiante->domicilio,
-                        'carnet_militar' => $ins->estudiante->carnet_militar,
-                        'carnet_cossmil' => $ins->estudiante->carnet_cossmil,
-                        'nombre_padres' => $ins->estudiante->nombre_padres,
-                        'ci_tutor' => $ins->estudiante->ci_tutor,
-                        'hermanos_inscritos' => $ins->estudiante->hermanos_inscritos,
-                        'contacto_emergencia' => $ins->estudiante->contacto_emergencia,
-                        'foto_4x4_url' => $ins->estudiante->foto_4x4_url,
-                        'grado_academico' => $ins->estudiante->grado_academico ?? '',
-                        'arma_especialidad' => $ins->estudiante->arma_especialidad ?? '',
+                    'estudiante' => $est ? [
+                        'id' => $est->id_estudiante,
+                        'id_estudiante' => $est->id_estudiante,
+                        'nombres' => $user?->nombres ?? $est->nombres ?? '',
+                        'apellidos' => $user?->apellidos ?? $est->apellidos ?? '',
+                        'ci' => $user?->ci ?? $est->ci ?? '',
+                        'foto_4x4_url' => $est->foto_4x4_url,
+                        'grado_academico' => $est->gradoRel?->nombre_grado ?? '',
+                        'arma_especialidad' => $est->armaRel?->nombre_arma ?? '',
                     ] : null,
                     'curso' => $ins->curso ? [
                         'id' => $ins->curso->id_curso,
@@ -505,6 +534,15 @@ class InscriptionController extends Controller
 
             $inscripcion->save();
 
+            // Emitir evento en tiempo real vía WebSockets
+            \App\Services\WebSocketService::broadcast('inscripciones', 'estado_actualizado', [
+                'id_inscripcion' => $inscripcion->id_inscripcion,
+                'id' => $inscripcion->id_inscripcion,
+                'estado' => $inscripcion->estado,
+                'paralelo_id' => $inscripcion->id_paralelo,
+                'curso_id' => $inscripcion->id_curso
+            ]);
+
             return response()->json([
                 'message' => 'Inscripción actualizada con éxito',
                 'inscripcion' => [
@@ -536,6 +574,11 @@ class InscriptionController extends Controller
             }
 
             $inscripcion->delete();
+
+            \App\Services\WebSocketService::broadcast('inscripciones', 'inscripcion_eliminada', [
+                'id_inscripcion' => $id,
+                'id' => $id
+            ]);
 
             return response()->json([
                 'message' => 'Inscripción eliminada correctamente.'
@@ -569,6 +612,16 @@ class InscriptionController extends Controller
                 'fecha_registro' => $request->fecha_registro ?? now()->toDateString(),
             ]);
 
+            \App\Services\WebSocketService::broadcast('inscripciones', 'nueva_inscripcion', [
+                'id_inscripcion' => $inscripcion->id_inscripcion,
+                'id' => $inscripcion->id_inscripcion,
+                'estudiante_id' => $inscripcion->id_estudiante,
+                'curso_id' => $inscripcion->id_curso,
+                'paralelo_id' => $inscripcion->id_paralelo,
+                'fecha_registro' => $inscripcion->fecha_registro,
+                'estado' => $inscripcion->estado,
+            ]);
+
             return response()->json([
                 'message' => 'Curso asignado al estudiante correctamente.',
                 'inscripcion' => $inscripcion
@@ -591,11 +644,11 @@ class InscriptionController extends Controller
      * @param bool $isPhotoOnly
      * @throws \Illuminate\Validation\ValidationException
      */
-    private function validateSecureFile($file, bool $isPhotoOnly = false)
+    private function validateSecureFile($file, bool $isPhotoOnly = false, string $fieldName = '')
     {
         if (!$file || !$file->isValid()) {
             throw \Illuminate\Validation\ValidationException::withMessages([
-                'archivo' => 'El archivo subido no es válido o está dañado.'
+                $fieldName ?: 'archivo' => 'El archivo subido no es válido o está dañado.'
             ]);
         }
 
@@ -604,12 +657,43 @@ class InscriptionController extends Controller
 
         if (!in_array($extension, $allowedExtensions)) {
             $msg = $isPhotoOnly
-                ? "La Fotografía Personal 4x4 debe ser una imagen (JPG, PNG o WEBP), no se permite formato .{$extension}."
+                ? "La Fotografía Personal 4x4 debe ser una imagen (JPG, PNG o WEBP con fondo rojo), no se permite formato .{$extension}."
                 : "Extensión no permitida (.{$extension}). Solo se admiten documentos PDF o imágenes (JPG, PNG).";
-            throw \Illuminate\Validation\ValidationException::withMessages(['archivo' => $msg]);
+            throw \Illuminate\Validation\ValidationException::withMessages([$fieldName ?: 'archivo' => $msg]);
         }
 
-        // Inspección binaria de Magic Bytes
+        // 1. Bloquear capturas de pantalla, memes y descargas genéricas
+        $originalName = strtolower($file->getClientOriginalName());
+        if (preg_match('/(screenshot|captura|pantall|screen_shot|screen-shot|snapchat|wa_|whatsapp|sticker|meme|descarga|download)/i', $originalName)) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                $fieldName ?: 'archivo' => "El archivo '{$file->getClientOriginalName()}' parece ser una captura de pantalla (Screenshot) o descarga. Debe subir el documento original oficial (escaneado o fotografiado directamente, o en formato PDF)."
+            ]);
+        }
+
+        // 2. Coherencia de tipo de documento (evitar documentos cruzados)
+        $forbiddenKeywords = [
+            'carnet' => ['titulo', 'bachiller', 'diploma', 'nacimiento', 'partida', 'deposito', 'boleta', 'pago', 'recibo', 'cossmil', 'factura'],
+            'titulo' => ['carnet', 'cedula', 'nacimiento', 'partida', 'deposito', 'boleta', 'pago', 'recibo', 'factura', 'cossmil', 'foto'],
+            'nacimiento' => ['carnet', 'cedula', 'titulo', 'bachiller', 'diploma', 'deposito', 'boleta', 'pago', 'factura', 'cossmil', 'foto'],
+            'foto' => ['carnet', 'cedula', 'identidad', 'titulo', 'bachiller', 'diploma', 'nacimiento', 'certificado', 'partida', 'deposito', 'boleta', 'pago', 'recibo', 'factura', 'cossmil', 'documento', 'pdf'],
+            'deposito' => ['carnet', 'cedula', 'titulo', 'bachiller', 'diploma', 'nacimiento', 'certificado', 'cossmil', 'foto'],
+            'credencialEmi' => ['titulo', 'bachiller', 'nacimiento', 'certificado', 'cossmil'],
+            'carnetCossmil' => ['titulo', 'bachiller', 'nacimiento', 'deposito', 'boleta'],
+            'carnetCossmilDoc' => ['titulo', 'bachiller', 'nacimiento', 'deposito', 'boleta'],
+            'carnetMilitarDoc' => ['titulo', 'bachiller', 'nacimiento', 'deposito', 'boleta', 'cossmil']
+        ];
+
+        if ($fieldName && isset($forbiddenKeywords[$fieldName])) {
+            foreach ($forbiddenKeywords[$fieldName] as $kw) {
+                if (str_contains($originalName, $kw)) {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        $fieldName => "El archivo subido ('{$file->getClientOriginalName()}') no corresponde al documento requerido. Parece pertenecer a otro tipo de documento (" . strtoupper($kw) . ")."
+                    ]);
+                }
+            }
+        }
+
+        // 3. Inspección binaria de Magic Bytes
         $handle = fopen($file->getRealPath(), 'rb');
         $header = fread($handle, 16);
         fclose($handle);
@@ -626,7 +710,7 @@ class InscriptionController extends Controller
         } elseif ($extension === 'pdf') {
             if (!str_starts_with($header, "%PDF-")) {
                 throw \Illuminate\Validation\ValidationException::withMessages([
-                    'archivo' => 'El documento no es un PDF auténtico (cabecera binaria inválida).'
+                    $fieldName ?: 'archivo' => 'El documento no es un PDF auténtico (cabecera binaria inválida).'
                 ]);
             }
 
@@ -647,7 +731,7 @@ class InscriptionController extends Controller
                 if (preg_match($pattern, $content)) {
                     \Log::warning("Bloqueo de PDF malicioso detectado ({$description}) en archivo: " . $file->getClientOriginalName());
                     throw \Illuminate\Validation\ValidationException::withMessages([
-                        'archivo' => "¡Alerta de Seguridad! El archivo PDF contiene {$description}. Por seguridad de la Escuela de Idiomas del Ejército (EIE), este archivo ha sido bloqueado."
+                        $fieldName ?: 'archivo' => "¡Alerta de Seguridad! El archivo PDF contiene {$description}. Por seguridad de la Escuela de Idiomas del Ejército (EIE), este archivo ha sido bloqueado."
                     ]);
                 }
             }
@@ -658,8 +742,69 @@ class InscriptionController extends Controller
             $isWebp = str_starts_with($header, "RIFF") && strpos($header, "WEBP") !== false;
             if (!$isJpg && !$isPng && !$isWebp) {
                 throw \Illuminate\Validation\ValidationException::withMessages([
-                    'archivo' => 'El archivo no corresponde a un documento de imagen válido o está corrupto.'
+                    $fieldName ?: 'archivo' => 'El archivo no corresponde a un documento de imagen válido o está corrupto.'
                 ]);
+            }
+        }
+
+        // 4. Inspección de dimensiones y aspecto visual para imágenes
+        if (in_array($extension, ['jpg', 'jpeg', 'png', 'webp'])) {
+            $imageInfo = @getimagesize($file->getRealPath());
+            if ($imageInfo) {
+                $w = $imageInfo[0];
+                $h = $imageInfo[1];
+                $ratio = $w / max(1, $h);
+
+                if ($isPhotoOnly) {
+                    if ($ratio < 0.70 || $ratio > 1.35) {
+                        throw \Illuminate\Validation\ValidationException::withMessages([
+                            'foto' => "La fotografía personal 4x4 debe tener proporción cuadrada o carnet oficial ({$w}x{$h} px). No se permiten imágenes panorámicas ni capturas alargadas."
+                        ]);
+                    }
+                    if ($w < 150 || $h < 150) {
+                        throw \Illuminate\Validation\ValidationException::withMessages([
+                            'foto' => "La resolución de la fotografía es demasiado baja (mínimo 150x150 píxeles)."
+                        ]);
+                    }
+
+                    // Verificación de fondo rojo si GD está disponible
+                    if (function_exists('imagecreatefromstring')) {
+                        $imgContent = file_get_contents($file->getRealPath());
+                        $im = @imagecreatefromstring($imgContent);
+                        if ($im) {
+                            $samplePoints = [
+                                [intval($w * 0.15), intval($h * 0.10)],
+                                [intval($w * 0.85), intval($h * 0.10)],
+                                [intval($w * 0.50), intval($h * 0.05)],
+                                [intval($w * 0.10), intval($h * 0.20)],
+                                [intval($w * 0.90), intval($h * 0.20)]
+                            ];
+                            $redPoints = 0;
+                            foreach ($samplePoints as $pt) {
+                                $rgb = imagecolorat($im, $pt[0], $pt[1]);
+                                $r = ($rgb >> 16) & 0xFF;
+                                $g = ($rgb >> 8) & 0xFF;
+                                $b = $rgb & 0xFF;
+                                if ($r > 90 && $r > ($g * 1.25) && $r > ($b * 1.25) && ($r - $g > 20) && ($r - b > 20)) {
+                                    $redPoints++;
+                                }
+                            }
+                            imagedestroy($im);
+                            if ($redPoints < 2) {
+                                throw \Illuminate\Validation\ValidationException::withMessages([
+                                    'foto' => 'La fotografía subida no cumple con el fondo ROJO obligatorio requerido por la Escuela de Idiomas del Ejército.'
+                                ]);
+                            }
+                        }
+                    }
+                } else {
+                    // Documento en imagen: verificar que no sea una captura vertical alargada de celular
+                    if ($ratio < 0.46 || $ratio > 2.25) {
+                        throw \Illuminate\Validation\ValidationException::withMessages([
+                            $fieldName ?: 'archivo' => "La imagen seleccionada tiene proporciones de captura de pantalla vertical ({$w}x{$h} px). Por favor suba una foto o escaneo nítido del documento original."
+                        ]);
+                    }
+                }
             }
         }
     }

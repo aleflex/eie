@@ -311,8 +311,9 @@
                   name="hermanos_inscritos" class="form-control">
               </div>
               <div class="form-group">
-                <label for="contacto_emergencia">Celular del Tutor (Contacto de Emergencia)</label>
+                <label for="contacto_emergencia">Celular del Tutor (Contacto de Emergencia - 8 dígitos)</label>
                 <input type="text" id="contacto_emergencia" [(ngModel)]="selectedStudent.contacto_emergencia"
+                  (keypress)="onlyNumbers($event)" maxlength="8"
                   name="contacto_emergencia" class="form-control" placeholder="Ej: 71234567">
               </div>
             </div>

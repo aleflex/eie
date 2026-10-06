@@ -4,7 +4,8 @@ import { Router, RouterModule } from '@angular/router';
 import { Title } from '@angular/platform-browser';
 import { InscriptionService } from '../../services/inscription.service';
 import { AuthService } from '../../services/auth.service';
-import { Subscription, interval } from 'rxjs';
+import { WebSocketService } from '../../services/websocket.service';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -18,10 +19,8 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   isLoading: boolean = true;
   user: any = null;
 
-  // Sincronización en tiempo real
-  private pollSub: Subscription | null = null;
-  private focusHandler: any = null;
-  private visibilityHandler: any = null;
+  // Suscripciones WebSocket en tiempo real
+  private wsSubs: Subscription[] = [];
 
   // Control de la barra lateral (Sidebar)
   isSidebarCollapsed: boolean = false;
@@ -46,6 +45,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   constructor(
     private inscriptionService: InscriptionService,
     private authService: AuthService,
+    private wsService: WebSocketService,
     private router: Router,
     private titleService: Title
   ) {}
@@ -61,29 +61,36 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     this.user = this.authService.getUser();
     this.cargarInscripciones();
 
-    // Polling en tiempo real cada 3.5 segundos para reflejar nuevas inscripciones automáticamente
-    this.pollSub = interval(3500).subscribe(() => {
-      this.silentSyncInscripciones();
-    });
-
-    if (typeof window !== 'undefined') {
-      this.focusHandler = () => this.silentSyncInscripciones();
-      this.visibilityHandler = () => {
-        if (!document.hidden) this.silentSyncInscripciones();
-      };
-      window.addEventListener('focus', this.focusHandler);
-      document.addEventListener('visibilitychange', this.visibilityHandler);
-    }
+    // Sincronización instantánea mediante WebSockets (cero peticiones repetidas)
+    this.wsSubs.push(
+      this.wsService.onInscriptionCreated().subscribe(() => {
+        this.cargarInscripciones();
+      }),
+      this.wsService.onInscriptionUpdated().subscribe((data) => {
+        if (data && (data.id_inscripcion || data.id)) {
+          const targetId = data.id_inscripcion || data.id;
+          const idx = this.inscripciones.findIndex(i => (i.id || i.id_inscripcion) == targetId);
+          if (idx !== -1) {
+            this.inscripciones[idx] = { ...this.inscripciones[idx], ...data };
+            this.actualizarEstadisticas();
+            return;
+          }
+        }
+        this.cargarInscripciones();
+      }),
+      this.wsService.onInscriptionDeleted().subscribe((data) => {
+        if (data && (data.id_inscripcion || data.id)) {
+          const targetId = data.id_inscripcion || data.id;
+          this.inscripciones = this.inscripciones.filter(i => (i.id || i.id_inscripcion) != targetId);
+          this.actualizarEstadisticas();
+        }
+      })
+    );
   }
 
   ngOnDestroy() {
-    if (this.pollSub) {
-      this.pollSub.unsubscribe();
-    }
-    if (typeof window !== 'undefined') {
-      if (this.focusHandler) window.removeEventListener('focus', this.focusHandler);
-      if (this.visibilityHandler) document.removeEventListener('visibilitychange', this.visibilityHandler);
-    }
+    this.wsSubs.forEach(sub => sub.unsubscribe());
+    this.wsSubs = [];
   }
 
   cargarInscripciones() {
@@ -97,21 +104,6 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         console.error('Error al cargar inscripciones', err);
         this.isLoading = false;
       }
-    });
-  }
-
-  silentSyncInscripciones() {
-    this.inscriptionService.listarInscripciones().subscribe({
-      next: (data) => {
-        if (!data || !Array.isArray(data)) return;
-        const currentFingerprint = this.inscripciones.map(i => `${i.id || i.id_inscripcion}_${i.estado}_${i.curso_id}`).join('|');
-        const newFingerprint = data.map(i => `${i.id || i.id_inscripcion}_${i.estado}_${i.curso_id}`).join('|');
-        if (currentFingerprint !== newFingerprint) {
-          this.inscripciones = data;
-          this.actualizarEstadisticas();
-        }
-      },
-      error: () => {}
     });
   }
 

@@ -10,7 +10,8 @@ import { CourseService } from '../../services/course.service';
 import { InscriptionService } from '../../services/inscription.service';
 import { downloadFile } from '../../utils/file-downloader';
 import { ParaleloService } from '../../services/paralelo.service';
-import { Subject, Subscription, interval } from 'rxjs';
+import { WebSocketService } from '../../services/websocket.service';
+import { Subject, Subscription } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { ImageCompressorService } from '../../services/image-compressor.service';
 import { AuthService } from '../../services/auth.service';
@@ -97,17 +98,16 @@ export class StudentsComponent implements OnInit, OnDestroy {
   isPreviewPdf: boolean = false;
   isPreviewImage: boolean = false;
 
-  // Sincronización en tiempo real silenciosa entre Web y APK
-  private realTimeSub: Subscription | null = null;
+  // Sincronización en tiempo real vía WebSockets (cero polling)
+  private wsSubs: Subscription[] = [];
   private isSyncing: boolean = false;
-  private focusHandler: any = null;
-  private visibilityHandler: any = null;
 
   constructor(
     private studentService: StudentService,
     private courseService: CourseService,
     private inscriptionService: InscriptionService,
     private paraleloService: ParaleloService,
+    private wsService: WebSocketService,
     private sanitizer: DomSanitizer,
     private imageCompressor: ImageCompressorService,
     private http: HttpClient,
@@ -127,35 +127,43 @@ export class StudentsComponent implements OnInit, OnDestroy {
       this.onSearch();
     });
 
-    // Sincronización automática silenciosa en tiempo real cada 3.5 segundos
-    this.realTimeSub = interval(3500).subscribe(() => {
-      if (!this.selectedStudent) {
-        this.silentSyncStudents();
-      }
-      if (this.showDocumentsModal && this.currentStudentForDocs && !this.docsLoading) {
-        this.silentSyncDocuments();
-      }
-    });
+    // Suscripción a eventos en tiempo real mediante WebSockets (cero llamadas continuas)
+    this.wsSubs.push(
+      this.wsService.onStudentUpdated().subscribe((updatedStudent) => {
+        if (!updatedStudent) return;
+        const targetId = updatedStudent.id || updatedStudent.id_estudiante;
+        const idx = this.allStudents.findIndex(s => (s.id || s.id_estudiante) == targetId);
+        if (idx !== -1) {
+          this.allStudents[idx] = { ...this.allStudents[idx], ...updatedStudent };
+          if (this.searchTerm && this.searchTerm.trim() !== '') {
+            this.onSearch();
+          } else {
+            this.students = [...this.allStudents];
+          }
+        } else {
+          this.loadStudents();
+        }
 
-    // Refrescar al reanudar aplicación o enfocar pestaña
-    if (typeof window !== 'undefined') {
-      this.focusHandler = () => this.silentSyncStudents();
-      this.visibilityHandler = () => {
-        if (!document.hidden) this.silentSyncStudents();
-      };
-      window.addEventListener('focus', this.focusHandler);
-      document.addEventListener('visibilitychange', this.visibilityHandler);
-    }
+        // Si el modal de documentos está abierto para este estudiante, refrescar documentos
+        if (this.showDocumentsModal && this.currentStudentForDocs) {
+          const currentDocStudentId = this.currentStudentForDocs.id || this.currentStudentForDocs.id_estudiante;
+          if (currentDocStudentId == targetId) {
+            this.loadStudentDocuments();
+          }
+        }
+      }),
+      this.wsService.onInscriptionCreated().subscribe(() => {
+        this.loadStudents();
+      }),
+      this.wsService.onInscriptionUpdated().subscribe(() => {
+        this.loadStudents();
+      })
+    );
   }
 
   ngOnDestroy() {
-    if (this.realTimeSub) {
-      this.realTimeSub.unsubscribe();
-    }
-    if (typeof window !== 'undefined') {
-      if (this.focusHandler) window.removeEventListener('focus', this.focusHandler);
-      if (this.visibilityHandler) document.removeEventListener('visibilitychange', this.visibilityHandler);
-    }
+    this.wsSubs.forEach(sub => sub.unsubscribe());
+    this.wsSubs = [];
   }
 
   /**

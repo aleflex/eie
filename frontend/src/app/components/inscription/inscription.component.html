@@ -307,12 +307,21 @@
             <input type="text" id="hermanosInscritos" formControlName="hermanosInscritos" class="form-control" placeholder="Ej. Carlos Pérez, María Pérez">
           </div>
           <div class="col-md-6 form-group">
-            <label for="contactoEmergencia">En caso de emergencia Llamar a *</label>
-            <input type="text" id="contactoEmergencia" formControlName="contactoEmergencia" class="form-control"
-                   [class.is-invalid]="(isSubmitted || f['contactoEmergencia'].touched) && f['contactoEmergencia'].errors" placeholder="Nombre y celular de contacto de emergencia">
+            <label for="contactoEmergencia">
+              En caso de emergencia Llamar a *
+              <span class="text-muted" style="font-size: 11px; font-weight: normal;">(Celular: 8 dígitos)</span>
+            </label>
+            <div *ngIf="f['nombrePadres']?.value?.trim()" class="text-muted mb-1" style="font-size: 12px;">
+              <i class="material-icons align-middle" style="font-size: 15px; color: #16a34a;">person</i>
+              Contacto: <strong>{{ f['nombrePadres'].value }}</strong>
+            </div>
+            <input type="tel" id="contactoEmergencia" formControlName="contactoEmergencia" class="form-control"
+                   (keypress)="onlyNumbers($event)" (input)="onEmergencyPhoneInput($event)"
+                   minlength="8" maxlength="8" inputmode="numeric"
+                   [class.is-invalid]="(isSubmitted || f['contactoEmergencia'].touched) && f['contactoEmergencia'].errors" placeholder="Ej: 71234567 (8 dígitos)">
             <div *ngIf="(isSubmitted || f['contactoEmergencia'].touched) && f['contactoEmergencia'].errors" class="error-msg">
-              <small *ngIf="f['contactoEmergencia'].errors['required']">El contacto de emergencia es obligatorio.</small>
-              <small *ngIf="f['contactoEmergencia'].errors['minlength']">Mínimo 4 caracteres.</small>
+              <small *ngIf="f['contactoEmergencia'].errors['required']">El número de celular de emergencia es obligatorio.</small>
+              <small *ngIf="f['contactoEmergencia'].errors['pattern']">Debe ser un número de celular de exactamente 8 dígitos.</small>
             </div>
           </div>
         </div>
@@ -693,7 +702,7 @@
                 <i class="material-icons file-icon text-success-icon">badge</i>
                 <div class="file-details">
                   <span class="file-name">{{ fileNames['foto'] }}</span>
-                  <span class="file-status">Fotografía cargada correctamente</span>
+                  <span class="file-status">Fotografía 4x4 (Fondo Rojo) validada</span>
                 </div>
                 <button type="button" class="btn-remove-file" (click)="removeFile('foto')" title="Quitar fotografía">
                   <i class="material-icons">close</i>
@@ -707,9 +716,6 @@
             </div>
             <div *ngIf="(isSubmitted || inscriptionForm.get('archivos.foto')?.touched) && inscriptionForm.get('archivos.foto')?.invalid" class="error-msg">
               <small>La Fotografía Personal 4x4 con fondo rojo es obligatoria.</small>
-            </div>
-            <div *ngIf="fileNames['foto'] && !isPhotoFondoRojoValid" class="error-msg">
-              <small>⚠️ La fotografía seleccionada no cumple con el fondo rojo obligatorio.</small>
             </div>
             <small class="text-muted mt-1">Formatos: Imagen (JPG, PNG) con fondo rojo.</small>
           </div>

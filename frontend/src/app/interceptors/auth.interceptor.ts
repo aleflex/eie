@@ -1,10 +1,15 @@
-import { HttpInterceptorFn } from '@angular/common/http';
+import { HttpInterceptorFn, HttpErrorResponse } from '@angular/common/http';
+import { inject } from '@angular/core';
+import { Router } from '@angular/router';
+import { catchError, throwError } from 'rxjs';
 
 /**
  * Interceptor HTTP de Autenticación y Seguridad
  * Inyecta automáticamente el Token de Autorización (Bearer Token) en cada petición al backend.
+ * Si el servidor responde 401 Unauthorized, redirige automáticamente al login.
  */
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
+  const router = inject(Router);
   let headers = req.headers;
 
   if (req.url.includes('ngrok-free.app')) {
@@ -32,5 +37,15 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   }
 
   const clonedRequest = req.clone({ headers });
-  return next(clonedRequest);
+  return next(clonedRequest).pipe(
+    catchError((error: HttpErrorResponse) => {
+      // Si el servidor rechaza la petición por falta de autenticación o token expirado
+      if (error.status === 401 && !req.url.includes('/api/login')) {
+        sessionStorage.removeItem('usuario');
+        localStorage.removeItem('usuario');
+        router.navigate(['/login']);
+      }
+      return throwError(() => error);
+    })
+  );
 };

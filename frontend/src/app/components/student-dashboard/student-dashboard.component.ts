@@ -3,10 +3,11 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { DomSanitizer, SafeResourceUrl, Title } from '@angular/platform-browser';
-import { Subscription, interval } from 'rxjs';
+import { Subscription } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { StudentService } from '../../services/student.service';
 import { InscriptionService } from '../../services/inscription.service';
+import { WebSocketService } from '../../services/websocket.service';
 import { downloadFile } from '../../utils/file-downloader';
 import { ImageCompressorService } from '../../services/image-compressor.service';
 import { environment } from '../../../environments/environment';
@@ -26,7 +27,7 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
   isRefreshing: boolean = false;
   activeTab: string = 'profile'; // 'profile', 'history', 'documents'
 
-  private gradesPollSub: Subscription | null = null;
+  private wsSubs: Subscription[] = [];
   private userSub: Subscription | null = null;
 
   // Mobile menu sidebar drawer
@@ -93,6 +94,7 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     private studentService: StudentService,
     private inscriptionService: InscriptionService,
+    private wsService: WebSocketService,
     private router: Router,
     private sanitizer: DomSanitizer,
     private titleService: Title,
@@ -135,35 +137,37 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
       this.isLoading = false;
     }
 
-    // Polling en tiempo real: consulta nuevas calificaciones, perfil y documentos cada 3.5 segundos
-    this.gradesPollSub = interval(3500).subscribe(() => {
-      if (this.user && this.user.estudiante_id && !this.uploading) {
-        this.loadStudentProfile(this.user.estudiante_id, true);
-        if (this.activeTab === 'documents' && this.student) {
-          this.loadStudentDocuments(true);
+    // Sincronización instantánea mediante WebSockets (cero llamadas HTTP repetidas)
+    this.wsSubs.push(
+      this.wsService.onStudentUpdated().subscribe((updatedStudent) => {
+        if (!updatedStudent) return;
+        const currentId = this.user?.estudiante_id || this.student?.id_estudiante || this.student?.id;
+        const updatedId = updatedStudent.id || updatedStudent.id_estudiante;
+        if (currentId && updatedId && currentId == updatedId) {
+          if (!this.uploading) {
+            this.loadStudentProfile(currentId, true);
+            if (this.activeTab === 'documents') {
+              this.loadStudentDocuments(true);
+            }
+          }
         }
-      }
-    });
-
-    // Sincronización inmediata al volver a la APK o a la pestaña del navegador
-    if (typeof window !== 'undefined') {
-      window.addEventListener('focus', () => {
-        if (this.user && this.user.estudiante_id) {
+      }),
+      this.wsService.onProfileUpdated().subscribe(() => {
+        if (this.user?.estudiante_id && !this.uploading) {
           this.loadStudentProfile(this.user.estudiante_id, true);
         }
-      });
-      document.addEventListener('visibilitychange', () => {
-        if (!document.hidden && this.user && this.user.estudiante_id) {
+      }),
+      this.wsService.onInscriptionUpdated().subscribe((ins) => {
+        if (ins && this.user?.estudiante_id && !this.uploading) {
           this.loadStudentProfile(this.user.estudiante_id, true);
         }
-      });
-    }
+      })
+    );
   }
 
   ngOnDestroy() {
-    if (this.gradesPollSub) {
-      this.gradesPollSub.unsubscribe();
-    }
+    this.wsSubs.forEach(s => s.unsubscribe());
+    this.wsSubs = [];
     if (this.userSub) {
       this.userSub.unsubscribe();
     }

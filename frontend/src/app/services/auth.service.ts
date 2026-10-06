@@ -36,18 +36,11 @@ export class AuthService {
     private roleService: RoleService,
     private ngZone: NgZone
   ) {
-    // Sincronización automática periódica y reactiva entre Web y APK
+    // Sincronización al enfocar pestaña o reanudar APK (sin polling continuo)
     if (typeof window !== 'undefined') {
       window.addEventListener('focus', () => this.sincronizarSilencioso());
       document.addEventListener('visibilitychange', () => {
         if (!document.hidden) this.sincronizarSilencioso();
-      });
-
-      // Polling cada 4 segundos en segundo plano si está autenticado
-      interval(4000).subscribe(() => {
-        if (this.estaAutenticado()) {
-          this.sincronizarSilencioso();
-        }
       });
     }
   }

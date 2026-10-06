@@ -415,7 +415,7 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
       nombrePadres: ['', [Validators.required, Validators.minLength(6), Validators.pattern(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/)]],
       ciTutor: ['', [Validators.required, Validators.pattern(/^[0-9]{7,8}$/)]],
       hermanosInscritos: [''],
-      contactoEmergencia: ['', [Validators.required, Validators.minLength(4)]],
+      contactoEmergencia: ['', [Validators.required, Validators.pattern(/^[0-9]{8}$/)]],
       archivos: this.fb.group({
         carnet: [null, Validators.required],
         titulo: [null, Validators.required],
@@ -609,6 +609,21 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
       }
       this.inscriptionForm.get('celular')?.setValue(clean);
       this.inscriptionForm.get('celular')?.markAsDirty();
+    }
+  }
+
+  /**
+   * Limita el número de contacto de emergencia a exactamente 8 dígitos numéricos
+   */
+  onEmergencyPhoneInput(event: any) {
+    const input = event.target as HTMLInputElement;
+    if (input && input.value) {
+      const clean = input.value.replace(/[^0-9]/g, '').slice(0, 8);
+      if (input.value !== clean) {
+        input.value = clean;
+      }
+      this.inscriptionForm.get('contactoEmergencia')?.setValue(clean);
+      this.inscriptionForm.get('contactoEmergencia')?.markAsDirty();
     }
   }
 
@@ -822,7 +837,11 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
         }
       }
       if (f['contactoEmergencia'].errors) {
-        errors.push('• Contacto de Emergencia: Campo obligatorio (mínimo 4 caracteres).');
+        if (f['contactoEmergencia'].errors['required']) {
+          errors.push('• En caso de emergencia llamar a: El celular de emergencia es obligatorio.');
+        } else if (f['contactoEmergencia'].errors['pattern']) {
+          errors.push('• En caso de emergencia llamar a: Debe ser un número de celular de exactamente 8 dígitos.');
+        }
       }
     } else if (step === 2) {
       if (f['email'].errors) {
@@ -987,10 +1006,11 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
   }
 
   /**
-   * Valida la seguridad y autenticidad del archivo (Magic Bytes, extensión y detección de scripts maliciosos en PDFs).
+   * Valida la seguridad y autenticidad del archivo (Magic Bytes, extensión, coherencia y detección de scripts maliciosos en PDFs).
    */
   private async validateFileSecurity(file: File, fieldName: string): Promise<{ valid: boolean; errorMsg?: string }> {
     const ext = (file.name.split('.').pop() || '').toLowerCase();
+    const nameLower = file.name.toLowerCase();
 
     // 1. Validación de tamaño (Máximo 5MB, mínimo 50 bytes)
     if (file.size > 5 * 1024 * 1024) {
@@ -1000,11 +1020,68 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
       return { valid: false, errorMsg: '⚠️ El archivo está vacío o dañado (tamaño inferior a 50 bytes).' };
     }
 
-    // 2. Fotografía 4x4 SOLO puede ser imagen (JPG o PNG), NUNCA PDF
+    // 2. Bloquear capturas de pantalla, memes, stickers y descargas de mensajería
+    const isScreenshotOrMeme = /(screenshot|captura|pantall|screen_shot|screen-shot|snapchat|wa_|whatsapp|sticker|meme|descarga|download)/i.test(nameLower);
+    if (isScreenshotOrMeme) {
+      return {
+        valid: false,
+        errorMsg: `⚠️ El archivo "${file.name}" parece ser una captura de pantalla (Screenshot) o descarga.\n\nPor favor suba el documento original escaneado o fotografiado directamente, o en formato PDF oficial.`
+      };
+    }
+
+    // 3. Validación estricta de coherencia de tipo de documento (impedir documentos cruzados)
+    const docRules: Record<string, { label: string; forbidden: string[] }> = {
+      carnet: {
+        label: 'Carnet de Identidad (C.I.)',
+        forbidden: ['titulo', 'bachiller', 'diploma', 'nacimiento', 'partida', 'deposito', 'boleta', 'pago', 'recibo', 'cossmil', 'factura']
+      },
+      titulo: {
+        label: 'Título de Bachiller',
+        forbidden: ['carnet', 'cedula', 'nacimiento', 'partida', 'deposito', 'boleta', 'pago', 'recibo', 'factura', 'cossmil', 'foto']
+      },
+      nacimiento: {
+        label: 'Certificado de Nacimiento',
+        forbidden: ['carnet', 'cedula', 'titulo', 'bachiller', 'diploma', 'deposito', 'boleta', 'pago', 'factura', 'cossmil', 'foto']
+      },
+      foto: {
+        label: 'Fotografía Personal 4x4 (Fondo Rojo)',
+        forbidden: ['carnet', 'cedula', 'identidad', 'titulo', 'bachiller', 'diploma', 'nacimiento', 'certificado', 'partida', 'deposito', 'boleta', 'pago', 'recibo', 'factura', 'cossmil', 'documento', 'pdf']
+      },
+      deposito: {
+        label: 'Boleta de Inscripción / Depósito EMI',
+        forbidden: ['carnet', 'cedula', 'titulo', 'bachiller', 'diploma', 'nacimiento', 'certificado', 'cossmil', 'foto']
+      },
+      credencialEmi: {
+        label: 'Credencial o Factura EMI',
+        forbidden: ['titulo', 'bachiller', 'nacimiento', 'certificado', 'cossmil']
+      },
+      carnetCossmil: {
+        label: 'Carnet COSSMIL',
+        forbidden: ['titulo', 'bachiller', 'nacimiento', 'deposito', 'boleta']
+      },
+      carnetMilitarDoc: {
+        label: 'Carnet Militar',
+        forbidden: ['titulo', 'bachiller', 'nacimiento', 'deposito', 'boleta', 'cossmil']
+      }
+    };
+
+    const rule = docRules[fieldName];
+    if (rule) {
+      for (const f of rule.forbidden) {
+        if (nameLower.includes(f)) {
+          return {
+            valid: false,
+            errorMsg: `⚠️ El archivo seleccionado ("${file.name}") no corresponde a ${rule.label}.\n\nParece pertenecer a otro tipo de documento (${f.toUpperCase()}). Por favor seleccione únicamente el archivo requerido.`
+          };
+        }
+      }
+    }
+
+    // 4. Fotografía 4x4 SOLO puede ser imagen (JPG, PNG o WEBP), NUNCA PDF
     if (fieldName === 'foto') {
       const allowedImageExts = ['jpg', 'jpeg', 'png', 'webp'];
       if (!allowedImageExts.includes(ext)) {
-        return { valid: false, errorMsg: '⚠️ La Fotografía Personal 4x4 debe ser una imagen (JPG o PNG). No se permite formato PDF ni otros documentos.' };
+        return { valid: false, errorMsg: '⚠️ La Fotografía Personal 4x4 debe ser una imagen (JPG o PNG con fondo rojo). No se permite formato PDF ni otros documentos.' };
       }
     } else {
       // Documentos generales: PDF o Imagen
@@ -1014,7 +1091,7 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
       }
     }
 
-    // 3. Inspección binaria de Magic Bytes (Firmas de archivo reales)
+    // 5. Inspección binaria de Magic Bytes (Firmas de archivo reales)
     try {
       const headerBuffer = await file.slice(0, 16).arrayBuffer();
       const bytes = new Uint8Array(headerBuffer);
@@ -1026,7 +1103,7 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
           return { valid: false, errorMsg: '⚠️ Archivo no auténtico: El archivo seleccionado no corresponde a un documento PDF válido (cabecera corrupta o falsa).' };
         }
 
-        // 4. Detección de código maligno en PDFs (/JavaScript, /Launch, /EmbeddedFiles, etc.)
+        // Detección de código maligno y contenido incongruente en PDFs
         const textSlice = await file.slice(0, Math.min(file.size, 1024 * 1024)).text();
         const maliciousPatterns = [
           { regex: /\/JavaScript/i, name: 'scripts ejecutables (/JavaScript)' },
@@ -1047,14 +1124,23 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
             };
           }
         }
+
+        const textUpper = textSlice.toUpperCase();
+        if (fieldName === 'carnet' && (textUpper.includes('CERTIFICADO DE NACIMIENTO') || textUpper.includes('TITULO DE BACHILLER'))) {
+          return { valid: false, errorMsg: '⚠️ El archivo PDF parece ser un Certificado de Nacimiento o Título en lugar de su Cédula de Identidad.' };
+        }
+        if (fieldName === 'titulo' && (textUpper.includes('CERTIFICADO DE NACIMIENTO') || textUpper.includes('CEDULA DE IDENTIDAD'))) {
+          return { valid: false, errorMsg: '⚠️ El archivo PDF seleccionado parece ser un Certificado de Nacimiento o Cédula en lugar de su Título de Bachiller.' };
+        }
+        if (fieldName === 'nacimiento' && (textUpper.includes('TITULO DE BACHILLER') || textUpper.includes('CEDULA DE IDENTIDAD'))) {
+          return { valid: false, errorMsg: '⚠️ El archivo PDF seleccionado parece ser un Título de Bachiller o Cédula en lugar de su Certificado de Nacimiento.' };
+        }
       } else if (ext === 'jpg' || ext === 'jpeg') {
-        // JPEG Magic bytes: FF D8 FF
         const isJpg = bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF;
         if (!isJpg) {
           return { valid: false, errorMsg: '⚠️ Archivo no auténtico: La cabecera binaria no coincide con una imagen JPEG/JPG real.' };
         }
       } else if (ext === 'png') {
-        // PNG Magic bytes: 89 50 4E 47
         const isPng = bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47;
         if (!isPng) {
           return { valid: false, errorMsg: '⚠️ Archivo no auténtico: La cabecera binaria no coincide con una imagen PNG real.' };
@@ -1067,12 +1153,27 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
     return { valid: true };
   }
 
-  // Files operations — with client-side image compression (RF16 - HU16 - T2)
+  /**
+   * Rechaza inmediatamente un archivo seleccionado, limpiando el input y mostrando el modal de error.
+   */
+  private rejectFile(fieldName: string, fileInput: HTMLInputElement | null, errorMsg: string) {
+    if (fileInput) fileInput.value = '';
+    const archivos = this.inscriptionForm.get('archivos') as FormGroup;
+    archivos.patchValue({ [fieldName]: null });
+    archivos.get(fieldName)?.markAsTouched();
+    this.fileNames[fieldName] = '';
+    this.fileWarnings[fieldName] = '';
+    if (fieldName === 'foto') {
+      this.isPhotoFondoRojoValid = false;
+    }
+    this.modalType = 'error';
+    this.modalMessage = errorMsg;
+    this.showModal = true;
+  }
+
   /**
    * Se activa cuando el usuario selecciona un archivo para subir.
-   * Realiza validaciones de ciberseguridad, coherencia, comprime imágenes y guarda el archivo en memoria.
-   * @param event El evento input con el archivo.
-   * @param fieldName El nombre del campo (carnet, titulo, etc.).
+   * Realiza validaciones estrictas de seguridad, coherencia, proporciones y fondo rojo antes de aceptar el archivo.
    */
   async onFileSelected(event: any, fieldName: string) {
     const file = event.target.files[0];
@@ -1084,62 +1185,49 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
     // Reiniciar advertencia previa
     this.fileWarnings[fieldName] = '';
 
-    // ================= SEGURIDAD Y VERIFICACIÓN BINARIA =================
+    // ================= 1. SEGURIDAD Y VERIFICACIÓN BINARIA =================
     const securityCheck = await this.validateFileSecurity(file, fieldName);
     if (!securityCheck.valid) {
-      if (fileInput) fileInput.value = '';
-      archivos.patchValue({ [fieldName]: null });
-      this.fileNames[fieldName] = '';
-      this.modalType = 'error';
-      this.modalMessage = securityCheck.errorMsg || 'Archivo no permitido por razones de seguridad.';
-      this.showModal = true;
+      this.rejectFile(fieldName, fileInput, securityCheck.errorMsg || 'Archivo no permitido por razones de seguridad.');
       return;
     }
 
-    // Validación inteligente de coherencia de nombre de archivo (Soft Warning)
-    const nameLower = file.name.toLowerCase();
+    // ================= 2. VERIFICACIÓN VISUAL DE IMÁGENES =================
+    const isImage = file.type.startsWith('image/') || /\.(jpg|jpeg|png|webp)$/i.test(file.name);
 
-    if (fieldName === 'carnet') {
-      if (nameLower.includes('certificado') || nameLower.includes('nacimiento') || nameLower.includes('titulo') || nameLower.includes('bachiller') || nameLower.includes('deposito') || nameLower.includes('boleta') || nameLower.includes('comprobante')) {
-        this.fileWarnings[fieldName] = 'El archivo seleccionado parece ser un Certificado, Título o Depósito bancario en lugar de tu Cédula de Identidad.';
+    if (fieldName === 'foto') {
+      // Para la fotografía 4x4: proporción cuadrada y fondo rojo OBLIGATORIO
+      const photoCheck = await this.analyzePhoto4x4(file);
+      if (!photoCheck.valid) {
+        this.rejectFile(fieldName, fileInput, photoCheck.errorMsg || 'La fotografía no cumple con los requisitos obligatorios.');
+        return;
+      }
+    } else if (isImage) {
+      // Para documentos en imagen: evitar capturas verticales alargadas de teléfono
+      const docImgCheck = await this.validateDocumentImage(file, fieldName);
+      if (!docImgCheck.valid) {
+        this.rejectFile(fieldName, fileInput, docImgCheck.errorMsg || 'La imagen no cumple con las características de un documento legible.');
+        return;
       }
     }
 
-    if (fieldName === 'titulo') {
-      if (nameLower.includes('carnet') || nameLower.includes('ci') || nameLower.includes('nacimiento') || nameLower.includes('deposito') || nameLower.includes('boleta') || nameLower.includes('comprobante') || nameLower.includes('certificado')) {
-        this.fileWarnings[fieldName] = 'El archivo seleccionado parece ser una Identificación, Certificado o Depósito en lugar de tu Título de Bachiller.';
-      }
-    }
-
-    if (fieldName === 'nacimiento') {
-      if (nameLower.includes('carnet') || nameLower.includes('ci') || nameLower.includes('titulo') || nameLower.includes('bachiller') || nameLower.includes('deposito') || nameLower.includes('boleta') || nameLower.includes('comprobante')) {
-        this.fileWarnings[fieldName] = 'El archivo seleccionado parece ser una Identificación, Título o Depósito en lugar de tu Certificado de Nacimiento.';
-      }
-    }
-
-    if (fieldName === 'deposito') {
-      if (nameLower.includes('ci') || nameLower.includes('carnet') || nameLower.includes('certificado') || nameLower.includes('nacimiento') || nameLower.includes('titulo') || nameLower.includes('foto')) {
-        this.fileWarnings[fieldName] = 'El archivo seleccionado parece ser una Identificación, Fotografía o Certificado en lugar de tu comprobante de depósito bancario.';
-      }
-    }
-
-    if (fieldName === 'carnetMilitarDoc') {
-      if (nameLower.includes('cossmil') || nameLower.includes('titulo') || nameLower.includes('nacimiento')) {
-        this.fileWarnings[fieldName] = 'El archivo seleccionado parece ser otro documento en lugar de tu Carnet Militar.';
-      }
-    }
-
-    if (file.type.startsWith('image/') || /\.(jpg|jpeg|png|webp)$/i.test(file.name)) {
-      const maxDim = fieldName === 'foto' ? 800 : 1200; // fotos 4x4 a 800px; documentos a 1200px
-      const quality = fieldName === 'foto' ? 0.82 : 0.78;
+    // ================= 3. COMPRESIÓN Y ASIGNACIÓN =================
+    if (isImage) {
+      const maxDim = fieldName === 'foto' ? 800 : 1200;
+      const quality = fieldName === 'foto' ? 0.85 : 0.78;
       this.imageCompressor.compressImage(file, maxDim, maxDim, quality).then(compressed => {
         archivos.patchValue({ [fieldName]: compressed });
         archivos.get(fieldName)?.markAsTouched();
         this.fileNames[fieldName] = compressed.name;
-        console.log(`[RF16] ${fieldName}: comprimido ${(file.size/1024).toFixed(1)}KB → ${(compressed.size/1024).toFixed(1)}KB`);
         if (fieldName === 'foto') {
-          this.analyzePhoto4x4(file);
+          this.isPhotoFondoRojoValid = true;
         }
+        console.log(`[RF16] ${fieldName}: comprimido ${(file.size/1024).toFixed(1)}KB → ${(compressed.size/1024).toFixed(1)}KB`);
+      }).catch(err => {
+        console.error('Error al comprimir imagen:', err);
+        archivos.patchValue({ [fieldName]: file });
+        archivos.get(fieldName)?.markAsTouched();
+        this.fileNames[fieldName] = file.name;
       });
     } else {
       // PDFs genuinos sin compresión
@@ -1150,60 +1238,133 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
   }
 
   /**
-   * Analiza matemáticamente los píxeles de una foto 4x4 subida para advertir
-   * si la imagen no es cuadrada o si el fondo no es de color rojo sólido.
-   * @param file El archivo de imagen subido.
+   * Valida que una imagen de documento no sea una captura de pantalla vertical de smartphone
+   * y cuente con la resolución mínima legible.
    */
-  analyzePhoto4x4(file: File): Promise<void> {
+  validateDocumentImage(file: File, fieldName: string): Promise<{ valid: boolean; errorMsg?: string }> {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e: any) => {
+        const img = new Image();
+        img.onload = () => {
+          const aspectRatio = img.width / img.height;
+          // Si tiene aspecto de captura vertical de celular (e.g. 1080x2400 donde ratio = 0.45)
+          if (aspectRatio < 0.46 || aspectRatio > 2.25) {
+            resolve({
+              valid: false,
+              errorMsg: `⚠️ El archivo "${file.name}" tiene proporciones de captura vertical de pantalla de celular (${img.width}x${img.height} px).\n\nDebe subir una fotografía o escaneo del documento original enfocado adecuadamente.`
+            });
+            return;
+          }
+
+          if (Math.min(img.width, img.height) < 180) {
+            resolve({
+              valid: false,
+              errorMsg: '⚠️ La imagen seleccionada es demasiado pequeña o de baja resolución para ser legible como documento oficial (mínimo 180px).'
+            });
+            return;
+          }
+
+          resolve({ valid: true });
+        };
+        img.onerror = () => {
+          resolve({ valid: false, errorMsg: '⚠️ Error al abrir el archivo de imagen. Archivo corrupto o no compatible.' });
+        };
+        img.src = e.target.result;
+      };
+      reader.onerror = () => {
+        resolve({ valid: false, errorMsg: '⚠️ No se pudo leer el archivo seleccionado.' });
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  /**
+   * Analiza matemáticamente los píxeles de una foto 4x4 subida para validar
+   * relación de aspecto cuadrada (4x4) y verificar de forma estricta el FONDO ROJO obligatorio.
+   */
+  analyzePhoto4x4(file: File): Promise<{ valid: boolean; errorMsg?: string }> {
     return new Promise((resolve) => {
       this.fileWarnings['foto'] = '';
       const reader = new FileReader();
       reader.onload = (e: any) => {
         const img = new Image();
         img.onload = () => {
-          // 1. Validar relación de aspecto 4x4 (cuadrado)
+          // 1. Validar relación de aspecto 4x4 (cuadrado / tipo carnet: 0.72 a 1.35)
           const aspectRatio = img.width / img.height;
-          if (aspectRatio < 0.82 || aspectRatio > 1.18) {
-            this.fileWarnings['foto'] = '⚠️ La imagen no tiene formato cuadrado (4x4). Se recomienda una foto cuadrada.';
+          if (aspectRatio < 0.72 || aspectRatio > 1.35) {
+            this.isPhotoFondoRojoValid = false;
+            resolve({
+              valid: false,
+              errorMsg: `⚠️ La imagen seleccionada (${img.width}x${img.height} px) no tiene formato cuadrado 4x4.\n\nLa fotografía debe tener proporciones cuadradas o de carnet oficial (no se permiten capturas alargadas de celular ni fotos panorámicas).`
+            });
+            return;
           }
 
-          // 2. Crear Canvas para analizar colores del fondo
+          // 2. Resolución mínima
+          if (img.width < 150 || img.height < 150) {
+            this.isPhotoFondoRojoValid = false;
+            resolve({
+              valid: false,
+              errorMsg: '⚠️ La resolución de la fotografía es demasiado baja (mínimo 150x150 píxeles).'
+            });
+            return;
+          }
+
+          // 3. Crear Canvas para analizar colores del fondo
           const canvas = document.createElement('canvas');
           canvas.width = 100;
           canvas.height = 100;
           const ctx = canvas.getContext('2d');
-          if (ctx) {
-            ctx.drawImage(img, 0, 0, 100, 100);
-            
-            // Tomar muestras del fondo en la esquina superior izquierda (15, 15) y superior derecha (85, 15)
-            const leftPixel = ctx.getImageData(15, 15, 1, 1).data;
-            const rightPixel = ctx.getImageData(85, 15, 1, 1).data;
+          if (!ctx) {
+            this.isPhotoFondoRojoValid = true;
+            resolve({ valid: true });
+            return;
+          }
 
-            const isRed = (pixel: Uint8ClampedArray) => {
-              const r = pixel[0];
-              const g = pixel[1];
-              const b = pixel[2];
-              // El rojo debe ser el canal dominante y tener una intensidad significativa
-              return r > 115 && g < 95 && b < 95 && (r - g) > 40 && (r - b) > 40;
-            };
+          ctx.drawImage(img, 0, 0, 100, 100);
 
-            const leftRed = isRed(leftPixel);
-            const rightRed = isRed(rightPixel);
+          // Puntos clave de muestreo en los bordes y esquinas superiores (zona donde debe estar el fondo rojo)
+          const samplePoints: [number, number][] = [
+            [10, 10], [25, 10], [75, 10], [90, 10],
+            [10, 20], [90, 20], [15, 15], [85, 15],
+            [50, 5], [5, 5], [95, 5]
+          ];
 
-            if (!leftRed && !rightRed) {
-              this.isPhotoFondoRojoValid = false;
-              if (this.fileWarnings['foto']) {
-                this.fileWarnings['foto'] += ' Además, el color de fondo no parece ser ROJO. Recuerda que es obligatorio fondo rojo para la inscripción.';
-              } else {
-                this.fileWarnings['foto'] = '⚠️ El color de fondo no parece ser ROJO. Recuerda que es obligatorio subir una foto con fondo rojo.';
-              }
-            } else {
-              this.isPhotoFondoRojoValid = true;
+          let redCount = 0;
+          for (const [x, y] of samplePoints) {
+            const pixel = ctx.getImageData(x, y, 1, 1).data;
+            const r = pixel[0];
+            const g = pixel[1];
+            const b = pixel[2];
+            // Criterio de color rojo dominante
+            if (r > 95 && r > (g * 1.3) && r > (b * 1.3) && (r - g > 25) && (r - b > 25)) {
+              redCount++;
             }
           }
-          resolve();
+
+          const redRatio = redCount / samplePoints.length;
+          if (redRatio < 0.35) {
+            this.isPhotoFondoRojoValid = false;
+            resolve({
+              valid: false,
+              errorMsg: '⚠️ La fotografía seleccionada NO cumple con el requisito obligatorio de FONDO ROJO.\n\nPara completar la inscripción en la Escuela de Idiomas del Ejército (EIE), es obligatorio presentar una fotografía formal 4x4 con fondo rojo sólido.'
+            });
+            return;
+          }
+
+          this.isPhotoFondoRojoValid = true;
+          resolve({ valid: true });
+        };
+        img.onerror = () => {
+          this.isPhotoFondoRojoValid = false;
+          resolve({ valid: false, errorMsg: '⚠️ Error al decodificar la imagen. Archivo corrupto o no compatible.' });
         };
         img.src = e.target.result;
+      };
+      reader.onerror = () => {
+        this.isPhotoFondoRojoValid = false;
+        resolve({ valid: false, errorMsg: '⚠️ No se pudo leer el archivo seleccionado.' });
       };
       reader.readAsDataURL(file);
     });

@@ -205,7 +205,11 @@ class StudentController extends Controller
             $estudiante->ci_tutor = $ciTutor;
         }
         if ($request->has('contacto_emergencia')) {
-            $estudiante->contacto_emergencia = $request->input('contacto_emergencia');
+            $contEmergencia = trim($request->input('contacto_emergencia'));
+            if ($contEmergencia !== '' && !preg_match('/^[0-9]{8}$/', $contEmergencia)) {
+                return response()->json(['message' => 'El celular de contacto de emergencia debe contener exactamente 8 dígitos.'], 422);
+            }
+            $estudiante->contacto_emergencia = $contEmergencia;
         }
         if ($request->has('hermanos_inscritos')) {
             $estudiante->hermanos_inscritos = $request->input('hermanos_inscritos');
@@ -238,9 +242,14 @@ class StudentController extends Controller
             $estudiante->inscripciones()->update(['estado' => ucfirst(strtolower($estadoInsc))]);
         }
 
+        $freshEstudiante = $estudiante->fresh(['user', 'gradoRel', 'armaRel', 'inscripciones.curso', 'inscripciones.paralelo']);
+
+        // Emitir evento en tiempo real vía WebSockets
+        \App\Services\WebSocketService::broadcast('estudiantes', 'estudiante_actualizado', $freshEstudiante);
+
         return response()->json([
             'message' => 'Estudiante actualizado con éxito',
-            'estudiante' => $estudiante->fresh(['user', 'gradoRel', 'armaRel', 'inscripciones.curso', 'inscripciones.paralelo'])
+            'estudiante' => $freshEstudiante
         ]);
     }
 
@@ -295,9 +304,12 @@ class StudentController extends Controller
                 }
             });
 
+            $freshEstudiante = $estudiante->fresh(['user', 'inscripciones.curso', 'inscripciones.paralelo']);
+            \App\Services\WebSocketService::broadcast('estudiantes', 'estudiante_actualizado', $freshEstudiante);
+
             return response()->json([
                 'message' => 'El estudiante ha sido dado de baja exitosamente. Su registro e historial permanecen protegidos.',
-                'estudiante' => $estudiante->fresh(['user', 'inscripciones.curso', 'inscripciones.paralelo'])
+                'estudiante' => $freshEstudiante
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -330,9 +342,12 @@ class StudentController extends Controller
                 }
             });
 
+            $freshEstudiante = $estudiante->fresh(['user', 'inscripciones.curso', 'inscripciones.paralelo']);
+            \App\Services\WebSocketService::broadcast('estudiantes', 'estudiante_actualizado', $freshEstudiante);
+
             return response()->json([
                 'message' => 'El estudiante ha sido rehabilitado exitosamente.',
-                'estudiante' => $estudiante->fresh(['user', 'inscripciones.curso', 'inscripciones.paralelo'])
+                'estudiante' => $freshEstudiante
             ]);
         } catch (\Exception $e) {
             return response()->json([

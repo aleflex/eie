@@ -28,9 +28,29 @@ const getApiUrl = () => {
   return DOMINIO_SERVIDOR_BACKEND;
 };
 
+const getWsUrl = () => {
+  if (typeof window !== 'undefined') {
+    const custom = localStorage.getItem('custom_ws_url');
+    if (custom) return custom;
+
+    if (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost') {
+      return 'ws://localhost:6001/ws';
+    }
+
+    const backendUrl = getApiUrl();
+    if (backendUrl.startsWith('https://')) {
+      return backendUrl.replace('https://', 'wss://') + '/ws';
+    } else if (backendUrl.startsWith('http://')) {
+      return backendUrl.replace('http://', 'ws://') + '/ws';
+    }
+  }
+  return 'wss://eie-backend-9n36.onrender.com/ws';
+};
+
 export const environment = {
   production: false,
   apiUrl: getApiUrl(),
   storageUrl: getApiUrl() + '/storage',
-  backendServerUrl: getApiUrl()
+  backendServerUrl: getApiUrl(),
+  wsUrl: getWsUrl()
 };

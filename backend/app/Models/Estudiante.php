@@ -385,12 +385,12 @@ class Estudiante extends Model
 
         $val = trim($value);
         \DB::table('contactos_emergencia')->updateOrInsert(
-            ['id_estudiante' => $this->id_estudiante],
+            ['id_estudiante' => $this->id_estudiante, 'es_principal' => 1],
             [
-                'nombre_contacto' => $this->nombre_padres ?: 'Tutor / Emergencia',
+                'nombre_contacto' => $this->nombre_padres ?: 'Padre/Madre/Tutor',
                 'telefono' => $val,
                 'relacion' => 'Padre/Madre/Tutor',
-                'es_principal' => true
+                'es_principal' => 1
             ]
         );
     }
