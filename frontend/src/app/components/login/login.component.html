@@ -54,6 +54,47 @@
   </div>
 </div>
 
+<!-- Modal de Carga con Porcentaje y Mensaje de Inicio de Sesión -->
+<div class="modal-backdrop-overlay" *ngIf="isLoggingIn">
+  <div class="modal-card login-progress-card animate-zoom-in" [class.success]="loginSuccess" (click)="$event.stopPropagation()">
+    <!-- Icono de estado -->
+    <div class="login-progress-icon-box" [class.success-icon]="loginSuccess">
+      <div class="login-pulse-ring" *ngIf="!loginSuccess"></div>
+      <i class="material-icons" *ngIf="!loginSuccess">lock</i>
+      <i class="material-icons" *ngIf="loginSuccess">verified</i>
+    </div>
+
+    <!-- Badge de rol (Administrador, Docente, Estudiante) -->
+    <div class="login-role-badge" *ngIf="loginSuccess && loginUserRoleBadge">
+      <i class="material-icons">admin_panel_settings</i>
+      <span>{{ loginUserRoleBadge }}</span>
+    </div>
+
+    <!-- Título principal con nombre del admin / usuario -->
+    <h2 class="modal-title login-progress-title">
+      {{ loginSuccess ? loginSuccessTitle : 'Iniciando Sesión' }}
+    </h2>
+
+    <!-- Subtítulo / estado descriptivo -->
+    <p class="login-progress-desc">
+      {{ loginSuccess ? loginSuccessSubtitle : loginStatusText }}
+    </p>
+
+    <!-- Barra de progreso con porcentaje -->
+    <div class="login-progress-bar-container">
+      <div class="login-progress-info">
+        <span class="login-progress-label">{{ loginSuccess ? 'Completado' : 'Autenticando' }}</span>
+        <span class="login-progress-percent">{{ loginProgress }}%</span>
+      </div>
+      <div class="login-progress-track">
+        <div class="login-progress-fill" [class.fill-success]="loginSuccess" [style.width.%]="loginProgress">
+          <div class="login-fill-glow"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Modal de Cambio Obligatorio de Contraseña (Primer inicio o reseteo por Admin) -->
 <div class="modal-backdrop-overlay" *ngIf="showMustChangePasswordModal">
   <div class="modal-card animate-zoom-in" style="max-width: 440px;">

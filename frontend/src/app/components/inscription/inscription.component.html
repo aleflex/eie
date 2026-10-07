@@ -851,6 +851,60 @@
   </div>
 </div>
 
+<!-- Modal de Progreso de Envío de Inscripción con Porcentaje -->
+<div class="modal-backdrop-overlay" *ngIf="isSubmitting">
+  <div class="modal-card submission-progress-card animate-zoom-in" (click)="$event.stopPropagation()">
+    <div class="progress-header-icon-box">
+      <div class="progress-pulse-ring"></div>
+      <i class="material-icons">cloud_upload</i>
+    </div>
+    
+    <h2 class="modal-title" style="margin-bottom: 0.35rem;">Enviando Solicitud</h2>
+    <p class="progress-status-desc">{{ submitStatusText }}</p>
+
+    <!-- Barra de progreso con porcentaje animado -->
+    <div class="progress-bar-container">
+      <div class="progress-info-row">
+        <span class="progress-stage-label">Progreso del Envío</span>
+        <span class="progress-percent-val">{{ submitProgress }}%</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" [style.width.%]="submitProgress">
+          <div class="progress-fill-glow"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Etapas visuales del proceso -->
+    <div class="progress-steps-list">
+      <div class="progress-step-item" [class.done]="submitProgress >= 38" [class.active]="submitProgress < 38">
+        <div class="step-icon">
+          <i class="material-icons">{{ submitProgress >= 38 ? 'check' : 'description' }}</i>
+        </div>
+        <span>Datos</span>
+      </div>
+      <div class="progress-step-item" [class.done]="submitProgress >= 68" [class.active]="submitProgress >= 38 && submitProgress < 68">
+        <div class="step-icon">
+          <i class="material-icons">{{ submitProgress >= 68 ? 'check' : 'attach_file' }}</i>
+        </div>
+        <span>Archivos</span>
+      </div>
+      <div class="progress-step-item" [class.done]="submitProgress >= 90" [class.active]="submitProgress >= 68 && submitProgress < 90">
+        <div class="step-icon">
+          <i class="material-icons">{{ submitProgress >= 90 ? 'check' : 'fact_check' }}</i>
+        </div>
+        <span>Validación</span>
+      </div>
+      <div class="progress-step-item" [class.done]="submitProgress >= 100" [class.active]="submitProgress >= 90">
+        <div class="step-icon">
+          <i class="material-icons">{{ submitProgress >= 100 ? 'done_all' : 'hourglass_top' }}</i>
+        </div>
+        <span>Finalizado</span>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Modal de Alerta Premium Success / Error -->
 <div class="modal-backdrop-overlay" *ngIf="showModal" (click)="closeModal()">
   <div class="modal-card animate-zoom-in" [class.success]="modalType === 'success'" [class.error]="modalType === 'error'" (click)="$event.stopPropagation()">
@@ -861,7 +915,14 @@
     <h2 class="modal-title">{{ modalType === 'success' ? '¡Inscripción Exitosa!' : 'Atención / Validación de Datos' }}</h2>
     <div class="modal-body-text">{{ modalMessage }}</div>
     <div class="modal-footer-btn">
-      <button type="button" class="btn-modal-close" (click)="closeModal()">Entendido</button>
+      <button type="button" class="btn-modal-close" (click)="closeModal()">
+        <ng-container *ngIf="modalType === 'success'">
+          <i class="material-icons" style="font-size: 1.15rem; vertical-align: middle; margin-right: 6px;">home</i> Ir al Inicio
+        </ng-container>
+        <ng-container *ngIf="modalType !== 'success'">
+          Entendido
+        </ng-container>
+      </button>
     </div>
   </div>
 </div>

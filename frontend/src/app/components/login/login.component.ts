@@ -29,6 +29,17 @@ export class LoginComponent implements OnInit {
   /** Mensaje de error mostrado si el inicio de sesión falla */
   mensajeError: string = '';
 
+  // Barra de progreso y etapas del inicio de sesión
+  isLoggingIn: boolean = false;
+  loginProgress: number = 0;
+  loginStatusText: string = 'Verificando credenciales...';
+  loginSuccess: boolean = false;
+  loginSuccessTitle: string = '';
+  loginSuccessSubtitle: string = '';
+  loginUserRoleBadge: string = '';
+  loginUserName: string = '';
+  private loginProgressTimer: any = null;
+
   // Modal y formulario para Cambio Obligatorio de Contraseña
   showMustChangePasswordModal: boolean = false;
   nuevaPassword = {
@@ -154,9 +165,34 @@ export class LoginComponent implements OnInit {
       password: this.credenciales.password
     };
 
+    // Iniciar barra de carga con porcentaje
+    this.isLoggingIn = true;
+    this.loginSuccess = false;
+    this.loginProgress = 15;
+    this.loginStatusText = 'Verificando credenciales...';
+
+    if (this.loginProgressTimer) clearInterval(this.loginProgressTimer);
+    this.loginProgressTimer = setInterval(() => {
+      if (this.loginProgress < 40) {
+        this.loginProgress += 6;
+        this.loginStatusText = 'Comprobando seguridad y permisos...';
+      } else if (this.loginProgress < 75) {
+        this.loginProgress += 4;
+        this.loginStatusText = 'Autenticando en el servidor...';
+      } else if (this.loginProgress < 90) {
+        this.loginProgress += 2;
+        this.loginStatusText = 'Cargando información del usuario...';
+      }
+    }, 200);
+
     this.servicioAutenticacion.iniciarSesion(payload).subscribe({
       next: (respuesta) => {
         console.log('✅ Inicio de sesión exitoso', respuesta);
+        if (this.loginProgressTimer) {
+          clearInterval(this.loginProgressTimer);
+          this.loginProgressTimer = null;
+        }
+
         const usuario = respuesta.user;
         this.pendingUserResponse = respuesta;
 
@@ -171,15 +207,55 @@ export class LoginComponent implements OnInit {
           }
         }
 
-        // Verificar si debe cambiar su contraseña obligatoriamente
-        if (usuario?.debe_cambiar_password) {
-          this.showMustChangePasswordModal = true;
+        // Configurar mensaje de bienvenida con el nombre del admin / usuario
+        this.loginProgress = 100;
+        this.loginSuccess = true;
+        this.loginStatusText = '¡Acceso concedido!';
+
+        const rawName = usuario?.name || usuario?.nombres || usuario?.usuario || 'Administrador';
+        const nombreLimpio = this.servicioAutenticacion.cleanDisplayName(rawName);
+        this.loginUserName = nombreLimpio;
+
+        const rol = (usuario?.rol || '').toLowerCase();
+        const idRol = usuario?.id_rol ? Number(usuario?.id_rol) : (rol === 'admin' ? 1 : null);
+        const esAdmin = rol === 'admin' || idRol === 1 || (!rol && !usuario?.docente_id && !usuario?.estudiante_id);
+
+        if (esAdmin) {
+          this.loginUserRoleBadge = 'ADMINISTRADOR';
+          this.loginSuccessTitle = `¡Bienvenido(a), Administrador(a) ${nombreLimpio}!`;
+        } else if (rol === 'docente' || idRol === 3) {
+          this.loginUserRoleBadge = 'DOCENTE';
+          this.loginSuccessTitle = `¡Bienvenido(a), Docente ${nombreLimpio}!`;
+        } else if (rol === 'estudiante' || idRol === 2) {
+          this.loginUserRoleBadge = 'ESTUDIANTE';
+          this.loginSuccessTitle = `¡Bienvenido(a), ${nombreLimpio}!`;
         } else {
-          this.redireccionarSegunRol(usuario?.rol, usuario?.id_rol);
+          this.loginUserRoleBadge = 'USUARIO';
+          this.loginSuccessTitle = `¡Bienvenido(a), ${nombreLimpio}!`;
         }
+
+        this.loginSuccessSubtitle = 'Inicio de sesión exitoso. Redirigiendo a tu panel de control...';
+
+        setTimeout(() => {
+          this.isLoggingIn = false;
+          // Verificar si debe cambiar su contraseña obligatoriamente
+          if (usuario?.debe_cambiar_password) {
+            this.showMustChangePasswordModal = true;
+          } else {
+            this.redireccionarSegunRol(usuario?.rol, usuario?.id_rol);
+          }
+        }, 1500);
       },
       error: (error) => {
         console.error('❌ Error de inicio de sesión', error);
+        if (this.loginProgressTimer) {
+          clearInterval(this.loginProgressTimer);
+          this.loginProgressTimer = null;
+        }
+        this.isLoggingIn = false;
+        this.loginSuccess = false;
+        this.loginProgress = 0;
+
         if (error.status === 0) {
           const apiIsHttp = (this.currentApiUrl || '').startsWith('http://');
           const pageIsHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
@@ -239,10 +315,35 @@ export class LoginComponent implements OnInit {
         localStorage.setItem('usuario', JSON.stringify(usuario));
         this.servicioAutenticacion.establecerSesionBiometrica(usuario);
 
-        // Importante: Ejecutar la navegación dentro de NgZone para que Angular actualice la vista al instante
-        this.ngZone.run(() => {
-          this.redireccionarSegunRol(usuario.rol, usuario.id_rol);
-        });
+        const rawName = usuario.name || usuario.nombres || usuario.usuario || 'Administrador';
+        const nombreLimpio = this.servicioAutenticacion.cleanDisplayName(rawName);
+        this.loginUserName = nombreLimpio;
+        this.isLoggingIn = true;
+        this.loginSuccess = true;
+        this.loginProgress = 100;
+        this.loginStatusText = '¡Huella digital reconocida!';
+        const rol = (usuario.rol || '').toLowerCase();
+        const idRol = usuario.id_rol ? Number(usuario.id_rol) : (rol === 'admin' ? 1 : null);
+        const esAdmin = rol === 'admin' || idRol === 1 || (!rol && !usuario.docente_id && !usuario.estudiante_id);
+        if (esAdmin) {
+          this.loginUserRoleBadge = 'ADMINISTRADOR';
+          this.loginSuccessTitle = `¡Bienvenido(a), Administrador(a) ${nombreLimpio}!`;
+        } else if (rol === 'docente' || idRol === 3) {
+          this.loginUserRoleBadge = 'DOCENTE';
+          this.loginSuccessTitle = `¡Bienvenido(a), Docente ${nombreLimpio}!`;
+        } else {
+          this.loginUserRoleBadge = 'ESTUDIANTE';
+          this.loginSuccessTitle = `¡Bienvenido(a), ${nombreLimpio}!`;
+        }
+        this.loginSuccessSubtitle = 'Acceso biométrico autorizado. Ingresando al panel...';
+
+        setTimeout(() => {
+          this.isLoggingIn = false;
+          // Importante: Ejecutar la navegación dentro de NgZone para que Angular actualice la vista al instante
+          this.ngZone.run(() => {
+            this.redireccionarSegunRol(usuario.rol, usuario.id_rol);
+          });
+        }, 1200);
 
         // Refrescar perfil en tiempo real desde el servidor para sincronizar foto y datos
         this.servicioAutenticacion.cargarPerfilActualizado().subscribe({ error: () => {} });
