@@ -18,12 +18,12 @@
 .custom-responsive-table {
     width: 100%;
     border-collapse: collapse;
-    min-width: 680px;
+    min-width: 860px;
 }
 
 .custom-responsive-table th,
 .custom-responsive-table td {
-    padding: 12px 14px;
+    padding: 14px 16px;
     vertical-align: middle;
 }
 
@@ -41,6 +41,11 @@
 .custom-responsive-table td {
     border-bottom: 1px solid #f1f5f9;
     font-size: 0.9rem;
+}
+
+.cell-aula, .text-nowrap {
+    white-space: nowrap !important;
+    word-break: keep-all !important;
 }
 
 .actions {
@@ -240,8 +245,19 @@
 }
 
 .badge-aula {
-    background: #e3f2fd !important;
-    color: #1976d2 !important;
+    background: #e0f2fe !important;
+    color: #0369a1 !important;
+    border: 1px solid #bae6fd !important;
+    white-space: nowrap !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    word-break: keep-all !important;
+    max-width: 100% !important;
+    font-weight: 700 !important;
+    padding: 6px 12px !important;
+    border-radius: 20px !important;
+    letter-spacing: 0.3px !important;
 }
 
 .badge-docente {

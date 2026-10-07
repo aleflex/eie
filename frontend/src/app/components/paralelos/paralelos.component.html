@@ -174,9 +174,9 @@
           </thead>
           <tbody>
             <tr *ngFor="let p of paralelos">
-              <td><strong>{{ p.nombre }}</strong></td>
-              <td>{{ p.curso?.idioma }} - {{ p.curso?.nivel }}</td>
-              <td><span class="status-badge badge-aula">{{ p.aula?.nombre || 'N/A' }}</span></td>
+              <td class="text-nowrap"><strong>{{ p.nombre }}</strong></td>
+              <td class="text-nowrap">{{ p.curso?.idioma }} - {{ p.curso?.nivel }}</td>
+              <td class="cell-aula text-nowrap"><span class="status-badge badge-aula">{{ p.aula?.nombre || 'N/A' }}</span></td>
               <td>
                 <div *ngFor="let d of p.docentes" class="small-badge badge-docente">
                   {{ d.user?.name }}
