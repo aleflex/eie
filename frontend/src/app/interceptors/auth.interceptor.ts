@@ -1,7 +1,7 @@
 import { HttpInterceptorFn, HttpErrorResponse } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { catchError, throwError } from 'rxjs';
+import { catchError, throwError, of } from 'rxjs';
 
 /**
  * Interceptor HTTP de Autenticación y Seguridad
@@ -40,10 +40,13 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   return next(clonedRequest).pipe(
     catchError((error: HttpErrorResponse) => {
       // Si el servidor rechaza la petición por falta de autenticación o token expirado
-      if (error.status === 401 && !req.url.includes('/api/login')) {
+      if (error.status === 401) {
         sessionStorage.removeItem('usuario');
         localStorage.removeItem('usuario');
-        router.navigate(['/login']);
+        if (!req.url.includes('/api/login') && !req.url.includes('/api/logout')) {
+          router.navigate(['/login']);
+        }
+        return of(null as any);
       }
       return throwError(() => error);
     })

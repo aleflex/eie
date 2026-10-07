@@ -27,6 +27,7 @@ Route::get('/ping', function () {
 
 // Autenticación pública
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/logout', [AuthController::class, 'logout']);
 
 // Catálogos públicos requeridos para el formulario de inscripción inicial
 Route::get('/idiomas', [CourseController::class, 'getIdiomas']);
@@ -68,7 +69,6 @@ Route::get('/storage/{p1}/{p2}/{filename}', function ($p1, $p2, $filename) {
 */
 Route::middleware('api.auth')->group(function () {
     // Sesión y Perfil
-    Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user/profile', [AuthController::class, 'getProfile']);
     Route::post('/user/profile', [AuthController::class, 'updateProfile']);
     Route::post('/user/change-password', [AuthController::class, 'changePassword']);
