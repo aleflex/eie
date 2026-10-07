@@ -423,12 +423,15 @@ class InscriptionController extends Controller
                 'id_inscripcion' => $inscripcion->id_inscripcion
             ], 201);
 
-        } catch (\Exception $e) {
+        } catch (\Illuminate\Validation\ValidationException $ve) {
             DB::rollBack();
-            \Log::error("Error en Inscripción: " . $e->getMessage() . " en " . $e->getFile() . ":" . $e->getLine());
+            throw $ve;
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            \Log::error("Error en Inscripción: " . $e->getMessage() . " en " . $e->getFile() . ":" . $e->getLine() . "\n" . $e->getTraceAsString());
             
             return response()->json([
-                'message' => 'Error crítico en el servidor',
+                'message' => 'Error al procesar la inscripción: ' . $e->getMessage(),
                 'detalle' => $e->getMessage(),
                 'file' => basename($e->getFile()),
                 'line' => $e->getLine()
@@ -785,7 +788,7 @@ class InscriptionController extends Controller
                                 $r = ($rgb >> 16) & 0xFF;
                                 $g = ($rgb >> 8) & 0xFF;
                                 $b = $rgb & 0xFF;
-                                if ($r > 90 && $r > ($g * 1.25) && $r > ($b * 1.25) && ($r - $g > 20) && ($r - b > 20)) {
+                                if ($r > 90 && $r > ($g * 1.25) && $r > ($b * 1.25) && ($r - $g > 20) && ($r - $b > 20)) {
                                     $redPoints++;
                                 }
                             }

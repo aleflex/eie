@@ -1566,14 +1566,6 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
           clearInterval(this.submitProgressTimer);
           this.submitProgressTimer = null;
         }
-        this.ngZone.run(() => {
-          this.isLoading = false;
-          this.isSubmitting = false;
-          this.submitProgress = 0;
-          console.error('Submission error:', err);
-          this.modalType = 'error';
-          this.cdr.detectChanges();
-        });
 
         const errObj = err || {};
         const errorList: string[] = [];
@@ -1592,15 +1584,26 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
         }
 
         const generalMsg = errObj.mensaje || errObj.message || errObj.error?.message || errObj.error?.mensaje;
+        let msg = '';
 
         if (errorList.length > 0) {
-          this.modalMessage = 'El servidor detectó las siguientes observaciones en el formulario:\n\n• ' + errorList.join('\n• ');
-        } else if (generalMsg && !generalMsg.includes('Error del servidor')) {
-          this.modalMessage = generalMsg;
+          msg = 'El servidor detectó las siguientes observaciones en el formulario:\n\n• ' + errorList.join('\n• ');
+        } else if (generalMsg && !generalMsg.includes('Error del servidor') && !generalMsg.includes('Server Error')) {
+          msg = generalMsg;
         } else {
-          this.modalMessage = 'No se pudo enviar la inscripción. Por favor revisa que todos los campos y documentos cumplan con los requisitos.';
+          msg = 'No se pudo enviar la inscripción. Por favor revisa que todos los campos y documentos cumplan con los requisitos.';
         }
-        this.showModal = true;
+
+        this.ngZone.run(() => {
+          this.isLoading = false;
+          this.isSubmitting = false;
+          this.submitProgress = 0;
+          console.error('Submission error:', err);
+          this.modalType = 'error';
+          this.modalMessage = msg;
+          this.showModal = true;
+          this.cdr.detectChanges();
+        });
       }
     });
   }
