@@ -1,5 +1,26 @@
 {
   "version": 2,
+  "buildCommand": "cd frontend && npm install && npm run build",
+  "outputDirectory": "frontend/dist/frontend/browser",
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate, max-age=0, s-maxage=0"
+        },
+        {
+          "key": "Pragma",
+          "value": "no-cache"
+        },
+        {
+          "key": "Expires",
+          "value": "0"
+        }
+      ]
+    }
+  ],
   "rewrites": [
     {
       "source": "/api/:path*",
@@ -8,6 +29,10 @@
     {
       "source": "/storage/:path*",
       "destination": "https://eie-backend-9n36.onrender.com/storage/:path*"
+    },
+    {
+      "source": "/((?!.*\\.).*)",
+      "destination": "/index.html"
     }
   ]
 }
