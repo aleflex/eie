@@ -12,7 +12,8 @@
         <div class="input-with-icon">
           <i class="material-icons-outlined">account_circle</i>
           <input type="text" id="usuario" name="usuario" [(ngModel)]="credenciales.usuario" class="form-control"
-            placeholder="Ej. carlos.mendoza o admin@eie.edu.bo" autocapitalize="none" autocorrect="off" spellcheck="false" required>
+            placeholder="Ej. carlos.mendoza o admin@eie.edu.bo" autocapitalize="none" autocorrect="off" spellcheck="false"
+            [disabled]="isLoggingIn" required>
         </div>
       </div>
 
@@ -21,9 +22,10 @@
         <div class="input-with-icon" style="position: relative;">
           <i class="material-icons-outlined">lock</i>
           <input [type]="mostrarPassword ? 'text' : 'password'" id="password" name="password" [(ngModel)]="credenciales.password" class="form-control"
-            placeholder="••••••••" style="padding-right: 2.75rem;" required>
+            placeholder="••••••••" style="padding-right: 2.75rem;" [disabled]="isLoggingIn" required>
           <button type="button" (click)="toggleMostrarPassword()" 
             style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #64748b; padding: 0; display: flex; align-items: center;"
+            [disabled]="isLoggingIn"
             [title]="mostrarPassword ? 'Ocultar contraseña' : 'Ver contraseña'">
             <i class="material-icons-outlined" style="position: static; transform: none; font-size: 1.25rem;">{{ mostrarPassword ? 'visibility_off' : 'visibility' }}</i>
           </button>
@@ -34,7 +36,7 @@
         {{ mensajeError }}
       </div>
 
-      <button type="submit" class="btn-login" [disabled]="!loginForm.valid || isLoggingIn">
+      <button type="submit" class="btn-login" [disabled]="!loginForm.valid || isLoggingIn" (click)="onLogin()">
         <ng-container *ngIf="!isLoggingIn">
           <i class="material-icons-outlined">login</i> INICIAR SESIÓN
         </ng-container>
