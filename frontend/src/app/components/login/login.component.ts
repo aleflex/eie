@@ -1,4 +1,4 @@
-import { Component, OnInit, NgZone } from '@angular/core';
+import { Component, OnInit, NgZone, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -65,7 +65,8 @@ export class LoginComponent implements OnInit {
     private servicioAutenticacion: AuthService,
     private enrutador: Router,
     private http: HttpClient,
-    private ngZone: NgZone
+    private ngZone: NgZone,
+    private cdr: ChangeDetectorRef
   ) {}
 
   async ngOnInit() {
@@ -170,20 +171,24 @@ export class LoginComponent implements OnInit {
     this.loginSuccess = false;
     this.loginProgress = 15;
     this.loginStatusText = 'Verificando credenciales...';
+    this.cdr.detectChanges();
 
     if (this.loginProgressTimer) clearInterval(this.loginProgressTimer);
     this.loginProgressTimer = setInterval(() => {
-      if (this.loginProgress < 40) {
-        this.loginProgress += 6;
-        this.loginStatusText = 'Comprobando seguridad y permisos...';
-      } else if (this.loginProgress < 75) {
-        this.loginProgress += 4;
-        this.loginStatusText = 'Autenticando en el servidor...';
-      } else if (this.loginProgress < 90) {
-        this.loginProgress += 2;
-        this.loginStatusText = 'Cargando información del usuario...';
-      }
-    }, 200);
+      this.ngZone.run(() => {
+        if (this.loginProgress < 40) {
+          this.loginProgress += 6;
+          this.loginStatusText = 'Comprobando seguridad y permisos...';
+        } else if (this.loginProgress < 75) {
+          this.loginProgress += 4;
+          this.loginStatusText = 'Autenticando en el servidor...';
+        } else if (this.loginProgress < 90) {
+          this.loginProgress += 2;
+          this.loginStatusText = 'Cargando información del usuario...';
+        }
+        this.cdr.detectChanges();
+      });
+    }, 160);
 
     this.servicioAutenticacion.iniciarSesion(payload).subscribe({
       next: (respuesta) => {
@@ -208,42 +213,48 @@ export class LoginComponent implements OnInit {
         }
 
         // Configurar mensaje de bienvenida con el nombre del admin / usuario
-        this.loginProgress = 100;
-        this.loginSuccess = true;
-        this.loginStatusText = '¡Acceso concedido!';
+        this.ngZone.run(() => {
+          this.loginProgress = 100;
+          this.loginSuccess = true;
+          this.loginStatusText = '¡Acceso concedido!';
 
-        const rawName = usuario?.name || usuario?.nombres || usuario?.usuario || 'Administrador';
-        const nombreLimpio = this.servicioAutenticacion.cleanDisplayName(rawName);
-        this.loginUserName = nombreLimpio;
+          const rawName = usuario?.name || usuario?.nombres || usuario?.usuario || 'Administrador';
+          const nombreLimpio = this.servicioAutenticacion.cleanDisplayName(rawName);
+          this.loginUserName = nombreLimpio;
 
-        const rol = (usuario?.rol || '').toLowerCase();
-        const idRol = usuario?.id_rol ? Number(usuario?.id_rol) : (rol === 'admin' ? 1 : null);
-        const esAdmin = rol === 'admin' || idRol === 1 || (!rol && !usuario?.docente_id && !usuario?.estudiante_id);
+          const rol = (usuario?.rol || '').toLowerCase();
+          const idRol = usuario?.id_rol ? Number(usuario?.id_rol) : (rol === 'admin' ? 1 : null);
+          const esAdmin = rol === 'admin' || idRol === 1 || (!rol && !usuario?.docente_id && !usuario?.estudiante_id);
 
-        if (esAdmin) {
-          this.loginUserRoleBadge = 'ADMINISTRADOR';
-          this.loginSuccessTitle = `¡Bienvenido(a), Administrador(a) ${nombreLimpio}!`;
-        } else if (rol === 'docente' || idRol === 3) {
-          this.loginUserRoleBadge = 'DOCENTE';
-          this.loginSuccessTitle = `¡Bienvenido(a), Docente ${nombreLimpio}!`;
-        } else if (rol === 'estudiante' || idRol === 2) {
-          this.loginUserRoleBadge = 'ESTUDIANTE';
-          this.loginSuccessTitle = `¡Bienvenido(a), ${nombreLimpio}!`;
-        } else {
-          this.loginUserRoleBadge = 'USUARIO';
-          this.loginSuccessTitle = `¡Bienvenido(a), ${nombreLimpio}!`;
-        }
+          if (esAdmin) {
+            this.loginUserRoleBadge = 'ADMINISTRADOR';
+            this.loginSuccessTitle = `¡Bienvenido(a), Administrador(a) ${nombreLimpio}!`;
+          } else if (rol === 'docente' || idRol === 3) {
+            this.loginUserRoleBadge = 'DOCENTE';
+            this.loginSuccessTitle = `¡Bienvenido(a), Docente ${nombreLimpio}!`;
+          } else if (rol === 'estudiante' || idRol === 2) {
+            this.loginUserRoleBadge = 'ESTUDIANTE';
+            this.loginSuccessTitle = `¡Bienvenido(a), ${nombreLimpio}!`;
+          } else {
+            this.loginUserRoleBadge = 'USUARIO';
+            this.loginSuccessTitle = `¡Bienvenido(a), ${nombreLimpio}!`;
+          }
 
-        this.loginSuccessSubtitle = 'Inicio de sesión exitoso. Redirigiendo a tu panel de control...';
+          this.loginSuccessSubtitle = 'Inicio de sesión exitoso. Redirigiendo a tu panel de control...';
+          this.cdr.detectChanges();
+        });
 
         setTimeout(() => {
-          this.isLoggingIn = false;
-          // Verificar si debe cambiar su contraseña obligatoriamente
-          if (usuario?.debe_cambiar_password) {
-            this.showMustChangePasswordModal = true;
-          } else {
-            this.redireccionarSegunRol(usuario?.rol, usuario?.id_rol);
-          }
+          this.ngZone.run(() => {
+            this.isLoggingIn = false;
+            this.cdr.detectChanges();
+            // Verificar si debe cambiar su contraseña obligatoriamente
+            if (usuario?.debe_cambiar_password) {
+              this.showMustChangePasswordModal = true;
+            } else {
+              this.redireccionarSegunRol(usuario?.rol, usuario?.id_rol);
+            }
+          });
         }, 1500);
       },
       error: (error) => {
@@ -252,21 +263,24 @@ export class LoginComponent implements OnInit {
           clearInterval(this.loginProgressTimer);
           this.loginProgressTimer = null;
         }
-        this.isLoggingIn = false;
-        this.loginSuccess = false;
-        this.loginProgress = 0;
+        this.ngZone.run(() => {
+          this.isLoggingIn = false;
+          this.loginSuccess = false;
+          this.loginProgress = 0;
 
-        if (error.status === 0) {
-          const apiIsHttp = (this.currentApiUrl || '').startsWith('http://');
-          const pageIsHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
-          if (pageIsHttps && apiIsHttp) {
-            this.mensajeError = `⚠️ Error de seguridad (Mixed Content): Tu web en Vercel (HTTPS) no puede conectar al servidor HTTP (${this.currentApiUrl}). Configura una URL de servidor HTTPS (ej. Ngrok o servidor desplegado) en "Configurar Servidor".`;
+          if (error.status === 0) {
+            const apiIsHttp = (this.currentApiUrl || '').startsWith('http://');
+            const pageIsHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
+            if (pageIsHttps && apiIsHttp) {
+              this.mensajeError = `⚠️ Error de seguridad (Mixed Content): Tu web en Vercel (HTTPS) no puede conectar al servidor HTTP (${this.currentApiUrl}). Configura una URL de servidor HTTPS (ej. Ngrok o servidor desplegado) en "Configurar Servidor".`;
+            } else {
+              this.mensajeError = `❌ No se pudo conectar al servidor API (${this.currentApiUrl}). Verifique que el servidor backend esté encendido y accesible.`;
+            }
           } else {
-            this.mensajeError = `❌ No se pudo conectar al servidor API (${this.currentApiUrl}). Verifique que el servidor backend esté encendido y accesible.`;
+            this.mensajeError = error.error?.message || 'Nombre de usuario o contraseña incorrectos. Por favor verifique sus datos.';
           }
-        } else {
-          this.mensajeError = error.error?.message || 'Nombre de usuario o contraseña incorrectos. Por favor verifique sus datos.';
-        }
+          this.cdr.detectChanges();
+        });
       }
     });
   }

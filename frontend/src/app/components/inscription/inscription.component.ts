@@ -1,4 +1,4 @@
-import { Component, OnInit, AfterViewInit } from '@angular/core';
+import { Component, OnInit, AfterViewInit, NgZone, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -95,7 +95,9 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
     private fb: FormBuilder,
     private inscriptionService: InscriptionService,
     private imageCompressor: ImageCompressorService,
-    private router: Router
+    private router: Router,
+    private ngZone: NgZone,
+    private cdr: ChangeDetectorRef
   ) {}
 
   /**
@@ -1452,22 +1454,26 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
     this.isSubmitting = true;
     this.submitProgress = 12;
     this.submitStatusText = 'Preparando documentos e información del estudiante...';
+    this.cdr.detectChanges();
 
     if (this.submitProgressTimer) {
       clearInterval(this.submitProgressTimer);
     }
     this.submitProgressTimer = setInterval(() => {
-      if (this.submitProgress < 38) {
-        this.submitProgress += 5;
-        this.submitStatusText = 'Subiendo archivos adjuntos al servidor...';
-      } else if (this.submitProgress < 68) {
-        this.submitProgress += 3;
-        this.submitStatusText = 'Verificando requisitos y documentos académicos...';
-      } else if (this.submitProgress < 90) {
-        this.submitProgress += 2;
-        this.submitStatusText = 'Registrando inscripción en el sistema...';
-      }
-    }, 220);
+      this.ngZone.run(() => {
+        if (this.submitProgress < 38) {
+          this.submitProgress += 5;
+          this.submitStatusText = 'Subiendo archivos adjuntos al servidor...';
+        } else if (this.submitProgress < 68) {
+          this.submitProgress += 3;
+          this.submitStatusText = 'Verificando requisitos y documentos académicos...';
+        } else if (this.submitProgress < 90) {
+          this.submitProgress += 2;
+          this.submitStatusText = 'Registrando inscripción en el sistema...';
+        }
+        this.cdr.detectChanges();
+      });
+    }, 180);
 
     const formData = new FormData();
     const formVal = this.inscriptionForm.value;
@@ -1513,40 +1519,46 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
           clearInterval(this.submitProgressTimer);
           this.submitProgressTimer = null;
         }
-        this.submitProgress = 100;
-        this.submitStatusText = '¡Inscripción registrada con éxito!';
+        this.ngZone.run(() => {
+          this.submitProgress = 100;
+          this.submitStatusText = '¡Inscripción registrada con éxito!';
+          this.cdr.detectChanges();
+        });
 
         setTimeout(() => {
-          this.isLoading = false;
-          this.isSubmitting = false;
-          this.modalType = 'success';
-          this.modalMessage = '¡Inscripción enviada con éxito! Tu solicitud ha sido registrada correctamente y pasará a revisión por el área académica/administrativa.';
-          this.showModal = true;
+          this.ngZone.run(() => {
+            this.isLoading = false;
+            this.isSubmitting = false;
+            this.modalType = 'success';
+            this.modalMessage = '¡Inscripción enviada con éxito! Tu solicitud ha sido registrada correctamente y pasará a revisión por el área académica/administrativa.';
+            this.showModal = true;
 
-          // Reiniciar formulario
-          this.inscriptionForm.reset({
-            userType: 'normal',
-            tipoCurso: 'presencial',
-            idioma: 'Inglés',
-            celularPrefix: '+591',
-            archivos: { carnet: null, titulo: null, nacimiento: null, deposito: null, foto: null, credencialEmi: null, carnetCossmil: null, carnetMilitarDoc: null }
+            // Reiniciar formulario
+            this.inscriptionForm.reset({
+              userType: 'normal',
+              tipoCurso: 'presencial',
+              idioma: 'Inglés',
+              celularPrefix: '+591',
+              archivos: { carnet: null, titulo: null, nacimiento: null, deposito: null, foto: null, credencialEmi: null, carnetCossmil: null, carnetMilitarDoc: null }
+            });
+
+            this.isPhotoFondoRojoValid = true;
+
+            // Reiniciar nombres de archivos y valores reales de entrada
+            Object.keys(this.fileNames).forEach(key => {
+              this.fileNames[key] = '';
+              this.fileWarnings[key] = '';
+              const fileInput = document.getElementById('file_' + key) as HTMLInputElement;
+              if (fileInput) {
+                fileInput.value = '';
+              }
+            });
+
+            this.isSubmitted = false;
+            this.currentStep = 1;
+            this.cdr.detectChanges();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
           });
-
-          this.isPhotoFondoRojoValid = true;
-
-          // Reiniciar nombres de archivos y valores reales de entrada
-          Object.keys(this.fileNames).forEach(key => {
-            this.fileNames[key] = '';
-            this.fileWarnings[key] = '';
-            const fileInput = document.getElementById('file_' + key) as HTMLInputElement;
-            if (fileInput) {
-              fileInput.value = '';
-            }
-          });
-
-          this.isSubmitted = false;
-          this.currentStep = 1;
-          window.scrollTo({ top: 0, behavior: 'smooth' });
         }, 700);
       },
       error: (err: any) => {
@@ -1554,11 +1566,14 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
           clearInterval(this.submitProgressTimer);
           this.submitProgressTimer = null;
         }
-        this.isLoading = false;
-        this.isSubmitting = false;
-        this.submitProgress = 0;
-        console.error('Submission error:', err);
-        this.modalType = 'error';
+        this.ngZone.run(() => {
+          this.isLoading = false;
+          this.isSubmitting = false;
+          this.submitProgress = 0;
+          console.error('Submission error:', err);
+          this.modalType = 'error';
+          this.cdr.detectChanges();
+        });
 
         const errObj = err || {};
         const errorList: string[] = [];
