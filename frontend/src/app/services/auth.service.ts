@@ -153,10 +153,21 @@ export class AuthService {
    * Cierra la sesión del usuario actual
    */
   cerrarSesion() {
+    const user = this.obtenerUsuario();
+    const token = user?.token || user?.token_acceso;
+    
     sessionStorage.removeItem('usuario');
     localStorage.removeItem('usuario');
     this.usuarioSubject.next(null);
-    return this.http.post(`${this.apiUrl}/logout`, {});
+
+    let headers = new HttpHeaders();
+    if (token) {
+      headers = headers.set('Authorization', `Bearer ${token}`);
+    }
+
+    return this.http.post(`${this.apiUrl}/logout`, {}, { headers }).pipe(
+      catchError(() => of({ status: 'logout_complete' }))
+    );
   }
 
   /**
