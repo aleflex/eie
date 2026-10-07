@@ -34,12 +34,17 @@
         {{ mensajeError }}
       </div>
 
-      <button type="submit" class="btn-login" [disabled]="!loginForm.valid">
-        <i class="material-icons-outlined">login</i> INICIAR SESIÓN
+      <button type="submit" class="btn-login" [disabled]="!loginForm.valid || isLoggingIn">
+        <ng-container *ngIf="!isLoggingIn">
+          <i class="material-icons-outlined">login</i> INICIAR SESIÓN
+        </ng-container>
+        <ng-container *ngIf="isLoggingIn">
+          <span class="btn-spinner"></span> INICIANDO SESIÓN...
+        </ng-container>
       </button>
 
       <div class="biometric-login-box">
-        <button type="button" class="btn-biometric" (click)="loginConBiometria()">
+        <button type="button" class="btn-biometric" (click)="loginConBiometria()" [disabled]="isLoggingIn">
           <i class="material-icons">fingerprint</i>
           <span>Ingresar con Huella Digital</span>
         </button>

@@ -155,6 +155,7 @@ export class LoginComponent implements OnInit {
    * Proceso principal de Inicio de Sesión por Nombre de Usuario y Contraseña
    */
   iniciarSesion() {
+    if (this.isLoggingIn) return;
     this.mensajeError = '';
     const custom = localStorage.getItem('custom_api_url');
     if (custom && custom.includes('railway.app')) {
