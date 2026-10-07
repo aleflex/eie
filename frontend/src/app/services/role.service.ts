@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, tap } from 'rxjs';
+import { Observable, tap, catchError, of } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 export interface ModuloInfo {
@@ -80,6 +80,10 @@ export class RoleService {
       tap(permisos => {
         this.cachedPermisos = permisos;
         localStorage.setItem('eie_roles_permisos', JSON.stringify(permisos));
+      }),
+      catchError(err => {
+        console.warn('Sincronizando permisos:', err?.message || err);
+        return of(this.cachedPermisos || {});
       })
     );
   }

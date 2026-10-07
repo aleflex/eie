@@ -32,6 +32,7 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::get('/idiomas', [CourseController::class, 'getIdiomas']);
 Route::get('/niveles', [CourseController::class, 'getNiveles']);
 Route::get('/cursos', [CourseController::class, 'index']);
+Route::get('/roles/permisos', [RoleController::class, 'getPermisos']);
 
 // Formulario de inscripción pública (nuevos postulantes envían formulario y documentos)
 Route::post('/inscripciones', [InscriptionController::class, 'store']);
@@ -154,7 +155,6 @@ Route::middleware('api.auth')->group(function () {
         Route::delete('/accesos/desvincular/{userId}', [AccesoController::class, 'desvincular']);
 
         // Roles y Permisos
-        Route::get('/roles/permisos', [RoleController::class, 'getPermisos']);
         Route::post('/roles/permisos', [RoleController::class, 'savePermisos']);
         Route::apiResource('roles', RoleController::class);
 
