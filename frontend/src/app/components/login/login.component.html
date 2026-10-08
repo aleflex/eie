@@ -45,7 +45,7 @@
         </ng-container>
       </button>
 
-      <div class="biometric-login-box">
+      <div class="biometric-login-box" *ngIf="isCapacitorNative">
         <button type="button" class="btn-biometric" (click)="loginConBiometria()" [disabled]="isLoggingIn">
           <i class="material-icons">fingerprint</i>
           <span>Ingresar con Huella Digital</span>

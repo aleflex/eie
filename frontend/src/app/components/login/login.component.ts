@@ -52,6 +52,7 @@ export class LoginComponent implements OnInit {
   // Biometría Nativa (Huella Digital / Reconocimiento Facial Android)
   biometricsAvailable: boolean = false;
   isMobileDevice: boolean = false;
+  isCapacitorNative: boolean = false;
   hasSavedBiometricToken: boolean = false;
   savedBiometricUserName: string = '';
   savedBiometricUserEmail: string = '';
@@ -70,6 +71,8 @@ export class LoginComponent implements OnInit {
   ) {}
 
   async ngOnInit() {
+    this.isCapacitorNative = Capacitor.isNativePlatform();
+
     const custom = localStorage.getItem('custom_api_url');
     if (custom && custom.includes('railway.app')) {
       localStorage.removeItem('custom_api_url');
@@ -83,7 +86,7 @@ export class LoginComponent implements OnInit {
     } catch (e) {}
 
     // Detectar si es dispositivo móvil o contenedor Capacitor nativo
-    this.isMobileDevice = Capacitor.isNativePlatform() || 
+    this.isMobileDevice = this.isCapacitorNative || 
       /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     
     // Verificar si el usuario habilitó activamente el acceso biométrico desde configuraciones
