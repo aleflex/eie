@@ -99,6 +99,18 @@ export class AuthService {
   }
 
   /**
+   * Genera o recupera un UUID persistente para el dispositivo del usuario
+   */
+  public getOrCreateDeviceUuid(): string {
+    let uuid = localStorage.getItem('eie_device_uuid');
+    if (!uuid) {
+      uuid = 'DEV-' + Math.random().toString(36).substring(2, 10).toUpperCase() + '-' + Date.now().toString(36).toUpperCase();
+      localStorage.setItem('eie_device_uuid', uuid);
+    }
+    return uuid;
+  }
+
+  /**
    * Inicia sesión del usuario por Usuario o Correo
    * @param credenciales - Objeto con login (usuario o correo) y contraseña
    * @returns Observable con la respuesta del servidor (usuario y token)
@@ -106,7 +118,12 @@ export class AuthService {
   iniciarSesion(credenciales: any): Observable<any> {
     const payload = {
       login: credenciales.login || credenciales.email || credenciales.usuario,
-      password: credenciales.password
+      password: credenciales.password,
+      device_model: credenciales.device_model || (Capacitor.isNativePlatform() ? 'APK Android' : navigator.userAgent),
+      device_mac: credenciales.device_mac || this.getOrCreateDeviceUuid(),
+      ubicacion_lugar: credenciales.ubicacion_lugar || 'Bolivia',
+      plataforma: Capacitor.isNativePlatform() ? 'APK_ANDROID' : 'WEB_VERCEL',
+      terminos_aceptados: true
     };
     return this.http.post(`${this.apiUrl}/login`, payload).pipe(
       tap((respuesta: any) => {
@@ -114,6 +131,10 @@ export class AuthService {
           const userLimpio = this.sanitizarUsuario(respuesta.user);
           if (respuesta.token) {
             userLimpio.token = respuesta.token;
+          }
+          if (respuesta.user.id_bitacora) {
+            sessionStorage.setItem('id_bitacora', String(respuesta.user.id_bitacora));
+            userLimpio.id_bitacora = respuesta.user.id_bitacora;
           }
           sessionStorage.setItem('usuario', JSON.stringify(userLimpio));
           if (Capacitor.isNativePlatform()) {
@@ -150,13 +171,15 @@ export class AuthService {
   }
 
   /**
-   * Cierra la sesión del usuario actual
+   * Cierra la sesión del usuario actual y registra la hora de salida en la bitácora
    */
   cerrarSesion() {
     const user = this.obtenerUsuario();
     const token = user?.token || user?.token_acceso;
+    const idBitacora = user?.id_bitacora || sessionStorage.getItem('id_bitacora');
     
     sessionStorage.removeItem('usuario');
+    sessionStorage.removeItem('id_bitacora');
     localStorage.removeItem('usuario');
     this.usuarioSubject.next(null);
 
@@ -165,7 +188,7 @@ export class AuthService {
       headers = headers.set('Authorization', `Bearer ${token}`);
     }
 
-    return this.http.post(`${this.apiUrl}/logout`, {}, { headers }).pipe(
+    return this.http.post(`${this.apiUrl}/logout`, { id_bitacora: idBitacora }, { headers }).pipe(
       catchError(() => of({ status: 'logout_complete' }))
     );
   }

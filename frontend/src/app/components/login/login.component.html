@@ -36,7 +36,14 @@
         {{ mensajeError }}
       </div>
 
-      <button type="submit" class="btn-login" [disabled]="!loginForm.valid || isLoggingIn" (click)="onLogin()">
+      <div class="terms-checkbox-group" style="margin-bottom: 1rem; text-align: center;">
+        <label style="font-size: 0.78rem; color: #475569; cursor: pointer; display: inline-flex; align-items: center; gap: 0.35rem;">
+          <input type="checkbox" [(ngModel)]="aceptaTerminos" name="aceptaTerminos" required style="accent-color: #003B71;">
+          <span>Acepto los <a (click)="openTerminosModal($event)" style="color: #003B71; font-weight: 700; text-decoration: underline; cursor: pointer;">Términos y Condiciones de Uso y Privacidad</a></span>
+        </label>
+      </div>
+
+      <button type="submit" class="btn-login" [disabled]="!loginForm.valid || isLoggingIn || !aceptaTerminos" (click)="onLogin()">
         <ng-container *ngIf="!isLoggingIn">
           <i class="material-icons-outlined">login</i> INICIAR SESIÓN
         </ng-container>
@@ -46,7 +53,7 @@
       </button>
 
       <div class="biometric-login-box" *ngIf="isCapacitorNative">
-        <button type="button" class="btn-biometric" (click)="loginConBiometria()" [disabled]="isLoggingIn">
+        <button type="button" class="btn-biometric" (click)="loginConBiometria()" [disabled]="isLoggingIn || !aceptaTerminos">
           <i class="material-icons">fingerprint</i>
           <span>Ingresar con Huella Digital</span>
         </button>
@@ -135,5 +142,41 @@
         <i class="material-icons-outlined">security</i> GUARDAR Y ACCEDER
       </button>
     </form>
+  </div>
+</div>
+
+<!-- Modal de Términos y Condiciones de Uso y Privacidad Institucional (Web & APK) -->
+<div class="modal-backdrop-overlay" *ngIf="showTerminosModal" (click)="closeTerminosModal()">
+  <div class="modal-card animate-zoom-in" style="max-width: 520px; text-align: left;" (click)="$event.stopPropagation()">
+    <div class="modal-header-icon" style="background: #eff6ff; color: #003B71; margin-left: auto; margin-right: auto;">
+      <i class="material-icons">gavel</i>
+    </div>
+    <h2 class="modal-title" style="text-align: center;">Términos y Condiciones de Uso y Privacidad</h2>
+    <p style="font-size: 0.82rem; color: #64748b; text-align: center; margin-bottom: 1rem;">
+      Escuela de Idiomas del Ejército (EIE) - Sistema de Gestión Institucional (Web & APK)
+    </p>
+
+    <div class="modal-body-text" style="max-height: 280px; overflow-y: auto; font-size: 0.85rem; line-height: 1.6; color: #334155; padding: 1rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px;">
+      <strong style="color: #003B71;">1. Registro de Auditoría y Bitácora Institucional</strong><br>
+      Al iniciar sesión en la plataforma Web o en la Aplicación Móvil (APK), el sistema registra con fines de seguridad y auditoría institucional: la dirección IP, la dirección MAC/UUID del dispositivo, el modelo del dispositivo, la ubicación estimada de acceso, la fecha y hora de ingreso, y la fecha y hora de cierre de sesión.<br><br>
+
+      <strong style="color: #003B71;">2. Uso Responsable de Credenciales</strong><br>
+      El usuario es responsable de mantener la confidencialidad de su nombre de usuario, correo institucional y contraseña. Queda estrictamente prohibido compartir credenciales de acceso.<br><br>
+
+      <strong style="color: #003B71;">3. Protección de Datos Personales</strong><br>
+      La información académica, personal y de inscripción recopilada está protegida y se utiliza únicamente para fines educativos, académicos y administrativos de la Escuela de Idiomas del Ejército.<br><br>
+
+      <strong style="color: #003B71;">4. Autenticación Biométrica Móvil (APK)</strong><br>
+      La autenticación por huella digital en la App APK utiliza los sensores de seguridad nativos de su dispositivo Android. Las plantillas biométricas permanecen en su equipo y no se transmiten a servidores externos.<br><br>
+
+      <strong style="color: #003B71;">5. Aceptación Expresa</strong><br>
+      Al marcar la casilla y utilizar esta plataforma, usted declara haber leído y aceptado en su totalidad los presentes Términos y Condiciones.
+    </div>
+
+    <div style="margin-top: 1.2rem; text-align: center; width: 100%;">
+      <button type="button" class="btn-login" style="margin-bottom: 0;" (click)="aceptarTerminosModal()">
+        <i class="material-icons">check_circle</i> ENTENDIDO Y ACEPTAR
+      </button>
+    </div>
   </div>
 </div>

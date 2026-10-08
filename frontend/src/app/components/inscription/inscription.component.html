@@ -830,8 +830,16 @@
         </div>
       </div>
 
+      <!-- Aceptación de Términos y Condiciones -->
+      <div class="terms-acceptance-box mt-3 mb-2 text-center" *ngIf="currentStep === totalSteps">
+        <label style="font-size: 0.82rem; color: #475569; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem;">
+          <input type="checkbox" formControlName="aceptaTerminos" style="accent-color: #003B71;">
+          <span>He leído y acepto los <a (click)="openTerminosModal($event)" style="color: #003B71; font-weight: 700; text-decoration: underline; cursor: pointer;">Términos y Condiciones de Inscripción y Privacidad</a></span>
+        </label>
+      </div>
+
       <!-- Navigation buttons inside the form card -->
-      <div class="form-navigation mt-5">
+      <div class="form-navigation mt-3">
         <button type="button" class="btn-nav btn-prev" *ngIf="currentStep > 1" (click)="prevStep()">
           <i class="material-icons">chevron_left</i> ANTERIOR
         </button>
@@ -840,7 +848,7 @@
           SIGUIENTE <i class="material-icons">chevron_right</i>
         </button>
 
-        <button type="submit" class="btn-nav btn-submit ml-auto" *ngIf="currentStep === totalSteps" [disabled]="isLoading">
+        <button type="submit" class="btn-nav btn-submit ml-auto" *ngIf="currentStep === totalSteps" [disabled]="isLoading || !inscriptionForm.get('aceptaTerminos')?.value">
           <span *ngIf="!isLoading">FINALIZAR INSCRIPCIÓN <i class="material-icons">send</i></span>
           <span *ngIf="isLoading" class="spinner-container">
             <span class="loading-spinner"></span> ENVIANDO...
@@ -922,6 +930,42 @@
         <ng-container *ngIf="modalType !== 'success'">
           Entendido
         </ng-container>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Términos y Condiciones de Uso y Privacidad Institucional para Inscripciones -->
+<div class="modal-backdrop-overlay" *ngIf="showTerminosModal" (click)="closeTerminosModal()">
+  <div class="modal-card animate-zoom-in" style="max-width: 520px; text-align: left;" (click)="$event.stopPropagation()">
+    <div class="modal-header-icon" style="background: #eff6ff; color: #003B71; margin-left: auto; margin-right: auto;">
+      <i class="material-icons">gavel</i>
+    </div>
+    <h2 class="modal-title" style="text-align: center;">Términos y Condiciones de Inscripción y Privacidad</h2>
+    <p style="font-size: 0.82rem; color: #64748b; text-align: center; margin-bottom: 1rem;">
+      Escuela de Idiomas del Ejército (EIE) - Sistema de Inscripción Institucional (Web & APK)
+    </p>
+
+    <div class="modal-body-text" style="max-height: 280px; overflow-y: auto; font-size: 0.85rem; line-height: 1.6; color: #334155; padding: 1rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px;">
+      <strong style="color: #003B71;">1. Veracidad de la Información Presentada</strong><br>
+      El postulante/estudiante declara bajo juramento que los datos personales, académicos y los documentos adjuntos (Carnet de Identidad, Título de Bachiller, Certificado de Nacimiento y comprobante de depósito) son legítimos, auténticos y fidedignos.<br><br>
+
+      <strong style="color: #003B71;">2. Registro de Bitácora de Sesión y Auditoría</strong><br>
+      Con fines de trazabilidad y seguridad institucional, al enviar su postulación o acceder a la plataforma, se registrarán automáticamente: dirección IP, identificador/UUID del dispositivo, modelo del equipo, fecha y hora de la transacción.<br><br>
+
+      <strong style="color: #003B71;">3. Asignación de Paralelos y Cupos Institucionales</strong><br>
+      La inscripción queda supeditada a la verificación de la documentación presentada y a la disponibilidad de vacantes en el paralelo y horario seleccionados.<br><br>
+
+      <strong style="color: #003B71;">4. Tratamiento de Datos Personales</strong><br>
+      Los datos recabados serán tratados conforme a la normativa institucional y utilizados exclusivamente para la gestión académica, emisión de boletines y certificaciones de la Escuela de Idiomas del Ejército.<br><br>
+
+      <strong style="color: #003B71;">5. Aceptación Expresa</strong><br>
+      Al marcar la casilla correspondiente, el postulante acepta de manera libre, explícita e informada los presentes Términos y Condiciones.
+    </div>
+
+    <div style="margin-top: 1.2rem; text-align: center; width: 100%;">
+      <button type="button" class="btn-modal-close" style="padding: 0.75rem 2rem;" (click)="closeTerminosModal()">
+        <i class="material-icons" style="font-size: 1.15rem; vertical-align: middle; margin-right: 6px;">check_circle</i> ENTENDIDO Y ACEPTAR
       </button>
     </div>
   </div>

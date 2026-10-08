@@ -57,10 +57,31 @@ export class LoginComponent implements OnInit {
   savedBiometricUserName: string = '';
   savedBiometricUserEmail: string = '';
 
+  // Términos y Condiciones de Uso y Privacidad (Web & APK)
+  aceptaTerminos: boolean = true;
+  showTerminosModal: boolean = false;
+
   // Configuración de API dinámica
   showApiConfigModal: boolean = false;
   customApiUrl: string = '';
   currentApiUrl: string = '';
+
+  openTerminosModal(event?: Event) {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    this.showTerminosModal = true;
+  }
+
+  closeTerminosModal() {
+    this.showTerminosModal = false;
+  }
+
+  aceptarTerminosModal() {
+    this.aceptaTerminos = true;
+    this.showTerminosModal = false;
+  }
 
   constructor(
     private servicioAutenticacion: AuthService,

@@ -72,6 +72,7 @@ Route::middleware('api.auth')->group(function () {
     Route::get('/user/profile', [AuthController::class, 'getProfile']);
     Route::post('/user/profile', [AuthController::class, 'updateProfile']);
     Route::post('/user/change-password', [AuthController::class, 'changePassword']);
+    Route::get('/bitacora-sesiones', [AuthController::class, 'getBitacora']);
 
     // Inscripciones (Gestión protegida para administradores y docentes)
     Route::get('/inscripciones', [InscriptionController::class, 'index']);

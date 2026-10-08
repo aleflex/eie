@@ -51,6 +51,19 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
   mapSearchQuery: string = '';
   isSearchingAddress: boolean = false;
   detectedLocationInfo: string = '';
+  showTerminosModal: boolean = false;
+
+  openTerminosModal(event?: Event) {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    this.showTerminosModal = true;
+  }
+
+  closeTerminosModal() {
+    this.showTerminosModal = false;
+  }
 
   // Almacenar nombres de archivo seleccionados para dropzones personalizados
   fileNames: { [key: string]: string } = {
@@ -426,6 +439,7 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
       ciTutor: ['', [Validators.required, Validators.pattern(/^[0-9]{7,8}$/)]],
       hermanosInscritos: [''],
       contactoEmergencia: ['', [Validators.required, Validators.pattern(/^[0-9]{8}$/)]],
+      aceptaTerminos: [true, Validators.requiredTrue],
       archivos: this.fb.group({
         carnet: [null, Validators.required],
         titulo: [null, Validators.required],

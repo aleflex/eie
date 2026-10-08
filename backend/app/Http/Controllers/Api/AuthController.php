@@ -66,6 +66,31 @@ class AuthController extends Controller
             $userData['usuario'] = $user->usuario;
             $userData['debe_cambiar_password'] = (bool) $user->debe_cambiar_password;
 
+            // Registrar Bitácora de Sesión (IP, MAC, Modelo, Lugar, Hora de Ingreso)
+            try {
+                $ip = $request->header('CF-Connecting-IP') ?: ($request->header('X-Forwarded-For') ? explode(',', $request->header('X-Forwarded-For'))[0] : $request->ip());
+                $mac = $request->input('device_mac', $request->input('mac_address', $request->header('X-Device-UUID', 'N/A')));
+                $model = $request->input('device_model', $request->header('User-Agent', 'Navegador Web / Dispositivo Móvil'));
+                $location = $request->input('ubicacion_lugar', $request->input('ubicacion', 'Bolivia'));
+                $platform = $request->input('plataforma', (str_contains($request->header('User-Agent', ''), 'Capacitor') ? 'APK_ANDROID' : 'WEB_VERCEL'));
+
+                $bitacora = \App\Models\BitacoraSesion::create([
+                    'id_usuario' => $user->id_usuario,
+                    'usuario_nombre' => $user->usuario ?: $user->correo_institucional,
+                    'ip_address' => $ip,
+                    'mac_address' => $mac,
+                    'modelo_dispositivo' => substr($model, 0, 250),
+                    'ubicacion_lugar' => substr($location, 0, 250),
+                    'plataforma' => $platform,
+                    'hora_ingreso' => now(),
+                    'terminos_aceptados' => true
+                ]);
+
+                $userData['id_bitacora'] = $bitacora->id_bitacora;
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('No se pudo guardar la bitácora de sesión: ' . $e->getMessage());
+            }
+
             return response()->json([
                 'message' => 'Login exitoso',
                 'user' => $userData,
@@ -106,12 +131,46 @@ class AuthController extends Controller
     }
 
     /**
-     * Cierra la sesión activa del usuario.
+     * Cierra la sesión activa del usuario y registra la hora de salida.
      */
     public function logout(Request $request)
     {
+        try {
+            $idBitacora = $request->input('id_bitacora');
+            $user = auth('sanctum')->user() ?? auth()->user();
+
+            if ($idBitacora) {
+                $log = \App\Models\BitacoraSesion::find($idBitacora);
+                if ($log) {
+                    $log->update(['hora_salida' => now()]);
+                }
+            } elseif ($user) {
+                \App\Models\BitacoraSesion::where('id_usuario', $user->id_usuario)
+                    ->whereNull('hora_salida')
+                    ->latest('hora_ingreso')
+                    ->first()
+                    ?->update(['hora_salida' => now()]);
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Error actualizando hora de salida en bitácora: ' . $e->getMessage());
+        }
+
         Auth::logout();
-        return response()->json(['message' => 'Sesión cerrada']);
+        return response()->json(['message' => 'Sesión cerrada exitosamente']);
+    }
+
+    /**
+     * Obtiene los registros de bitácora de inicios y cierres de sesión.
+     */
+    public function getBitacora(Request $request)
+    {
+        $logs = \App\Models\BitacoraSesion::orderBy('id_bitacora', 'desc')
+            ->limit(150)
+            ->get();
+
+        return response()->json([
+            'bitacora' => $logs
+        ]);
     }
 
     /**
