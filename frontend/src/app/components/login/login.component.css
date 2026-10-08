@@ -437,6 +437,15 @@
   .login-header h3 {
     font-size: 0.85rem !important;
   }
+
+  .login-progress-card {
+    padding: 1.75rem 1.25rem 1.5rem !important;
+    max-width: 92vw !important;
+  }
+
+  .login-progress-title {
+    font-size: 1.15rem !important;
+  }
 }
 
 /* ==========================================================================
