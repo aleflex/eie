@@ -1,5 +1,5 @@
 {
-  "buildCommand": "node -e \"if (require('fs').existsSync('frontend')) process.chdir('frontend');\" && npm install && npm run build",
+  "buildCommand": "if [ -d \"frontend\" ]; then cd frontend; fi && npm install && npm run build",
   "outputDirectory": "frontend/dist/frontend/browser",
   "headers": [
     {
