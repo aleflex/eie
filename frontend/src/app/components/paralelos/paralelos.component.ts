@@ -309,7 +309,10 @@ export class ParalelosComponent implements OnInit {
   adminEstudiantes: any[] = [];
   loadingAdminStudents = false;
   adminPeriodo = 'Book 1';
-  adminFechaAsistencia: string = new Date().toISOString().split('T')[0];
+  adminFechaAsistencia: string = (() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  })();
   
   adminNotasForm: { [inscId: number]: number | null } = {};
   adminObsNotasForm: { [inscId: number]: string } = {};

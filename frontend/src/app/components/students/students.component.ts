@@ -564,7 +564,7 @@ export class StudentsComponent implements OnInit, OnDestroy {
             id_curso: this.selectedStudent.curso_id,
             id_paralelo: this.selectedStudent.paralelo_id || null,
             estado: this.selectedStudent.estado_inscripcion || 'activo',
-            fecha_registro: new Date().toISOString().split('T')[0]
+            fecha_registro: (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })()
           };
           this.http.post(`${environment.apiUrl}/api/inscripciones/admin-assign`, newInsData).subscribe({
             next: () => {

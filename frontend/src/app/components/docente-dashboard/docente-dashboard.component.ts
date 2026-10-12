@@ -69,8 +69,15 @@ export class DocenteDashboardComponent implements OnInit {
   notasMsg = '';
   notasError = false;
 
+  getFechaLocal(d: Date = new Date()): string {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
   // Asistencia
-  fechaAsistencia: string = new Date().toISOString().split('T')[0];
+  fechaAsistencia: string = this.getFechaLocal();
   asistenciaForm: { [inscripcionId: number]: string } = {};
   observacionAsistenciaForm: { [inscripcionId: number]: string } = {};
   asistenciaBloqueada: boolean = false;
@@ -632,7 +639,7 @@ export class DocenteDashboardComponent implements OnInit {
       this.http.get<any[]>(`${this.apiUrl}/inscripciones/${insc.id}/asistencias`).pipe(catchError(() => of([])))
     );
 
-    const hoyStr = new Date().toISOString().split('T')[0];
+    const hoyStr = this.getFechaLocal();
     this.esFechaPasada = this.fechaAsistencia < hoyStr;
 
     forkJoin(requests).subscribe(resultados => {

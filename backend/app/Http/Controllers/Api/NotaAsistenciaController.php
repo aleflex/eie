@@ -411,8 +411,8 @@ class NotaAsistenciaController extends Controller
         $user = $this->getAuthenticatedUser($request);
         $isAdmin = $this->isUserAdmin($user);
 
-        $fechaRegistro = \Carbon\Carbon::parse($validated['fecha'])->startOfDay();
-        $hoy = now()->startOfDay();
+        $fechaRegistro = \Carbon\Carbon::parse($validated['fecha'], 'America/La_Paz')->startOfDay();
+        $hoy = now('America/La_Paz')->startOfDay();
 
         // Verificar si ya existe un registro de asistencia para esta fecha
         $existingAsistencia = Asistencia::where('id_inscripcion', $inscripcion->id_inscripcion)
