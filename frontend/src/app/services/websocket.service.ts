@@ -79,7 +79,10 @@ export class WebSocketService implements OnDestroy {
       };
 
       this.socket.onerror = (error) => {
-        console.warn('⚠️ [WebSocket EIE] Advertencia de socket:', error);
+        // Silenciar advertencias consecutivas para evitar saturación de consola
+        if (this.reconnectAttempts <= 1) {
+          console.warn('⚠️ [WebSocket EIE] Conexión no disponible en este momento:', error);
+        }
       };
 
       this.socket.onclose = () => {
@@ -92,7 +95,9 @@ export class WebSocketService implements OnDestroy {
         });
       };
     } catch (e) {
-      console.warn('[WebSocket EIE] Error al inicializar conexión:', e);
+      if (this.reconnectAttempts <= 1) {
+        console.warn('[WebSocket EIE] Error al inicializar conexión:', e);
+      }
       this.scheduleReconnect();
     }
   }
@@ -105,12 +110,14 @@ export class WebSocketService implements OnDestroy {
 
     this.reconnectAttempts++;
     if (this.reconnectAttempts > this.maxReconnectAttempts) {
-      console.warn('[WebSocket EIE] Se alcanzó el límite de intentos de reconexión.');
+      console.info('ℹ️ [WebSocket EIE] El servidor WebSocket no está disponible actualmente. El sistema continuará operando normalmente en modo REST estándar.');
       return;
     }
 
     const delay = Math.min(3000 * Math.pow(1.5, this.reconnectAttempts - 1), 30000);
-    console.log(`[WebSocket EIE] Reintentando conexión en ${(delay / 1000).toFixed(1)} segundos (intento ${this.reconnectAttempts})...`);
+    if (this.reconnectAttempts <= 3 || this.reconnectAttempts % 5 === 0) {
+      console.log(`[WebSocket EIE] Reintentando conexión en ${(delay / 1000).toFixed(1)} segundos (intento ${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
+    }
 
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null;

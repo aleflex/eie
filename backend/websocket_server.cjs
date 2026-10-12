@@ -9,7 +9,15 @@
 const http = require('http');
 const WebSocket = require('ws');
 
-const PORT = parseInt(process.env.WS_PORT || process.env.PORT || '6001', 10);
+// Puerto interno exclusivo para el servidor WebSocket (no debe colisionar con el PORT de Apache en Render)
+const PORT = parseInt(process.env.WS_PORT || '6001', 10);
+
+process.on('uncaughtException', (err) => {
+  console.error('[WS Uncaught Exception]', err.message);
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('[WS Unhandled Rejection]', reason);
+});
 
 // Crear servidor HTTP para admitir tanto WebSockets como la API de broadcast de Laravel
 const server = http.createServer((req, res) => {

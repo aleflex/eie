@@ -10,16 +10,19 @@ RUN apt-get update && apt-get install -y \
     unzip \
     git \
     curl \
+    nodejs \
+    npm \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install pdo_mysql gd bcmath zip
+    && docker-php-ext-install pdo_mysql gd bcmath zip \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Configurar limites de subida de archivos para soportar fotos de celular de alta resolucion
 RUN echo "upload_max_filesize = 64M" > /usr/local/etc/php/conf.d/uploads.ini \
     && echo "post_max_size = 64M" >> /usr/local/etc/php/conf.d/uploads.ini \
     && echo "memory_limit = 256M" >> /usr/local/etc/php/conf.d/uploads.ini
 
-# Habilitar el módulo mod_rewrite de Apache para Laravel
-RUN a2enmod rewrite
+# Habilitar el módulo mod_rewrite y módulos de proxy para WebSockets en Apache
+RUN a2enmod rewrite proxy proxy_http proxy_wstunnel headers
 
 # Cambiar el DocumentRoot de Apache a la carpeta 'public' de Laravel
 ENV APACHE_DOCUMENT_ROOT /var/www/html/public
@@ -40,6 +43,13 @@ RUN if [ -f "/var/www/html/backend/.env" ]; then cp /var/www/html/backend/.env /
 
 # Instalar dependencias de PHP vía Composer
 RUN composer install --no-interaction --no-dev --optimize-autoloader
+
+# Instalar dependencias de Node.js para el servidor WebSocket
+RUN npm install --omit=dev --no-audit --no-fund || true
+
+# Configurar e habilitar proxy de WebSockets en Apache
+RUN cp /var/www/html/apache-websocket.conf /etc/apache2/conf-available/websocket.conf \
+    && a2enconf websocket || true
 
 # Crear carpetas de almacenamiento y establecer permisos en el contenedor
 RUN mkdir -p /var/www/html/storage/framework/views \
