@@ -336,30 +336,91 @@ class DocenteController extends Controller
     }
 
     /**
-     * Eliminar un docente específico de la base de datos.
+     * Da de baja a un docente registrando obligatoriamente el informe / motivo de la baja.
+     * No se elimina el registro de la base de datos para preservar el historial institucional.
      */
-    public function destroy($id)
+    public function darDeBaja(Request $request, $id)
     {
+        $request->validate([
+            'motivo_baja' => 'required|string|min:5'
+        ], [
+            'motivo_baja.required' => 'El informe o motivo de la baja es obligatorio.',
+            'motivo_baja.min' => 'El informe o motivo de la baja debe contener al menos 5 caracteres descriptivos.'
+        ]);
+
         try {
-            $docente = Docente::findOrFail($id);
-            $user = $docente->user;
-
             DB::beginTransaction();
-            $docente->paralelos()->detach();
-            $docente->delete();
+            $docente = Docente::with('user')->findOrFail($id);
 
-            if ($user) {
-                $user->delete();
+            $docente->update([
+                'estado' => 'De Baja',
+                'motivo_baja' => trim($request->motivo_baja),
+                'fecha_baja' => now(),
+            ]);
+
+            if ($docente->user) {
+                $docente->user->update([
+                    'estado' => 'INACTIVO'
+                ]);
             }
+
+            // Desvincular de paralelos activos para no interferir con las clases en curso
+            $docente->paralelos()->detach();
+
             DB::commit();
 
-            return response()->json(['message' => 'Docente eliminado correctamente']);
+            return response()->json([
+                'message' => 'El instructor ha sido dado de baja exitosamente con informe registrado.',
+                'docente' => $docente->fresh()->load('user')
+            ]);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
-                'message' => 'Error al eliminar docente',
-                'error' => $e->getMessage()
+                'message' => 'Error al procesar la baja del docente: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Rehabilitar a un docente dado de baja.
+     */
+    public function rehabilitar($id)
+    {
+        try {
+            DB::beginTransaction();
+            $docente = Docente::with('user')->findOrFail($id);
+
+            $docente->update([
+                'estado' => 'Activo',
+                'motivo_baja' => null,
+                'fecha_baja' => null,
+            ]);
+
+            if ($docente->user) {
+                $docente->user->update([
+                    'estado' => 'ACTIVO'
+                ]);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'El instructor ha sido reactivado exitosamente.',
+                'docente' => $docente->fresh()->load('user')
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 'Error al reactivar docente: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Intento de eliminación: Redirige a darDeBaja con informe obligatorio.
+     */
+    public function destroy(Request $request, $id)
+    {
+        return $this->darDeBaja($request, $id);
     }
 }

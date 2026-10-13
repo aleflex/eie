@@ -114,6 +114,14 @@ export class DocentesListComponent implements OnInit {
   isEditing = false;
   showForm = false;
 
+  // Gestión de Baja con Informe Obligatorio para Instructores
+  showBajaModal: boolean = false;
+  showInformeModal: boolean = false;
+  docenteForBaja: any = null;
+  docenteInforme: any = null;
+  motivoBajaDocente: string = '';
+  bajaLoading: boolean = false;
+
   searchTerm: string = '';
 
   constructor(
@@ -449,16 +457,85 @@ export class DocentesListComponent implements OnInit {
     });
   }
 
-  deleteDocente(id: number) {
-    if (confirm('¿Estás seguro de que deseas eliminar este instructor? Se eliminará también su cuenta de acceso.')) {
-      this.docenteService.deleteDocente(id).subscribe({
-        next: () => {
+  isDocenteDeBaja(docente: any): boolean {
+    if (!docente) return false;
+    const est = (docente.estado || '').toLowerCase();
+    const userEst = (docente.user?.estado || '').toUpperCase();
+    return est === 'de baja' || est === 'inactivo' || userEst === 'INACTIVO';
+  }
+
+  openBajaModal(docente: any): void {
+    this.docenteForBaja = docente;
+    this.motivoBajaDocente = '';
+    this.bajaLoading = false;
+    this.showBajaModal = true;
+  }
+
+  closeBajaModal(): void {
+    this.showBajaModal = false;
+    this.docenteForBaja = null;
+    this.motivoBajaDocente = '';
+    this.bajaLoading = false;
+  }
+
+  confirmarBaja(): void {
+    if (!this.docenteForBaja) return;
+
+    if (!this.motivoBajaDocente || this.motivoBajaDocente.trim().length < 5) {
+      alert('Es obligatorio ingresar un informe o justificación detallada de por qué se está dando de baja al instructor (mínimo 5 caracteres).');
+      return;
+    }
+
+    this.bajaLoading = true;
+    this.docenteService.darDeBaja(this.docenteForBaja.id, this.motivoBajaDocente.trim()).subscribe({
+      next: (res) => {
+        this.bajaLoading = false;
+        alert(res?.message || 'El instructor ha sido dado de baja exitosamente con informe registrado.');
+        this.closeBajaModal();
+        this.loadDocentes();
+      },
+      error: (err) => {
+        this.bajaLoading = false;
+        alert('Error al dar de baja al instructor:\n• ' + this.extractErrorMessage(err));
+      }
+    });
+  }
+
+  verInformeBaja(docente: any): void {
+    this.docenteInforme = docente;
+    this.showInformeModal = true;
+  }
+
+  closeInformeModal(): void {
+    this.showInformeModal = false;
+    this.docenteInforme = null;
+  }
+
+  rehabilitarDocente(docente: any): void {
+    if (!docente) return;
+    if (confirm(`¿Está seguro de que desea rehabilitar y reactivar al instructor ${docente.nombres} ${docente.apellidos || ''}? Se restaurará su acceso al sistema.`)) {
+      this.docenteService.rehabilitar(docente.id).subscribe({
+        next: (res) => {
+          alert(res?.message || 'Instructor reactivado exitosamente.');
           this.loadDocentes();
         },
         error: (err) => {
-          alert('Error al eliminar instructor: ' + (err.error?.message || err.message));
+          alert('Error al reactivar instructor:\n• ' + this.extractErrorMessage(err));
         }
       });
+    }
+  }
+
+  deleteDocente(docenteOrId: any): void {
+    if (typeof docenteOrId === 'object' && docenteOrId !== null) {
+      this.openBajaModal(docenteOrId);
+    } else {
+      const d = this.docentes.find(item => item.id === docenteOrId);
+      if (d) {
+        this.openBajaModal(d);
+      } else {
+        alert('Instructor no encontrado.');
+      }
     }
   }
 

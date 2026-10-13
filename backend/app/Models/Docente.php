@@ -23,7 +23,9 @@ class Docente extends Authenticatable
         'id_tipo_contrato',
         'telefono',
         'fecha_contrato',
-        'estado'
+        'estado',
+        'motivo_baja',
+        'fecha_baja'
     ];
 
     protected $appends = [

@@ -296,21 +296,37 @@
               </td>
               <td>
                 <span class="status-badge"
-                  [ngClass]="docente.estado === 'Activo' ? 'bg-success' : 'bg-danger text-white'">
+                  [ngClass]="{
+                    'bg-success': docente.estado === 'Activo',
+                    'bg-danger text-white': isDocenteDeBaja(docente),
+                    'bg-warning text-dark': docente.estado === 'Pendiente'
+                  }">
                   {{ docente.estado }}
                 </span>
               </td>
               <td>
                 <div class="actions">
-                  <button (click)="toggleStatus(docente)" class="btn-act btn-toggle-act"
+                  <button *ngIf="!isDocenteDeBaja(docente)" (click)="toggleStatus(docente)" class="btn-act btn-toggle-act"
                     [title]="docente.estado === 'Activo' ? 'Desactivar Instructor' : 'Activar Instructor'">
                     <i class="material-icons-outlined">{{ docente.estado === 'Activo' ? 'toggle_on' : 'toggle_off' }}</i>
                   </button>
                   <button (click)="editDocente(docente)" class="btn-act btn-edit-act" title="Modificar / Actualizar">
                     <i class="material-icons-outlined">edit</i>
                   </button>
-                  <button (click)="deleteDocente(docente.id)" class="btn-act btn-delete-act" title="Eliminar">
-                    <i class="material-icons-outlined">delete</i>
+
+                  <!-- Si está activo: Dar de Baja (con informe obligatorio) -->
+                  <button *ngIf="!isDocenteDeBaja(docente)" (click)="openBajaModal(docente)" class="btn-act btn-delete-act" title="Dar de Baja al Instructor (con informe)">
+                    <i class="material-icons-outlined">person_off</i>
+                  </button>
+
+                  <!-- Si está de baja: Ver Informe de Baja -->
+                  <button *ngIf="isDocenteDeBaja(docente) && docente.motivo_baja" (click)="verInformeBaja(docente)" class="btn-act btn-report-act" title="Ver Informe de Baja">
+                    <i class="material-icons-outlined">assignment</i>
+                  </button>
+
+                  <!-- Si está de baja: Rehabilitar Instructor -->
+                  <button *ngIf="isDocenteDeBaja(docente)" (click)="rehabilitarDocente(docente)" class="btn-act btn-rehabilitar-act" title="Rehabilitar y Reactivar Instructor">
+                    <i class="material-icons-outlined">restore_from_trash</i>
                   </button>
                 </div>
               </td>
@@ -339,7 +355,12 @@
                 <span class="docente-ci-text">C.I.: {{ docente.ci || 'Sin C.I.' }}</span>
               </div>
             </div>
-            <span class="status-badge" [ngClass]="docente.estado === 'Activo' ? 'bg-success' : 'bg-danger text-white'">
+            <span class="status-badge"
+              [ngClass]="{
+                'bg-success': docente.estado === 'Activo',
+                'bg-danger text-white': isDocenteDeBaja(docente),
+                'bg-warning text-dark': docente.estado === 'Pendiente'
+              }">
               {{ docente.estado }}
             </span>
           </div>
@@ -375,7 +396,7 @@
           </div>
 
           <div class="card-mobile-actions">
-            <button type="button" (click)="toggleStatus(docente)" class="btn-mobile-action btn-mobile-toggle"
+            <button type="button" *ngIf="!isDocenteDeBaja(docente)" (click)="toggleStatus(docente)" class="btn-mobile-action btn-mobile-toggle"
               [title]="docente.estado === 'Activo' ? 'Desactivar Instructor' : 'Activar Instructor'">
               <i class="material-icons-outlined">{{ docente.estado === 'Activo' ? 'toggle_on' : 'toggle_off' }}</i>
               <span>{{ docente.estado === 'Activo' ? 'Desactivar' : 'Activar' }}</span>
@@ -384,9 +405,20 @@
               <i class="material-icons-outlined">edit</i>
               <span>Editar</span>
             </button>
-            <button type="button" (click)="deleteDocente(docente.id)" class="btn-mobile-action btn-mobile-delete" title="Eliminar Instructor">
-              <i class="material-icons-outlined">delete</i>
-              <span>Eliminar</span>
+            <!-- Si está activo: Dar de Baja -->
+            <button type="button" *ngIf="!isDocenteDeBaja(docente)" (click)="openBajaModal(docente)" class="btn-mobile-action btn-mobile-delete" title="Dar de Baja al Instructor">
+              <i class="material-icons-outlined">person_off</i>
+              <span>Dar de Baja</span>
+            </button>
+            <!-- Si está de baja: Ver Informe -->
+            <button type="button" *ngIf="isDocenteDeBaja(docente) && docente.motivo_baja" (click)="verInformeBaja(docente)" class="btn-mobile-action btn-mobile-report" title="Ver Informe de Baja">
+              <i class="material-icons-outlined">assignment</i>
+              <span>Ver Informe</span>
+            </button>
+            <!-- Si está de baja: Rehabilitar -->
+            <button type="button" *ngIf="isDocenteDeBaja(docente)" (click)="rehabilitarDocente(docente)" class="btn-mobile-action btn-mobile-rehabilitar" title="Rehabilitar Instructor">
+              <i class="material-icons-outlined">restore_from_trash</i>
+              <span>Rehabilitar</span>
             </button>
           </div>
         </div>
@@ -397,4 +429,81 @@
       </div>
     </div>
   </main>
+
+  <!-- MODAL: DAR DE BAJA AL INSTRUCTOR (CON INFORME OBLIGATORIO) -->
+  <div class="modal-backdrop" *ngIf="showBajaModal" (click)="closeBajaModal()"></div>
+  <div class="modal" [class.show]="showBajaModal" [style.display]="showBajaModal ? 'block' : 'none'" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg">
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title d-flex align-items-center gap-2 m-0">
+            <i class="material-icons-outlined align-middle">person_off</i>
+            Dar de Baja al Instructor
+          </h5>
+          <button type="button" class="btn-close btn-close-white" (click)="closeBajaModal()" aria-label="Cerrar" title="Cerrar"></button>
+        </div>
+        <div class="modal-body py-4 px-4">
+          <div class="alert alert-warning d-flex align-items-start gap-2 mb-3">
+            <i class="material-icons-outlined fs-4 mt-1 text-danger">gavel</i>
+            <div class="small">
+              <strong>Aviso Institucional (EIE):</strong> El personal docente <strong>no puede ser eliminado</strong> de la base de datos para preservar el historial institucional y académico. En su lugar se procede a <strong>dar de baja</strong> y es <u>obligatorio emitir el informe justificativo</u>.
+            </div>
+          </div>
+
+          <div *ngIf="docenteForBaja" class="mb-3 p-3 bg-light rounded border">
+            <div class="fw-bold fs-6 text-dark">{{ docenteForBaja.nombres }} {{ docenteForBaja.apellidos }}</div>
+            <div class="text-muted small">C.I.: {{ docenteForBaja.ci || 'N/A' }} | Especialidad: {{ docenteForBaja.especialidad || 'General' }}</div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold">Informe / Motivo de la Baja: <span class="text-danger">*</span></label>
+            <textarea class="form-control" rows="4" [(ngModel)]="motivoBajaDocente"
+              placeholder="Detalle de forma clara el informe, causal o justificación institucional por la cual se da de baja al docente (mínimo 5 caracteres)..." required></textarea>
+            <small class="text-muted">Este informe quedará registrado en el historial del docente.</small>
+          </div>
+        </div>
+        <div class="modal-footer bg-light">
+          <button type="button" class="btn btn-secondary px-4" (click)="closeBajaModal()" [disabled]="bajaLoading">CANCELAR</button>
+          <button type="button" class="btn btn-danger px-4 fw-bold" (click)="confirmarBaja()" [disabled]="bajaLoading">
+            <span *ngIf="bajaLoading" class="spinner-border spinner-border-sm me-1"></span>
+            APLICAR BAJA CON INFORME
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: VER INFORME DE BAJA REGISTRADO -->
+  <div class="modal-backdrop" *ngIf="showInformeModal" (click)="closeInformeModal()"></div>
+  <div class="modal" [class.show]="showInformeModal" [style.display]="showInformeModal ? 'block' : 'none'" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg">
+        <div class="modal-header bg-dark text-white">
+          <h5 class="modal-title d-flex align-items-center gap-2 m-0">
+            <i class="material-icons-outlined align-middle">assignment</i>
+            Informe Institucional de Baja
+          </h5>
+          <button type="button" class="btn-close btn-close-white" (click)="closeInformeModal()" aria-label="Cerrar" title="Cerrar"></button>
+        </div>
+        <div class="modal-body py-4 px-4">
+          <div *ngIf="docenteInforme" class="mb-3 p-3 bg-light rounded border">
+            <div class="fw-bold fs-6 text-dark">{{ docenteInforme.nombres }} {{ docenteInforme.apellidos }}</div>
+            <div class="text-muted small">C.I.: {{ docenteInforme.ci || 'N/A' }} | Especialidad: {{ docenteInforme.especialidad || 'General' }}</div>
+            <div class="text-danger small mt-1" *ngIf="docenteInforme.fecha_baja">
+              <strong>Fecha de Baja:</strong> {{ docenteInforme.fecha_baja }}
+            </div>
+          </div>
+
+          <div class="p-3 bg-light rounded border">
+            <label class="form-label fw-bold text-dark mb-1">Detalle del Informe / Causal Registrada:</label>
+            <p class="mb-0 text-dark" style="white-space: pre-wrap;">{{ docenteInforme?.motivo_baja || 'No se registró detalle del informe.' }}</p>
+          </div>
+        </div>
+        <div class="modal-footer bg-light">
+          <button type="button" class="btn btn-secondary px-4" (click)="closeInformeModal()">CERRAR</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>

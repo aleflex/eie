@@ -27,31 +27,100 @@ class AuthController extends Controller
         }
 
         // Buscar por usuario o por correo institucional con relaciones precargadas
-        $user = User::with(['docente', 'estudiante'])->where(function($q) use ($loginInput) {
+        $user = User::with(['docente', 'estudiante.inscripciones'])->where(function($q) use ($loginInput) {
             $q->where('usuario', strtolower($loginInput))
               ->orWhere('correo_institucional', strtolower($loginInput));
         })->first();
 
         if ($user && Hash::check($password, $user->password)) {
-            // Iniciar sesión
-            Auth::login($user);
+            // Verificar estado global del usuario
+            $userEstado = strtoupper($user->estado ?? 'ACTIVO');
+            if (in_array($userEstado, ['INACTIVO', 'BLOQUEADO', 'BAJA', 'DE BAJA'])) {
+                return response()->json([
+                    'message' => 'Acceso denegado: Su cuenta de usuario se encuentra ' . $userEstado . '. Comuníquese con la administración.'
+                ], 403);
+            }
 
             // Obtener perfil precargado
             $docente = $user->docente;
             $estudiante = $user->estudiante;
 
-            $userData = $user->toArray();
+            // 1. Validaciones para DOCENTE
             if ($docente) {
+                $docEstado = strtolower(trim($docente->estado ?? 'activo'));
+                if ($docEstado === 'pendiente') {
+                    return response()->json([
+                        'message' => 'Acceso denegado: Su cuenta de instructor se encuentra en estado PENDIENTE de aprobación/asignación.'
+                    ], 403);
+                }
+
+                if (in_array($docEstado, ['de baja', 'baja', 'inactivo'])) {
+                    $motivo = !empty($docente->motivo_baja) ? (" Motivo registrado: " . $docente->motivo_baja) : '';
+                    return response()->json([
+                        'message' => 'Acceso denegado: Su cuenta de instructor ha sido DADA DE BAJA.' . $motivo
+                    ], 403);
+                }
+
                 if ($docente->tipo_contrato === 'Contrato' && $docente->fecha_contrato) {
                     $fechaExpiracion = \Carbon\Carbon::parse($docente->fecha_contrato)->endOfDay();
                     if (now()->greaterThan($fechaExpiracion)) {
-                        Auth::logout();
                         return response()->json([
                             'message' => 'Su contrato ha expirado. Por favor, contáctese o diríjase a dirección para recontratar.'
                         ], 403);
                     }
                 }
+            }
 
+            // 2. Validaciones para ESTUDIANTE
+            if ($estudiante) {
+                $estEstado = strtolower(trim($estudiante->estado ?? 'activo'));
+                if ($estEstado === 'pendiente') {
+                    return response()->json([
+                        'message' => 'Acceso denegado: Su registro de estudiante se encuentra en estado PENDIENTE de confirmación y asignación de paralelo.'
+                    ], 403);
+                }
+
+                if (in_array($estEstado, ['de baja', 'baja', 'inactivo', 'retirado'])) {
+                    return response()->json([
+                        'message' => 'Acceso denegado: Su registro de estudiante se encuentra DADO DE BAJA.'
+                    ], 403);
+                }
+
+                // Verificar inscripciones si existen
+                if ($estudiante->inscripciones && $estudiante->inscripciones->isNotEmpty()) {
+                    $hasHabilitado = $estudiante->inscripciones->contains(function ($ins) {
+                        return in_array(strtolower(trim($ins->estado ?? '')), ['activo', 'habilitado', 'finalizado', 'aprobado']);
+                    });
+
+                    if (!$hasHabilitado) {
+                        $allPendiente = $estudiante->inscripciones->every(function ($ins) {
+                            return strtolower(trim($ins->estado ?? '')) === 'pendiente';
+                        });
+
+                        if ($allPendiente) {
+                            return response()->json([
+                                'message' => 'Acceso denegado: Su inscripción se encuentra en estado PENDIENTE de aprobación y asignación.'
+                            ], 403);
+                        }
+
+                        $allBaja = $estudiante->inscripciones->every(function ($ins) {
+                            return in_array(strtolower(trim($ins->estado ?? '')), ['baja', 'retirado', 'de baja', 'inactivo']);
+                        });
+
+                        if ($allBaja) {
+                            return response()->json([
+                                'message' => 'Acceso denegado: Su inscripción académica se encuentra en estado DE BAJA o RETIRADO.'
+                            ], 403);
+                        }
+                    }
+                }
+            }
+
+            // Iniciar sesión
+            Auth::login($user);
+
+            $userData = $user->toArray();
+            if ($docente) {
                 $userData['docente_id'] = $docente->id_docente;
                 $userData['rol'] = 'docente';
             } elseif ($estudiante) {

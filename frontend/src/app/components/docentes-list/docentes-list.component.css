@@ -383,3 +383,127 @@ tbody tr:hover {
 .phone-input {
   flex: 1;
 }
+
+.btn-report-act {
+  background: #ede7f6;
+  color: #5e35b1;
+}
+.btn-report-act:hover {
+  background: #5e35b1;
+  color: #ffffff;
+  transform: translateY(-2px);
+}
+
+.btn-rehabilitar-act {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+.btn-rehabilitar-act:hover {
+  background: #2e7d32;
+  color: #ffffff;
+  transform: translateY(-2px);
+}
+
+.btn-mobile-report {
+  background: #ede7f6;
+  color: #5e35b1;
+  border: 1px solid #d1c4e9;
+}
+
+.btn-mobile-rehabilitar {
+  background: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #c8e6c9;
+}
+
+/* Modal styles */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.55);
+  z-index: 1050;
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+}
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1060;
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  outline: 0;
+}
+
+.modal.show {
+  display: block;
+}
+
+.modal-dialog {
+  position: relative;
+  width: auto;
+  margin: 1.5rem auto;
+  pointer-events: none;
+  max-width: 540px;
+}
+
+.modal-dialog-centered {
+  display: flex;
+  align-items: center;
+  min-height: calc(100% - 3rem);
+}
+
+.modal-content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  pointer-events: auto;
+  background-color: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+}
+
+.modal-body {
+  position: relative;
+  flex: 1 1 auto;
+}
+
+.modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 0.85rem 1.25rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.btn-close {
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: #000;
+  opacity: 0.5;
+  cursor: pointer;
+  padding: 0;
+}
+.btn-close-white {
+  filter: invert(1) grayscale(100%) brightness(200%);
+}
+.btn-close:hover {
+  opacity: 0.8;
+}

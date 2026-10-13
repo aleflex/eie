@@ -101,6 +101,8 @@ Route::middleware('api.auth')->group(function () {
     Route::post('/docentes', [DocenteController::class, 'store']);
     Route::put('/docentes/{id}', [DocenteController::class, 'update']);
     Route::patch('/docentes/{id}/toggle-status', [DocenteController::class, 'toggleStatus']);
+    Route::post('/docentes/{id}/baja', [DocenteController::class, 'darDeBaja']);
+    Route::post('/docentes/{id}/rehabilitar', [DocenteController::class, 'rehabilitar']);
     Route::delete('/docentes/{id}', [DocenteController::class, 'destroy']);
 
     // Paralelos y Aulas

@@ -86,12 +86,29 @@ export class DocenteService {
   }
 
   /**
-   * Elimina un docente del sistema
+   * Elimina un docente del sistema (redirige a baja en backend)
    * @param id - ID del docente a eliminar
    * @returns Observable con la respuesta del servidor
    */
-  eliminarDocente(id: number): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/${id}`);
+  eliminarDocente(id: number, motivoBaja: string = 'Baja solicitada por administración'): Observable<any> {
+    return this.http.post(`${this.apiUrl}/${id}/baja`, { motivo_baja: motivoBaja });
+  }
+
+  /**
+   * Da de baja a un docente registrando el informe/motivo obligatorio
+   * @param id - ID del docente
+   * @param motivoBaja - Justificación/informe escrito del motivo de baja
+   */
+  darDeBaja(id: number, motivoBaja: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/${id}/baja`, { motivo_baja: motivoBaja });
+  }
+
+  /**
+   * Rehabilita a un docente previamente dado de baja
+   * @param id - ID del docente
+   */
+  rehabilitar(id: number): Observable<any> {
+    return this.http.post(`${this.apiUrl}/${id}/rehabilitar`, {});
   }
 
   /**
