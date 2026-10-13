@@ -288,7 +288,17 @@
 
         <!-- Formulario de Subida -->
         <div *ngIf="puedeSubirDocumentos()" class="upload-section mb-4 p-4 bg-light rounded-3 border">
-          <h6 class="fw-bold mb-3">Subir Nuevo Documento Oficial</h6>
+          <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+            <div>
+              <h6 class="fw-bold mb-1 text-dark">Subir Nuevo Documento Oficial</h6>
+              <small class="text-muted">Elige el tipo de documento y escanéalo con tu cámara o sube un archivo digital.</small>
+            </div>
+            <button type="button" class="btn btn-primary d-inline-flex align-items-center gap-2 px-3 py-2 shadow-sm" (click)="openScanner()" style="border-radius: 10px; font-weight: 600;">
+              <i class="material-icons-outlined" style="font-size: 20px;">camera_alt</i>
+              <span>{{ isCarnetMode ? 'Escanear Carnet (Anverso y Reverso)' : 'Escanear con Cámara' }}</span>
+            </button>
+          </div>
+
           <div class="row g-3 align-items-end">
             <div class="col-md-5">
               <label for="docTypePortal" class="form-label-small">Tipo de Documento</label>
@@ -300,17 +310,31 @@
                 <option value="Otro">Otro</option>
               </select>
             </div>
-            <div class="col-md-5">
-              <label for="filePortalInput" class="form-label-small">Seleccionar Archivo</label>
+            <div class="col-md-4">
+              <label for="filePortalInput" class="form-label-small">O Seleccionar Archivo (PDF, JPG, PNG)</label>
               <input type="file" id="filePortalInput" (change)="onFileSelected($event)" class="form-control" accept=".pdf,.jpg,.jpeg,.png">
             </div>
-            <div class="col-md-2">
-              <button (click)="uploadFile()" [disabled]="!selectedFile || uploading" class="btn btn-primary w-100 py-2">
-                <span *ngIf="!uploading">SUBIR ARCHIVO</span>
-                <span *ngIf="uploading">...</span>
+            <div class="col-md-3">
+              <button (click)="uploadFile()" [disabled]="!selectedFile || uploading" class="btn btn-success w-100 py-2 fw-bold shadow-sm">
+                <span *ngIf="!uploading" class="d-inline-flex align-items-center justify-content-center gap-1">
+                  <i class="material-icons-outlined" style="font-size: 18px;">cloud_upload</i> SUBIR ARCHIVO
+                </span>
+                <span *ngIf="uploading">Subiendo...</span>
               </button>
             </div>
           </div>
+
+          <!-- Previsualización de Archivo Preparado / Escaneado -->
+          <div *ngIf="selectedFile" class="mt-3 p-2 px-3 bg-white border border-success-subtle rounded-3 d-flex align-items-center justify-content-between animate-fade-in">
+            <div class="d-flex align-items-center gap-2">
+              <i class="material-icons-outlined text-success" style="font-size: 22px;">check_circle</i>
+              <span class="small fw-semibold text-dark">{{ selectedFile.name }} ({{ formatDocSize(selectedFile.size) }})</span>
+            </div>
+            <button type="button" class="btn btn-sm btn-link text-danger p-0 text-decoration-none" (click)="selectedFile = null">
+              <i class="material-icons-outlined" style="font-size: 18px;">close</i> Quitar
+            </button>
+          </div>
+
           <!-- Advertencias -->
           <div *ngIf="docWarning" class="warning-msg-admin mt-3 animate-fade-in">
             <small class="text-warning-msg">⚠️ {{ docWarning }}</small>
@@ -357,7 +381,7 @@
                         <button (click)="previewDocument(doc)" class="btn btn-sm btn-outline-primary py-1 px-2" title="Ver Documento">
                           <i class="material-icons-outlined doc-action-icon" style="font-size: 18px;">visibility</i>
                         </button>
-                        <button (click)="removeDocument(doc)" class="btn btn-sm btn-outline-danger py-1 px-2" title="Eliminar">
+                        <button *ngIf="puedeSubirDocumentos()" (click)="removeDocument(doc)" class="btn btn-sm btn-outline-danger py-1 px-2" title="Eliminar">
                           <i class="material-icons-outlined doc-action-icon" style="font-size: 18px;">delete</i>
                         </button>
                       </div>
@@ -383,7 +407,7 @@
                 <button (click)="previewDocument(doc)" class="btn-doc-mob-view">
                   <i class="material-icons-outlined">visibility</i> Ver
                 </button>
-                <button (click)="removeDocument(doc)" class="btn-doc-mob-del">
+                <button *ngIf="puedeSubirDocumentos()" (click)="removeDocument(doc)" class="btn-doc-mob-del">
                   <i class="material-icons-outlined">delete</i> Eliminar
                 </button>
               </div>
@@ -415,6 +439,122 @@
           <div *ngIf="isPreviewImage" class="image-viewer-container">
             <img [src]="activePreviewUrl" alt="Vista previa" class="image-viewer-img">
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL ESCÁNER INTELIGENTE DE DOCUMENTOS (KYC 2 CARAS / ESTILO APP BANCARIA) -->
+  <div class="kyc-modal-overlay animate-fade-in" *ngIf="isScannerOpen">
+    <div class="kyc-scanner-container">
+      <!-- Encabezado del Escáner -->
+      <div class="kyc-scanner-header">
+        <div class="d-flex align-items-center gap-2">
+          <span class="kyc-step-badge" *ngIf="isCarnetMode && scannerStep < 3">
+            Paso {{ scannerStep }} de 2
+          </span>
+          <h6 class="m-0 text-white fw-bold">
+            <span *ngIf="isCarnetMode && scannerStep === 1">Escanea el FRENTE del Carnet</span>
+            <span *ngIf="isCarnetMode && scannerStep === 2">Escanea el REVERSO del Carnet</span>
+            <span *ngIf="!isCarnetMode && scannerStep < 3">Escanear {{ docType }}</span>
+            <span *ngIf="scannerStep === 3">Revisión del Documento</span>
+          </h6>
+        </div>
+        <button type="button" class="btn-close-scanner" (click)="closeScanner()" aria-label="Cerrar">
+          <i class="material-icons-outlined">close</i>
+        </button>
+      </div>
+
+      <!-- Pantalla de Error si no hay permisos -->
+      <div *ngIf="scannerError" class="kyc-error-box p-4 text-center">
+        <i class="material-icons-outlined text-danger mb-2" style="font-size: 48px;">no_photography</i>
+        <h6 class="text-white fw-bold mb-2">Permiso de Cámara Requerido</h6>
+        <p class="text-white-50 small mb-3">{{ scannerError }}</p>
+        <button type="button" class="btn btn-primary btn-sm" (click)="initCamera()">Reintentar</button>
+      </div>
+
+      <!-- Visor de Cámara en Vivo (Pasos 1 y 2) -->
+      <div class="kyc-camera-viewport" *ngIf="scannerStep < 3 && !scannerError">
+        <video id="scannerVideoFeed" class="kyc-video-feed" autoplay playsinline muted></video>
+
+        <!-- Overlay con marco iluminado de tarjeta / documento -->
+        <div class="kyc-frame-overlay">
+          <!-- Recuadro Guía (Aspecto 1.58 para carnet o 0.75 para documentos A4) -->
+          <div class="kyc-guide-box" [ngClass]="isCarnetMode ? 'guide-carnet' : 'guide-doc'">
+            <!-- Esquinas brillantes -->
+            <div class="corner corner-tl"></div>
+            <div class="corner corner-tr"></div>
+            <div class="corner corner-bl"></div>
+            <div class="corner corner-br"></div>
+            <!-- Línea láser de escaneo animada -->
+            <div class="laser-scanner-line"></div>
+          </div>
+
+          <!-- Instrucción dinámica superpuesta -->
+          <div class="kyc-guide-hint">
+            <span *ngIf="isCarnetMode && scannerStep === 1">
+              <i class="material-icons-outlined align-middle me-1">badge</i> Ubica el <strong>ANVERSO (frente)</strong> dentro del recuadro
+            </span>
+            <span *ngIf="isCarnetMode && scannerStep === 2">
+              <i class="material-icons-outlined align-middle me-1">flip</i> Ahora voltea y ubica el <strong>REVERSO (dorso)</strong>
+            </span>
+            <span *ngIf="!isCarnetMode">
+              <i class="material-icons-outlined align-middle me-1">crop_free</i> Centra el <strong>documento completo</strong> nítidamente
+            </span>
+          </div>
+        </div>
+
+        <!-- Barra inferior de controles de captura -->
+        <div class="kyc-camera-controls">
+          <button type="button" class="btn-kyc-ctrl" [class.active]="scannerTorchOn" *ngIf="scannerHasTorch" (click)="toggleTorch()" title="Linterna">
+            <i class="material-icons-outlined">{{ scannerTorchOn ? 'flash_on' : 'flash_off' }}</i>
+          </button>
+          <div *ngIf="!scannerHasTorch" style="width: 48px;"></div>
+
+          <!-- Botón de Disparo Principal -->
+          <button type="button" class="btn-shutter-trigger" (click)="captureFrame()" aria-label="Capturar">
+            <div class="shutter-inner">
+              <i class="material-icons-outlined">camera_alt</i>
+            </div>
+          </button>
+
+          <!-- Rotar Cámara (Frontal / Trasera) -->
+          <button type="button" class="btn-kyc-ctrl" (click)="toggleCameraFacing()" title="Cambiar Cámara">
+            <i class="material-icons-outlined">flip_camera_ios</i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Pantalla de Revisión Final (Paso 3) -->
+      <div class="kyc-review-view p-4" *ngIf="scannerStep === 3">
+        <h6 class="text-white text-center mb-3">Previsualización de Documento Capturado</h6>
+
+        <div class="kyc-review-grid" [class.review-two-sides]="isCarnetMode">
+          <!-- Cara 1 (Frontal) -->
+          <div class="review-side-card">
+            <span class="review-label">{{ isCarnetMode ? '1. Frente (Anverso)' : 'Documento Escaneado' }}</span>
+            <div class="review-img-wrap">
+              <img [src]="scannerFrontImage" alt="Frente" class="review-img">
+            </div>
+          </div>
+
+          <!-- Cara 2 (Reverso si es carnet) -->
+          <div class="review-side-card" *ngIf="isCarnetMode && scannerBackImage">
+            <span class="review-label">2. Posterior (Reverso)</span>
+            <div class="review-img-wrap">
+              <img [src]="scannerBackImage" alt="Reverso" class="review-img">
+            </div>
+          </div>
+        </div>
+
+        <!-- Acciones de Revisión -->
+        <div class="d-flex justify-content-center gap-3 mt-4">
+          <button type="button" class="btn btn-outline-light px-4 py-2 d-inline-flex align-items-center gap-2" (click)="retakeCurrentStep()">
+            <i class="material-icons-outlined">refresh</i> Repetir Escaneo
+          </button>
+          <button type="button" class="btn btn-success px-4 py-2 d-inline-flex align-items-center gap-2 fw-bold shadow" (click)="confirmScannedDocument()">
+            <i class="material-icons-outlined">check_circle</i> Usar este Documento
+          </button>
         </div>
       </div>
     </div>

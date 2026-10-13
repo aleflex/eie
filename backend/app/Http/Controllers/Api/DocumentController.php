@@ -114,6 +114,31 @@ class DocumentController extends Controller
             return response()->json(['message' => 'Documento no encontrado'], 404);
         }
 
+        // Verificar si el usuario que solicita es un estudiante y si su plazo ha vencido
+        $user = auth()->user();
+        if ($user && in_array($user->id_rol, [2])) { // Rol 2 = Estudiante
+            $estudianteObj = Estudiante::where('id_usuario', $user->id_usuario)->first();
+            if ($estudianteObj) {
+                $hasta = $estudianteObj->documentos_habilitados_hasta;
+                if (!$hasta || now()->greaterThan(\Carbon\Carbon::parse($hasta))) {
+                    return response()->json([
+                        'message' => 'El plazo para modificar o eliminar documentos ha vencido. Contacta a la administración.'
+                    ], 403);
+                }
+            }
+        } else if (!$user) {
+            // Validar sobre el estudiante dueño del documento
+            $estudianteObj = Estudiante::find($documento->id_estudiante);
+            if ($estudianteObj) {
+                $hasta = $estudianteObj->documentos_habilitados_hasta;
+                if ($hasta && now()->greaterThan(\Carbon\Carbon::parse($hasta))) {
+                    return response()->json([
+                        'message' => 'El plazo para modificar o eliminar documentos ha vencido. Contacta a la administración.'
+                    ], 403);
+                }
+            }
+        }
+
         try {
             // Eliminar el archivo físico si existe una ruta de almacenamiento válida
             $filePath = str_replace('/storage/documentos/', '', $documento->ruta_archivo);

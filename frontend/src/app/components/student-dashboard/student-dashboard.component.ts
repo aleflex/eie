@@ -166,6 +166,7 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.stopCamera();
     this.wsSubs.forEach(s => s.unsubscribe());
     this.wsSubs = [];
     if (this.userSub) {
@@ -345,6 +346,11 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
   }
 
   removeDocument(doc: any) {
+    if (!this.puedeSubirDocumentos()) {
+      alert('Tu plazo para subir o eliminar documentos ha finalizado. La documentación se encuentra bloqueada.');
+      return;
+    }
+
     const docId = typeof doc === 'object' ? (doc.id_documento || doc.id_expediente || doc.id) : doc;
     if (!docId) {
       alert('No se pudo identificar el código único del documento.');
@@ -446,6 +452,281 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
     this.activePreviewUrl = null;
     this.isPreviewPdf = false;
     this.isPreviewImage = false;
+  }
+
+  // --- ESCÁNER INTELIGENTE DE DOCUMENTOS (KYC / 2 CARAS) ---
+  isScannerOpen: boolean = false;
+  scannerFacingMode: 'environment' | 'user' = 'environment';
+  scannerTorchOn: boolean = false;
+  scannerHasTorch: boolean = false;
+  scannerStep: number = 1; // 1: Frente, 2: Reverso, 3: Revisión
+  scannerFrontImage: string | null = null;
+  scannerBackImage: string | null = null;
+  scannerMediaStream: MediaStream | null = null;
+  scannerError: string = '';
+
+  get isCarnetMode(): boolean {
+    return (this.docType || '').toLowerCase().includes('carnet');
+  }
+
+  openScanner() {
+    this.isScannerOpen = true;
+    this.scannerStep = 1;
+    this.scannerFrontImage = null;
+    this.scannerBackImage = null;
+    this.scannerError = '';
+    setTimeout(() => {
+      this.initCamera();
+    }, 150);
+  }
+
+  closeScanner() {
+    this.stopCamera();
+    this.isScannerOpen = false;
+    this.scannerStep = 1;
+    this.scannerFrontImage = null;
+    this.scannerBackImage = null;
+    this.scannerError = '';
+  }
+
+  async initCamera() {
+    this.stopCamera();
+    this.scannerError = '';
+    try {
+      const constraints: MediaStreamConstraints = {
+        video: {
+          facingMode: { ideal: this.scannerFacingMode },
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
+        },
+        audio: false
+      };
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      this.scannerMediaStream = stream;
+      const videoEl = document.getElementById('scannerVideoFeed') as HTMLVideoElement;
+      if (videoEl) {
+        videoEl.srcObject = stream;
+        videoEl.play().catch(e => console.warn('Video play error', e));
+      }
+
+      const track = stream.getVideoTracks()[0];
+      const capabilities: any = track && track.getCapabilities ? track.getCapabilities() : {};
+      this.scannerHasTorch = !!capabilities.torch;
+      this.scannerTorchOn = false;
+    } catch (err: any) {
+      console.error('Error accediendo a la cámara:', err);
+      this.scannerError = 'No se pudo acceder a la cámara. Por favor autoriza los permisos en tu navegador o celular.';
+    }
+  }
+
+  stopCamera() {
+    if (this.scannerMediaStream) {
+      this.scannerMediaStream.getTracks().forEach(track => {
+        try { track.stop(); } catch (e) {}
+      });
+      this.scannerMediaStream = null;
+    }
+  }
+
+  toggleCameraFacing() {
+    this.scannerFacingMode = this.scannerFacingMode === 'environment' ? 'user' : 'environment';
+    this.initCamera();
+  }
+
+  async toggleTorch() {
+    if (!this.scannerMediaStream) return;
+    const track = this.scannerMediaStream.getVideoTracks()[0];
+    if (track && this.scannerHasTorch) {
+      this.scannerTorchOn = !this.scannerTorchOn;
+      try {
+        await (track as any).applyConstraints({
+          advanced: [{ torch: this.scannerTorchOn }]
+        });
+      } catch (e) {
+        console.warn('Torch toggle failed', e);
+      }
+    }
+  }
+
+  captureFrame() {
+    const videoEl = document.getElementById('scannerVideoFeed') as HTMLVideoElement;
+    if (!videoEl || !videoEl.videoWidth) return;
+
+    const vW = videoEl.videoWidth;
+    const vH = videoEl.videoHeight;
+    const targetAspect = this.isCarnetMode ? 1.58 : 0.71;
+
+    let cropW = vW * 0.85;
+    let cropH = cropW / targetAspect;
+
+    if (cropH > vH * 0.85) {
+      cropH = vH * 0.85;
+      cropW = cropH * targetAspect;
+    }
+
+    const startX = (vW - cropW) / 2;
+    const startY = (vH - cropH) / 2;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(cropW);
+    canvas.height = Math.round(cropH);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.drawImage(videoEl, startX, startY, cropW, cropH, 0, 0, canvas.width, canvas.height);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      try { navigator.vibrate(60); } catch (e) {}
+    }
+
+    if (this.isCarnetMode) {
+      if (this.scannerStep === 1) {
+        this.scannerFrontImage = dataUrl;
+        this.scannerStep = 2; // Pasar al reverso
+      } else if (this.scannerStep === 2) {
+        this.scannerBackImage = dataUrl;
+        this.scannerStep = 3; // Pasar a revisión
+        this.stopCamera();
+      }
+    } else {
+      this.scannerFrontImage = dataUrl;
+      this.scannerStep = 3;
+      this.stopCamera();
+    }
+  }
+
+  retakeCurrentStep() {
+    if (this.scannerStep === 2) {
+      this.scannerStep = 1;
+      this.scannerFrontImage = null;
+    } else if (this.scannerStep === 3) {
+      this.scannerStep = 1;
+      this.scannerFrontImage = null;
+      this.scannerBackImage = null;
+      this.initCamera();
+    }
+  }
+
+  async confirmScannedDocument() {
+    if (this.isCarnetMode && this.scannerFrontImage && this.scannerBackImage) {
+      const combinedBlob = await this.stitchTwoSides(this.scannerFrontImage, this.scannerBackImage);
+      if (combinedBlob) {
+        const file = new File([combinedBlob], `Carnet_Identidad_${this.student?.ci || 'doc'}.jpg`, { type: 'image/jpeg' });
+        this.selectedFile = file;
+        this.closeScanner();
+      }
+    } else if (this.scannerFrontImage) {
+      const blob = this.dataURItoBlob(this.scannerFrontImage);
+      const cleanType = (this.docType || 'Documento').replace(/\s+/g, '_');
+      const file = new File([blob], `${cleanType}_${this.student?.ci || 'doc'}.jpg`, { type: 'image/jpeg' });
+      this.selectedFile = file;
+      this.closeScanner();
+    }
+  }
+
+  private stitchTwoSides(frontDataUrl: string, backDataUrl: string): Promise<Blob | null> {
+    return new Promise((resolve) => {
+      const imgFront = new Image();
+      const imgBack = new Image();
+
+      imgFront.onload = () => {
+        imgBack.onload = () => {
+          const canvasW = 1200;
+          const cardW = 1060;
+          const cardH = Math.round(cardW / 1.58);
+          const gap = 70;
+          const headerH = 120;
+          const footerH = 50;
+          const canvasH = headerH + cardH + gap + cardH + footerH;
+
+          const canvas = document.createElement('canvas');
+          canvas.width = canvasW;
+          canvas.height = canvasH;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) { resolve(null); return; }
+
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, canvasW, canvasH);
+
+          // Encabezado institucional
+          ctx.fillStyle = '#003b71';
+          ctx.font = 'bold 34px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('DOCUMENTO OFICIAL DE IDENTIFICACIÓN — EIE', canvasW / 2, 55);
+
+          ctx.fillStyle = '#64748b';
+          ctx.font = '20px sans-serif';
+          ctx.fillText('Cédula de Identidad (Anverso y Reverso)', canvasW / 2, 90);
+
+          const cardX = (canvasW - cardW) / 2;
+
+          // Etiqueta Anverso
+          ctx.fillStyle = '#1e293b';
+          ctx.font = 'bold 22px sans-serif';
+          ctx.textAlign = 'left';
+          ctx.fillText('1. PARTE FRONTAL (ANVERSO):', cardX, headerH + 20);
+
+          const cardY1 = headerH + 30;
+          ctx.save();
+          this.roundedRect(ctx, cardX, cardY1, cardW, cardH, 20);
+          ctx.clip();
+          ctx.drawImage(imgFront, cardX, cardY1, cardW, cardH);
+          ctx.restore();
+
+          ctx.strokeStyle = '#94a3b8';
+          ctx.lineWidth = 2;
+          this.roundedRect(ctx, cardX, cardY1, cardW, cardH, 20);
+          ctx.stroke();
+
+          // Etiqueta Reverso
+          const cardY2 = cardY1 + cardH + gap;
+          ctx.fillStyle = '#1e293b';
+          ctx.font = 'bold 22px sans-serif';
+          ctx.fillText('2. PARTE POSTERIOR (REVERSO):', cardX, cardY2 - 10);
+
+          ctx.save();
+          this.roundedRect(ctx, cardX, cardY2, cardW, cardH, 20);
+          ctx.clip();
+          ctx.drawImage(imgBack, cardX, cardY2, cardW, cardH);
+          ctx.restore();
+
+          this.roundedRect(ctx, cardX, cardY2, cardW, cardH, 20);
+          ctx.stroke();
+
+          canvas.toBlob((blob) => {
+            resolve(blob);
+          }, 'image/jpeg', 0.90);
+        };
+        imgBack.src = backDataUrl;
+      };
+      imgFront.src = frontDataUrl;
+    });
+  }
+
+  private roundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  }
+
+  private dataURItoBlob(dataURI: string): Blob {
+    const byteString = atob(dataURI.split(',')[1]);
+    const mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0];
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
+    for (let i = 0; i < byteString.length; i++) {
+      ia[i] = byteString.charCodeAt(i);
+    }
+    return new Blob([ab], { type: mimeString });
   }
 
   puedeSubirDocumentos(): boolean {
