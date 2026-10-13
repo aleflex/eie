@@ -309,19 +309,33 @@
           <div class="col-md-6 form-group">
             <label for="contactoEmergencia">
               En caso de emergencia Llamar a *
-              <span class="text-muted" style="font-size: 11px; font-weight: normal;">(Celular: 8 dígitos)</span>
+              <span class="text-muted" style="font-size: 11px; font-weight: normal;">({{ currentEmergencyPhoneRule.country }}: {{ currentEmergencyPhoneRule.min === currentEmergencyPhoneRule.max ? (currentEmergencyPhoneRule.min + ' dígitos') : (currentEmergencyPhoneRule.min + ' a ' + currentEmergencyPhoneRule.max + ' dígitos') }})</span>
             </label>
             <div *ngIf="f['nombrePadres']?.value?.trim()" class="text-muted mb-1" style="font-size: 12px;">
               <i class="material-icons align-middle" style="font-size: 15px; color: #16a34a;">person</i>
               Contacto: <strong>{{ f['nombrePadres'].value }}</strong>
             </div>
-            <input type="tel" id="contactoEmergencia" formControlName="contactoEmergencia" class="form-control"
-                   (keypress)="onlyNumbers($event)" (input)="onEmergencyPhoneInput($event)"
-                   minlength="8" maxlength="8" inputmode="numeric"
-                   [class.is-invalid]="(isSubmitted || f['contactoEmergencia'].touched) && f['contactoEmergencia'].errors" placeholder="Ej: 71234567 (8 dígitos)">
-            <div *ngIf="(isSubmitted || f['contactoEmergencia'].touched) && f['contactoEmergencia'].errors" class="error-msg">
+            <div class="input-group-phone">
+              <select formControlName="contactoEmergenciaPrefix" class="prefix-select" title="Prefijo de país" aria-label="Prefijo de país">
+                <option value="+591">+591 (BO)</option>
+                <option value="+54">+54 (AR)</option>
+                <option value="+55">+55 (BR)</option>
+                <option value="+56">+56 (CL)</option>
+                <option value="+51">+51 (PE)</option>
+                <option value="+57">+57 (CO)</option>
+                <option value="+34">+34 (ES)</option>
+                <option value="+1">+1 (US/CA)</option>
+              </select>
+              <input type="tel" id="contactoEmergencia" formControlName="contactoEmergencia" class="form-control phone-input"
+                     (keypress)="onlyNumbers($event)" (input)="onEmergencyPhoneInput($event)"
+                     [attr.maxlength]="currentEmergencyPhoneRule.max"
+                     inputmode="numeric"
+                     [class.is-invalid]="(isSubmitted || f['contactoEmergencia'].touched || f['contactoEmergencia'].dirty) && f['contactoEmergencia'].errors"
+                     [placeholder]="currentEmergencyPhoneRule.placeholder">
+            </div>
+            <div *ngIf="(isSubmitted || f['contactoEmergencia'].touched || f['contactoEmergencia'].dirty) && f['contactoEmergencia'].errors" class="error-msg">
               <small *ngIf="f['contactoEmergencia'].errors['required']">El número de celular de emergencia es obligatorio.</small>
-              <small *ngIf="f['contactoEmergencia'].errors['pattern']">Debe ser un número de celular de exactamente 8 dígitos.</small>
+              <small *ngIf="f['contactoEmergencia'].errors['pattern']">Para {{ currentEmergencyPhoneRule.country }} ({{ f['contactoEmergenciaPrefix'].value }}), el celular debe tener {{ currentEmergencyPhoneRule.min === currentEmergencyPhoneRule.max ? ('exactamente ' + currentEmergencyPhoneRule.min) : ('entre ' + currentEmergencyPhoneRule.min + ' y ' + currentEmergencyPhoneRule.max) }} dígitos numéricos.</small>
             </div>
           </div>
         </div>

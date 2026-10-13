@@ -206,8 +206,8 @@ class StudentController extends Controller
         }
         if ($request->has('contacto_emergencia')) {
             $contEmergencia = trim($request->input('contacto_emergencia'));
-            if ($contEmergencia !== '' && !preg_match('/^[0-9]{8}$/', $contEmergencia)) {
-                return response()->json(['message' => 'El celular de contacto de emergencia debe contener exactamente 8 dígitos.'], 422);
+            if ($contEmergencia !== '' && !preg_match('/^\+?[0-9\s\-]{7,25}$/', $contEmergencia)) {
+                return response()->json(['message' => 'El formato del número de contacto de emergencia es inválido.'], 422);
             }
             $estudiante->contacto_emergencia = $contEmergencia;
         }

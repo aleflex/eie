@@ -112,6 +112,9 @@ class InscriptionController extends Controller
             DB::beginTransaction();
 
             $celularCompleto = ($request->celularPrefix ? ($request->celularPrefix . ' ') : '') . $request->celular;
+            $contEmergenciaRaw = $request->contactoEmergencia ?? $request->contacto_emergencia;
+            $contEmergenciaPrefix = $request->contactoEmergenciaPrefix ?? $request->contacto_emergencia_prefix;
+            $contactoEmergenciaCompleto = ($contEmergenciaPrefix ? ($contEmergenciaPrefix . ' ') : '') . $contEmergenciaRaw;
 
             // 1. Buscar o reutilizar usuario existente por CI o Correo Electrónico
             $user = User::where('ci', $request->ci)
@@ -208,6 +211,9 @@ class InscriptionController extends Controller
                 'domicilio' => $request->domicilio,
                 'anio_egreso_bachiller' => $request->anioBachiller,
                 'hermanos_inscritos' => is_numeric($request->hermanosInscritos) ? intval($request->hermanosInscritos) : 0,
+                'nombre_padres' => $request->nombrePadres ?? $request->nombre_padres,
+                'ci_tutor' => $request->ciTutor ?? $request->ci_tutor,
+                'contacto_emergencia' => $contactoEmergenciaCompleto ?: ($contEmergenciaRaw ?? null),
                 'tipo_usuario' => $request->userType ?? $request->tipo_usuario ?? 'normal',
                 'estado' => 'Activo'
             ];

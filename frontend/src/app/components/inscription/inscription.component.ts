@@ -102,6 +102,7 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
   };
 
   currentPhoneRule = this.phoneCountryRules['+591'];
+  currentEmergencyPhoneRule = this.phoneCountryRules['+591'];
   isPhotoFondoRojoValid: boolean = true;
 
   constructor(
@@ -438,6 +439,7 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
       nombrePadres: ['', [Validators.required, Validators.minLength(6), Validators.pattern(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/)]],
       ciTutor: ['', [Validators.required, Validators.pattern(/^[0-9]{7,8}$/)]],
       hermanosInscritos: [''],
+      contactoEmergenciaPrefix: ['+591', Validators.required],
       contactoEmergencia: ['', [Validators.required, Validators.pattern(/^[0-9]{8}$/)]],
       aceptaTerminos: [true, Validators.requiredTrue],
       archivos: this.fb.group({
@@ -487,6 +489,19 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
           Validators.pattern(new RegExp(`^[0-9]{${this.currentPhoneRule.min},${this.currentPhoneRule.max}}$`))
         ]);
         celularCtrl.updateValueAndValidity();
+      }
+    });
+
+    // Escuchar cambio de país para adaptar el límite y validación del contacto de emergencia
+    this.inscriptionForm.get('contactoEmergenciaPrefix')?.valueChanges.subscribe(prefix => {
+      this.currentEmergencyPhoneRule = this.phoneCountryRules[prefix] || { min: 7, max: 12, country: 'Internacional', placeholder: 'Número de celular' };
+      const emergencyCtrl = this.inscriptionForm.get('contactoEmergencia');
+      if (emergencyCtrl) {
+        emergencyCtrl.setValidators([
+          Validators.required,
+          Validators.pattern(new RegExp(`^[0-9]{${this.currentEmergencyPhoneRule.min},${this.currentEmergencyPhoneRule.max}}$`))
+        ]);
+        emergencyCtrl.updateValueAndValidity();
       }
     });
 
@@ -637,12 +652,13 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
   }
 
   /**
-   * Limita el número de contacto de emergencia a exactamente 8 dígitos numéricos
+   * Limita el número de contacto de emergencia según el país seleccionado
    */
   onEmergencyPhoneInput(event: any) {
     const input = event.target as HTMLInputElement;
     if (input && input.value) {
-      const clean = input.value.replace(/[^0-9]/g, '').slice(0, 8);
+      const maxLen = this.currentEmergencyPhoneRule.max;
+      const clean = input.value.replace(/[^0-9]/g, '').slice(0, maxLen);
       if (input.value !== clean) {
         input.value = clean;
       }
@@ -711,7 +727,7 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
     this.isSubmitted = true;
 
     if (step === 1) {
-      const step1Fields = ['userType', 'nombres', 'apellidos', 'ci', 'lugarNacimiento', 'fechaNacimiento', 'edad', 'estadoCivil', 'nombrePadres', 'ciTutor', 'contactoEmergencia'];
+      const step1Fields = ['userType', 'nombres', 'apellidos', 'ci', 'lugarNacimiento', 'fechaNacimiento', 'edad', 'estadoCivil', 'nombrePadres', 'ciTutor', 'contactoEmergenciaPrefix', 'contactoEmergencia'];
       let isValid = true;
       step1Fields.forEach(field => {
         const control = this.inscriptionForm.get(field);
@@ -864,7 +880,8 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
         if (f['contactoEmergencia'].errors['required']) {
           errors.push('• En caso de emergencia llamar a: El celular de emergencia es obligatorio.');
         } else if (f['contactoEmergencia'].errors['pattern']) {
-          errors.push('• En caso de emergencia llamar a: Debe ser un número de celular de exactamente 8 dígitos.');
+          const rule = this.currentEmergencyPhoneRule;
+          errors.push(`• En caso de emergencia llamar a: Para ${rule.country} (${f['contactoEmergenciaPrefix'].value}) debe tener ${rule.min === rule.max ? (rule.min + ' dígitos') : ('entre ' + rule.min + ' y ' + rule.max + ' dígitos')}.`);
         }
       }
     } else if (step === 2) {
