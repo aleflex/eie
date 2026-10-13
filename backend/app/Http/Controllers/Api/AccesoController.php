@@ -234,13 +234,13 @@ class AccesoController extends Controller
         $request->validate([
             'usuario' => 'required|string|max:100|unique:usuarios,usuario,' . $user->id_usuario . ',id_usuario',
             'email' => 'nullable|email|max:255',
-            'password' => 'nullable|string|min:4',
+            'password' => 'nullable|string|min:8',
             'id_rol' => 'nullable|integer',
         ], [
             'usuario.required' => 'El nombre de usuario es obligatorio.',
             'usuario.unique' => 'Este nombre de usuario ya está en uso por otra cuenta.',
             'email.email' => 'El correo electrónico no tiene un formato válido.',
-            'password.min' => 'La nueva contraseña debe tener al menos 4 caracteres.',
+            'password.min' => 'La nueva contraseña debe tener al menos 8 caracteres.',
         ]);
 
         try {
