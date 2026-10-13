@@ -489,6 +489,16 @@ class InscriptionController extends Controller
             $inscripciones = $rawInscripciones->map(function($ins) {
                 $est = $ins->estudiante;
                 $user = $est?->user;
+                if (!$user && $est && !empty($est->ci)) {
+                    $user = User::where('ci', $est->ci)->first();
+                    if ($user && empty($est->id_usuario)) {
+                        try {
+                            $est->id_usuario = $user->id_usuario;
+                            $est->save();
+                        } catch (\Throwable $t) {}
+                    }
+                }
+                $correo = $user?->correo_institucional ?: ($est?->correo_electronico ?: ($user?->email ?: ''));
 
                 return [
                     'id_inscripcion' => $ins->id_inscripcion,
@@ -504,9 +514,19 @@ class InscriptionController extends Controller
                         'nombres' => $user?->nombres ?? $est->nombres ?? '',
                         'apellidos' => $user?->apellidos ?? $est->apellidos ?? '',
                         'ci' => $user?->ci ?? $est->ci ?? '',
+                        'correo_electronico' => $correo,
+                        'correo_institucional' => $correo,
+                        'email' => $correo,
+                        'celular' => $est->celular ?: '',
                         'foto_4x4_url' => $est->foto_4x4_url,
                         'grado_academico' => $est->gradoRel?->nombre_grado ?? '',
                         'arma_especialidad' => $est->armaRel?->nombre_arma ?? '',
+                        'user' => $user ? [
+                            'id' => $user->id_usuario,
+                            'usuario' => $user->usuario,
+                            'correo_institucional' => $user->correo_institucional,
+                            'email' => $user->correo_institucional,
+                        ] : null,
                     ] : null,
                     'curso' => $ins->curso ? [
                         'id' => $ins->curso->id_curso,
