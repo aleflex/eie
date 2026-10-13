@@ -164,9 +164,37 @@
                   class="form-control" placeholder="Ej: Lengua y Cultura Rusa / Alemán Técnico" required>
               </div>
               <div class="form-group">
-                <label for="telefono">Teléfono</label>
-                <input type="text" id="telefono" [(ngModel)]="selectedDocente.telefono" name="telefono"
-                  class="form-control" placeholder="Ej: +591 70000000">
+                <label for="telefono">
+                  Teléfono / Celular 
+                  <span class="text-muted small fw-normal">
+                    ({{ currentPhoneRule.country }}: {{ currentPhoneRule.min === currentPhoneRule.max ? (currentPhoneRule.min + ' dígitos') : (currentPhoneRule.min + ' a ' + currentPhoneRule.max + ' dígitos') }})
+                  </span>
+                </label>
+                <div class="input-group-phone">
+                  <select [(ngModel)]="telefonoPrefix" (change)="onTelefonoPrefixChange()" name="telefono_prefix" class="prefix-select" title="Código de País">
+                    <option value="+591">🇧🇴 +591 (BO)</option>
+                    <option value="+54">🇦🇷 +54 (AR)</option>
+                    <option value="+55">🇧🇷 +55 (BR)</option>
+                    <option value="+56">🇨🇱 +56 (CL)</option>
+                    <option value="+51">🇵🇪 +51 (PE)</option>
+                    <option value="+57">🇨🇴 +57 (CO)</option>
+                    <option value="+34">🇪🇸 +34 (ES)</option>
+                    <option value="+1">🇺🇸 +1 (US/CA)</option>
+                    <option value="+52">🇲🇽 +52 (MX)</option>
+                    <option value="+595">🇵🇾 +595 (PY)</option>
+                    <option value="+598">🇺🇾 +598 (UY)</option>
+                    <option value="+593">🇪🇨 +593 (EC)</option>
+                    <option value="+58">🇻🇪 +58 (VE)</option>
+                    <option value="+86">🇨🇳 +86 (CN)</option>
+                    <option value="+49">🇩🇪 +49 (DE)</option>
+                    <option value="+33">🇫🇷 +33 (FR)</option>
+                    <option value="+">🌐 Otro (+)</option>
+                  </select>
+                  <input type="tel" id="telefono" [(ngModel)]="telefonoNumero" name="telefono"
+                    class="form-control phone-input" (keypress)="onlyNumbers($event)"
+                    [attr.maxlength]="currentPhoneRule.max"
+                    [placeholder]="currentPhoneRule.placeholder">
+                </div>
               </div>
               <div class="form-group">
                 <label for="tipo_contrato">Tipo de Contrato</label>

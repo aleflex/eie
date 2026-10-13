@@ -31,6 +31,65 @@ export class DocentesListComponent implements OnInit {
   ];
   customEspecialidad: string = '';
 
+  // Reglas de formato telefónico y límites por país
+  phoneCountryRules: { [prefix: string]: { min: number; max: number; country: string; placeholder: string } } = {
+    '+591': { min: 8, max: 8, country: 'Bolivia', placeholder: '70000000 (8 dígitos)' },
+    '+54':  { min: 10, max: 10, country: 'Argentina', placeholder: '1123456789 (10 dígitos)' },
+    '+55':  { min: 10, max: 11, country: 'Brasil', placeholder: '11987654321 (10 u 11 dígitos)' },
+    '+56':  { min: 9, max: 9, country: 'Chile', placeholder: '912345678 (9 dígitos)' },
+    '+51':  { min: 9, max: 9, country: 'Perú', placeholder: '912345678 (9 dígitos)' },
+    '+57':  { min: 10, max: 10, country: 'Colombia', placeholder: '3001234567 (10 dígitos)' },
+    '+34':  { min: 9, max: 9, country: 'España', placeholder: '612345678 (9 dígitos)' },
+    '+1':   { min: 10, max: 10, country: 'EE.UU. / Canadá', placeholder: '2025550123 (10 dígitos)' },
+    '+52':  { min: 10, max: 10, country: 'México', placeholder: '5512345678 (10 dígitos)' },
+    '+595': { min: 9, max: 9, country: 'Paraguay', placeholder: '981234567 (9 dígitos)' },
+    '+598': { min: 8, max: 8, country: 'Uruguay', placeholder: '91234567 (8 dígitos)' },
+    '+593': { min: 9, max: 9, country: 'Ecuador', placeholder: '991234567 (9 dígitos)' },
+    '+58':  { min: 10, max: 10, country: 'Venezuela', placeholder: '4121234567 (10 dígitos)' },
+    '+86':  { min: 11, max: 11, country: 'China', placeholder: '13800138000 (11 dígitos)' },
+    '+49':  { min: 10, max: 11, country: 'Alemania', placeholder: '15112345678 (10 u 11 dígitos)' },
+    '+33':  { min: 9, max: 9, country: 'Francia', placeholder: '612345678 (9 dígitos)' },
+    '+':    { min: 6, max: 15, country: 'Otro país', placeholder: 'Número telefónico' }
+  };
+
+  telefonoPrefix: string = '+591';
+  telefonoNumero: string = '';
+
+  get currentPhoneRule() {
+    return this.phoneCountryRules[this.telefonoPrefix] || this.phoneCountryRules['+'];
+  }
+
+  onTelefonoPrefixChange() {
+    if (this.telefonoNumero && this.telefonoNumero.length > this.currentPhoneRule.max) {
+      this.telefonoNumero = this.telefonoNumero.substring(0, this.currentPhoneRule.max);
+    }
+  }
+
+  parseTelefono(raw: string) {
+    if (!raw) {
+      this.telefonoPrefix = '+591';
+      this.telefonoNumero = '';
+      return;
+    }
+    const clean = (raw + '').trim();
+    const prefixes = Object.keys(this.phoneCountryRules).filter(p => p !== '+').sort((a, b) => b.length - a.length);
+    for (const p of prefixes) {
+      if (clean.startsWith(p)) {
+        this.telefonoPrefix = p;
+        this.telefonoNumero = clean.substring(p.length).replace(/[^0-9]/g, '');
+        return;
+      }
+    }
+    this.telefonoPrefix = '+591';
+    this.telefonoNumero = clean.replace(/[^0-9]/g, '');
+  }
+
+  buildTelefono(): string {
+    const num = (this.telefonoNumero || '').trim().replace(/[^0-9]/g, '');
+    if (!num) return '';
+    return `${this.telefonoPrefix} ${num}`;
+  }
+
   toggleSidebar() {
     this.isSidebarCollapsed = !this.isSidebarCollapsed;
   }
@@ -147,6 +206,7 @@ export class DocentesListComponent implements OnInit {
     this.docentePhotoFile = null;
     this.docentePhotoFileName = '';
     this.customEspecialidad = '';
+    this.parseTelefono('');
     this.selectedDocente = {
       nombres: '',
       apellidos: '',
@@ -172,6 +232,7 @@ export class DocentesListComponent implements OnInit {
     this.docentePhotoFile = null;
     this.docentePhotoFileName = '';
     this.customEspecialidad = '';
+    this.parseTelefono(docente.telefono || '');
     if (docente.especialidad && !this.listaIdiomas.includes(docente.especialidad)) {
       this.listaIdiomas.push(docente.especialidad);
     }
@@ -225,6 +286,15 @@ export class DocentesListComponent implements OnInit {
       return;
     }
 
+    const fullTel = this.buildTelefono();
+    if (this.telefonoNumero && this.telefonoNumero.trim()) {
+      const len = this.telefonoNumero.trim().length;
+      if (len < this.currentPhoneRule.min || len > this.currentPhoneRule.max) {
+        alert(`Para ${this.currentPhoneRule.country} (${this.telefonoPrefix}), el número telefónico debe tener ${this.currentPhoneRule.min === this.currentPhoneRule.max ? ('exactamente ' + this.currentPhoneRule.min) : ('entre ' + this.currentPhoneRule.min + ' y ' + this.currentPhoneRule.max)} dígitos.`);
+        return;
+      }
+    }
+
     if (this.isEditing) {
       this.updateDocente();
     } else {
@@ -251,8 +321,8 @@ export class DocentesListComponent implements OnInit {
         : (this.selectedDocente.especialidad?.trim() || 'General');
       formData.append('especialidad', espFinal);
 
-      if (this.selectedDocente.telefono && this.selectedDocente.telefono.trim()) {
-        formData.append('telefono', this.selectedDocente.telefono.trim());
+      if (fullTel) {
+        formData.append('telefono', fullTel);
       }
       if (this.selectedDocente.tipo_contrato) {
         formData.append('tipo_contrato', this.selectedDocente.tipo_contrato);
@@ -290,6 +360,15 @@ export class DocentesListComponent implements OnInit {
   updateDocente() {
     if (!this.selectedDocente) return;
 
+    const fullTel = this.buildTelefono();
+    if (this.telefonoNumero && this.telefonoNumero.trim()) {
+      const len = this.telefonoNumero.trim().length;
+      if (len < this.currentPhoneRule.min || len > this.currentPhoneRule.max) {
+        alert(`Para ${this.currentPhoneRule.country} (${this.telefonoPrefix}), el número telefónico debe tener ${this.currentPhoneRule.min === this.currentPhoneRule.max ? ('exactamente ' + this.currentPhoneRule.min) : ('entre ' + this.currentPhoneRule.min + ' y ' + this.currentPhoneRule.max)} dígitos.`);
+        return;
+      }
+    }
+
     const formData = new FormData();
     formData.append('nombres', this.selectedDocente.nombres.trim());
     if (this.selectedDocente.apellidos && this.selectedDocente.apellidos.trim()) {
@@ -315,8 +394,8 @@ export class DocentesListComponent implements OnInit {
       : (this.selectedDocente.especialidad?.trim() || 'General');
     formData.append('especialidad', espFinal);
 
-    if (this.selectedDocente.telefono && this.selectedDocente.telefono.trim()) {
-      formData.append('telefono', this.selectedDocente.telefono.trim());
+    if (fullTel) {
+      formData.append('telefono', fullTel);
     }
     formData.append('estado', this.selectedDocente.estado || 'Activo');
     if (this.selectedDocente.tipo_contrato) {

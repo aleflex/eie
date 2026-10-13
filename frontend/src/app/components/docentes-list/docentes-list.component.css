@@ -353,3 +353,33 @@ tbody tr:hover {
     font-size: 1.1rem !important;
   }
 }
+
+/* Selector Internacional de Teléfono */
+.input-group-phone {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.prefix-select {
+  flex: 0 0 135px;
+  padding: 0.65rem 0.6rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: #1e293b;
+  background-color: #ffffff;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.prefix-select:focus {
+  border-color: #003366;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0, 51, 102, 0.1);
+}
+
+.phone-input {
+  flex: 1;
+}
