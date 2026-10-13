@@ -18,6 +18,8 @@ class Docente extends Authenticatable
     protected $fillable = [
         'id_usuario',
         'especialidad',
+        'fecha_nacimiento',
+        'lugar_nacimiento',
         'id_tipo_contrato',
         'telefono',
         'fecha_contrato',

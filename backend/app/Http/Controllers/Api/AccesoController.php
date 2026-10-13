@@ -20,15 +20,21 @@ class AccesoController extends Controller
     {
         // 1. Obtener Docentes con su cuenta de usuario
         $docentes = Docente::with('user')->get()->map(function ($docente) {
+            $user = $docente->user;
+            if ($user && empty($user->usuario)) {
+                $user->usuario = User::generateUsername($docente->nombres ?? $user->nombres, $docente->apellidos ?? $user->apellidos ?? '', $user->id_usuario);
+                $user->save();
+            }
             return [
                 'persona_id' => $docente->id_docente,
                 'user_id' => $docente->id_usuario,
+                'id_rol' => $user ? $user->id_rol : 3,
                 'nombres' => $docente->nombres ?? 'Docente',
                 'apellidos' => $docente->apellidos ?? '',
                 'ci' => $docente->ci ?? 'N/A',
                 'tipo' => 'docente',
-                'usuario' => $docente->user ? $docente->user->usuario : null,
-                'correo_electronico' => $docente->user ? $docente->user->email : $docente->correo_electronico,
+                'usuario' => $user ? $user->usuario : null,
+                'correo_electronico' => $user ? $user->email : $docente->correo_electronico,
                 'telefono' => $docente->telefono,
                 'tiene_cuenta' => $docente->id_usuario !== null,
                 'estado' => $docente->estado ?? 'Activo'
@@ -37,15 +43,21 @@ class AccesoController extends Controller
 
         // 2. Obtener Estudiantes con su cuenta de usuario
         $estudiantes = Estudiante::with('user')->get()->map(function ($estudiante) {
+            $user = $estudiante->user;
+            if ($user && empty($user->usuario)) {
+                $user->usuario = User::generateUsername($estudiante->nombres ?? $user->nombres, $estudiante->apellidos ?? $user->apellidos ?? '', $user->id_usuario);
+                $user->save();
+            }
             return [
                 'persona_id' => $estudiante->id_estudiante,
                 'user_id' => $estudiante->id_usuario,
+                'id_rol' => $user ? $user->id_rol : 2,
                 'nombres' => $estudiante->nombres,
                 'apellidos' => $estudiante->apellidos,
                 'ci' => $estudiante->ci,
                 'tipo' => 'estudiante',
-                'usuario' => $estudiante->user ? $estudiante->user->usuario : null,
-                'correo_electronico' => $estudiante->user ? $estudiante->user->email : $estudiante->correo_electronico,
+                'usuario' => $user ? $user->usuario : null,
+                'correo_electronico' => $user ? $user->email : $estudiante->correo_electronico,
                 'telefono' => $estudiante->celular,
                 'tiene_cuenta' => $estudiante->id_usuario !== null,
                 'estado' => 'Activo'
@@ -58,6 +70,10 @@ class AccesoController extends Controller
         $excluidos = array_merge($docenteUserIds, $estudianteUserIds);
 
         $administradores = User::whereNotIn('id_usuario', $excluidos)->get()->map(function ($user) {
+            if (empty($user->usuario)) {
+                $user->usuario = User::generateUsername($user->nombres ?? 'admin', $user->apellidos ?? '', $user->id_usuario);
+                $user->save();
+            }
             $rolNombre = 'Administrador General';
             if ($user->id_rol == 5) {
                 $rolNombre = 'Secretaría';
@@ -69,7 +85,7 @@ class AccesoController extends Controller
                 'user_id' => $user->id_usuario,
                 'nombres' => $user->name,
                 'apellidos' => '',
-                'ci' => 'N/A',
+                'ci' => $user->ci ?? 'N/A',
                 'tipo' => 'admin',
                 'id_rol' => $user->id_rol ?: 1,
                 'rol_nombre' => $rolNombre,
@@ -92,14 +108,22 @@ class AccesoController extends Controller
      */
     public function asignar(Request $request)
     {
+        if ($request->has('email') && trim((string)$request->email) === '') {
+            $request->merge(['email' => null]);
+        }
+
         $request->validate([
             'persona_id' => 'required_unless:tipo,admin|integer',
             'tipo' => 'required|string|in:docente,estudiante,admin',
             'nombres' => 'required_if:tipo,admin|string|max:255',
             'usuario' => 'sometimes|required|string|max:100|unique:usuarios,usuario',
-            'email' => 'nullable|string|email|max:255',
-            'password' => 'required|string|min:8',
+            'email' => 'nullable|email|max:255',
+            'password' => 'nullable|string|min:4',
             'id_rol' => 'nullable|integer',
+        ], [
+            'usuario.unique' => 'Este nombre de usuario ya se encuentra registrado.',
+            'email.email' => 'El formato del correo electrónico no es válido.',
+            'password.min' => 'La contraseña debe contener al menos 4 caracteres.',
         ]);
 
         try {
@@ -107,6 +131,7 @@ class AccesoController extends Controller
 
             $nombres = '';
             $apellidos = '';
+            $ci = null;
 
             if ($request->tipo === 'admin') {
                 $nombres = $request->nombres;
@@ -118,6 +143,7 @@ class AccesoController extends Controller
                 }
                 $nombres = $docente->nombres;
                 $apellidos = $docente->apellidos;
+                $ci = $docente->ci;
             } else {
                 $estudiante = Estudiante::findOrFail($request->persona_id);
                 if ($estudiante->id_usuario) {
@@ -125,6 +151,7 @@ class AccesoController extends Controller
                 }
                 $nombres = $estudiante->nombres;
                 $apellidos = $estudiante->apellidos;
+                $ci = $estudiante->ci;
             }
 
             // Usar nombre de usuario personalizado o generar automático
@@ -135,6 +162,11 @@ class AccesoController extends Controller
             $email = $request->filled('email') 
                 ? strtolower(trim($request->email)) 
                 : "{$username}@eie.edu.bo";
+
+            // Si no se envió contraseña, usar el carnet por defecto
+            $passwordPlain = $request->filled('password') 
+                ? $request->password 
+                : ($ci ? preg_replace('/\s+/', '', $ci) : 'password123');
 
             // Determinar rol
             $idRol = 1;
@@ -151,11 +183,12 @@ class AccesoController extends Controller
                 'id_rol' => $idRol,
                 'correo_institucional' => $email,
                 'usuario' => $username,
-                'password' => Hash::make($request->password),
+                'password' => Hash::make($passwordPlain),
                 'debe_cambiar_password' => true,
                 'estado' => 'ACTIVO',
                 'nombres' => $nombres,
                 'apellidos' => $apellidos,
+                'ci' => $ci,
             ]);
 
             // 2. Vincular el usuario si aplica
@@ -191,10 +224,23 @@ class AccesoController extends Controller
     {
         $user = User::findOrFail($userId);
 
+        if ($request->has('email') && trim((string)$request->email) === '') {
+            $request->merge(['email' => null]);
+        }
+        if ($request->has('password') && trim((string)$request->password) === '') {
+            $request->merge(['password' => null]);
+        }
+
         $request->validate([
             'usuario' => 'required|string|max:100|unique:usuarios,usuario,' . $user->id_usuario . ',id_usuario',
-            'email' => 'nullable|string|email|max:255',
-            'password' => 'nullable|string|min:8',
+            'email' => 'nullable|email|max:255',
+            'password' => 'nullable|string|min:4',
+            'id_rol' => 'nullable|integer',
+        ], [
+            'usuario.required' => 'El nombre de usuario es obligatorio.',
+            'usuario.unique' => 'Este nombre de usuario ya está en uso por otra cuenta.',
+            'email.email' => 'El correo electrónico no tiene un formato válido.',
+            'password.min' => 'La nueva contraseña debe tener al menos 4 caracteres.',
         ]);
 
         try {

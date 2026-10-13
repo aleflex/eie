@@ -11,8 +11,8 @@ def generate_icons():
     orig_img = Image.open(LOGO_PATH).convert('RGBA')
     w, h = orig_img.size
 
-    # Crop tightly around the emblem
-    # Bounding box of emblem was (236, 272, 1360, 1304), center is roughly (798, 788)
+    # Recorta bien alrededor del emblema
+    # La caja delimitadora del emblema era (236, 272, 1360, 1304), el centro está aproximadamente en (798, 788)
     cx, cy = 798, 788
     crop_size = 1180
     left = max(0, cx - crop_size // 2)
@@ -21,18 +21,18 @@ def generate_icons():
     bottom = min(h, top + crop_size)
     cropped_emblem = orig_img.crop((left, top, right, bottom))
 
-    # Also make a transparent version where outer off-white background is made transparent
+   # También crea una versión transparente donde el fondo exterior casi blanco se haga transparente
     bg_color = (245, 241, 238)
     transparent_emblem = cropped_emblem.copy()
     datas = transparent_emblem.getdata()
     new_data = []
     for item in datas:
-        # Check distance to background color
+        # Comprobar la distancia al color de fondo
         dist = sum(abs(item[i] - bg_color[i]) for i in range(3))
         if dist < 22:
             new_data.append((255, 255, 255, 0))
         elif dist < 38:
-            # smooth edge antialiasing
+            # suavizado de bordes
             alpha = int(255 * ((dist - 22) / 16))
             new_data.append((item[0], item[1], item[2], alpha))
         else:
@@ -41,31 +41,31 @@ def generate_icons():
 
     print("Emblem cropped and transparency processed.")
 
-    # 1. FAVICON FOR WEB
-    # Generate multi-resolution ICO
+    # 1. FAVICON PARA WEB
+    # Generar ICO de múltiples resoluciones
     ico_sizes = [(16, 16), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)]
     ico_path = 'frontend/src/favicon.ico'
     transparent_emblem.save(ico_path, format='ICO', sizes=ico_sizes)
     print(f"Generated {ico_path}")
 
-    # Also save as PNG
+    # También guardar como PNG
     png_fav = 'frontend/src/assets/imagenes/favicon.png'
     transparent_emblem.resize((192, 192), Image.Resampling.LANCZOS).save(png_fav, format='PNG')
     print(f"Generated {png_fav}")
 
-    # Copy to dist if exists
+    # Copiar a dist si existe
     dist_fav = 'frontend/dist/frontend/browser/favicon.ico'
     if os.path.exists(os.path.dirname(dist_fav)):
         transparent_emblem.save(dist_fav, format='ICO', sizes=ico_sizes)
         print(f"Updated {dist_fav}")
 
-    # Backend public favicon
+    # Favicon público de backend
     be_fav = 'backend/public/favicon.ico'
     if os.path.exists(os.path.dirname(be_fav)):
         transparent_emblem.save(be_fav, format='ICO', sizes=ico_sizes)
         print(f"Updated {be_fav}")
 
-    # 2. ANDROID MIPMAP LAUNCHER ICONS
+    # 2. ICONOS DE LANZADOR MIPMAP DE ANDROID
     android_res_dirs = [
         'frontend/android/app/src/main/res',
         'android/app/src/main/res'
@@ -132,7 +132,7 @@ def generate_icons():
 
             print(f"Generated launcher icons for {dest_dir}")
 
-        # 3. ANDROID SPLASH SCREENS
+        # 3. PANTALLAS DE INICIO EN ANDROID
         splash_configs = {
             'drawable': (480, 320),
             'drawable-land-mdpi': (480, 320),
@@ -151,14 +151,14 @@ def generate_icons():
             splash_dir = os.path.join(res_dir, folder)
             os.makedirs(splash_dir, exist_ok=True)
 
-            # Splash canvas is clean white (#FFFFFF)
+            # El lienzo de inicio es blanco limpio (#FFFFFF)
             splash = Image.new('RGBA', (sw, sh), (255, 255, 255, 255))
             
-            # Emblem size: 45% of minimum screen dimension
+            # Tamaño del emblema: 45% de la dimensión mínima de la pantalla
             target_emblem_size = int(min(sw, sh) * 0.45)
             emblem_resized = transparent_emblem.resize((target_emblem_size, target_emblem_size), Image.Resampling.LANCZOS)
             
-            # Center the emblem
+            # Centrar el emblema
             ox = (sw - target_emblem_size) // 2
             oy = (sh - target_emblem_size) // 2
             splash.paste(emblem_resized, (ox, oy), emblem_resized)
@@ -167,7 +167,7 @@ def generate_icons():
             splash.save(splash_path, format='PNG')
             print(f"Generated splash for {splash_path}")
 
-    print("\nALL ICONS AND SPLASH SCREENS GENERATED SUCCESSFULLY!")
+    print("\n¡TODOS LOS ICONOS Y PANTALLAS DE INICIO GENERADOS EXITOSAMENTE!")
 
 if __name__ == '__main__':
     generate_icons()

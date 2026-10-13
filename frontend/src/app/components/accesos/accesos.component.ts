@@ -268,11 +268,13 @@ export class AccesosComponent implements OnInit {
       usuarioSugerido = usuarioSugerido.replace(/[^a-z0-9.]/g, '');
     }
 
+    const defaultPassword = (persona.ci && persona.ci !== 'N/A') ? persona.ci.replace(/\s+/g, '') : '';
+
     this.formModel = {
       nombres: '',
       usuario: usuarioSugerido,
       email: persona.correo_electronico || '',
-      password: '',
+      password: defaultPassword,
       id_rol: persona.tipo === 'admin' ? 1 : (persona.tipo === 'docente' ? 3 : 2)
     };
     this.showAssignModal = true;
@@ -299,8 +301,8 @@ export class AccesosComponent implements OnInit {
 
     const payload: any = {
       tipo: this.selectedPersona.tipo,
-      usuario: this.formModel.usuario,
-      email: this.formModel.email || `${this.formModel.usuario}@eie.edu.bo`,
+      usuario: this.formModel.usuario.trim(),
+      email: this.formModel.email && this.formModel.email.trim() !== '' ? this.formModel.email.trim() : null,
       password: this.formModel.password,
       id_rol: this.formModel.id_rol
     };
@@ -318,7 +320,7 @@ export class AccesosComponent implements OnInit {
         this.cargarAccesos();
       },
       error: (err: any) => {
-        alert('Error al procesar solicitud: ' + (err.error?.message || err.message));
+        alert('Error al procesar solicitud:\n• ' + this.formatErrorMessage(err));
       }
     });
   }
@@ -326,14 +328,29 @@ export class AccesosComponent implements OnInit {
   // --- MODAL EDITAR ---
   openEditModal(persona: any) {
     this.selectedPersona = persona;
+
+    let usuarioSugerido = persona.usuario || '';
+    if (!usuarioSugerido && persona.nombres) {
+      const nom = persona.nombres.split(' ')[0].toLowerCase();
+      const ape = (persona.apellidos || '').split(' ')[0].toLowerCase();
+      usuarioSugerido = ape ? `${nom}.${ape}` : nom;
+      usuarioSugerido = usuarioSugerido.replace(/[^a-z0-9.]/g, '');
+    }
+
     this.formModel = {
       nombres: persona.nombres || '',
-      usuario: persona.usuario || '',
+      usuario: usuarioSugerido,
       email: persona.correo_electronico || '',
       password: '',
-      id_rol: persona.id_rol || 1
+      id_rol: persona.id_rol || (persona.tipo === 'admin' ? 1 : (persona.tipo === 'docente' ? 3 : 2))
     };
     this.showEditModal = true;
+  }
+
+  setCiAsPassword() {
+    if (this.selectedPersona?.ci && this.selectedPersona.ci !== 'N/A') {
+      this.formModel.password = this.selectedPersona.ci.replace(/\s+/g, '');
+    }
   }
 
   closeEditModal() {
@@ -349,13 +366,13 @@ export class AccesosComponent implements OnInit {
     }
 
     const payload: any = {
-      usuario: this.formModel.usuario,
-      email: this.formModel.email,
+      usuario: this.formModel.usuario.trim(),
+      email: this.formModel.email && this.formModel.email.trim() !== '' ? this.formModel.email.trim() : null,
       id_rol: this.formModel.id_rol
     };
 
     if (this.formModel.password && this.formModel.password.trim() !== '') {
-      payload.password = this.formModel.password;
+      payload.password = this.formModel.password.trim();
     }
 
     this.accesoService.actualizarCredenciales(this.selectedPersona.user_id, payload).subscribe({
@@ -365,9 +382,19 @@ export class AccesosComponent implements OnInit {
         this.cargarAccesos();
       },
       error: (err: any) => {
-        alert('Error al actualizar credenciales: ' + (err.error?.message || err.message));
+        alert('Error al actualizar credenciales:\n• ' + this.formatErrorMessage(err));
       }
     });
+  }
+
+  private formatErrorMessage(err: any): string {
+    if (err?.error?.errors && typeof err.error.errors === 'object') {
+      const messages = Object.values(err.error.errors).flat() as string[];
+      if (messages.length > 0) {
+        return messages.join('\n• ');
+      }
+    }
+    return err?.error?.message || err?.message || 'Error desconocido del servidor';
   }
 
   // --- DESVINCULAR CUENTA ---

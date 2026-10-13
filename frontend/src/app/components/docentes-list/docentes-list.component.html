@@ -133,14 +133,35 @@
                 </select>
               </div>
               <div class="form-group">
+                <label for="fecha_nacimiento">Fecha de Nacimiento</label>
+                <input type="date" id="fecha_nacimiento" [(ngModel)]="selectedDocente.fecha_nacimiento"
+                  name="fecha_nacimiento" class="form-control">
+              </div>
+              <div class="form-group">
+                <label for="lugar_nacimiento">Lugar de Nacimiento</label>
+                <input type="text" id="lugar_nacimiento" [(ngModel)]="selectedDocente.lugar_nacimiento"
+                  name="lugar_nacimiento" class="form-control" placeholder="Ej: Cochabamba, Cercado">
+              </div>
+              <div class="form-group">
                 <label for="correo_electronico">Correo Electrónico Personal</label>
                 <input type="email" id="correo_electronico" [(ngModel)]="selectedDocente.correo_electronico"
                   name="correo_electronico" class="form-control" placeholder="personal@ejemplo.com">
               </div>
               <div class="form-group">
-                <label for="especialidad">Especialidad</label>
-                <input type="text" id="especialidad" [(ngModel)]="selectedDocente.especialidad" name="especialidad"
-                  class="form-control" placeholder="Ej: Inglés, Francés">
+                <label for="especialidad">Especialidad / Idioma que Imparte *</label>
+                <select id="especialidad" [(ngModel)]="selectedDocente.especialidad" name="especialidad"
+                  class="form-control" required>
+                  <option value="">Seleccione Idioma / Especialidad...</option>
+                  <option *ngFor="let idm of listaIdiomas" [value]="idm">{{ idm }}</option>
+                  <option value="Inglés y Francés">Inglés y Francés</option>
+                  <option value="Multilingüe">Multilingüe / Varios Idiomas</option>
+                  <option value="__OTRO__">Otro (Especificar manualmente)...</option>
+                </select>
+              </div>
+              <div class="form-group animate-fade-in" *ngIf="selectedDocente.especialidad === '__OTRO__'">
+                <label for="custom_esp">Especificar Idioma o Especialidad *</label>
+                <input type="text" id="custom_esp" [(ngModel)]="customEspecialidad" name="custom_esp"
+                  class="form-control" placeholder="Ej: Lengua y Cultura Rusa / Alemán Técnico" required>
               </div>
               <div class="form-group">
                 <label for="telefono">Teléfono</label>
@@ -307,6 +328,13 @@
             <div class="mobile-detail-item" *ngIf="docente.correo_electronico">
               <i class="material-icons-outlined">email</i>
               <span><strong>Correo:</strong> <a [href]="'mailto:' + docente.correo_electronico" class="mobile-contact-link">{{ docente.correo_electronico }}</a></span>
+            </div>
+            <div class="mobile-detail-item" *ngIf="docente.lugar_nacimiento || docente.fecha_nacimiento">
+              <i class="material-icons-outlined">cake</i>
+              <span>
+                <strong>Nacimiento:</strong> {{ docente.lugar_nacimiento || '' }}
+                <span *ngIf="docente.fecha_nacimiento">({{ docente.fecha_nacimiento }})</span>
+              </span>
             </div>
             <div class="mobile-detail-item" *ngIf="docente.tipo_contrato">
               <i class="material-icons-outlined">badge</i>

@@ -22,11 +22,36 @@ export class WebSocketService implements OnDestroy {
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 20;
   private reconnectTimer: any = null;
+  private heartbeatTimer: any = null;
   private isDestroyed = false;
   private channels = new Set<string>(['inscripciones', 'estudiantes', 'usuarios']);
 
   constructor(private ngZone: NgZone) {
     if (typeof window !== 'undefined') {
+      // Manejar restauración desde Back-Forward Cache (bfcache)
+      window.addEventListener('pageshow', (event) => {
+        if (event.persisted) {
+          this.reconnectAttempts = 0;
+          this.connect();
+        }
+      });
+
+      // Reconectar cuando la pestaña vuelve a ser visible tras suspensión
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          if (!this.socket || this.socket.readyState === WebSocket.CLOSED) {
+            this.reconnectAttempts = 0;
+            this.connect();
+          }
+        }
+      });
+
+      // Reconectar cuando se recupera la conexión a internet
+      window.addEventListener('online', () => {
+        this.reconnectAttempts = 0;
+        this.connect();
+      });
+
       this.connect();
     }
   }
@@ -35,6 +60,10 @@ export class WebSocketService implements OnDestroy {
    * Establece la conexión única con el servidor WebSocket
    */
   public connect() {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      return;
+    }
+
     if (this.socket && (this.socket.readyState === WebSocket.OPEN || this.socket.readyState === WebSocket.CONNECTING)) {
       return;
     }
@@ -50,6 +79,14 @@ export class WebSocketService implements OnDestroy {
           console.log('✅ [WebSocket EIE] Conectado exitosamente en tiempo real.');
           this.isConnectedSubject.next(true);
           this.reconnectAttempts = 0;
+
+          // Iniciar Heartbeat cada 25 segundos para mantener activo el proxy reverso de Render / Apache
+          this.stopHeartbeat();
+          this.heartbeatTimer = setInterval(() => {
+            if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+              this.send({ action: 'ping' });
+            }
+          }, 25000);
 
           // Suscribirse a los canales registrados
           this.channels.forEach(ch => {
@@ -87,6 +124,7 @@ export class WebSocketService implements OnDestroy {
 
       this.socket.onclose = () => {
         this.ngZone.run(() => {
+          this.stopHeartbeat();
           this.isConnectedSubject.next(false);
           this.socket = null;
           if (!this.isDestroyed) {
@@ -95,10 +133,18 @@ export class WebSocketService implements OnDestroy {
         });
       };
     } catch (e) {
+      this.stopHeartbeat();
       if (this.reconnectAttempts <= 1) {
         console.warn('[WebSocket EIE] Error al inicializar conexión:', e);
       }
       this.scheduleReconnect();
+    }
+  }
+
+  private stopHeartbeat() {
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer);
+      this.heartbeatTimer = null;
     }
   }
 
@@ -200,6 +246,7 @@ export class WebSocketService implements OnDestroy {
 
   ngOnDestroy() {
     this.isDestroyed = true;
+    this.stopHeartbeat();
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
     }

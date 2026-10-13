@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { DocenteService } from '../../services/docente.service';
+import { CourseService } from '../../services/course.service';
 import { ImageCompressorService } from '../../services/image-compressor.service';
 import { AuthService } from '../../services/auth.service';
 import { environment } from '../../../environments/environment';
@@ -19,6 +20,16 @@ export class DocentesListComponent implements OnInit {
   docentes: any[] = [];
   isSidebarCollapsed = false;
   isMobileMenuOpen = false;
+
+  listaIdiomas: string[] = [
+    'Inglés',
+    'Francés',
+    'Chino Mandarín',
+    'Alemán',
+    'Quechua',
+    'Aymara'
+  ];
+  customEspecialidad: string = '';
 
   toggleSidebar() {
     this.isSidebarCollapsed = !this.isSidebarCollapsed;
@@ -48,6 +59,7 @@ export class DocentesListComponent implements OnInit {
 
   constructor(
     private docenteService: DocenteService,
+    private courseService: CourseService,
     private imageCompressor: ImageCompressorService,
     private authService: AuthService
   ) {}
@@ -58,6 +70,21 @@ export class DocentesListComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadDocentes();
+    this.loadIdiomas();
+  }
+
+  loadIdiomas() {
+    this.courseService.obtenerIdiomas().subscribe({
+      next: (data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          const nombres = data.map((i: any) => i.nombre_idioma || i.nombre).filter(Boolean);
+          if (nombres.length > 0) {
+            this.listaIdiomas = Array.from(new Set([...this.listaIdiomas, ...nombres]));
+          }
+        }
+      },
+      error: () => {}
+    });
   }
 
   loadDocentes() {
@@ -119,11 +146,15 @@ export class DocentesListComponent implements OnInit {
     this.isEditing = false;
     this.docentePhotoFile = null;
     this.docentePhotoFileName = '';
+    this.customEspecialidad = '';
     this.selectedDocente = {
       nombres: '',
       apellidos: '',
       correo_electronico: '',
       ci: '',
+      expedido: '',
+      fecha_nacimiento: '',
+      lugar_nacimiento: '',
       especialidad: '',
       telefono: '',
       estado: 'Activo',
@@ -140,6 +171,10 @@ export class DocentesListComponent implements OnInit {
     this.isEditing = true;
     this.docentePhotoFile = null;
     this.docentePhotoFileName = '';
+    this.customEspecialidad = '';
+    if (docente.especialidad && !this.listaIdiomas.includes(docente.especialidad)) {
+      this.listaIdiomas.push(docente.especialidad);
+    }
     // Make a deep copy to avoid modifying the table row directly before saving
     this.selectedDocente = {
       id: docente.id,
@@ -148,7 +183,10 @@ export class DocentesListComponent implements OnInit {
       correo_electronico: docente.correo_electronico || '',
       foto_url: docente.foto_url || '',
       ci: docente.ci || '',
-      especialidad: docente.especialidad,
+      expedido: docente.expedido || docente.user?.expedido || '',
+      fecha_nacimiento: docente.fecha_nacimiento || '',
+      lugar_nacimiento: docente.lugar_nacimiento || '',
+      especialidad: docente.especialidad || '',
       telefono: docente.telefono,
       meta_foto: docente.foto_url,
       estado: docente.estado,
@@ -164,37 +202,58 @@ export class DocentesListComponent implements OnInit {
 
   cancelEdit() {
     this.selectedDocente = null;
+    this.customEspecialidad = '';
     this.showForm = false;
   }
 
   saveDocente() {
     if (!this.selectedDocente) return;
 
-    if (this.selectedDocente.ci) {
-      const cleanCi = (this.selectedDocente.ci + '').trim();
-      if (!/^[0-9]{7,8}$/.test(cleanCi)) {
-        alert('El C.I. del instructor debe contener estrictamente 7 u 8 dígitos numéricos.');
-        return;
-      }
+    if (!this.selectedDocente.nombres || !this.selectedDocente.nombres.trim()) {
+      alert('El campo Nombres es obligatorio.');
+      return;
+    }
+
+    if (!this.selectedDocente.ci || !(this.selectedDocente.ci + '').trim()) {
+      alert('El número de C.I. del instructor es obligatorio.');
+      return;
+    }
+
+    const cleanCi = (this.selectedDocente.ci + '').trim();
+    if (!/^[0-9]{7,8}$/.test(cleanCi)) {
+      alert('El C.I. del instructor debe contener estrictamente 7 u 8 dígitos numéricos.');
+      return;
     }
 
     if (this.isEditing) {
       this.updateDocente();
     } else {
-      if (!this.selectedDocente.nombres) {
-        alert('El campo Nombres es obligatorio.');
-        return;
-      }
-
       const formData = new FormData();
-      formData.append('nombres', this.selectedDocente.nombres);
-      formData.append('apellidos', this.selectedDocente.apellidos || '');
-      formData.append('correo_electronico', this.selectedDocente.correo_electronico || '');
-      if (this.selectedDocente.ci) {
-        formData.append('ci', this.selectedDocente.ci);
+      formData.append('nombres', this.selectedDocente.nombres.trim());
+      if (this.selectedDocente.apellidos && this.selectedDocente.apellidos.trim()) {
+        formData.append('apellidos', this.selectedDocente.apellidos.trim());
       }
-      formData.append('especialidad', this.selectedDocente.especialidad || 'General');
-      formData.append('telefono', this.selectedDocente.telefono || '');
+      if (this.selectedDocente.correo_electronico && this.selectedDocente.correo_electronico.trim()) {
+        formData.append('correo_electronico', this.selectedDocente.correo_electronico.trim());
+      }
+      formData.append('ci', cleanCi);
+      if (this.selectedDocente.expedido) {
+        formData.append('expedido', this.selectedDocente.expedido);
+      }
+      if (this.selectedDocente.fecha_nacimiento) {
+        formData.append('fecha_nacimiento', this.selectedDocente.fecha_nacimiento);
+      }
+      if (this.selectedDocente.lugar_nacimiento && this.selectedDocente.lugar_nacimiento.trim()) {
+        formData.append('lugar_nacimiento', this.selectedDocente.lugar_nacimiento.trim());
+      }
+      const espFinal = this.selectedDocente.especialidad === '__OTRO__'
+        ? (this.customEspecialidad?.trim() || 'General')
+        : (this.selectedDocente.especialidad?.trim() || 'General');
+      formData.append('especialidad', espFinal);
+
+      if (this.selectedDocente.telefono && this.selectedDocente.telefono.trim()) {
+        formData.append('telefono', this.selectedDocente.telefono.trim());
+      }
       if (this.selectedDocente.tipo_contrato) {
         formData.append('tipo_contrato', this.selectedDocente.tipo_contrato);
       }
@@ -217,12 +276,12 @@ export class DocentesListComponent implements OnInit {
           this.selectedDocente = null;
           this.docentePhotoFile = null;
           this.docentePhotoFileName = '';
+          this.customEspecialidad = '';
           this.showForm = false;
           this.loadDocentes();
         },
         error: (err) => {
-          const detail = err.error?.error || err.error?.message || err.message || 'Error desconocido';
-          alert('Error al registrar instructor: ' + detail);
+          alert('Error al registrar instructor:\n• ' + this.extractErrorMessage(err));
         }
       });
     }
@@ -232,14 +291,33 @@ export class DocentesListComponent implements OnInit {
     if (!this.selectedDocente) return;
 
     const formData = new FormData();
-    formData.append('nombres', this.selectedDocente.nombres);
-    formData.append('apellidos', this.selectedDocente.apellidos || '');
-    formData.append('correo_electronico', this.selectedDocente.correo_electronico || '');
-    if (this.selectedDocente.ci) {
-      formData.append('ci', this.selectedDocente.ci);
+    formData.append('nombres', this.selectedDocente.nombres.trim());
+    if (this.selectedDocente.apellidos && this.selectedDocente.apellidos.trim()) {
+      formData.append('apellidos', this.selectedDocente.apellidos.trim());
     }
-    formData.append('especialidad', this.selectedDocente.especialidad || '');
-    formData.append('telefono', this.selectedDocente.telefono || '');
+    if (this.selectedDocente.correo_electronico && this.selectedDocente.correo_electronico.trim()) {
+      formData.append('correo_electronico', this.selectedDocente.correo_electronico.trim());
+    }
+    if (this.selectedDocente.ci) {
+      formData.append('ci', (this.selectedDocente.ci + '').trim());
+    }
+    if (this.selectedDocente.expedido) {
+      formData.append('expedido', this.selectedDocente.expedido);
+    }
+    if (this.selectedDocente.fecha_nacimiento) {
+      formData.append('fecha_nacimiento', this.selectedDocente.fecha_nacimiento);
+    }
+    if (this.selectedDocente.lugar_nacimiento && this.selectedDocente.lugar_nacimiento.trim()) {
+      formData.append('lugar_nacimiento', this.selectedDocente.lugar_nacimiento.trim());
+    }
+    const espFinal = this.selectedDocente.especialidad === '__OTRO__'
+      ? (this.customEspecialidad?.trim() || 'General')
+      : (this.selectedDocente.especialidad?.trim() || 'General');
+    formData.append('especialidad', espFinal);
+
+    if (this.selectedDocente.telefono && this.selectedDocente.telefono.trim()) {
+      formData.append('telefono', this.selectedDocente.telefono.trim());
+    }
     formData.append('estado', this.selectedDocente.estado || 'Activo');
     if (this.selectedDocente.tipo_contrato) {
       formData.append('tipo_contrato', this.selectedDocente.tipo_contrato);
@@ -266,9 +344,19 @@ export class DocentesListComponent implements OnInit {
         this.loadDocentes();
       },
       error: (err) => {
-        alert('Error al actualizar instructor: ' + (err.error?.message || err.message));
+        alert('Error al actualizar instructor:\n• ' + this.extractErrorMessage(err));
       }
     });
+  }
+
+  private extractErrorMessage(err: any): string {
+    if (err?.error?.errors && typeof err.error.errors === 'object') {
+      const messages = Object.values(err.error.errors).flat() as string[];
+      if (messages.length > 0) {
+        return messages.join('\n• ');
+      }
+    }
+    return err?.error?.message || err?.message || 'Error desconocido';
   }
 
   toggleStatus(docente: any) {
