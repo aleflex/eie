@@ -66,4 +66,45 @@ class SettingController extends Controller
             'settings' => $this->index()->original
         ]);
     }
+
+    /**
+     * Retorna el estado público del periodo de inscripciones (si está abierto o cerrado, y sus fechas límites).
+     */
+    public function getPeriodoInscripcion()
+    {
+        $fechaInicio = Configuracion::where('clave', 'fecha_inicio_inscripcion')->value('valor');
+        $fechaFin = Configuracion::where('clave', 'fecha_fin_inscripcion')->value('valor');
+
+        $ahora = now();
+        $abierto = true;
+        $motivo = '';
+
+        if (!empty($fechaInicio)) {
+            try {
+                $inicio = \Carbon\Carbon::parse($fechaInicio);
+                if ($ahora->lessThan($inicio)) {
+                    $abierto = false;
+                    $motivo = 'El periodo de inscripciones aún no ha comenzado. Apertura programada: ' . $inicio->format('d/m/Y H:i');
+                }
+            } catch (\Throwable $e) {}
+        }
+
+        if ($abierto && !empty($fechaFin)) {
+            try {
+                $fin = \Carbon\Carbon::parse($fechaFin);
+                if ($ahora->greaterThan($fin)) {
+                    $abierto = false;
+                    $motivo = 'El periodo de inscripciones ha finalizado. La fecha y hora límite de cierre fue: ' . $fin->format('d/m/Y H:i');
+                }
+            } catch (\Throwable $e) {}
+        }
+
+        return response()->json([
+            'abierto' => $abierto,
+            'motivo' => $motivo,
+            'fecha_inicio' => $fechaInicio,
+            'fecha_fin' => $fechaFin,
+            'hora_actual' => $ahora->toIso8601String()
+        ]);
+    }
 }

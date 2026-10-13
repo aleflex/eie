@@ -34,6 +34,7 @@ Route::get('/idiomas', [CourseController::class, 'getIdiomas']);
 Route::get('/niveles', [CourseController::class, 'getNiveles']);
 Route::get('/cursos', [CourseController::class, 'index']);
 Route::get('/roles/permisos', [RoleController::class, 'getPermisos']);
+Route::get('/periodo-inscripcion', [SettingController::class, 'getPeriodoInscripcion']);
 
 // Formulario de inscripción pública (nuevos postulantes envían formulario y documentos)
 Route::post('/inscripciones', [InscriptionController::class, 'store']);

@@ -8,8 +8,37 @@
       <p class="form-subtitle">Escuela de Idiomas del Ejército - EIE</p>
     </div>
 
-    <!-- Barra de Progreso del Asistente -->
-    <div class="stepper-progress-container">
+    <!-- AVISO DE PERIODO CERRADO / FECHA LÍMITE VENCIDA -->
+    <div *ngIf="periodoChecked && periodoInscripcion?.abierto === false" class="periodo-cerrado-banner animate-fade-in">
+      <div class="periodo-banner-icon">
+        <i class="material-icons-outlined">event_busy</i>
+      </div>
+      <div class="periodo-banner-content">
+        <h3>Inscripciones Cerradas</h3>
+        <p class="periodo-banner-text">
+          {{ periodoInscripcion?.motivo || 'El portal web de inscripciones no se encuentra disponible en este momento debido a que la fecha límite ha expirado o el periodo aún no ha iniciado.' }}
+        </p>
+        <div class="periodo-fechas-grid">
+          <div class="periodo-fecha-pill" *ngIf="periodoInscripcion?.fecha_inicio">
+            <i class="material-icons-outlined">play_circle</i>
+            <span>Apertura: <strong>{{ formatPeriodDate(periodoInscripcion.fecha_inicio) }}</strong></span>
+          </div>
+          <div class="periodo-fecha-pill" *ngIf="periodoInscripcion?.fecha_fin">
+            <i class="material-icons-outlined">cancel</i>
+            <span>Cierre límite: <strong>{{ formatPeriodDate(periodoInscripcion.fecha_fin) }}</strong></span>
+          </div>
+        </div>
+        <div class="periodo-banner-action mt-3">
+          <a routerLink="/" class="btn-periodo-home">
+            <i class="material-icons-outlined">home</i> Volver al Inicio
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <ng-container *ngIf="periodoInscripcion?.abierto !== false">
+      <!-- Barra de Progreso del Asistente -->
+      <div class="stepper-progress-container">
       <div class="stepper-track">
         <div class="stepper-line" [style.width.%]="(currentStep - 1) * 50"></div>
       </div>
@@ -870,6 +899,7 @@
         </button>
       </div>
     </form>
+    </ng-container>
   </div>
 </div>
 

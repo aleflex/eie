@@ -31,6 +31,15 @@ export class InscriptionService {
   }
 
   /**
+   * Obtiene el estado del periodo de inscripciones (si está abierto o cerrado, fechas y motivo)
+   */
+  obtenerPeriodoInscripcion(): Observable<any> {
+    return this.http.get<any>(`${environment.apiUrl}/api/periodo-inscripcion`).pipe(
+      catchError(() => of({ abierto: true, motivo: '', fecha_inicio: null, fecha_fin: null }))
+    );
+  }
+
+  /**
    * Envía una solicitud de inscripción con datos y archivos adjuntos
    * @param datos - FormData con los datos de inscripción
    * @returns Observable con la respuesta del servidor

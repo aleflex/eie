@@ -1121,3 +1121,93 @@
   color: #059669;
   font-weight: 700;
 }
+
+/* Banner de Periodo de Inscripciones Cerrado / Finalizado */
+.periodo-cerrado-banner {
+  background: linear-gradient(135deg, #fff1f2 0%, #fee2e2 100%);
+  border: 2px solid #fecaca;
+  border-radius: 16px;
+  padding: 2.2rem 1.5rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 10px 25px -5px rgba(225, 29, 72, 0.12);
+  text-align: center;
+}
+
+.periodo-banner-icon {
+  width: 76px;
+  height: 76px;
+  background: #ffe4e6;
+  color: #e11d48;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+  box-shadow: 0 4px 12px rgba(225, 29, 72, 0.18);
+}
+
+.periodo-banner-icon i {
+  font-size: 2.8rem;
+}
+
+.periodo-banner-content h3 {
+  color: #9f1239;
+  font-size: 1.6rem;
+  font-weight: 800;
+  margin-bottom: 0.75rem;
+}
+
+.periodo-banner-text {
+  color: #475569;
+  font-size: 1.05rem;
+  max-width: 650px;
+  margin: 0 auto 1.25rem auto;
+  line-height: 1.6;
+}
+
+.periodo-fechas-grid {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+
+.periodo-fecha-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #ffffff;
+  padding: 0.65rem 1.2rem;
+  border-radius: 50px;
+  border: 1px solid #fca5a5;
+  color: #881337;
+  font-size: 0.88rem;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.periodo-fecha-pill i {
+  font-size: 1.15rem;
+  color: #e11d48;
+}
+
+.btn-periodo-home {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #003B71;
+  color: #ffffff !important;
+  padding: 0.8rem 2rem;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  text-decoration: none;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 12px rgba(0, 59, 113, 0.25);
+}
+
+.btn-periodo-home:hover {
+  background: #002244;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 59, 113, 0.35);
+}

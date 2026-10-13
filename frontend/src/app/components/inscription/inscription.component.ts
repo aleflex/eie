@@ -92,18 +92,27 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
   // Reglas de longitud y formato de celular por país
   phoneCountryRules: { [prefix: string]: { min: number; max: number; country: string; placeholder: string } } = {
     '+591': { min: 8, max: 8, country: 'Bolivia', placeholder: 'Ej. 70000000 (8 dígitos)' },
-    '+54':  { min: 10, max: 10, country: 'Argentina', placeholder: 'Ej. 1123456789 (10 dígitos)' },
-    '+55':  { min: 10, max: 11, country: 'Brasil', placeholder: 'Ej. 11987654321 (10 u 11 dígitos)' },
-    '+56':  { min: 9, max: 9, country: 'Chile', placeholder: 'Ej. 912345678 (9 dígitos)' },
-    '+51':  { min: 9, max: 9, country: 'Perú', placeholder: 'Ej. 912345678 (9 dígitos)' },
-    '+57':  { min: 10, max: 10, country: 'Colombia', placeholder: 'Ej. 3001234567 (10 dígitos)' },
-    '+34':  { min: 9, max: 9, country: 'España', placeholder: 'Ej. 612345678 (9 dígitos)' },
-    '+1':   { min: 10, max: 10, country: 'EE.UU. / Canadá', placeholder: 'Ej. 2025550123 (10 dígitos)' }
+    '+54': { min: 10, max: 10, country: 'Argentina', placeholder: 'Ej. 1123456789 (10 dígitos)' },
+    '+55': { min: 10, max: 11, country: 'Brasil', placeholder: 'Ej. 11987654321 (10 u 11 dígitos)' },
+    '+56': { min: 9, max: 9, country: 'Chile', placeholder: 'Ej. 912345678 (9 dígitos)' },
+    '+51': { min: 9, max: 9, country: 'Perú', placeholder: 'Ej. 912345678 (9 dígitos)' },
+    '+57': { min: 10, max: 10, country: 'Colombia', placeholder: 'Ej. 3001234567 (10 dígitos)' },
+    '+34': { min: 9, max: 9, country: 'España', placeholder: 'Ej. 612345678 (9 dígitos)' },
+    '+1': { min: 10, max: 10, country: 'EE.UU. / Canadá', placeholder: 'Ej. 2025550123 (10 dígitos)' }
   };
 
   currentPhoneRule = this.phoneCountryRules['+591'];
   currentEmergencyPhoneRule = this.phoneCountryRules['+591'];
   isPhotoFondoRojoValid: boolean = true;
+
+  // Control del Periodo de Inscripciones
+  periodoInscripcion: any = {
+    abierto: true,
+    motivo: '',
+    fecha_inicio: null,
+    fecha_fin: null
+  };
+  periodoChecked: boolean = false;
 
   constructor(
     private fb: FormBuilder,
@@ -112,7 +121,7 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
     private router: Router,
     private ngZone: NgZone,
     private cdr: ChangeDetectorRef
-  ) {}
+  ) { }
 
   /**
    * Se ejecuta al inicializar el componente.
@@ -121,14 +130,47 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
   ngOnInit(): void {
     this.initForm();
     this.setupFormSubscriptions();
+    this.checkPeriodoInscripcion();
 
     // Pre-calentar servidor backend Render en segundo plano mientras el estudiante llena los datos
     try {
-      this.inscriptionService.ping().subscribe({ error: () => {} });
-    } catch (e) {}
+      this.inscriptionService.ping().subscribe({ error: () => { } });
+    } catch (e) { }
 
     this.customApiUrl = localStorage.getItem('custom_api_url') || '';
     this.currentApiUrl = environment.apiUrl;
+  }
+
+  checkPeriodoInscripcion() {
+    this.inscriptionService.obtenerPeriodoInscripcion().subscribe({
+      next: (res) => {
+        if (res) {
+          this.periodoInscripcion = res;
+          this.periodoChecked = true;
+          this.cdr.detectChanges();
+        }
+      },
+      error: () => {
+        this.periodoChecked = true;
+      }
+    });
+  }
+
+  formatPeriodDate(dateStr: string | null | undefined): string {
+    if (!dateStr) return '';
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      const pad = (n: number) => n < 10 ? '0' + n : n;
+      const dia = pad(d.getDate());
+      const mes = pad(d.getMonth() + 1);
+      const anio = d.getFullYear();
+      const horas = pad(d.getHours());
+      const mins = pad(d.getMinutes());
+      return `${dia}/${mes}/${anio} ${horas}:${mins}`;
+    } catch {
+      return dateStr;
+    }
   }
 
   ngAfterViewInit() {
@@ -519,7 +561,7 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
           carnetMilitar: '',
           carnetCossmil: ''
         }, { emitEvent: false });
-        
+
         // Re-add validators for non-military
         nombrePadresCtrl?.setValidators([Validators.required, Validators.minLength(6), Validators.pattern(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'\-]+$/)]);
         ciTutorCtrl?.setValidators([Validators.required, Validators.pattern(/^[0-9]{7,8}$/)]);
@@ -986,6 +1028,13 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
    * Avanza al siguiente paso del formulario de inscripción si el paso actual es completamente válido.
    */
   nextStep() {
+    if (this.periodoInscripcion && this.periodoInscripcion.abierto === false) {
+      this.modalType = 'error';
+      this.modalMessage = this.periodoInscripcion.motivo || 'El periodo de inscripciones ha finalizado o se encuentra cerrado.';
+      this.showModal = true;
+      return;
+    }
+
     if (this.validateStep(this.currentStep)) {
       if (this.currentStep < this.totalSteps) {
         this.currentStep++;
@@ -1022,6 +1071,13 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
    * @param step El paso al que se desea ir.
    */
   goToStep(step: number) {
+    if (this.periodoInscripcion && this.periodoInscripcion.abierto === false) {
+      this.modalType = 'error';
+      this.modalMessage = this.periodoInscripcion.motivo || 'El periodo de inscripciones ha finalizado o se encuentra cerrado.';
+      this.showModal = true;
+      return;
+    }
+
     if (step < this.currentStep) {
       this.currentStep = step;
       this.isSubmitted = false;
@@ -1263,7 +1319,7 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
         if (fieldName === 'foto') {
           this.isPhotoFondoRojoValid = true;
         }
-        console.log(`[RF16] ${fieldName}: comprimido ${(file.size/1024).toFixed(1)}KB → ${(compressed.size/1024).toFixed(1)}KB`);
+        console.log(`[RF16] ${fieldName}: comprimido ${(file.size / 1024).toFixed(1)}KB → ${(compressed.size / 1024).toFixed(1)}KB`);
       }).catch(err => {
         console.error('Error al comprimir imagen:', err);
         archivos.patchValue({ [fieldName]: file });
@@ -1453,6 +1509,13 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
    * Si es exitoso, muestra mensaje de éxito y permite volver a Home.
    */
   onSubmit() {
+    if (this.periodoInscripcion && this.periodoInscripcion.abierto === false) {
+      this.modalType = 'error';
+      this.modalMessage = this.periodoInscripcion.motivo || 'El periodo de inscripciones ha finalizado o se encuentra cerrado.';
+      this.showModal = true;
+      return;
+    }
+
     this.isSubmitted = true;
     console.log('Submitting final form...', this.inscriptionForm.value);
 

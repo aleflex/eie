@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Inscripcion;
 use App\Models\Estudiante;
 use App\Models\User;
+use App\Models\Configuracion;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -15,6 +16,33 @@ class InscriptionController extends Controller
 {
     public function store(Request $request)
     {
+        // 0. Validar vigencia del periodo de inscripciones
+        $fechaInicio = Configuracion::where('clave', 'fecha_inicio_inscripcion')->value('valor');
+        $fechaFin = Configuracion::where('clave', 'fecha_fin_inscripcion')->value('valor');
+        $ahora = now();
+
+        if (!empty($fechaInicio)) {
+            try {
+                $inicio = \Carbon\Carbon::parse($fechaInicio);
+                if ($ahora->lessThan($inicio)) {
+                    return response()->json([
+                        'message' => 'El periodo de inscripciones aún no ha comenzado. Apertura programada: ' . $inicio->format('d/m/Y H:i') . '.'
+                    ], 403);
+                }
+            } catch (\Throwable $e) {}
+        }
+
+        if (!empty($fechaFin)) {
+            try {
+                $fin = \Carbon\Carbon::parse($fechaFin);
+                if ($ahora->greaterThan($fin)) {
+                    return response()->json([
+                        'message' => 'El periodo de inscripciones ha finalizado. La fecha y hora límite de cierre fue: ' . $fin->format('d/m/Y H:i') . '.'
+                    ], 403);
+                }
+            } catch (\Throwable $e) {}
+        }
+
         $validationRules = [
             'nombres' => ['required', 'string', 'min:2', 'max:255', 'regex:/^[\pL\s\.\'\-]+$/u'],
             'apellidos' => ['required', 'string', 'max:255', 'regex:/^[\pL\s\.\'\-]+$/u'],
@@ -31,7 +59,7 @@ class InscriptionController extends Controller
             'nombrePadres' => 'nullable|string|max:255',
             'ciTutor' => 'nullable|string|max:30',
             'hermanosInscritos' => 'nullable|string|max:255',
-            'contactoEmergencia' => ['required', 'string', 'regex:/^[0-9]{8}$/'],
+            'contactoEmergencia' => ['required', 'string', 'min:7', 'max:20'],
             'idioma' => 'required|string',
             'nivel' => 'required|string',
             'horario' => 'required|string',
