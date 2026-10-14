@@ -1,7 +1,7 @@
 import { Component, OnInit, AfterViewInit, NgZone, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterModule, RouterLink } from '@angular/router';
 import { NavbarComponent } from '../navbar/navbar.component';
 import { FooterComponent } from '../footer/footer.component';
 import { InscriptionService } from '../../services/inscription.service';
@@ -15,13 +15,21 @@ declare var L: any;
 @Component({
   selector: 'app-inscription',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, NavbarComponent, FooterComponent],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterModule, RouterLink, NavbarComponent, FooterComponent],
   templateUrl: './inscription.component.html',
   styleUrl: './inscription.component.css'
 })
 export class InscriptionComponent implements OnInit, AfterViewInit {
   inscriptionForm!: FormGroup;
   isSubmitted = false;
+
+  goHome(event?: Event): void {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    this.router.navigate(['/']);
+  }
 
   // Stepper state
   currentStep = 1;

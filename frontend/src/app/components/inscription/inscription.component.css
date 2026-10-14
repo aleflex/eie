@@ -1202,6 +1202,8 @@
   font-weight: 700;
   font-size: 0.95rem;
   text-decoration: none;
+  cursor: pointer;
+  border: none;
   transition: all 0.25s ease;
   box-shadow: 0 4px 12px rgba(0, 59, 113, 0.25);
 }
