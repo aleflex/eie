@@ -10,6 +10,9 @@ a2enmod mpm_prefork || true
 php /var/www/html/artisan config:clear || true
 php /var/www/html/artisan route:clear || true
 
+# Ejecutar migraciones automáticas en la base de datos
+php /var/www/html/artisan migrate --force || true
+
 # Asegurar directorios de almacenamiento y link de storage
 mkdir -p /var/www/html/storage/logs \
          /var/www/html/storage/framework/views \

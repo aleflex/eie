@@ -25,6 +25,23 @@ Route::get('/ping', function () {
     return response()->json(['status' => 'ok', 'time' => now()]);
 });
 
+// Endpoint seguro para ejecutar migraciones en la base de datos de producción
+Route::get('/system/migrate', function () {
+    try {
+        \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+        $output = \Illuminate\Support\Facades\Artisan::output();
+        return response()->json([
+            'status' => 'success',
+            'output' => $output
+        ]);
+    } catch (\Throwable $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => $e->getMessage()
+        ], 500);
+    }
+});
+
 // Autenticación pública
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout']);
