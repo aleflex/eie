@@ -47,7 +47,7 @@ class User extends Authenticatable
         'remember_token',
     ];
 
-    protected $appends = ['id', 'name', 'email', 'correo_electronico', 'foto_url', 'estado_civil', 'grupo_sanguineo', 'celular', 'telefono', 'direccion'];
+    protected $appends = ['id', 'name', 'email', 'correo_electronico', 'foto_url', 'estado_civil', 'grupo_sanguineo'];
 
     /**
      * Obtener los atributos que deben ser convertidos.
@@ -132,6 +132,36 @@ class User extends Authenticatable
         } else {
             $this->attributes['grupo_sanguineo'] = 'O+';
         }
+    }
+
+    public function getCelularAttribute()
+    {
+        return $this->attributes['celular'] ?? null;
+    }
+
+    public function setCelularAttribute($value)
+    {
+        $this->attributes['celular'] = $value;
+    }
+
+    public function getTelefonoAttribute()
+    {
+        return $this->attributes['telefono'] ?? null;
+    }
+
+    public function setTelefonoAttribute($value)
+    {
+        $this->attributes['telefono'] = $value;
+    }
+
+    public function getDireccionAttribute()
+    {
+        return $this->attributes['direccion'] ?? null;
+    }
+
+    public function setDireccionAttribute($value)
+    {
+        $this->attributes['direccion'] = $value;
     }
 
     /**
