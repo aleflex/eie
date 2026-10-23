@@ -114,28 +114,38 @@ class DocumentController extends Controller
             return response()->json(['message' => 'Documento no encontrado'], 404);
         }
 
-        // Verificar si el usuario que solicita es un estudiante y si su plazo ha vencido
-        $user = auth()->user();
-        if ($user && in_array($user->id_rol, [2])) { // Rol 2 = Estudiante
-            $estudianteObj = Estudiante::where('id_usuario', $user->id_usuario)->first();
-            if ($estudianteObj) {
-                $hasta = $estudianteObj->documentos_habilitados_hasta;
-                if (!$hasta || now()->greaterThan(\Carbon\Carbon::parse($hasta))) {
-                    return response()->json([
-                        'message' => 'El plazo para modificar o eliminar documentos ha vencido. Contacta a la administración.'
-                    ], 403);
-                }
+        // Verificar vigencia del plazo de documentos para el estudiante
+        $user = auth()->user() ?? request()->user();
+        $esAdmin = $user && ($user->id_rol == 1 || $user->tipo_usuario === 'admin');
+
+        // Si no es administrador, aplicar regla estricta de fecha límite
+        if (!$esAdmin) {
+            $estudianteObj = null;
+            if ($user) {
+                $estudianteObj = Estudiante::where('id_usuario', $user->id_usuario)->first();
             }
-        } else if (!$user) {
-            // Validar sobre el estudiante dueño del documento
-            $estudianteObj = Estudiante::find($documento->id_estudiante);
+            if (!$estudianteObj) {
+                $estudianteObj = Estudiante::find($documento->id_estudiante);
+            }
+
             if ($estudianteObj) {
                 $hasta = $estudianteObj->documentos_habilitados_hasta;
-                if ($hasta && now()->greaterThan(\Carbon\Carbon::parse($hasta))) {
+                if (empty($hasta)) {
                     return response()->json([
-                        'message' => 'El plazo para modificar o eliminar documentos ha vencido. Contacta a la administración.'
+                        'message' => 'No cuentas con un plazo activo para modificar o eliminar documentos. Contacta con la administración de la Escuela de Idiomas.'
                     ], 403);
                 }
+
+                $fechaLimite = \Carbon\Carbon::parse($hasta);
+                if (now()->greaterThan($fechaLimite)) {
+                    return response()->json([
+                        'message' => 'El plazo para modificar o eliminar documentos ha vencido el ' . $fechaLimite->format('d/m/Y H:i') . '. No se permite la eliminación fuera de esta fecha límite.'
+                    ], 403);
+                }
+            } else {
+                return response()->json([
+                    'message' => 'No tienes autorización para eliminar este documento.'
+                ], 403);
             }
         }
 

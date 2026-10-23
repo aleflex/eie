@@ -40,6 +40,21 @@ class SettingController extends Controller
     {
         $data = $request->all();
 
+        // Validar coherencia entre fecha de apertura y cierre de inscripciones si ambas vienen
+        $fInicio = $request->input('fecha_inicio_inscripcion');
+        $fFin = $request->input('fecha_fin_inscripcion');
+        if (!empty($fInicio) && !empty($fFin)) {
+            try {
+                $dtInicio = \Carbon\Carbon::parse($fInicio);
+                $dtFin = \Carbon\Carbon::parse($fFin);
+                if ($dtFin->lessThanOrEqualTo($dtInicio)) {
+                    return response()->json([
+                        'message' => 'La fecha y hora de cierre debe ser posterior a la fecha y hora de inicio de inscripciones.'
+                    ], 422);
+                }
+            } catch (\Throwable $e) {}
+        }
+
         foreach ($data as $clave => $value) {
             // Buscar la configuración existente para mantener el tipo y grupo original
             $existing = Configuracion::where('clave', $clave)->first();

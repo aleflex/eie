@@ -114,12 +114,17 @@ class Docente extends Authenticatable
 
     public function getTelefonoAttribute()
     {
-        return $this->attributes['telefono'] ?? null;
+        return $this->attributes['telefono'] ?? ($this->user ? ($this->user->telefono ?: $this->user->celular) : null);
     }
 
     public function setTelefonoAttribute($value)
     {
         $this->attributes['telefono'] = $value;
+        if ($this->user) {
+            $this->user->telefono = $value;
+            $this->user->celular = $value;
+            $this->user->saveQuietly();
+        }
     }
 
     public function getCorreoElectronicoAttribute()

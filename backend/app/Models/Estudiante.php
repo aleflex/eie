@@ -109,12 +109,30 @@ class Estudiante extends Model
 
     public function getCelularAttribute()
     {
-        return $this->attributes['celular'] ?? null;
+        return $this->attributes['celular'] ?? ($this->user ? $this->user->celular : null);
     }
 
     public function setCelularAttribute($value)
     {
         $this->attributes['celular'] = $value;
+        if ($this->user) {
+            $this->user->celular = $value;
+            $this->user->saveQuietly();
+        }
+    }
+
+    public function getDomicilioAttribute()
+    {
+        return $this->attributes['domicilio'] ?? ($this->user ? $this->user->direccion : null);
+    }
+
+    public function setDomicilioAttribute($value)
+    {
+        $this->attributes['domicilio'] = $value;
+        if ($this->user) {
+            $this->user->direccion = $value;
+            $this->user->saveQuietly();
+        }
     }
 
     public function getCorreoElectronicoAttribute()
@@ -434,6 +452,15 @@ class Estudiante extends Model
 
     public function setDocumentosHabilitadosHastaAttribute($value)
     {
-        $this->attributes['documentos_habilitados_hasta'] = empty($value) ? null : $value;
+        if (empty($value)) {
+            $this->attributes['documentos_habilitados_hasta'] = null;
+        } else {
+            try {
+                $this->attributes['documentos_habilitados_hasta'] = \Carbon\Carbon::parse($value)->format('Y-m-d H:i:s');
+            } catch (\Throwable $e) {
+                $clean = str_replace('T', ' ', trim((string)$value));
+                $this->attributes['documentos_habilitados_hasta'] = strlen($clean) === 16 ? ($clean . ':00') : $clean;
+            }
+        }
     }
 }

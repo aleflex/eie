@@ -453,16 +453,8 @@
                   </span>
                   <span *ngIf="!isStudentDeBaja(student)">
                     <span *ngIf="student.inscripciones && student.inscripciones.length > 0">
-                      <span class="badge rounded-pill" [ngClass]="{
-                              'bg-success': student.inscripciones[0]?.estado === 'activo',
-                              'bg-warning text-dark': student.inscripciones[0]?.estado === 'pendiente',
-                              'bg-danger': student.inscripciones[0]?.estado === 'retirado' || student.inscripciones[0]?.estado === 'baja',
-                              'bg-primary': student.inscripciones[0]?.estado === 'finalizado'
-                            }">
-                        {{ student.inscripciones[0]?.estado === 'activo' ? 'Habilitado' :
-                        student.inscripciones[0]?.estado === 'pendiente' ? 'Pendiente' :
-                        student.inscripciones[0]?.estado === 'baja' ? 'De Baja' :
-                        student.inscripciones[0]?.estado }}
+                      <span class="badge rounded-pill" [ngClass]="getEstadoClass(student.inscripciones[0]?.estado)">
+                        {{ getEstadoText(student.inscripciones[0]?.estado) }}
                       </span>
                     </span>
                     <span *ngIf="!student.inscripciones || student.inscripciones.length === 0">-</span>
@@ -636,16 +628,8 @@
                 <i class="material-icons-outlined" style="font-size: 13px;">person_off</i> De Baja
               </span>
               <span *ngIf="!isStudentDeBaja(student)">
-                <span *ngIf="student.inscripciones && student.inscripciones.length > 0" class="badge rounded-pill mt-1" [ngClass]="{
-                    'bg-success': student.inscripciones[0]?.estado === 'activo',
-                    'bg-warning text-dark': student.inscripciones[0]?.estado === 'pendiente',
-                    'bg-danger': student.inscripciones[0]?.estado === 'retirado' || student.inscripciones[0]?.estado === 'baja',
-                    'bg-primary': student.inscripciones[0]?.estado === 'finalizado'
-                  }">
-                  {{ student.inscripciones[0]?.estado === 'activo' ? 'Habilitado' :
-                     student.inscripciones[0]?.estado === 'pendiente' ? 'Pendiente' :
-                     student.inscripciones[0]?.estado === 'baja' ? 'De Baja' :
-                     student.inscripciones[0]?.estado }}
+                <span *ngIf="student.inscripciones && student.inscripciones.length > 0" class="badge rounded-pill mt-1" [ngClass]="getEstadoClass(student.inscripciones[0]?.estado)">
+                  {{ getEstadoText(student.inscripciones[0]?.estado) }}
                 </span>
               </span>
             </div>
@@ -797,16 +781,8 @@
                     <small class="text-muted d-block mt-1">Inscrito el: {{ item.fecha_registro | date:'mediumDate' }}</small>
                   </div>
                   <div class="course-header-status">
-                    <span class="badge rounded-pill" [ngClass]="{
-                            'bg-success': item.estado === 'activo',
-                            'bg-warning text-dark': item.estado === 'pendiente',
-                            'bg-danger': item.estado === 'retirado' || item.estado === 'baja',
-                            'bg-primary': item.estado === 'finalizado'
-                          }">
-                      {{ item.estado === 'activo' ? 'Habilitado' :
-                         item.estado === 'pendiente' ? 'Pendiente' :
-                         item.estado === 'baja' ? 'De Baja' :
-                         item.estado }}
+                    <span class="badge rounded-pill" [ngClass]="getEstadoClass(item.estado)">
+                      {{ getEstadoText(item.estado) }}
                     </span>
                   </div>
                 </div>
@@ -943,18 +919,19 @@
 
           <!-- Formulario de Subida Responsivo -->
           <div class="upload-section mb-4 p-3 bg-light rounded-3 border">
-            <h6 class="fw-bold mb-3 d-flex align-items-center gap-2 text-primary">
-              <i class="material-icons-outlined">cloud_upload</i> Subir Nuevo Documento (.pdf, .jpg, .png)
+            <h6 class="fw-bold mb-3 d-flex align-items-center justify-content-between flex-wrap gap-2 text-primary">
+              <span class="d-flex align-items-center gap-2">
+                <i class="material-icons-outlined">cloud_upload</i> Subir Nuevo Documento (.pdf, .jpg, .png)
+              </span>
+              <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 fw-semibold" style="font-size: 0.78rem;">
+                Requisitos: {{ getCategoriaEstudianteNombre(currentStudentForDocs) }}
+              </span>
             </h6>
             <div class="docs-upload-grid">
               <div class="upload-field-type">
-                <label class="form-label-small">Tipo de Documento</label>
+                <label class="form-label-small">Tipo de Documento (Requisitos {{ getCategoriaEstudianteNombre(currentStudentForDocs) }})</label>
                 <select [(ngModel)]="docType" class="form-select" aria-label="Tipo de documento">
-                  <option value="Carnet de Identidad">Carnet de Identidad</option>
-                  <option value="Título de Bachiller">Título de Bachiller</option>
-                  <option value="Certificado de Nacimiento">Certificado de Nacimiento</option>
-                  <option value="Boleta de Depósito">Boleta de Depósito</option>
-                  <option value="Otro">Otro</option>
+                  <option *ngFor="let t of getTiposDocumentosPermitidos(currentStudentForDocs)" [value]="t">{{ t }}</option>
                 </select>
               </div>
               <div class="upload-field-file">
@@ -1064,25 +1041,46 @@
   </div>
 
   <!-- VISOR DE DOCUMENTACIÓN RESPONSIVO EN MÓVILES (RF 15) -->
-  <div class="modal-backdrop" *ngIf="showPreviewModal" (click)="closePreviewModal()"></div>
   <div class="document-preview-modal-wrapper animate-fade-in" *ngIf="showPreviewModal">
     <div class="preview-modal-dialog">
       <div class="preview-modal-content">
-        <div class="preview-modal-header bg-dark text-white">
-          <h5 class="modal-title m-0">
-            <i class="material-icons-outlined align-middle me-2">visibility</i>
-            {{ activePreviewDoc?.tipo_documento }}
+        <div class="preview-modal-header">
+          <h5 class="modal-title">
+            <span class="material-icons-outlined text-primary">visibility</span>
+            <span class="text-truncate">{{ activePreviewDoc?.tipo_documento || 'Documento' }}</span>
           </h5>
-          <button type="button" class="btn-close btn-close-white" (click)="closePreviewModal()" aria-label="Cerrar"
-            title="Cerrar">&times;</button>
+          <div class="preview-header-actions">
+            <a *ngIf="rawPreviewUrl" [href]="rawPreviewUrl" target="_blank" download class="btn-preview-action" title="Abrir en pestaña nueva">
+              <span class="material-icons-outlined" style="font-size: 16px;">open_in_new</span>
+              <span class="d-none d-sm-inline">Abrir</span>
+            </a>
+            <button type="button" class="btn-preview-close" (click)="closePreviewModal()" aria-label="Cerrar" title="Cerrar">
+              <span class="material-icons-outlined" style="font-size: 20px;">close</span>
+            </button>
+          </div>
         </div>
-        <div class="preview-modal-body p-0">
-          <!-- Visor de PDF (HU15 - T2: Contenedor fluido de 100vw) -->
-          <iframe *ngIf="isPreviewPdf" [src]="activePreviewUrl" class="pdf-viewer-frame" title="Visor de PDF"></iframe>
+        <div class="preview-modal-body">
+          <!-- Visor de PDF (HU15 - T2) -->
+          <div *ngIf="isPreviewPdf" class="pdf-viewer-container">
+            <iframe [src]="activePreviewUrl" class="pdf-viewer-frame" title="Visor de PDF"></iframe>
+            <div class="d-md-none p-2 text-center bg-dark text-white-50 small border-top border-secondary">
+              ¿No se ve en tu móvil? 
+              <a *ngIf="rawPreviewUrl" [href]="rawPreviewUrl" target="_blank" class="text-warning fw-semibold ms-1">Abrir en lector PDF</a>
+            </div>
+          </div>
 
           <!-- Visor de Imágenes -->
           <div *ngIf="isPreviewImage" class="image-viewer-container">
-            <img [src]="activePreviewUrl" alt="Vista previa" class="image-viewer-img">
+            <img *ngIf="!previewError" [src]="activePreviewUrl" (error)="onPreviewImgError()" alt="Vista previa" class="image-viewer-img">
+            <div *ngIf="previewError" class="preview-fallback-box animate-fade-in text-center p-4">
+              <span class="material-icons-outlined text-warning mb-2" style="font-size: 50px;">cloud_off</span>
+              <h6 class="text-white fw-bold mb-1">Archivo temporalmente inaccesible</h6>
+              <p class="text-white-50 small mb-3">El servidor de almacenamiento remoto se encuentra temporalmente fuera de línea.</p>
+              <a *ngIf="rawPreviewUrl" [href]="rawPreviewUrl" target="_blank" class="btn-preview-action">
+                <span class="material-icons-outlined" style="font-size: 16px;">open_in_new</span>
+                Probar enlace directo
+              </a>
+            </div>
           </div>
         </div>
       </div>

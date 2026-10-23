@@ -160,16 +160,8 @@
               </td>
               <td>{{ inscripcion.fecha_registro | date:'mediumDate' }}</td>
               <td>
-                <span class="badge rounded-pill"
-                      [ngClass]="{
-                        'bg-success': inscripcion.estado === 'activo',
-                        'bg-warning text-dark': inscripcion.estado === 'pendiente',
-                        'bg-danger': inscripcion.estado === 'retirado',
-                        'bg-primary': inscripcion.estado === 'finalizado'
-                      }">
-                  {{ inscripcion.estado === 'activo' ? 'Habilitado' :
-                     inscripcion.estado === 'pendiente' ? 'Pendiente' :
-                     inscripcion.estado }}
+                <span class="badge rounded-pill" [ngClass]="getEstadoClass(inscripcion.estado)">
+                  {{ getEstadoLabel(inscripcion.estado) }}
                 </span>
               </td>
             </tr>
@@ -185,16 +177,8 @@
         <div class="mobile-card" *ngFor="let inscripcion of inscripciones">
           <div class="mobile-card-row header-row">
             <span class="mobile-card-name">{{ inscripcion.estudiante?.nombres }} {{ inscripcion.estudiante?.apellidos }}</span>
-            <span class="badge rounded-pill"
-                  [ngClass]="{
-                    'bg-success': inscripcion.estado === 'activo',
-                    'bg-warning text-dark': inscripcion.estado === 'pendiente',
-                    'bg-danger': inscripcion.estado === 'retirado',
-                    'bg-primary': inscripcion.estado === 'finalizado'
-                  }">
-              {{ inscripcion.estado === 'activo' ? 'Habilitado' :
-                 inscripcion.estado === 'pendiente' ? 'Pendiente' :
-                 inscripcion.estado }}
+            <span class="badge rounded-pill" [ngClass]="getEstadoClass(inscripcion.estado)">
+              {{ getEstadoLabel(inscripcion.estado) }}
             </span>
           </div>
           <div class="mobile-card-details">

@@ -27,36 +27,47 @@ class DocenteController extends Controller
      */
     public function store(Request $request)
     {
-        // Normalizar cadenas vacías a null para evitar falsos negativos en validaciones nullable
+        // Normalizar entradas eliminando espacios innecesarios
         $inputs = $request->all();
-        foreach (['correo_electronico', 'telefono', 'tipo_contrato', 'fecha_contrato', 'fecha_inicio_contrato', 'fecha_fin_contrato', 'especialidad', 'lugar_nacimiento', 'fecha_nacimiento'] as $field) {
-            if (isset($inputs[$field]) && trim((string)$inputs[$field]) === '') {
-                $inputs[$field] = null;
+        foreach (['nombres', 'apellidos', 'ci', 'expedido', 'correo_electronico', 'telefono', 'tipo_contrato', 'fecha_contrato', 'fecha_inicio_contrato', 'fecha_fin_contrato', 'especialidad', 'lugar_nacimiento', 'fecha_nacimiento'] as $field) {
+            if (isset($inputs[$field])) {
+                $trimmed = trim((string)$inputs[$field]);
+                $inputs[$field] = $trimmed === '' ? null : $trimmed;
             }
+        }
+        if (!empty($inputs['correo_electronico'])) {
+            $inputs['correo_electronico'] = strtolower($inputs['correo_electronico']);
         }
         $request->merge($inputs);
 
         $request->validate([
-            'nombres' => 'required|string|max:255',
-            'apellidos' => 'nullable|string|max:255',
-            'correo_electronico' => 'nullable|email|max:255|unique:usuarios,correo_institucional',
-            'ci' => 'required|string|max:30|unique:usuarios,ci',
-            'especialidad' => 'nullable|string|max:255',
-            'fecha_nacimiento' => 'nullable|date',
-            'lugar_nacimiento' => 'nullable|string|max:255',
-            'telefono' => 'nullable|string|max:50',
-            'tipo_contrato' => 'nullable|string|in:Contrato,Ítem,Titular,Contratado',
-            'expedido' => 'nullable|string|max:10',
-            'fecha_contrato' => 'nullable|date',
-            'fecha_inicio_contrato' => 'nullable|date',
-            'fecha_fin_contrato' => 'nullable|date',
+            'nombres' => ['required', 'string', 'max:255', 'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\.\-]+$/'],
+            'apellidos' => ['nullable', 'string', 'max:255', 'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\.\-]+$/'],
+            'correo_electronico' => ['nullable', 'email:rfc,filter', 'max:255', 'unique:usuarios,correo_institucional'],
+            'ci' => ['required', 'string', 'regex:/^[0-9]{7,8}$/', 'unique:usuarios,ci'],
+            'expedido' => ['required', 'string', 'in:LP,CB,SC,OR,PT,TJ,CH,BE,PD'],
+            'especialidad' => ['required', 'string', 'max:255'],
+            'fecha_nacimiento' => ['nullable', 'date', 'before:today'],
+            'lugar_nacimiento' => ['nullable', 'string', 'max:255'],
+            'telefono' => ['nullable', 'string', 'max:50'],
+            'tipo_contrato' => ['nullable', 'string', 'in:Contrato,Ítem,Titular,Contratado'],
+            'fecha_contrato' => ['nullable', 'date'],
+            'fecha_inicio_contrato' => ['nullable', 'date'],
+            'fecha_fin_contrato' => ['nullable', 'date'],
         ], [
             'nombres.required' => 'El nombre del instructor es obligatorio.',
+            'nombres.regex' => 'El campo Nombres solo debe contener letras y espacios.',
+            'apellidos.regex' => 'El campo Apellidos solo debe contener letras y espacios.',
             'ci.required' => 'El número de C.I. es obligatorio.',
-            'ci.unique' => 'El C.I. ya se encuentra registrado en el sistema.',
-            'correo_electronico.email' => 'El formato del correo electrónico es inválido.',
-            'correo_electronico.unique' => 'El correo electrónico ya está registrado por otro usuario.',
+            'ci.regex' => 'El C.I. debe contener estrictamente 7 u 8 dígitos numéricos.',
+            'ci.unique' => 'El C.I. ingresado ya se encuentra registrado por otro usuario.',
+            'expedido.required' => 'El departamento de expedición del C.I. es obligatorio.',
+            'expedido.in' => 'Seleccione un departamento válido de expedición (LP, CB, SC, etc.).',
+            'especialidad.required' => 'La especialidad o idioma que imparte es obligatoria.',
+            'correo_electronico.email' => 'El formato del correo electrónico es inválido (ejemplo: personal@ejemplo.com).',
+            'correo_electronico.unique' => 'El correo electrónico ingresado ya se encuentra registrado en el sistema.',
             'tipo_contrato.in' => 'El tipo de contrato debe ser Ítem o Contrato.',
+            'fecha_nacimiento.before' => 'La fecha de nacimiento debe ser anterior a la fecha actual.',
         ]);
 
         try {
@@ -64,7 +75,20 @@ class DocenteController extends Controller
 
             // 1. Crear el usuario para el docente (Rol 3 = DOCENTE)
             $username = User::generateUsername($request->nombres, $request->apellidos ?? '');
-            $email = $request->correo_electronico ?: ($username . '@eie.edu.bo');
+            
+            // Garantizar correo único institucional si no fue especificado manualmente
+            if ($request->filled('correo_electronico')) {
+                $email = strtolower(trim($request->correo_electronico));
+            } else {
+                $baseEmail = $username . '@eie.edu.bo';
+                $email = $baseEmail;
+                $counter = 1;
+                while (User::where('correo_institucional', $email)->exists()) {
+                    $email = $username . $counter . '@eie.edu.bo';
+                    $counter++;
+                }
+            }
+
             $cleanCi = trim($request->ci);
 
             $user = User::create([
@@ -75,8 +99,10 @@ class DocenteController extends Controller
                 'debe_cambiar_password' => true,
                 'nombres' => $request->nombres,
                 'apellidos' => $request->apellidos,
-                'ci' => $request->ci,
+                'ci' => $cleanCi,
                 'expedido' => $request->expedido,
+                'celular' => $request->telefono,
+                'telefono' => $request->telefono,
                 'estado' => 'ACTIVO',
             ]);
 
@@ -154,35 +180,45 @@ class DocenteController extends Controller
         $docente = Docente::findOrFail($id);
         $userId = $docente->id_usuario;
 
-        // Normalizar cadenas vacías a null para evitar falsos negativos en validaciones nullable
+        // Normalizar entradas
         $inputs = $request->all();
-        foreach (['correo_electronico', 'telefono', 'tipo_contrato', 'fecha_contrato', 'fecha_inicio_contrato', 'fecha_fin_contrato', 'especialidad', 'lugar_nacimiento', 'fecha_nacimiento'] as $field) {
-            if (isset($inputs[$field]) && trim((string)$inputs[$field]) === '') {
-                $inputs[$field] = null;
+        foreach (['nombres', 'apellidos', 'ci', 'expedido', 'correo_electronico', 'telefono', 'tipo_contrato', 'fecha_contrato', 'fecha_inicio_contrato', 'fecha_fin_contrato', 'especialidad', 'lugar_nacimiento', 'fecha_nacimiento'] as $field) {
+            if (isset($inputs[$field])) {
+                $trimmed = trim((string)$inputs[$field]);
+                $inputs[$field] = $trimmed === '' ? null : $trimmed;
             }
+        }
+        if (!empty($inputs['correo_electronico'])) {
+            $inputs['correo_electronico'] = strtolower($inputs['correo_electronico']);
         }
         $request->merge($inputs);
 
         // Validación con regla de unicidad exceptuando al docente actual
         $request->validate([
-            'nombres' => 'required|string|max:255',
-            'apellidos' => 'nullable|string|max:255',
-            'correo_electronico' => 'nullable|email|max:255|unique:usuarios,correo_institucional,' . ($userId ?: 0) . ',id_usuario',
-            'ci' => 'nullable|string|max:30|unique:usuarios,ci,' . ($userId ?: 0) . ',id_usuario',
-            'especialidad' => 'nullable|string|max:255',
-            'fecha_nacimiento' => 'nullable|date',
-            'lugar_nacimiento' => 'nullable|string|max:255',
-            'telefono' => 'nullable|string|max:50',
-            'tipo_contrato' => 'nullable|string|in:Contrato,Ítem,Titular,Contratado',
-            'fecha_contrato' => 'nullable|date',
-            'fecha_inicio_contrato' => 'nullable|date',
-            'fecha_fin_contrato' => 'nullable|date',
+            'nombres' => ['required', 'string', 'max:255', 'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\.\-]+$/'],
+            'apellidos' => ['nullable', 'string', 'max:255', 'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\.\-]+$/'],
+            'correo_electronico' => ['nullable', 'email:rfc,filter', 'max:255', 'unique:usuarios,correo_institucional,' . ($userId ?: 0) . ',id_usuario'],
+            'ci' => ['nullable', 'string', 'regex:/^[0-9]{7,8}$/', 'unique:usuarios,ci,' . ($userId ?: 0) . ',id_usuario'],
+            'expedido' => ['nullable', 'string', 'in:LP,CB,SC,OR,PT,TJ,CH,BE,PD'],
+            'especialidad' => ['nullable', 'string', 'max:255'],
+            'fecha_nacimiento' => ['nullable', 'date', 'before:today'],
+            'lugar_nacimiento' => ['nullable', 'string', 'max:255'],
+            'telefono' => ['nullable', 'string', 'max:50'],
+            'tipo_contrato' => ['nullable', 'string', 'in:Contrato,Ítem,Titular,Contratado'],
+            'fecha_contrato' => ['nullable', 'date'],
+            'fecha_inicio_contrato' => ['nullable', 'date'],
+            'fecha_fin_contrato' => ['nullable', 'date'],
         ], [
             'nombres.required' => 'El nombre del instructor es obligatorio.',
+            'nombres.regex' => 'El campo Nombres solo debe contener letras y espacios.',
+            'apellidos.regex' => 'El campo Apellidos solo debe contener letras y espacios.',
+            'ci.regex' => 'El C.I. debe contener estrictamente 7 u 8 dígitos numéricos.',
             'ci.unique' => 'El C.I. ya se encuentra registrado por otro usuario.',
-            'correo_electronico.email' => 'El formato del correo electrónico es inválido.',
+            'expedido.in' => 'Seleccione un departamento válido de expedición.',
+            'correo_electronico.email' => 'El formato del correo electrónico es inválido (ejemplo: personal@ejemplo.com).',
             'correo_electronico.unique' => 'El correo electrónico ya está registrado por otro usuario.',
             'tipo_contrato.in' => 'El tipo de contrato debe ser Ítem o Contrato.',
+            'fecha_nacimiento.before' => 'La fecha de nacimiento debe ser anterior a la fecha actual.',
         ]);
 
         try {
@@ -214,6 +250,8 @@ class DocenteController extends Controller
                         'apellidos' => $request->apellidos,
                         'ci' => $request->ci,
                         'expedido' => $request->expedido,
+                        'celular' => $request->telefono,
+                        'telefono' => $request->telefono,
                         'correo_institucional' => $request->correo_electronico ?: $user->correo_institucional,
                     ];
                     if (empty($user->usuario)) {

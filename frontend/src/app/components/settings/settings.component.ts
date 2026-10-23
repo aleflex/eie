@@ -186,6 +186,19 @@ export class SettingsComponent implements OnInit {
   }
 
   /**
+   * Normaliza una fecha ISO o string a formato YYYY-MM-DDTHH:mm para inputs HTML5
+   */
+  formatDateTimeLocal(val: any): string {
+    if (!val) return '';
+    const str = String(val).trim();
+    if (str.includes('T')) {
+      return str.substring(0, 16);
+    }
+    const clean = str.replace(' ', 'T');
+    return clean.substring(0, 16);
+  }
+
+  /**
    * Pide al servidor las configuraciones actuales del sistema (fechas, tamaños de archivos)
    * y las guarda en la variable local `settings` para mostrarlas en pantalla.
    */
@@ -195,6 +208,12 @@ export class SettingsComponent implements OnInit {
       next: (data: any) => {
         // Combinar datos recibidos con los valores por defecto locales
         this.settings = { ...this.settings, ...data };
+        if (this.settings.fecha_inicio_inscripcion) {
+          this.settings.fecha_inicio_inscripcion = this.formatDateTimeLocal(this.settings.fecha_inicio_inscripcion);
+        }
+        if (this.settings.fecha_fin_inscripcion) {
+          this.settings.fecha_fin_inscripcion = this.formatDateTimeLocal(this.settings.fecha_fin_inscripcion);
+        }
         this.isLoading = false;
       },
       error: (err: any) => {
@@ -214,10 +233,27 @@ export class SettingsComponent implements OnInit {
     this.successMessage = '';
     this.errorMessage = '';
 
+    // Validar rango lógico de fechas del periodo
+    if (this.settings.fecha_inicio_inscripcion && this.settings.fecha_fin_inscripcion) {
+      const inicio = new Date(this.settings.fecha_inicio_inscripcion);
+      const fin = new Date(this.settings.fecha_fin_inscripcion);
+      if (fin <= inicio) {
+        alert('La fecha y hora de cierre debe ser posterior a la fecha y hora de apertura del periodo.');
+        this.isSaving = false;
+        return;
+      }
+    }
+
     this.settingsService.saveSettings(this.settings).subscribe({
       next: (response: any) => {
         this.settings = { ...this.settings, ...response.settings };
-        this.successMessage = '¡Configuraciones guardadas y aplicadas con éxito!';
+        if (this.settings.fecha_inicio_inscripcion) {
+          this.settings.fecha_inicio_inscripcion = this.formatDateTimeLocal(this.settings.fecha_inicio_inscripcion);
+        }
+        if (this.settings.fecha_fin_inscripcion) {
+          this.settings.fecha_fin_inscripcion = this.formatDateTimeLocal(this.settings.fecha_fin_inscripcion);
+        }
+        this.successMessage = '¡Configuraciones y fechas de periodo guardadas y aplicadas con éxito!';
         this.isSaving = false;
 
         // Limpiar mensaje de éxito tras 4 segundos
@@ -227,7 +263,7 @@ export class SettingsComponent implements OnInit {
       },
       error: (err: any) => {
         console.error('Error al guardar configuraciones', err);
-        this.errorMessage = 'Hubo un error al intentar guardar los cambios.';
+        this.errorMessage = err?.error?.message || 'Hubo un error al intentar guardar los cambios de configuración.';
         this.isSaving = false;
       }
     });

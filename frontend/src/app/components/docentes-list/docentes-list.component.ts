@@ -283,6 +283,18 @@ export class DocentesListComponent implements OnInit {
       return;
     }
 
+    if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\.\-]+$/.test(this.selectedDocente.nombres.trim())) {
+      alert('El campo Nombres solo debe contener letras y espacios.');
+      return;
+    }
+
+    if (this.selectedDocente.apellidos && this.selectedDocente.apellidos.trim()) {
+      if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\.\-]+$/.test(this.selectedDocente.apellidos.trim())) {
+        alert('El campo Apellidos solo debe contener letras y espacios.');
+        return;
+      }
+    }
+
     if (!this.selectedDocente.ci || !(this.selectedDocente.ci + '').trim()) {
       alert('El número de C.I. del instructor es obligatorio.');
       return;
@@ -292,6 +304,30 @@ export class DocentesListComponent implements OnInit {
     if (!/^[0-9]{7,8}$/.test(cleanCi)) {
       alert('El C.I. del instructor debe contener estrictamente 7 u 8 dígitos numéricos.');
       return;
+    }
+
+    if (!this.selectedDocente.expedido) {
+      alert('Debe seleccionar el lugar de expedición del C.I.');
+      return;
+    }
+
+    const espFinal = this.selectedDocente.especialidad === '__OTRO__'
+      ? (this.customEspecialidad?.trim() || '')
+      : (this.selectedDocente.especialidad?.trim() || '');
+
+    if (!espFinal) {
+      alert('Debe seleccionar o especificar la especialidad o idioma del instructor.');
+      return;
+    }
+
+    // Validación rigurosa de formato de correo si se proporciona
+    if (this.selectedDocente.correo_electronico && this.selectedDocente.correo_electronico.trim()) {
+      const email = this.selectedDocente.correo_electronico.trim();
+      const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      if (!emailPattern.test(email)) {
+        alert('El correo electrónico ingresado no tiene un formato válido (ejemplo: personal@ejemplo.com).');
+        return;
+      }
     }
 
     const fullTel = this.buildTelefono();

@@ -29,11 +29,9 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
     }
   }
 
-  // Evitar caché de respuestas en navegador o WebView para sincronización inmediata en tiempo real
-  if (req.method === 'GET' && req.url.includes('/api/')) {
-    headers = headers.set('Cache-Control', 'no-cache, no-store, must-revalidate')
-                     .set('Pragma', 'no-cache')
-                     .set('Expires', '0');
+  // Asegurar formato JSON para evitar redirecciones HTML en respuestas de validación
+  if (req.url.includes('/api/') && !headers.has('Accept')) {
+    headers = headers.set('Accept', 'application/json');
   }
 
   const clonedRequest = req.clone({ headers });

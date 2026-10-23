@@ -21,7 +21,7 @@ class Inscripcion extends Model
         'estado'
     ];
 
-    protected $appends = ['id', 'fecha_inscripcion'];
+    protected $appends = ['id', 'fecha_inscripcion', 'horario'];
 
     public function getIdAttribute()
     {
@@ -36,6 +36,24 @@ class Inscripcion extends Model
     public function setFechaInscripcionAttribute($value)
     {
         $this->attributes['fecha_registro'] = $value;
+    }
+
+    public function getHorarioAttribute()
+    {
+        if ($this->paralelo) {
+            $horarios = $this->paralelo->relationLoaded('horarios') 
+                ? $this->paralelo->horarios 
+                : $this->paralelo->horarios()->get();
+
+            if ($horarios && $horarios->isNotEmpty()) {
+                return $horarios->map(function ($h) {
+                    $inicio = substr($h->hora_inicio, 0, 5);
+                    $fin = substr($h->hora_fin, 0, 5);
+                    return "{$h->dia_semana} ({$inicio} - {$fin})";
+                })->implode(', ');
+            }
+        }
+        return null;
     }
 
     /**

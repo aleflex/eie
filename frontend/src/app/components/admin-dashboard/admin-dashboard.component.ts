@@ -111,8 +111,29 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   pendientesCount = 0;
 
   actualizarEstadisticas() {
-    this.habilitadosCount = this.inscripciones.filter(i => i.estado === 'activo').length;
-    this.pendientesCount = this.inscripciones.filter(i => i.estado === 'pendiente').length;
+    this.habilitadosCount = this.inscripciones.filter(i => {
+      const s = (i.estado || '').toLowerCase().trim();
+      return s === 'activo' || s === 'habilitado';
+    }).length;
+    this.pendientesCount = this.inscripciones.filter(i => (i.estado || '').toLowerCase().trim() === 'pendiente').length;
+  }
+
+  getEstadoClass(estado: string): string {
+    const s = (estado || '').toLowerCase().trim();
+    if (s === 'activo' || s === 'habilitado') return 'bg-success text-white';
+    if (s === 'pendiente') return 'bg-warning text-dark';
+    if (s === 'retirado' || s === 'baja') return 'bg-danger text-white';
+    if (s === 'finalizado') return 'bg-primary text-white';
+    return 'bg-secondary text-white';
+  }
+
+  getEstadoLabel(estado: string): string {
+    const s = (estado || '').toLowerCase().trim();
+    if (s === 'activo' || s === 'habilitado') return 'Habilitado';
+    if (s === 'pendiente') return 'Pendiente';
+    if (s === 'baja' || s === 'retirado') return 'De Baja';
+    if (s === 'finalizado') return 'Finalizado';
+    return estado || 'Sin estado';
   }
 
   onLogout() {

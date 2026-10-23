@@ -31,6 +31,9 @@ class User extends Authenticatable
         'apellidos',
         'ci',
         'expedido',
+        'celular',
+        'telefono',
+        'direccion',
         'estado_civil',
         'grupo_sanguineo',
         'foto_url',
@@ -44,7 +47,7 @@ class User extends Authenticatable
         'remember_token',
     ];
 
-    protected $appends = ['id', 'name', 'email', 'correo_electronico', 'foto_url', 'estado_civil', 'grupo_sanguineo'];
+    protected $appends = ['id', 'name', 'email', 'correo_electronico', 'foto_url', 'estado_civil', 'grupo_sanguineo', 'celular', 'telefono', 'direccion'];
 
     /**
      * Obtener los atributos que deben ser convertidos.

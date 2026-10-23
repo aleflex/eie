@@ -87,8 +87,10 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
   showPreviewModal: boolean = false;
   activePreviewDoc: any = null;
   activePreviewUrl: SafeResourceUrl | null = null;
+  rawPreviewUrl: string = '';
   isPreviewPdf: boolean = false;
   isPreviewImage: boolean = false;
+  previewError: boolean = false;
 
   constructor(
     private authService: AuthService,
@@ -202,6 +204,7 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
     this.studentService.getStudent(id).subscribe({
       next: (data) => {
         this.student = data;
+        this.updateDocTypeDefault();
         this.isLoading = false;
         if (!silent) {
           this.loadStudentDocuments();
@@ -217,6 +220,124 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
         if (callback) callback();
       }
     });
+  }
+
+  getCategoriaEstudiante(): string {
+    const tipo = (this.student?.tipo_usuario || '').toLowerCase();
+    const grado = (this.student?.grado_academico || this.student?.grado || '').toLowerCase();
+    const carnetMilitar = this.student?.carnet_militar;
+    const carnetCossmil = this.student?.carnet_cossmil;
+
+    if (tipo === 'militar' || !!carnetMilitar || (grado && !['civil', 'premilitar', 'bachiller'].includes(grado))) {
+      return 'militar';
+    }
+    if (tipo === 'hijo_militar' || (!!carnetCossmil && !carnetMilitar)) {
+      return 'hijo_militar';
+    }
+    if (tipo === 'emi') {
+      return 'emi';
+    }
+    return 'normal';
+  }
+
+  getCategoriaEstudianteNombre(): string {
+    const cat = this.getCategoriaEstudiante();
+    switch (cat) {
+      case 'militar':
+        return 'Personal Militar';
+      case 'hijo_militar':
+        return 'Hijo de Militar';
+      case 'emi':
+        return 'Convenio EMI';
+      default:
+        return 'Estudiante Civil / Particular';
+    }
+  }
+
+  getTiposDocumentosPermitidos(): string[] {
+    const cat = this.getCategoriaEstudiante();
+    if (cat === 'militar') {
+      return [
+        'Carnet Militar',
+        'Carnet de COSSMIL',
+        'Carnet de Identidad',
+        'Certificado de Nacimiento'
+      ];
+    }
+    if (cat === 'hijo_militar') {
+      return [
+        'Carnet de Identidad',
+        'Carnet de COSSMIL',
+        'Título de Bachiller',
+        'Certificado de Nacimiento'
+      ];
+    }
+    if (cat === 'emi') {
+      return [
+        'Carnet de Identidad',
+        'Credencial o Factura EMI',
+        'Boleta de Inscripción EMI',
+        'Título de Bachiller',
+        'Certificado de Nacimiento'
+      ];
+    }
+    // Estudiante Civil / Particular (normal)
+    return [
+      'Carnet de Identidad',
+      'Título de Bachiller',
+      'Certificado de Nacimiento'
+    ];
+  }
+
+  updateDocTypeDefault() {
+    const permitidos = this.getTiposDocumentosPermitidos();
+    if (!permitidos.includes(this.docType)) {
+      this.docType = permitidos[0];
+    }
+  }
+
+  getEstadoClass(estado: string): string {
+    const est = (estado || '').toLowerCase().trim();
+    if (est === 'activo' || est === 'habilitado' || est === 'inscrito') {
+      return 'bg-success text-white shadow-sm';
+    }
+    if (est === 'pendiente' || est === 'en revision' || est === 'en revisión') {
+      return 'bg-warning text-dark shadow-sm';
+    }
+    if (est === 'retirado' || est === 'baja' || est === 'inactivo' || est === 'reprobado') {
+      return 'bg-danger text-white shadow-sm';
+    }
+    if (est === 'finalizado' || est === 'concluido' || est === 'aprobado') {
+      return 'bg-primary text-white shadow-sm';
+    }
+    return 'bg-secondary text-white shadow-sm';
+  }
+
+  getEstadoText(estado: string): string {
+    const est = (estado || '').toLowerCase().trim();
+    if (est === 'activo' || est === 'habilitado' || est === 'inscrito') return 'Habilitado';
+    if (est === 'pendiente') return 'Pendiente';
+    if (est === 'retirado' || est === 'baja') return 'Retirado';
+    if (est === 'finalizado') return 'Finalizado';
+    return estado || 'Registrado';
+  }
+
+  getHorarioInscripcion(item: any): string {
+    if (!item) return 'Pendiente de asignación';
+    if (item.horario && typeof item.horario === 'string' && item.horario.trim() !== '') {
+      return item.horario;
+    }
+    if (item.curso?.horario && typeof item.curso.horario === 'string' && item.curso.horario.trim() !== '') {
+      return item.curso.horario;
+    }
+    if (item.paralelo?.horarios && Array.isArray(item.paralelo.horarios) && item.paralelo.horarios.length > 0) {
+      return item.paralelo.horarios.map((h: any) => {
+        const ini = (h.hora_inicio || '').substring(0, 5);
+        const fin = (h.hora_fin || '').substring(0, 5);
+        return `${h.dia_semana || ''} (${ini} - ${fin})`;
+      }).join(', ');
+    }
+    return 'Pendiente de asignación';
   }
 
   loadStudentDocuments(silent: boolean = false) {
@@ -401,6 +522,9 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
       }
       return cleanUrl;
     }
+    if (cleanUrl.includes('xrtemuwuseageaeeeeuq.supabase.co')) {
+      return '';
+    }
     if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) {
       return cleanUrl;
     }
@@ -434,11 +558,13 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
       url = apiBase + '/storage/documentos/' + path.replace(/^\/+/, '');
     }
 
+    this.rawPreviewUrl = url;
+    this.previewError = false;
     this.activePreviewUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
 
     const isDataPdf = path.startsWith('data:application/pdf');
     const isDataImg = path.startsWith('data:image');
-    const ext = path.split('.').pop().toLowerCase();
+    const ext = path.split('?')[0].split('.').pop().toLowerCase();
 
     this.isPreviewPdf = isDataPdf || ext === 'pdf';
     this.isPreviewImage = isDataImg || ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext);
@@ -446,12 +572,18 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
     this.showPreviewModal = true;
   }
 
+  onPreviewImgError() {
+    this.previewError = true;
+  }
+
   closePreviewModal() {
     this.showPreviewModal = false;
     this.activePreviewDoc = null;
     this.activePreviewUrl = null;
+    this.rawPreviewUrl = '';
     this.isPreviewPdf = false;
     this.isPreviewImage = false;
+    this.previewError = false;
   }
 
   // --- ESCÁNER INTELIGENTE DE DOCUMENTOS (KYC / 2 CARAS) ---

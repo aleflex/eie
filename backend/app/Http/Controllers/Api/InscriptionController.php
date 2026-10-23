@@ -197,9 +197,7 @@ class InscriptionController extends Controller
                 $idArma = $arma->id_arma;
             }
 
-            // 4. Resolver estado civil mediante catálogo 'estados_civil' (columna: nombre_estado_civil)
-            $idEstadoCivil = null;
-            // 4. Asignar estado civil y grupo sanguíneo directamente al Usuario (modelo User)
+            // 4. Asignar estado civil, grupo sanguíneo y contacto centralizado directamente al Usuario (modelo User)
             if ($request->filled('estadoCivil') && trim($request->estadoCivil) !== '') {
                 $user->estado_civil = trim($request->estadoCivil);
             }
@@ -209,6 +207,12 @@ class InscriptionController extends Controller
                     $cleanGrupo = trim($m[1]);
                 }
                 $user->grupo_sanguineo = $cleanGrupo;
+            }
+            if (!empty($celularCompleto)) {
+                $user->celular = $celularCompleto;
+            }
+            if ($request->filled('domicilio')) {
+                $user->direccion = trim($request->domicilio);
             }
             $user->save();
 
@@ -507,7 +511,7 @@ class InscriptionController extends Controller
                     'curso_id' => $ins->id_curso,
                     'paralelo_id' => $ins->id_paralelo,
                     'fecha_registro' => $ins->fecha_registro,
-                    'estado' => $ins->estado,
+                    'estado' => $ins->estado ? strtolower(trim($ins->estado)) : 'pendiente',
                     'estudiante' => $est ? [
                         'id' => $est->id_estudiante,
                         'id_estudiante' => $est->id_estudiante,
@@ -587,6 +591,8 @@ class InscriptionController extends Controller
 
             if ($request->has('fecha_registro')) {
                 $inscripcion->fecha_registro = $request->input('fecha_registro');
+            } elseif ($request->has('fecha_inscripcion')) {
+                $inscripcion->fecha_registro = $request->input('fecha_inscripcion');
             }
 
             $inscripcion->save();

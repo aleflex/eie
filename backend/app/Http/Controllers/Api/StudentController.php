@@ -101,7 +101,17 @@ class StudentController extends Controller
      */
     public function show($id)
     {
-        $estudiante = Estudiante::with(['user', 'inscripciones.curso', 'inscripciones.paralelo.curso', 'inscripciones.notas', 'gradoRel', 'armaRel'])->find($id);
+        $estudiante = Estudiante::with([
+            'user', 
+            'inscripciones.curso.idioma', 
+            'inscripciones.curso.nivelRel', 
+            'inscripciones.curso.modalidadRel',
+            'inscripciones.paralelo.horarios', 
+            'inscripciones.paralelo.curso', 
+            'inscripciones.notas', 
+            'gradoRel', 
+            'armaRel'
+        ])->find($id);
         if (!$estudiante) {
             return response()->json(['message' => 'Estudiante no encontrado'], 404);
         }
@@ -143,6 +153,12 @@ class StudentController extends Controller
             }
             if ($request->has('correo_electronico')) {
                 $userData['correo_institucional'] = $request->input('correo_electronico');
+            }
+            if ($request->has('celular')) {
+                $userData['celular'] = $request->input('celular');
+            }
+            if ($request->has('domicilio')) {
+                $userData['direccion'] = $request->input('domicilio');
             }
             if ($request->has('password') && !empty($request->password)) {
                 $userData['password'] = \Illuminate\Support\Facades\Hash::make($request->password);
@@ -239,7 +255,7 @@ class StudentController extends Controller
         // 5. Actualizar estado de inscripción si viene en la petición
         if ($request->has('estado_inscripcion')) {
             $estadoInsc = $request->input('estado_inscripcion');
-            $estudiante->inscripciones()->update(['estado' => ucfirst(strtolower($estadoInsc))]);
+            $estudiante->inscripciones()->update(['estado' => strtolower(trim($estadoInsc))]);
         }
 
         $freshEstudiante = $estudiante->fresh(['user', 'gradoRel', 'armaRel', 'inscripciones.curso', 'inscripciones.paralelo']);

@@ -220,29 +220,29 @@
 
         <div class="history-list-portal" *ngIf="student.inscripciones && student.inscripciones.length > 0">
           <div *ngFor="let item of student.inscripciones" class="portal-history-item mb-4 p-4 border rounded-3 bg-light shadow-sm">
-            <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="d-flex justify-content-between align-items-start mb-3 gap-2">
               <div>
-                <h3 class="text-primary mb-1">{{ item.curso?.idioma }} — {{ item.curso?.nivel }}</h3>
-                <small class="text-muted">Horario: {{ item.curso?.horario }} | Modalidad: <strong class="text-capitalize text-secondary">{{ item.curso?.modalidad || 'Presencial' }}</strong></small>
+                <h3 class="text-primary mb-1 fw-bold fs-5">{{ item.curso?.idioma }} — {{ item.curso?.nivel }}</h3>
+                <small class="text-muted d-block">
+                  <span *ngIf="item.paralelo?.nombre || item.paralelo?.nombre_paralelo">
+                    Paralelo: <strong class="text-dark">{{ item.paralelo?.nombre || item.paralelo?.nombre_paralelo }}</strong> • 
+                  </span>
+                  Horario: <strong class="text-dark">{{ getHorarioInscripcion(item) }}</strong> • 
+                  Modalidad: <strong class="text-capitalize text-secondary">{{ item.curso?.modalidad || 'Presencial' }}</strong>
+                </small>
               </div>
-              <span class="badge rounded-pill status-pill-portal"
-                    [ngClass]="{
-                      'bg-success': item.estado === 'activo',
-                      'bg-warning text-dark': item.estado === 'pendiente',
-                      'bg-danger': item.estado === 'retirado',
-                      'bg-primary': item.estado === 'finalizado'
-                    }">
-                {{ item.estado === 'activo' ? 'Habilitado' : item.estado === 'pendiente' ? 'Pendiente' : item.estado }}
+              <span class="badge rounded-pill status-pill-portal flex-shrink-0" [ngClass]="getEstadoClass(item.estado)">
+                {{ getEstadoText(item.estado) }}
               </span>
             </div>
 
             <!-- Tabla de Notas para esta Inscripción -->
-            <div class="table-responsive">
-              <table class="table table-hover table-sm border bg-white rounded-2 overflow-hidden">
+            <div class="table-responsive" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+              <table class="table table-hover table-sm border bg-white rounded-2 overflow-hidden mb-0" style="min-width: 100%;">
                 <thead class="bg-light">
                   <tr>
                     <th>Actividad / Evaluación</th>
-                    <th class="text-center" style="width: 150px;">Nota</th>
+                    <th class="text-center" style="width: 110px; min-width: 90px;">Nota</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -253,7 +253,7 @@
                     </td>
                   </tr>
                   <tr *ngIf="!item.notas || item.notas.length === 0">
-                    <td colspan="2" class="text-center text-muted small py-3 italic">
+                    <td colspan="2" class="text-center text-muted small py-3 italic px-2">
                       Aún no hay calificaciones parciales registradas para este periodo por el instructor.
                     </td>
                   </tr>
@@ -290,8 +290,13 @@
         <div *ngIf="puedeSubirDocumentos()" class="upload-section mb-4 p-4 bg-light rounded-3 border">
           <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
             <div>
-              <h6 class="fw-bold mb-1 text-dark">Subir Nuevo Documento Oficial</h6>
-              <small class="text-muted">Elige el tipo de documento y escanéalo con tu cámara o sube un archivo digital.</small>
+              <h6 class="fw-bold mb-1 text-dark d-flex align-items-center gap-2 flex-wrap">
+                <span>Subir Nuevo Documento Oficial</span>
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 fw-semibold" style="font-size: 0.78rem; border-radius: 6px;">
+                  Requisitos: {{ getCategoriaEstudianteNombre() }}
+                </span>
+              </h6>
+              <small class="text-muted">Elige el tipo de documento requerido para tu categoría de inscripción ({{ getCategoriaEstudianteNombre() }}) y cárgalo al expediente digital.</small>
             </div>
             <button type="button" class="btn btn-primary d-inline-flex align-items-center gap-2 px-3 py-2 shadow-sm" (click)="openScanner()" style="border-radius: 10px; font-weight: 600;">
               <i class="material-icons-outlined" style="font-size: 20px;">camera_alt</i>
@@ -301,13 +306,9 @@
 
           <div class="row g-3 align-items-end">
             <div class="col-md-5">
-              <label for="docTypePortal" class="form-label-small">Tipo de Documento</label>
+              <label for="docTypePortal" class="form-label-small">Tipo de Documento (Requisitos {{ getCategoriaEstudianteNombre() }})</label>
               <select id="docTypePortal" [(ngModel)]="docType" class="form-select" aria-label="Tipo de documento">
-                <option value="Carnet de Identidad">Carnet de Identidad</option>
-                <option value="Título de Bachiller">Título de Bachiller</option>
-                <option value="Certificado de Nacimiento">Certificado de Nacimiento</option>
-                <option value="Boleta de Depósito">Boleta de Depósito</option>
-                <option value="Otro">Otro</option>
+                <option *ngFor="let t of getTiposDocumentosPermitidos()" [value]="t">{{ t }}</option>
               </select>
             </div>
             <div class="col-md-4">
@@ -420,24 +421,47 @@
   </main>
 
   <!-- VISOR DE DOCUMENTACIÓN RESPONSIVO EN MÓVILES (RF 15) -->
-  <div class="modal-backdrop" *ngIf="showPreviewModal" (click)="closePreviewModal()"></div>
   <div class="document-preview-modal-wrapper animate-fade-in" *ngIf="showPreviewModal">
     <div class="preview-modal-dialog">
       <div class="preview-modal-content">
-        <div class="preview-modal-header bg-dark text-white">
-          <h5 class="modal-title m-0">
-            <i class="material-icons-outlined align-middle me-2">visibility</i>
-            {{ activePreviewDoc?.tipo_documento }}
+        <div class="preview-modal-header">
+          <h5 class="modal-title">
+            <span class="material-icons-outlined text-primary">visibility</span>
+            <span class="text-truncate">{{ activePreviewDoc?.tipo_documento || 'Documento' }}</span>
           </h5>
-          <button type="button" class="btn-close btn-close-white" (click)="closePreviewModal()" aria-label="Cerrar" title="Cerrar"></button>
+          <div class="preview-header-actions">
+            <a *ngIf="rawPreviewUrl" [href]="rawPreviewUrl" target="_blank" download class="btn-preview-action" title="Abrir en pestaña nueva">
+              <span class="material-icons-outlined" style="font-size: 16px;">open_in_new</span>
+              <span class="d-none d-sm-inline">Abrir</span>
+            </a>
+            <button type="button" class="btn-preview-close" (click)="closePreviewModal()" aria-label="Cerrar" title="Cerrar">
+              <span class="material-icons-outlined" style="font-size: 20px;">close</span>
+            </button>
+          </div>
         </div>
-        <div class="preview-modal-body p-0">
-          <!-- Visor de PDF (HU15 - T2: Contenedor fluido de 100vw) -->
-          <iframe *ngIf="isPreviewPdf" [src]="activePreviewUrl" class="pdf-viewer-frame" title="Visor de PDF"></iframe>
+        <div class="preview-modal-body">
+          <!-- Visor de PDF (HU15 - T2) -->
+          <div *ngIf="isPreviewPdf" class="pdf-viewer-container">
+            <iframe [src]="activePreviewUrl" class="pdf-viewer-frame" title="Visor de PDF"></iframe>
+            <!-- Aviso de apertura directa para navegadores móviles -->
+            <div class="d-md-none p-2 text-center bg-dark text-white-50 small border-top border-secondary">
+              ¿No se ve en tu móvil? 
+              <a *ngIf="rawPreviewUrl" [href]="rawPreviewUrl" target="_blank" class="text-warning fw-semibold ms-1">Abrir en lector PDF</a>
+            </div>
+          </div>
           
           <!-- Visor de Imágenes -->
           <div *ngIf="isPreviewImage" class="image-viewer-container">
-            <img [src]="activePreviewUrl" alt="Vista previa" class="image-viewer-img">
+            <img *ngIf="!previewError" [src]="activePreviewUrl" (error)="onPreviewImgError()" alt="Vista previa del documento" class="image-viewer-img">
+            <div *ngIf="previewError" class="preview-fallback-box animate-fade-in text-center p-4">
+              <span class="material-icons-outlined text-warning mb-2" style="font-size: 50px;">cloud_off</span>
+              <h6 class="text-white fw-bold mb-1">Archivo temporalmente inaccesible</h6>
+              <p class="text-white-50 small mb-3">El servidor de almacenamiento remoto se encuentra temporalmente fuera de línea.</p>
+              <a *ngIf="rawPreviewUrl" [href]="rawPreviewUrl" target="_blank" class="btn-preview-action">
+                <span class="material-icons-outlined" style="font-size: 16px;">open_in_new</span>
+                Probar enlace directo
+              </a>
+            </div>
           </div>
         </div>
       </div>

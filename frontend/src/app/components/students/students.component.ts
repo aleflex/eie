@@ -95,8 +95,10 @@ export class StudentsComponent implements OnInit, OnDestroy {
   showPreviewModal: boolean = false;
   activePreviewDoc: any = null;
   activePreviewUrl: SafeResourceUrl | null = null;
+  rawPreviewUrl: string = '';
   isPreviewPdf: boolean = false;
   isPreviewImage: boolean = false;
+  previewError: boolean = false;
 
   // Sincronización en tiempo real vía WebSockets (cero polling)
   private wsSubs: Subscription[] = [];
@@ -735,8 +737,97 @@ export class StudentsComponent implements OnInit, OnDestroy {
   }
 
   // --- GESTIÓN DE DOCUMENTOS ---
+  getCategoriaEstudiante(student?: any): string {
+    const s = student || this.currentStudentForDocs;
+    if (!s) return 'normal';
+    const tipo = (s.tipo_usuario || '').toLowerCase();
+    const grado = (s.grado_academico || s.grado || '').toLowerCase();
+    const carnetMilitar = s.carnet_militar;
+    const carnetCossmil = s.carnet_cossmil;
+
+    if (tipo === 'militar' || !!carnetMilitar || (grado && !['civil', 'premilitar', 'bachiller'].includes(grado))) {
+      return 'militar';
+    }
+    if (tipo === 'hijo_militar' || (!!carnetCossmil && !carnetMilitar)) {
+      return 'hijo_militar';
+    }
+    if (tipo === 'emi') {
+      return 'emi';
+    }
+    return 'normal';
+  }
+
+  getCategoriaEstudianteNombre(student?: any): string {
+    const cat = this.getCategoriaEstudiante(student);
+    switch (cat) {
+      case 'militar':
+        return 'Personal Militar';
+      case 'hijo_militar':
+        return 'Hijo de Militar';
+      case 'emi':
+        return 'Convenio EMI';
+      default:
+        return 'Estudiante Civil / Particular';
+    }
+  }
+
+  getTiposDocumentosPermitidos(student?: any): string[] {
+    const cat = this.getCategoriaEstudiante(student);
+    if (cat === 'militar') {
+      return [
+        'Carnet Militar',
+        'Carnet de COSSMIL',
+        'Carnet de Identidad',
+        'Certificado de Nacimiento'
+      ];
+    }
+    if (cat === 'hijo_militar') {
+      return [
+        'Carnet de Identidad',
+        'Carnet de COSSMIL',
+        'Título de Bachiller',
+        'Certificado de Nacimiento'
+      ];
+    }
+    if (cat === 'emi') {
+      return [
+        'Carnet de Identidad',
+        'Credencial o Factura EMI',
+        'Boleta de Inscripción EMI',
+        'Título de Bachiller',
+        'Certificado de Nacimiento'
+      ];
+    }
+    // Estudiante Civil / Particular (normal)
+    return [
+      'Carnet de Identidad',
+      'Título de Bachiller',
+      'Certificado de Nacimiento'
+    ];
+  }
+
+  getEstadoClass(estado: string): string {
+    const s = (estado || '').toLowerCase().trim();
+    if (s === 'activo' || s === 'habilitado') return 'bg-success text-white';
+    if (s === 'pendiente') return 'bg-warning text-dark';
+    if (s === 'retirado' || s === 'baja') return 'bg-danger text-white';
+    if (s === 'finalizado') return 'bg-primary text-white';
+    return 'bg-secondary text-white';
+  }
+
+  getEstadoText(estado: string): string {
+    const s = (estado || '').toLowerCase().trim();
+    if (s === 'activo' || s === 'habilitado') return 'Habilitado';
+    if (s === 'pendiente') return 'Pendiente';
+    if (s === 'baja' || s === 'retirado') return 'De Baja';
+    if (s === 'finalizado') return 'Finalizado';
+    return estado || 'Sin estado';
+  }
+
   openDocumentsModal(student: any) {
     this.currentStudentForDocs = student;
+    const permitidos = this.getTiposDocumentosPermitidos(student);
+    this.docType = permitidos[0] || 'Carnet de Identidad';
     this.showDocumentsModal = true;
     this.loadStudentDocuments();
   }
@@ -881,6 +972,7 @@ export class StudentsComponent implements OnInit, OnDestroy {
 
   previewDocument(doc: any) {
     this.activePreviewDoc = doc;
+    this.previewError = false;
     const apiBase = environment.apiUrl.replace(/\/api\/?$/, '');
     let path = doc.ruta_archivo || doc.archivo || '';
 
@@ -897,21 +989,28 @@ export class StudentsComponent implements OnInit, OnDestroy {
       url = apiBase + '/storage/documentos/' + path.replace(/^\/+/, '');
     }
 
+    this.rawPreviewUrl = url;
     this.activePreviewUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
 
-    const ext = path.split('.').pop().toLowerCase();
+    const ext = path.split('?')[0].split('.').pop().toLowerCase();
     this.isPreviewPdf = ext === 'pdf';
-    this.isPreviewImage = ['jpg', 'jpeg', 'png', 'gif'].includes(ext);
+    this.isPreviewImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext);
 
     this.showPreviewModal = true;
+  }
+
+  onPreviewImgError() {
+    this.previewError = true;
   }
 
   closePreviewModal() {
     this.showPreviewModal = false;
     this.activePreviewDoc = null;
     this.activePreviewUrl = null;
+    this.rawPreviewUrl = '';
     this.isPreviewPdf = false;
     this.isPreviewImage = false;
+    this.previewError = false;
   }
 
   onImageError(event: any) {
@@ -933,6 +1032,9 @@ export class StudentsComponent implements OnInit, OnDestroy {
         return '';
       }
       return cleanUrl;
+    }
+    if (cleanUrl.includes('xrtemuwuseageaeeeeuq.supabase.co')) {
+      return '';
     }
     if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) {
       return cleanUrl;
