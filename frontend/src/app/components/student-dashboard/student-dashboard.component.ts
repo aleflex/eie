@@ -543,9 +543,6 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
       }
       return cleanUrl;
     }
-    if (cleanUrl.includes('xrtemuwuseageaeeeeuq.supabase.co')) {
-      return '';
-    }
     if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) {
       return cleanUrl;
     }
