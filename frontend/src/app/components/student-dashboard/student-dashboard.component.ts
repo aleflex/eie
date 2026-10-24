@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -100,7 +100,8 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
     private router: Router,
     private sanitizer: DomSanitizer,
     private titleService: Title,
-    private imageCompressor: ImageCompressorService
+    private imageCompressor: ImageCompressorService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit() {
@@ -115,6 +116,15 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
     if (this.user?.rol === 'admin') { this.router.navigate(['/admin']); return; }
     if (this.user?.rol === 'docente') { this.router.navigate(['/docente-dashboard']); return; }
 
+    // Pre-cargar datos del estudiante de inmediato si ya existen en la sesión del usuario
+    if (this.user?.estudiante) {
+      this.student = this.user.estudiante;
+      try {
+        this.updateDocTypeDefault();
+      } catch (e) {}
+      this.isLoading = false;
+    }
+
     this.biometricEnabled = this.authService.isBiometricEnabled();
 
     // Suscripción reactiva para mantener foto y perfil sincronizados en tiempo real entre Web y APK
@@ -125,6 +135,9 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
           if (u.foto_url) this.student.foto_4x4_url = u.foto_url;
           if (u.nombres) this.student.nombres = u.nombres;
           if (u.apellidos) this.student.apellidos = u.apellidos;
+        } else if (u.estudiante) {
+          this.student = u.estudiante;
+          this.isLoading = false;
         }
         if (u.estudiante_id && !this.uploading) {
           this.loadStudentProfile(u.estudiante_id, true);
@@ -134,7 +147,7 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
 
     if (this.user && this.user.estudiante_id) {
       this.loadStudentProfile(this.user.estudiante_id);
-    } else {
+    } else if (!this.student) {
       this.errorMessage = 'No se encontró un perfil de estudiante asociado a esta cuenta.';
       this.isLoading = false;
     }
@@ -200,12 +213,18 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
   loadStudentProfile(id: number, silent: boolean = false, callback?: () => void) {
     if (!silent && !this.student) {
       this.isLoading = true;
+      this.cdr.detectChanges();
     }
     this.studentService.getStudent(id).subscribe({
       next: (data) => {
         this.student = data;
-        this.updateDocTypeDefault();
+        try {
+          this.updateDocTypeDefault();
+        } catch (e) {
+          console.warn('Advertencia al configurar tipos de documentos:', e);
+        }
         this.isLoading = false;
+        this.cdr.detectChanges();
         if (!silent) {
           this.loadStudentDocuments();
         }
@@ -213,18 +232,20 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         console.error('Error loading student profile', err);
+        this.isLoading = false;
         if (!silent) {
           this.errorMessage = 'No se pudo cargar tu información de perfil. Por favor, reintenta.';
-          this.isLoading = false;
         }
+        this.cdr.detectChanges();
         if (callback) callback();
       }
     });
   }
 
   getCategoriaEstudiante(): string {
-    const tipo = (this.student?.tipo_usuario || '').toLowerCase();
-    const grado = (this.student?.grado_academico || this.student?.grado || '').toLowerCase();
+    const tipo = String(this.student?.tipo_usuario || '').toLowerCase();
+    const rawGrado = this.student?.grado_academico || (typeof this.student?.grado === 'object' ? (this.student?.grado?.nombre || this.student?.grado?.nombre_grado) : this.student?.grado) || '';
+    const grado = String(rawGrado || '').toLowerCase();
     const carnetMilitar = this.student?.carnet_militar;
     const carnetCossmil = this.student?.carnet_cossmil;
 
