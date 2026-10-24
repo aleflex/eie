@@ -145,7 +145,9 @@ class InscriptionController extends Controller
             $contactoEmergenciaCompleto = ($contEmergenciaPrefix ? ($contEmergenciaPrefix . ' ') : '') . $contEmergenciaRaw;
 
             // 1. Buscar o reutilizar usuario existente por CI o Correo Electrónico
+            $cleanCi = preg_replace('/[^0-9]/', '', (string)$request->ci) ?: trim((string)$request->ci);
             $user = User::where('ci', $request->ci)
+                        ->orWhere('ci', $cleanCi)
                         ->orWhere('correo_institucional', strtolower($request->email))
                         ->first();
             
@@ -155,8 +157,8 @@ class InscriptionController extends Controller
                     'correo_institucional' => strtolower($request->email),
                     'nombres' => $request->nombres,
                     'apellidos' => $request->apellidos,
-                    'ci' => $request->ci,
-                    'password' => Hash::make($request->ci),
+                    'ci' => $cleanCi,
+                    'password' => Hash::make($cleanCi),
                     'debe_cambiar_password' => true,
                 ]);
             } else {
@@ -166,11 +168,11 @@ class InscriptionController extends Controller
                     'id_rol' => 2, // 2 = estudiante en tabla roles
                     'correo_institucional' => strtolower($request->email),
                     'usuario' => $username,
-                    'password' => Hash::make($request->ci),
+                    'password' => Hash::make($cleanCi),
                     'debe_cambiar_password' => true,
                     'nombres' => $request->nombres,
                     'apellidos' => $request->apellidos,
-                    'ci' => $request->ci,
+                    'ci' => $cleanCi,
                     'estado' => 'ACTIVO',
                 ]);
             }

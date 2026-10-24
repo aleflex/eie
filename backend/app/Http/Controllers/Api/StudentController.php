@@ -145,7 +145,7 @@ class StudentController extends Controller
                 $userData['apellidos'] = $request->input('apellidos');
             }
             if ($request->has('ci')) {
-                $userData['ci'] = $request->input('ci');
+                $userData['ci'] = preg_replace('/[^0-9]/', '', (string)$request->input('ci')) ?: trim((string)$request->input('ci'));
             }
             if ($request->has('expedido')) {
                 $userData['expedido'] = $request->input('expedido');

@@ -163,10 +163,11 @@ class AccesoController extends Controller
                 ? strtolower(trim($request->email)) 
                 : "{$username}@eie.edu.bo";
 
-            // Si no se envió contraseña, usar el carnet por defecto
+            // Si no se envió contraseña, usar el carnet limpio (solo dígitos) por defecto
+            $cleanCi = $ci ? preg_replace('/[^0-9]/', '', (string)$ci) : '';
             $passwordPlain = $request->filled('password') 
                 ? $request->password 
-                : ($ci ? preg_replace('/\s+/', '', $ci) : 'password123');
+                : ($cleanCi ?: 'password123');
 
             // Determinar rol
             $idRol = 1;
@@ -234,13 +235,13 @@ class AccesoController extends Controller
         $request->validate([
             'usuario' => 'required|string|max:100|unique:usuarios,usuario,' . $user->id_usuario . ',id_usuario',
             'email' => 'nullable|email|max:255',
-            'password' => 'nullable|string|min:8',
+            'password' => 'nullable|string|min:4',
             'id_rol' => 'nullable|integer',
         ], [
             'usuario.required' => 'El nombre de usuario es obligatorio.',
             'usuario.unique' => 'Este nombre de usuario ya está en uso por otra cuenta.',
             'email.email' => 'El correo electrónico no tiene un formato válido.',
-            'password.min' => 'La nueva contraseña debe tener al menos 8 caracteres.',
+            'password.min' => 'La nueva contraseña debe tener al menos 4 caracteres.',
         ]);
 
         try {

@@ -89,7 +89,7 @@ class DocenteController extends Controller
                 }
             }
 
-            $cleanCi = trim($request->ci);
+            $cleanCi = preg_replace('/[^0-9]/', '', (string)$request->ci) ?: trim((string)$request->ci);
 
             $user = User::create([
                 'id_rol' => 3, // DOCENTE
@@ -225,7 +225,7 @@ class DocenteController extends Controller
             DB::beginTransaction();
 
             // 1. Actualizar o crear el usuario para el docente (Rol 3 = DOCENTE)
-            $cleanCi = trim($request->ci);
+            $cleanCi = preg_replace('/[^0-9]/', '', (string)$request->ci) ?: trim((string)$request->ci);
             if (!$userId) {
                 $username = User::generateUsername($request->nombres, $request->apellidos ?? '');
                 $email = $request->correo_electronico ?: ($username . '@eie.edu.bo');
@@ -237,7 +237,7 @@ class DocenteController extends Controller
                     'debe_cambiar_password' => true,
                     'nombres' => $request->nombres,
                     'apellidos' => $request->apellidos,
-                    'ci' => $request->ci,
+                    'ci' => $cleanCi,
                     'expedido' => $request->expedido,
                     'estado' => 'ACTIVO',
                 ]);
@@ -248,7 +248,7 @@ class DocenteController extends Controller
                     $updateData = [
                         'nombres' => $request->nombres,
                         'apellidos' => $request->apellidos,
-                        'ci' => $request->ci,
+                        'ci' => $cleanCi,
                         'expedido' => $request->expedido,
                         'celular' => $request->telefono,
                         'telefono' => $request->telefono,

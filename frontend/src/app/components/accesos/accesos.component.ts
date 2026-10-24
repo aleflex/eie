@@ -268,7 +268,7 @@ export class AccesosComponent implements OnInit {
       usuarioSugerido = usuarioSugerido.replace(/[^a-z0-9.]/g, '');
     }
 
-    const defaultPassword = (persona.ci && persona.ci !== 'N/A') ? persona.ci.replace(/\s+/g, '') : '';
+    const defaultPassword = (persona.ci && persona.ci !== 'N/A') ? (persona.ci + '').replace(/[^0-9]/g, '') : '';
 
     this.formModel = {
       nombres: '',
@@ -349,7 +349,7 @@ export class AccesosComponent implements OnInit {
 
   setCiAsPassword() {
     if (this.selectedPersona?.ci && this.selectedPersona.ci !== 'N/A') {
-      this.formModel.password = this.selectedPersona.ci.replace(/\s+/g, '');
+      this.formModel.password = (this.selectedPersona.ci + '').replace(/[^0-9]/g, '');
     }
   }
 
