@@ -223,6 +223,23 @@ export class LoginComponent implements OnInit {
           this.loginProgressTimer = null;
         }
 
+        if (!respuesta || !respuesta.user) {
+          this.isLoggingIn = false;
+          this.loginProgress = 0;
+          this.mensajeError = 'Nombre de usuario o contraseña incorrectos. Por favor verifique sus datos.';
+          this.cdr.detectChanges();
+          Swal.fire({
+            title: 'Credenciales Incorrectas',
+            html: '<div style="text-align: center; color: #334155; font-size: 0.95rem; line-height: 1.5;">Nombre de usuario o contraseña incorrectos.<br>Por favor verifique sus datos.</div>',
+            icon: 'error',
+            confirmButtonText: 'Reintentar',
+            confirmButtonColor: '#003B71',
+            buttonsStyling: true,
+            heightAuto: false
+          });
+          return;
+        }
+
         const usuario = respuesta.user;
         this.pendingUserResponse = respuesta;
 
@@ -305,6 +322,17 @@ export class LoginComponent implements OnInit {
             this.mensajeError = error.error?.message || 'Nombre de usuario o contraseña incorrectos. Por favor verifique sus datos.';
           }
           this.cdr.detectChanges();
+
+          // Notificación visual inmediata para que el usuario sepa claramente que los datos son incorrectos
+          Swal.fire({
+            title: 'Credenciales Incorrectas',
+            html: `<div style="text-align: center; color: #334155; font-size: 0.95rem; line-height: 1.5;">${this.mensajeError}</div>`,
+            icon: 'error',
+            confirmButtonText: 'Entendido',
+            confirmButtonColor: '#003B71',
+            buttonsStyling: true,
+            heightAuto: false
+          });
         });
       }
     });

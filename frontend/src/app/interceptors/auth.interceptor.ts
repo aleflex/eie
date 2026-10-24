@@ -37,14 +37,15 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const clonedRequest = req.clone({ headers });
   return next(clonedRequest).pipe(
     catchError((error: HttpErrorResponse) => {
-      // Si el servidor rechaza la petición por falta de autenticación o token expirado
+      // Si el servidor rechaza la petición por falta de autenticación o token expirado en rutas protegidas
       if (error.status === 401) {
-        sessionStorage.removeItem('usuario');
-        localStorage.removeItem('usuario');
         if (!req.url.includes('/api/login') && !req.url.includes('/api/logout')) {
+          sessionStorage.removeItem('usuario');
+          localStorage.removeItem('usuario');
           router.navigate(['/login']);
+          return of(null as any);
         }
-        return of(null as any);
+        return throwError(() => error);
       }
       return throwError(() => error);
     })
