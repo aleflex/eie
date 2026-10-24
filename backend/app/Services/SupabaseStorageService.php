@@ -51,7 +51,7 @@ class SupabaseStorageService
         }
         try {
             $bucketUrl = rtrim(self::$supabaseUrl, '/') . '/storage/v1/bucket';
-            Http::timeout(1.5)->connectTimeout(1.0)->withHeaders([
+            Http::timeout(5.0)->connectTimeout(3.0)->withHeaders([
                 'apikey' => self::$anonKey,
                 'Authorization' => 'Bearer ' . self::$anonKey,
                 'Content-Type' => 'application/json'
@@ -69,8 +69,8 @@ class SupabaseStorageService
 
     /**
      * Sube un archivo binario a Supabase Storage y retorna la URL pública.
-     * Si falla o la conexión es lenta, retorna NULL de inmediato (< 1ms)
-     * para que el backend guarde en disco local al instante.
+     * Si falla o la conexión es lenta, retorna NULL de inmediato
+     * para que el backend guarde en disco local.
      */
     public static function uploadFile($fileBinary, $remotePath, $mimeType = 'application/octet-stream')
     {
@@ -86,7 +86,7 @@ class SupabaseStorageService
 
             $uploadUrl = rtrim(self::$supabaseUrl, '/') . '/storage/v1/object/' . self::$bucket . '/' . ltrim($remotePath, '/');
 
-            $response = Http::timeout(2.0)->connectTimeout(1.0)->withHeaders([
+            $response = Http::timeout(12.0)->connectTimeout(4.0)->withHeaders([
                 'apikey' => self::$anonKey,
                 'Authorization' => 'Bearer ' . self::$anonKey,
                 'Content-Type' => $mimeType,
@@ -98,10 +98,8 @@ class SupabaseStorageService
                 return $publicUrl;
             } else {
                 Log::warning('Supabase Storage upload warning: ' . $response->body());
-                self::$isAvailable = false;
             }
         } catch (\Exception $e) {
-            self::$isAvailable = false;
             Log::warning('Supabase Storage timeout/error: ' . $e->getMessage());
         }
 

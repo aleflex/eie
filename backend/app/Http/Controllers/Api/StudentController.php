@@ -188,30 +188,43 @@ class StudentController extends Controller
                 }
             }
 
-            // 2. Si hay un archivo de foto, guardarlo en Supabase Storage
+            // 2. Si hay un archivo o cadena de foto, guardarlo permanentemente en Supabase Storage
             $ci = $request->input('ci', $estudiante->ci ?? 'foto');
-            if ($request->hasFile('foto')) {
-                $file = $request->file('foto');
-                $mime = $file->getClientMimeType() ?: 'image/jpeg';
-                $fileBinary = file_get_contents($file->getRealPath());
-                $fileName = time() . '_' . preg_replace('/[^a-zA-Z0-9\._-]/', '_', $file->getClientOriginalName());
+            $photoUrl = null;
+            $photoFile = $request->file('foto') ?? $request->file('foto_url') ?? $request->file('foto_4x4_url');
+
+            if ($photoFile) {
+                $mime = $photoFile->getClientMimeType() ?: 'image/jpeg';
+                $fileBinary = file_get_contents($photoFile->getRealPath());
+                $fileName = time() . '_' . preg_replace('/[^a-zA-Z0-9\._-]/', '_', $photoFile->getClientOriginalName());
                 $remotePath = 'fotos/' . $ci . '/' . $fileName;
 
-                // Intentar subir a Supabase Storage
+                // Intentar subir a Supabase Storage con timeout amplio
                 $supabaseUrl = \App\Services\SupabaseStorageService::uploadFile($fileBinary, $remotePath, $mime);
 
                 if ($supabaseUrl) {
                     $photoUrl = $supabaseUrl;
                 } else {
-                    $path = $file->store('fotos/' . $ci, 'public');
+                    $path = $photoFile->store('fotos/' . $ci, 'public');
                     $photoUrl = '/storage/' . $path;
                 }
+            } else {
+                $candidatePhoto = $request->input('foto') ?? $request->input('foto_url') ?? $request->input('foto_4x4_url');
+                if (is_string($candidatePhoto) && !empty($candidatePhoto)) {
+                    if (str_starts_with($candidatePhoto, 'data:')) {
+                        $photoUrl = $this->storeBase64Photo($candidatePhoto, 'fotos/' . $ci);
+                    } elseif (str_starts_with($candidatePhoto, 'http') || str_starts_with($candidatePhoto, '/storage/')) {
+                        $photoUrl = $candidatePhoto;
+                    }
+                }
+            }
 
+            if (!empty($photoUrl)) {
                 $estudiante->foto_4x4_url = $photoUrl;
                 $data['foto_4x4_url'] = $photoUrl;
-            } elseif ($request->has('foto') && is_string($request->input('foto')) && (str_starts_with($request->input('foto'), 'http') || str_starts_with($request->input('foto'), 'data:'))) {
-                $estudiante->foto_4x4_url = $request->input('foto');
-                $data['foto_4x4_url'] = $request->input('foto');
+                if ($estudiante->user) {
+                    $estudiante->user->update(['foto_url' => $photoUrl]);
+                }
             }
 
             // 3. Mapear explícitamente mutadores
@@ -463,6 +476,12 @@ class StudentController extends Controller
 
         $filename = $prefix . '_' . time() . '.' . $extension;
         $relativePath = trim($storagePath, '/') . '/' . $filename;
+
+        // Intentar guardar primero en Supabase Storage para persistencia permanente
+        $supabaseUrl = \App\Services\SupabaseStorageService::uploadFile($decoded, $relativePath, $mime);
+        if ($supabaseUrl) {
+            return $supabaseUrl;
+        }
 
         Storage::disk('public')->put($relativePath, $decoded);
 

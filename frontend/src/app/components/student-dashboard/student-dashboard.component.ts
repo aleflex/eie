@@ -217,7 +217,13 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
     }
     this.studentService.getStudent(id).subscribe({
       next: (data) => {
+        if (!data.foto_4x4_url && (this.user?.foto_url || this.student?.foto_4x4_url)) {
+          data.foto_4x4_url = this.user?.foto_url || this.student?.foto_4x4_url;
+        }
         this.student = data;
+        if (data.foto_4x4_url && this.user) {
+          this.user.foto_url = data.foto_4x4_url;
+        }
         try {
           this.updateDocTypeDefault();
         } catch (e) {
@@ -415,7 +421,15 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
         this.photoFile = null;
         this.photoFileName = '';
         this.uploading = false;
-        this.loadStudentProfile(this.student.id);
+        if (res && res.estudiante) {
+          this.student = res.estudiante;
+          if (res.estudiante.foto_4x4_url && this.user) {
+            this.user.foto_url = res.estudiante.foto_4x4_url;
+          }
+        }
+        this.authService.cargarPerfilActualizado().subscribe();
+        this.loadStudentProfile(this.student.id, true);
+        this.cdr.detectChanges();
       },
       error: (err) => {
         console.error('Error subiendo foto', err);
