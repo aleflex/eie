@@ -303,11 +303,12 @@ class Estudiante extends Model
 
     public function setNombrePadresAttribute($value)
     {
-        if (empty($value)) {
+        $val = !empty($value) ? trim((string)$value) : '';
+        if ($val === '') {
             return;
         }
 
-        $parts = explode(' ', trim($value));
+        $parts = explode(' ', $val);
         $nombres_resp = $parts[0];
         $paterno_resp = '';
         $materno_resp = '';
@@ -341,8 +342,8 @@ class Estudiante extends Model
             ]);
 
             \DB::table('estudiante_responsable')->updateOrInsert(
-                ['id_estudiante' => $this->id_estudiante, 'id_responsable' => $id_responsable],
-                ['parentesco' => 'Padre/Madre/Tutor']
+                ['id_estudiante' => $this->id_estudiante],
+                ['id_responsable' => $id_responsable, 'parentesco' => 'Padre/Madre/Tutor']
             );
         }
     }
@@ -358,29 +359,56 @@ class Estudiante extends Model
 
     public function setCiTutorAttribute($value)
     {
-        $resp = \DB::table('responsables')
-            ->join('estudiante_responsable', 'responsables.id_responsable', '=', 'estudiante_responsable.id_responsable')
-            ->where('estudiante_responsable.id_estudiante', $this->id_estudiante)
+        $cleanCi = !empty($value) ? trim((string)$value) : null;
+        if ($cleanCi === '') {
+            $cleanCi = null;
+        }
+
+        // Buscar si ya existe un responsable con este CI en la base de datos
+        $existingWithCi = $cleanCi ? \DB::table('responsables')->where('ci_responsable', $cleanCi)->first() : null;
+
+        $respLink = \DB::table('estudiante_responsable')
+            ->where('id_estudiante', $this->id_estudiante)
             ->first();
 
-        if ($resp) {
-            \DB::table('responsables')->where('id_responsable', $resp->id_responsable)->update([
-                'ci_responsable' => $value
+        if ($existingWithCi) {
+            // Si el tutor ya existe con este CI (por ejemplo, tutor de otro hermano/estudiante)
+            if ($respLink) {
+                if ($respLink->id_responsable != $existingWithCi->id_responsable) {
+                    \DB::table('estudiante_responsable')
+                        ->where('id_estudiante_responsable', $respLink->id_estudiante_responsable)
+                        ->update(['id_responsable' => $existingWithCi->id_responsable]);
+                }
+            } else {
+                \DB::table('estudiante_responsable')->insert([
+                    'id_estudiante' => $this->id_estudiante,
+                    'id_responsable' => $existingWithCi->id_responsable,
+                    'parentesco' => 'Padre/Madre/Tutor'
+                ]);
+            }
+            return;
+        }
+
+        // Si no existe un responsable con este CI
+        if ($respLink) {
+            \DB::table('responsables')->where('id_responsable', $respLink->id_responsable)->update([
+                'ci_responsable' => $cleanCi
             ]);
-        } else {
+        } elseif ($cleanCi !== null) {
             $id_responsable = \DB::table('responsables')->insertGetId([
                 'nombres_responsable' => 'Tutor',
                 'apellido_paterno_responsable' => '',
                 'apellido_materno_responsable' => '',
-                'ci_responsable' => $value,
+                'ci_responsable' => $cleanCi,
                 'celular_responsable' => '',
                 'direccion_responsable' => ''
             ]);
 
-            \DB::table('estudiante_responsable')->updateOrInsert(
-                ['id_estudiante' => $this->id_estudiante, 'id_responsable' => $id_responsable],
-                ['parentesco' => 'Padre/Madre/Tutor']
-            );
+            \DB::table('estudiante_responsable')->insert([
+                'id_estudiante' => $this->id_estudiante,
+                'id_responsable' => $id_responsable,
+                'parentesco' => 'Padre/Madre/Tutor'
+            ]);
         }
     }
 

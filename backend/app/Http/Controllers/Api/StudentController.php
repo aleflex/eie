@@ -128,145 +128,215 @@ class StudentController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $estudiante = Estudiante::with('user')->find($id);
-        if (!$estudiante) {
-            return response()->json(['message' => 'Estudiante no encontrado'], 404);
-        }
+        try {
+            $estudiante = Estudiante::with('user')->find($id);
+            if (!$estudiante) {
+                return response()->json(['message' => 'Estudiante no encontrado'], 404);
+            }
 
-        $data = $request->all();
+            $data = $request->all();
 
-        // 1. Actualizar usuario vinculado (nombres, apellidos, ci, correo_electronico, etc.)
-        if ($estudiante->user) {
-            $userData = [];
-            if ($request->has('nombres')) {
-                $userData['nombres'] = $request->input('nombres');
+            // 1. Actualizar usuario vinculado (nombres, apellidos, ci, correo_electronico, etc.)
+            if ($estudiante->user) {
+                $userData = [];
+                if ($request->has('nombres')) {
+                    $userData['nombres'] = trim((string)$request->input('nombres'));
+                }
+                if ($request->has('apellidos')) {
+                    $userData['apellidos'] = trim((string)$request->input('apellidos'));
+                }
+                if ($request->has('ci')) {
+                    $cleanCi = preg_replace('/[^0-9]/', '', (string)$request->input('ci')) ?: trim((string)$request->input('ci'));
+                    if (!empty($cleanCi)) {
+                        $ciExists = \App\Models\User::where('ci', $cleanCi)
+                            ->where('id_usuario', '!=', $estudiante->user->id_usuario)
+                            ->exists();
+                        if ($ciExists) {
+                            return response()->json(['message' => "La cédula de identidad {$cleanCi} ya se encuentra registrada para otro usuario."], 422);
+                        }
+                        $userData['ci'] = $cleanCi;
+                    }
+                }
+                if ($request->has('expedido')) {
+                    $userData['expedido'] = $request->input('expedido') ? trim((string)$request->input('expedido')) : null;
+                    $estudiante->expedido = $userData['expedido'];
+                }
+                if ($request->has('correo_electronico')) {
+                    $cleanEmail = trim((string)$request->input('correo_electronico'));
+                    if (!empty($cleanEmail)) {
+                        $emailExists = \App\Models\User::where('correo_institucional', $cleanEmail)
+                            ->where('id_usuario', '!=', $estudiante->user->id_usuario)
+                            ->exists();
+                        if ($emailExists) {
+                            return response()->json(['message' => "El correo institucional {$cleanEmail} ya se encuentra registrado para otro usuario."], 422);
+                        }
+                        $userData['correo_institucional'] = $cleanEmail;
+                    }
+                }
+                if ($request->has('celular')) {
+                    $userData['celular'] = $request->input('celular');
+                }
+                if ($request->has('domicilio')) {
+                    $userData['direccion'] = $request->input('domicilio');
+                }
+                if ($request->has('password') && !empty($request->password)) {
+                    $userData['password'] = \Illuminate\Support\Facades\Hash::make($request->password);
+                }
+                
+                if (!empty($userData)) {
+                    $estudiante->user->update($userData);
+                }
             }
-            if ($request->has('apellidos')) {
-                $userData['apellidos'] = $request->input('apellidos');
+
+            // 2. Si hay un archivo de foto, guardarlo en Supabase Storage
+            $ci = $request->input('ci', $estudiante->ci ?? 'foto');
+            if ($request->hasFile('foto')) {
+                $file = $request->file('foto');
+                $mime = $file->getClientMimeType() ?: 'image/jpeg';
+                $fileBinary = file_get_contents($file->getRealPath());
+                $fileName = time() . '_' . preg_replace('/[^a-zA-Z0-9\._-]/', '_', $file->getClientOriginalName());
+                $remotePath = 'fotos/' . $ci . '/' . $fileName;
+
+                // Intentar subir a Supabase Storage
+                $supabaseUrl = \App\Services\SupabaseStorageService::uploadFile($fileBinary, $remotePath, $mime);
+
+                if ($supabaseUrl) {
+                    $photoUrl = $supabaseUrl;
+                } else {
+                    $path = $file->store('fotos/' . $ci, 'public');
+                    $photoUrl = '/storage/' . $path;
+                }
+
+                $estudiante->foto_4x4_url = $photoUrl;
+                $data['foto_4x4_url'] = $photoUrl;
+            } elseif ($request->has('foto') && is_string($request->input('foto')) && (str_starts_with($request->input('foto'), 'http') || str_starts_with($request->input('foto'), 'data:'))) {
+                $estudiante->foto_4x4_url = $request->input('foto');
+                $data['foto_4x4_url'] = $request->input('foto');
             }
-            if ($request->has('ci')) {
-                $userData['ci'] = preg_replace('/[^0-9]/', '', (string)$request->input('ci')) ?: trim((string)$request->input('ci'));
+
+            // 3. Mapear explícitamente mutadores
+            if ($request->has('grado_academico')) {
+                $estudiante->grado_academico = $request->input('grado_academico');
             }
-            if ($request->has('expedido')) {
-                $userData['expedido'] = $request->input('expedido');
-                $estudiante->expedido = $request->input('expedido');
-            }
-            if ($request->has('correo_electronico')) {
-                $userData['correo_institucional'] = $request->input('correo_electronico');
-            }
-            if ($request->has('celular')) {
-                $userData['celular'] = $request->input('celular');
-            }
-            if ($request->has('domicilio')) {
-                $userData['direccion'] = $request->input('domicilio');
-            }
-            if ($request->has('password') && !empty($request->password)) {
-                $userData['password'] = \Illuminate\Support\Facades\Hash::make($request->password);
+            if ($request->has('arma_especialidad')) {
+                $estudiante->arma_especialidad = $request->input('arma_especialidad');
             }
             
-            if (!empty($userData)) {
-                $estudiante->user->update($userData);
+            if ($request->has('estado_civil')) {
+                $estudiante->estado_civil = $request->input('estado_civil');
             }
-        }
-
-        // 2. Si hay un archivo de foto, guardarlo en Supabase Storage
-        $ci = $request->input('ci', $estudiante->ci ?? 'foto');
-        if ($request->hasFile('foto')) {
-            $file = $request->file('foto');
-            $mime = $file->getClientMimeType() ?: 'image/jpeg';
-            $fileBinary = file_get_contents($file->getRealPath());
-            $fileName = time() . '_' . preg_replace('/[^a-zA-Z0-9\._-]/', '_', $file->getClientOriginalName());
-            $remotePath = 'fotos/' . $ci . '/' . $fileName;
-
-            // Intentar subir a Supabase Storage
-            $supabaseUrl = \App\Services\SupabaseStorageService::uploadFile($fileBinary, $remotePath, $mime);
-
-            if ($supabaseUrl) {
-                $photoUrl = $supabaseUrl;
-            } else {
-                $path = $file->store('fotos/' . $ci, 'public');
-                $photoUrl = '/storage/' . $path;
+            if ($request->has('grupo_sanguineo')) {
+                $estudiante->grupo_sanguineo = $request->input('grupo_sanguineo');
+            }
+            if ($request->has('nombre_padres')) {
+                $estudiante->nombre_padres = $request->input('nombre_padres');
+            }
+            if ($request->has('ci_tutor')) {
+                $ciTutor = trim((string)$request->input('ci_tutor'));
+                // Permitir formato puro (7-8 dígitos) o formato antiguo (dígitos + espacio + depto)
+                if ($ciTutor !== '' && !preg_match('/^[0-9]{7,8}(\s*[A-Za-z]{2})?$/', $ciTutor)) {
+                    return response()->json(['message' => 'El C.I. del tutor debe contener 7 u 8 dígitos numéricos.'], 422);
+                }
+                $estudiante->ci_tutor = $ciTutor;
+            }
+            if ($request->has('contacto_emergencia')) {
+                $contEmergencia = trim((string)$request->input('contacto_emergencia'));
+                if ($contEmergencia !== '' && !preg_match('/^\+?[0-9\s\-]{7,25}$/', $contEmergencia)) {
+                    return response()->json(['message' => 'El formato del número de contacto de emergencia es inválido.'], 422);
+                }
+                $estudiante->contacto_emergencia = $contEmergencia;
+            }
+            if ($request->has('hermanos_inscritos')) {
+                $estudiante->hermanos_inscritos = $request->input('hermanos_inscritos');
             }
 
-            $estudiante->foto_4x4_url = $photoUrl;
-            $data['foto_4x4_url'] = $photoUrl;
-        } elseif ($request->has('foto') && is_string($request->input('foto')) && (str_starts_with($request->input('foto'), 'http') || str_starts_with($request->input('foto'), 'data:'))) {
-            $estudiante->foto_4x4_url = $request->input('foto');
-            $data['foto_4x4_url'] = $request->input('foto');
-        }
+            // 4. Filtrar campos que no corresponden a columnas de la tabla 'estudiantes'
+            $nonDbFields = [
+                'nombres', 'apellidos', 'ci', 'correo_electronico',
+                'estado_civil', 'grupo_sanguineo', 'grado_academico',
+                'arma_especialidad', 'nombre_padres', 'ci_tutor',
+                'contacto_emergencia', 'estado_inscripcion', 'curso_id',
+                'paralelo_id', 'inscripcion_id', 'foto', 'user', 'inscripciones',
+                'grado', 'arma', 'gradoRel', 'armaRel', 'grado_rel', 'arma_rel',
+                'id', 'id_estudiante', 'id_usuario', '_method', 'expedido',
+                'created_at', 'updated_at', 'deleted_at', 'foto_4x4_url'
+            ];
+            $fillData = array_diff_key($data, array_flip($nonDbFields));
 
-        // 3. Mapear explícitamente mutadores
-        if ($request->has('grado_academico')) {
-            $estudiante->grado_academico = $request->input('grado_academico');
-        }
-        if ($request->has('arma_especialidad')) {
-            $estudiante->arma_especialidad = $request->input('arma_especialidad');
-        }
-        
-        if ($request->has('estado_civil')) {
-            $estudiante->estado_civil = $request->input('estado_civil');
-        }
-        if ($request->has('grupo_sanguineo')) {
-            $estudiante->grupo_sanguineo = $request->input('grupo_sanguineo');
-        }
-        if ($request->has('nombre_padres')) {
-            $estudiante->nombre_padres = $request->input('nombre_padres');
-        }
-        if ($request->has('ci_tutor')) {
-            $ciTutor = trim($request->input('ci_tutor'));
-            // Permitir formato puro (7-8 dígitos) o formato antiguo (dígitos + espacio + depto)
-            if ($ciTutor !== '' && !preg_match('/^[0-9]{7,8}(\s*[A-Za-z]{2})?$/', $ciTutor)) {
-                return response()->json(['message' => 'El C.I. del tutor debe contener 7 u 8 dígitos numéricos.'], 422);
+            // Manejo de valores vacíos para columnas UNIQUE
+            if ($request->has('carnet_militar')) {
+                $cleanCm = trim((string)$request->input('carnet_militar'));
+                $fillData['carnet_militar'] = $cleanCm !== '' ? $cleanCm : null;
+                if ($fillData['carnet_militar']) {
+                    $cmExists = Estudiante::where('carnet_militar', $fillData['carnet_militar'])
+                        ->where('id_estudiante', '!=', $estudiante->id_estudiante)
+                        ->exists();
+                    if ($cmExists) {
+                        return response()->json(['message' => "El carnet militar {$fillData['carnet_militar']} ya pertenece a otro estudiante."], 422);
+                    }
+                }
             }
-            $estudiante->ci_tutor = $ciTutor;
-        }
-        if ($request->has('contacto_emergencia')) {
-            $contEmergencia = trim($request->input('contacto_emergencia'));
-            if ($contEmergencia !== '' && !preg_match('/^\+?[0-9\s\-]{7,25}$/', $contEmergencia)) {
-                return response()->json(['message' => 'El formato del número de contacto de emergencia es inválido.'], 422);
+            if ($request->has('carnet_cossmil')) {
+                $cleanCs = strtoupper(trim((string)$request->input('carnet_cossmil')));
+                $fillData['carnet_cossmil'] = $cleanCs !== '' ? $cleanCs : null;
+                if ($fillData['carnet_cossmil']) {
+                    $csExists = Estudiante::where('carnet_cossmil', $fillData['carnet_cossmil'])
+                        ->where('id_estudiante', '!=', $estudiante->id_estudiante)
+                        ->exists();
+                    if ($csExists) {
+                        return response()->json(['message' => "El carnet COSSMIL {$fillData['carnet_cossmil']} ya pertenece a otro estudiante."], 422);
+                    }
+                }
             }
-            $estudiante->contacto_emergencia = $contEmergencia;
-        }
-        if ($request->has('hermanos_inscritos')) {
-            $estudiante->hermanos_inscritos = $request->input('hermanos_inscritos');
-        }
 
-        // 4. Filtrar campos que no corresponden a columnas de la tabla 'estudiantes'
-        $nonDbFields = [
-            'nombres', 'apellidos', 'ci', 'correo_electronico',
-            'estado_civil', 'grupo_sanguineo', 'grado_academico',
-            'arma_especialidad', 'nombre_padres', 'ci_tutor',
-            'contacto_emergencia', 'estado_inscripcion', 'curso_id',
-            'paralelo_id', 'inscripcion_id', 'foto', 'user', 'inscripciones',
-            'grado', 'arma', 'gradoRel', 'armaRel', 'id', '_method', 'expedido'
-        ];
-        $fillData = array_diff_key($data, array_flip($nonDbFields));
-
-        // Eliminar también cualquier valor tipo array u objeto no relacional
-        foreach ($fillData as $k => $v) {
-            if (is_array($v) || is_object($v)) {
-                unset($fillData[$k]);
+            // Eliminar también cualquier valor tipo array u objeto no relacional
+            foreach ($fillData as $k => $v) {
+                if (is_array($v) || is_object($v)) {
+                    unset($fillData[$k]);
+                }
             }
+
+            $estudiante->fill($fillData);
+            $estudiante->save();
+
+            // 5. Actualizar estado de inscripción si viene en la petición
+            if ($request->has('estado_inscripcion')) {
+                $estadoInsc = $request->input('estado_inscripcion');
+                $estudiante->inscripciones()->update(['estado' => strtolower(trim($estadoInsc))]);
+            }
+
+            $freshEstudiante = $estudiante->fresh(['user', 'gradoRel', 'armaRel', 'inscripciones.curso', 'inscripciones.paralelo']);
+
+            // Emitir evento en tiempo real vía WebSockets
+            \App\Services\WebSocketService::broadcast('estudiantes', 'estudiante_actualizado', $freshEstudiante);
+
+            return response()->json([
+                'message' => 'Estudiante actualizado con éxito',
+                'estudiante' => $freshEstudiante
+            ]);
+        } catch (\Illuminate\Database\QueryException $e) {
+            \Illuminate\Support\Facades\Log::error("DB Error actualizando estudiante {$id}: " . $e->getMessage());
+            $errorInfo = $e->errorInfo[2] ?? $e->getMessage();
+            if (str_contains($errorInfo, 'Duplicate entry') || $e->getCode() == 23000) {
+                if (str_contains($errorInfo, 'carnet_militar')) {
+                    return response()->json(['message' => 'La matrícula o carnet militar ya se encuentra registrada para otro estudiante.'], 422);
+                }
+                if (str_contains($errorInfo, 'carnet_cossmil')) {
+                    return response()->json(['message' => 'El código de carnet COSSMIL ya se encuentra registrado para otro estudiante.'], 422);
+                }
+                if (str_contains($errorInfo, 'ci_responsable')) {
+                    return response()->json(['message' => 'El C.I. del tutor ya se encuentra registrado.'], 422);
+                }
+                if (str_contains($errorInfo, 'usuarios_ci_unique')) {
+                    return response()->json(['message' => 'El C.I. ingresado ya se encuentra registrado para otro usuario.'], 422);
+                }
+                return response()->json(['message' => 'Dato duplicado: ' . $errorInfo], 422);
+            }
+            return response()->json(['message' => 'Error en base de datos: ' . $errorInfo], 500);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error("Error general actualizando estudiante {$id}: " . $e->getMessage() . "\n" . $e->getTraceAsString());
+            return response()->json(['message' => 'Error al actualizar estudiante: ' . $e->getMessage()], 500);
         }
-
-        $estudiante->fill($fillData);
-        $estudiante->save();
-
-        // 5. Actualizar estado de inscripción si viene en la petición
-        if ($request->has('estado_inscripcion')) {
-            $estadoInsc = $request->input('estado_inscripcion');
-            $estudiante->inscripciones()->update(['estado' => strtolower(trim($estadoInsc))]);
-        }
-
-        $freshEstudiante = $estudiante->fresh(['user', 'gradoRel', 'armaRel', 'inscripciones.curso', 'inscripciones.paralelo']);
-
-        // Emitir evento en tiempo real vía WebSockets
-        \App\Services\WebSocketService::broadcast('estudiantes', 'estudiante_actualizado', $freshEstudiante);
-
-        return response()->json([
-            'message' => 'Estudiante actualizado con éxito',
-            'estudiante' => $freshEstudiante
-        ]);
     }
 
     /**

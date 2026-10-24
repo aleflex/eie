@@ -523,6 +523,8 @@ export class StudentsComponent implements OnInit, OnDestroy {
         key !== 'inscripciones' &&
         key !== 'gradoRel' &&
         key !== 'armaRel' &&
+        key !== 'grado_rel' &&
+        key !== 'arma_rel' &&
         key !== 'grado' &&
         key !== 'arma' &&
         key !== 'foto_4x4_url' &&
@@ -583,7 +585,10 @@ export class StudentsComponent implements OnInit, OnDestroy {
           this.loadStudents();
         }
       },
-      error: (err: any) => alert('Error al actualizar estudiante: ' + (err.error?.message || err.message || err))
+      error: (err: any) => {
+        const errorMsg = err.error?.message || err.error?.error || err.message || 'Error del servidor';
+        alert('Error al actualizar estudiante: ' + errorMsg);
+      }
     });
   }
 
