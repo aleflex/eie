@@ -110,12 +110,23 @@
                   class="form-control">
               </div>
               <div class="form-group">
-                <label for="apellidos">Apellidos</label>
-                <input type="text" id="apellidos" [(ngModel)]="selectedStudent.apellidos" name="apellidos"
-                  (keydown)="blockNumbers($event)" (beforeinput)="blockNumbersBeforeInput($event)" (input)="onInputSanitize($event, 'apellidos')"
+                <label for="apellido_paterno">Apellido Paterno</label>
+                <input type="text" id="apellido_paterno" [(ngModel)]="selectedStudent.apellido_paterno" name="apellido_paterno"
+                  (keydown)="blockNumbers($event)" (beforeinput)="blockNumbersBeforeInput($event)" (input)="onInputSanitize($event, 'apellido_paterno')"
                   oninput="this.value = this.value.replace(/[0-9]/g, '')"
                   onkeydown="if(!event.ctrlKey && !event.metaKey && ((event.key >= '0' && event.key <= '9') || (event.code && event.code.startsWith('Numpad') && event.code !== 'NumpadEnter'))) event.preventDefault();"
                   inputmode="text"
+                  placeholder="Ej: Siles"
+                  class="form-control">
+              </div>
+              <div class="form-group">
+                <label for="apellido_materno">Apellido Materno</label>
+                <input type="text" id="apellido_materno" [(ngModel)]="selectedStudent.apellido_materno" name="apellido_materno"
+                  (keydown)="blockNumbers($event)" (beforeinput)="blockNumbersBeforeInput($event)" (input)="onInputSanitize($event, 'apellido_materno')"
+                  oninput="this.value = this.value.replace(/[0-9]/g, '')"
+                  onkeydown="if(!event.ctrlKey && !event.metaKey && ((event.key >= '0' && event.key <= '9') || (event.code && event.code.startsWith('Numpad') && event.code !== 'NumpadEnter'))) event.preventDefault();"
+                  inputmode="text"
+                  placeholder="Ej: Maldonado"
                   class="form-control">
               </div>
               <div class="form-group">
@@ -412,7 +423,8 @@
               <th class="col-expand"></th>
               <th>Foto</th>
               <th>Nombres</th>
-              <th>Apellidos</th>
+              <th>Ap. Paterno</th>
+              <th>Ap. Materno</th>
               <th>CI</th>
               <th class="col-course-main">Curso / Paralelo</th>
               <th class="col-status-main">Estado Académico</th>
@@ -437,7 +449,8 @@
                   </div>
                 </td>
                 <td>{{ student.nombres }}</td>
-                <td>{{ student.apellidos }}</td>
+                <td>{{ student.apellido_paterno || '-' }}</td>
+                <td>{{ student.apellido_materno || '-' }}</td>
                 <td>{{ student.ci }}</td>
                 <td class="col-course-main">
                   <span *ngIf="student.inscripciones && student.inscripciones.length > 0">
@@ -487,7 +500,7 @@
               </tr>
               <!-- Fila de Detalles Desplegable -->
               <tr *ngIf="isRowExpanded(student.id)" class="detail-row animate-fade-in">
-                <td colspan="8">
+                <td colspan="9">
                   <div class="student-detail-panel">
                     <div class="detail-section-title">
                       <i class="material-icons-outlined">badge</i> Datos Completos del Estudiante
@@ -502,6 +515,10 @@
                           <div class="detail-field">
                             <span class="field-label">Tipo de Usuario:</span>
                             <span class="status-badge" [ngClass]="student.tipo_usuario">{{ student.tipo_usuario }}</span>
+                          </div>
+                          <div class="detail-field" *ngIf="student.apellido_paterno || student.apellido_materno">
+                            <span class="field-label">Ap. Paterno / Materno:</span>
+                            <span>{{ student.apellido_paterno || '-' }} / {{ student.apellido_materno || '-' }}</span>
                           </div>
                           <div class="detail-field">
                             <span class="field-label">Lugar/Fecha de Nacimiento:</span>

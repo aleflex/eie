@@ -142,7 +142,12 @@ class StudentController extends Controller
                 if ($request->has('nombres')) {
                     $userData['nombres'] = trim((string)$request->input('nombres'));
                 }
-                if ($request->has('apellidos')) {
+                if ($request->has('apellido_paterno') || $request->has('apellido_materno') || $request->has('apellidoPaterno') || $request->has('apellidoMaterno')) {
+                    $paterno = trim((string)$request->input('apellido_paterno', $request->input('apellidoPaterno', '')));
+                    $materno = trim((string)$request->input('apellido_materno', $request->input('apellidoMaterno', '')));
+                    $comb = trim($paterno . ' ' . $materno);
+                    $userData['apellidos'] = $comb;
+                } elseif ($request->has('apellidos')) {
                     $userData['apellidos'] = trim((string)$request->input('apellidos'));
                 }
                 if ($request->has('ci')) {

@@ -194,6 +194,7 @@ export class StudentsComponent implements OnInit, OnDestroy {
         ).join('|');
 
         if (currentFingerprint !== newFingerprint) {
+          (data || []).forEach(st => this.normalizeStudentNames(st));
           this.allStudents = data;
           if (this.searchTerm && this.searchTerm.trim() !== '') {
             this.onSearch();
@@ -206,6 +207,26 @@ export class StudentsComponent implements OnInit, OnDestroy {
         this.isSyncing = false;
       }
     });
+  }
+
+  /**
+   * Asegura que los estudiantes tengan apellido_paterno y apellido_materno desglosados
+   */
+  private normalizeStudentNames(st: any) {
+    if (!st) return;
+    if (st.user) {
+      if (!st.nombres && st.user.nombres) st.nombres = st.user.nombres;
+      if (!st.apellidos && st.user.apellidos) st.apellidos = st.user.apellidos;
+      if (!st.apellido_paterno && st.user.apellido_paterno) st.apellido_paterno = st.user.apellido_paterno;
+      if (!st.apellido_materno && st.user.apellido_materno) st.apellido_materno = st.user.apellido_materno;
+    }
+    if (!st.apellido_paterno && !st.apellido_materno && st.apellidos) {
+      const parts = (st.apellidos + '').trim().split(/\s+/);
+      st.apellido_paterno = parts[0] || '';
+      st.apellido_materno = parts.slice(1).join(' ') || '';
+    } else if (!st.apellidos && (st.apellido_paterno || st.apellido_materno)) {
+      st.apellidos = [st.apellido_paterno, st.apellido_materno].filter(Boolean).join(' ');
+    }
   }
 
   /**
@@ -233,8 +254,10 @@ export class StudentsComponent implements OnInit, OnDestroy {
     this.isLoading = true;
     this.studentService.getStudents().subscribe({
       next: (data) => {
-        this.allStudents = data || [];
-        this.students = data || [];
+        const studentList = data || [];
+        studentList.forEach(st => this.normalizeStudentNames(st));
+        this.allStudents = studentList;
+        this.students = [...studentList];
         this.isLoading = false;
       },
       error: (err) => {
@@ -357,7 +380,7 @@ export class StudentsComponent implements OnInit, OnDestroy {
     }
   }
 
-  onInputSanitize(event: any, field: 'nombres' | 'apellidos' | 'nombre_padres') {
+  onInputSanitize(event: any, field: string) {
     const input = event.target as HTMLInputElement;
     if (!input || !this.selectedStudent) return;
     const cleanValue = input.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]/g, '');
@@ -365,10 +388,23 @@ export class StudentsComponent implements OnInit, OnDestroy {
       input.value = cleanValue;
     }
     this.selectedStudent[field] = cleanValue;
+    if (field === 'apellido_paterno' || field === 'apellido_materno') {
+      this.syncApellidos();
+    } else if (field === 'nombres') {
+      this.autoGenerateCossmil();
+    }
   }
 
-  filterLetters(event: Event, field: 'nombres' | 'apellidos' | 'nombre_padres') {
+  filterLetters(event: Event, field: string) {
     this.onInputSanitize(event, field);
+  }
+
+  syncApellidos() {
+    if (!this.selectedStudent) return;
+    const pat = (this.selectedStudent.apellido_paterno || '').trim();
+    const mat = (this.selectedStudent.apellido_materno || '').trim();
+    this.selectedStudent.apellidos = [pat, mat].filter(Boolean).join(' ');
+    this.autoGenerateCossmil();
   }
 
   updateCarnetMilitarFull() {
@@ -388,7 +424,9 @@ export class StudentsComponent implements OnInit, OnDestroy {
     if (!this.selectedStudent) return;
     const fecha = this.selectedStudent.fecha_nacimiento;
     const nombres = (this.selectedStudent.nombres || '').trim();
-    const apellidos = (this.selectedStudent.apellidos || '').trim().split(/\s+/);
+    const pat = (this.selectedStudent.apellido_paterno || '').trim();
+    const mat = (this.selectedStudent.apellido_materno || '').trim();
+    const apellidos = (this.selectedStudent.apellidos || [pat, mat].filter(Boolean).join(' ')).trim().split(/\s+/);
 
     let numPart = '';
     if (fecha) {
@@ -399,13 +437,20 @@ export class StudentsComponent implements OnInit, OnDestroy {
     }
 
     let letPart = '';
-    if (apellidos.length > 0 && apellidos[0]) {
+    if (pat) {
+      letPart += pat.charAt(0).toUpperCase();
+      if (mat) {
+        letPart += mat.charAt(0).toUpperCase();
+      } else if (pat.length > 1) {
+        letPart += pat.charAt(1).toUpperCase();
+      }
+    } else if (apellidos.length > 0 && apellidos[0]) {
       letPart += apellidos[0].charAt(0).toUpperCase();
-    }
-    if (apellidos.length > 1 && apellidos[1]) {
-      letPart += apellidos[1].charAt(0).toUpperCase();
-    } else if (apellidos.length > 0 && apellidos[0].length > 1) {
-      letPart += apellidos[0].charAt(1).toUpperCase();
+      if (apellidos.length > 1 && apellidos[1]) {
+        letPart += apellidos[1].charAt(0).toUpperCase();
+      } else if (apellidos[0].length > 1) {
+        letPart += apellidos[0].charAt(1).toUpperCase();
+      }
     }
     if (nombres.length > 0) {
       letPart += nombres.charAt(0).toUpperCase();
@@ -428,6 +473,21 @@ export class StudentsComponent implements OnInit, OnDestroy {
       if (!this.selectedStudent.apellidos) this.selectedStudent.apellidos = this.selectedStudent.user.apellidos || '';
       if (!this.selectedStudent.ci) this.selectedStudent.ci = this.selectedStudent.user.ci || '';
       if (!this.selectedStudent.expedido) this.selectedStudent.expedido = this.selectedStudent.user.expedido || '';
+      if (!this.selectedStudent.apellido_paterno && this.selectedStudent.user.apellido_paterno) {
+        this.selectedStudent.apellido_paterno = this.selectedStudent.user.apellido_paterno;
+      }
+      if (!this.selectedStudent.apellido_materno && this.selectedStudent.user.apellido_materno) {
+        this.selectedStudent.apellido_materno = this.selectedStudent.user.apellido_materno;
+      }
+    }
+
+    // Auto-separar apellido paterno y materno si no vienen directamente
+    if (!this.selectedStudent.apellido_paterno && !this.selectedStudent.apellido_materno && this.selectedStudent.apellidos) {
+      const parts = (this.selectedStudent.apellidos + '').trim().split(/\s+/);
+      this.selectedStudent.apellido_paterno = parts[0] || '';
+      this.selectedStudent.apellido_materno = parts.slice(1).join(' ') || '';
+    } else if (!this.selectedStudent.apellidos) {
+      this.selectedStudent.apellidos = [this.selectedStudent.apellido_paterno, this.selectedStudent.apellido_materno].filter(Boolean).join(' ');
     }
 
     // Auto-separar CI antiguo que incluye departamento (ej: '6190284 LP' -> ci='6190284', expedido='LP')
@@ -501,6 +561,14 @@ export class StudentsComponent implements OnInit, OnDestroy {
 
   updateStudent() {
     if (!this.selectedStudent || this.quotaError) return;
+
+    // Asegurar sincronización de apellidos
+    this.syncApellidos();
+
+    if (!this.selectedStudent.apellido_paterno && !this.selectedStudent.apellidos) {
+      alert('Debe ingresar al menos el apellido paterno del estudiante.');
+      return;
+    }
 
     if (this.selectedStudent.ci) {
       const cleanCi = (this.selectedStudent.ci + '').trim();
@@ -727,6 +795,8 @@ export class StudentsComponent implements OnInit, OnDestroy {
     this.students = this.allStudents.filter(st => {
       const nombres = st.nombres || st.user?.nombres || '';
       const apellidos = st.apellidos || st.user?.apellidos || '';
+      const pat = st.apellido_paterno || st.user?.apellido_paterno || '';
+      const mat = st.apellido_materno || st.user?.apellido_materno || '';
       const fullName = `${nombres} ${apellidos}`.trim();
       const ci = `${st.ci || st.user?.ci || ''}`;
 
@@ -736,6 +806,8 @@ export class StudentsComponent implements OnInit, OnDestroy {
 
       return wordBoundaryRegex.test(nombres) ||
              wordBoundaryRegex.test(apellidos) ||
+             wordBoundaryRegex.test(pat) ||
+             wordBoundaryRegex.test(mat) ||
              wordBoundaryRegex.test(fullName) ||
              ci.toLowerCase().includes(term);
     });

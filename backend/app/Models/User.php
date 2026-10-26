@@ -47,7 +47,7 @@ class User extends Authenticatable
         'remember_token',
     ];
 
-    protected $appends = ['id', 'name', 'email', 'correo_electronico', 'foto_url', 'estado_civil', 'grupo_sanguineo'];
+    protected $appends = ['id', 'name', 'email', 'correo_electronico', 'foto_url', 'estado_civil', 'grupo_sanguineo', 'apellido_paterno', 'apellido_materno'];
 
     /**
      * Obtener los atributos que deben ser convertidos.
@@ -89,6 +89,22 @@ class User extends Authenticatable
         if ($apellidos) return $apellidos;
 
         return 'Administrador';
+    }
+
+    public function getApellidoPaternoAttribute()
+    {
+        $apellidos = trim($this->apellidos ?? '');
+        if (!$apellidos) return '';
+        $parts = preg_split('/\s+/', $apellidos);
+        return $parts[0] ?? '';
+    }
+
+    public function getApellidoMaternoAttribute()
+    {
+        $apellidos = trim($this->apellidos ?? '');
+        if (!$apellidos) return '';
+        $parts = preg_split('/\s+/', $apellidos);
+        return count($parts) > 1 ? implode(' ', array_slice($parts, 1)) : '';
     }
 
     public function getEmailAttribute()
