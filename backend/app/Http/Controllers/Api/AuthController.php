@@ -17,159 +17,172 @@ class AuthController extends Controller
      */
     public function login(Request $request)
     {
-        $loginInput = trim($request->input('usuario', $request->input('login', $request->input('email', ''))));
-        $password = $request->input('password');
+        try {
+            $loginInput = trim($request->input('usuario', $request->input('login', $request->input('email', ''))));
+            $password = $request->input('password');
 
-        if (empty($loginInput) || empty($password)) {
-            return response()->json([
-                'message' => 'Por favor ingrese su Nombre de Usuario y Contraseña.'
-            ], 422);
-        }
-
-        // Buscar por usuario o por correo institucional con relaciones precargadas
-        $user = User::with(['docente', 'estudiante.inscripciones'])->where(function($q) use ($loginInput) {
-            $q->where('usuario', strtolower($loginInput))
-              ->orWhere('correo_institucional', strtolower($loginInput));
-        })->first();
-
-        if ($user && Hash::check($password, $user->password)) {
-            // Verificar estado global del usuario
-            $userEstado = strtoupper($user->estado ?? 'ACTIVO');
-            if (in_array($userEstado, ['INACTIVO', 'BLOQUEADO', 'BAJA', 'DE BAJA'])) {
+            if (empty($loginInput) || empty($password)) {
                 return response()->json([
-                    'message' => 'Acceso denegado: Su cuenta de usuario se encuentra ' . $userEstado . '. Comuníquese con la administración.'
-                ], 403);
+                    'message' => 'Por favor ingrese su Nombre de Usuario y Contraseña.'
+                ], 422);
             }
 
-            // Obtener perfil precargado
-            $docente = $user->docente;
-            $estudiante = $user->estudiante;
+            // Buscar por usuario o por correo institucional con relaciones precargadas
+            $user = User::with(['docente', 'estudiante.inscripciones'])->where(function($q) use ($loginInput) {
+                $q->where('usuario', strtolower($loginInput))
+                  ->orWhere('correo_institucional', strtolower($loginInput));
+            })->first();
 
-            // 1. Validaciones para DOCENTE
-            if ($docente) {
-                $docEstado = strtolower(trim($docente->estado ?? 'activo'));
-                if ($docEstado === 'pendiente') {
+            if ($user && Hash::check($password, $user->password)) {
+                // Verificar estado global del usuario
+                $userEstado = strtoupper($user->estado ?? 'ACTIVO');
+                if (in_array($userEstado, ['INACTIVO', 'BLOQUEADO', 'BAJA', 'DE BAJA'])) {
                     return response()->json([
-                        'message' => 'Acceso denegado: Su cuenta de instructor se encuentra en estado PENDIENTE de aprobación/asignación.'
+                        'message' => 'Acceso denegado: Su cuenta de usuario se encuentra ' . $userEstado . '. Comuníquese con la administración.'
                     ], 403);
                 }
 
-                if (in_array($docEstado, ['de baja', 'baja', 'inactivo'])) {
-                    $motivo = !empty($docente->motivo_baja) ? (" Motivo registrado: " . $docente->motivo_baja) : '';
-                    return response()->json([
-                        'message' => 'Acceso denegado: Su cuenta de instructor ha sido DADA DE BAJA.' . $motivo
-                    ], 403);
-                }
+                // Obtener perfil precargado
+                $docente = $user->docente;
+                $estudiante = $user->estudiante;
 
-                if ($docente->tipo_contrato === 'Contrato' && $docente->fecha_contrato) {
-                    $fechaExpiracion = \Carbon\Carbon::parse($docente->fecha_contrato)->endOfDay();
-                    if (now()->greaterThan($fechaExpiracion)) {
+                // 1. Validaciones para DOCENTE
+                if ($docente) {
+                    $docEstado = strtolower(trim($docente->estado ?? 'activo'));
+                    if ($docEstado === 'pendiente') {
                         return response()->json([
-                            'message' => 'Su contrato ha expirado. Por favor, contáctese o diríjase a dirección para recontratar.'
+                            'message' => 'Acceso denegado: Su cuenta de instructor se encuentra en estado PENDIENTE de aprobación/asignación.'
                         ], 403);
                     }
-                }
-            }
 
-            // 2. Validaciones para ESTUDIANTE
-            if ($estudiante) {
-                $estEstado = strtolower(trim($estudiante->estado ?? 'activo'));
-                if ($estEstado === 'pendiente') {
-                    return response()->json([
-                        'message' => 'Acceso denegado: Su registro de estudiante se encuentra en estado PENDIENTE de confirmación y asignación de paralelo.'
-                    ], 403);
-                }
+                    if (in_array($docEstado, ['de baja', 'baja', 'inactivo'])) {
+                        $motivo = !empty($docente->motivo_baja) ? (" Motivo registrado: " . $docente->motivo_baja) : '';
+                        return response()->json([
+                            'message' => 'Acceso denegado: Su cuenta de instructor ha sido DADA DE BAJA.' . $motivo
+                        ], 403);
+                    }
 
-                if (in_array($estEstado, ['de baja', 'baja', 'inactivo', 'retirado'])) {
-                    return response()->json([
-                        'message' => 'Acceso denegado: Su registro de estudiante se encuentra DADO DE BAJA.'
-                    ], 403);
-                }
-
-                // Verificar inscripciones si existen
-                if ($estudiante->inscripciones && $estudiante->inscripciones->isNotEmpty()) {
-                    $hasHabilitado = $estudiante->inscripciones->contains(function ($ins) {
-                        return in_array(strtolower(trim($ins->estado ?? '')), ['activo', 'habilitado', 'finalizado', 'aprobado']);
-                    });
-
-                    if (!$hasHabilitado) {
-                        $allPendiente = $estudiante->inscripciones->every(function ($ins) {
-                            return strtolower(trim($ins->estado ?? '')) === 'pendiente';
-                        });
-
-                        if ($allPendiente) {
+                    if ($docente->tipo_contrato === 'Contrato' && $docente->fecha_contrato) {
+                        $fechaExpiracion = \Carbon\Carbon::parse($docente->fecha_contrato)->endOfDay();
+                        if (now()->greaterThan($fechaExpiracion)) {
                             return response()->json([
-                                'message' => 'Acceso denegado: Su inscripción se encuentra en estado PENDIENTE de aprobación y asignación.'
-                            ], 403);
-                        }
-
-                        $allBaja = $estudiante->inscripciones->every(function ($ins) {
-                            return in_array(strtolower(trim($ins->estado ?? '')), ['baja', 'retirado', 'de baja', 'inactivo']);
-                        });
-
-                        if ($allBaja) {
-                            return response()->json([
-                                'message' => 'Acceso denegado: Su inscripción académica se encuentra en estado DE BAJA o RETIRADO.'
+                                'message' => 'Su contrato ha expirado. Por favor, contáctese o diríjase a dirección para recontratar.'
                             ], 403);
                         }
                     }
                 }
-            }
 
-            // Iniciar sesión
-            Auth::login($user);
+                // 2. Validaciones para ESTUDIANTE
+                if ($estudiante) {
+                    $estEstado = strtolower(trim($estudiante->estado ?? 'activo'));
+                    if ($estEstado === 'pendiente') {
+                        return response()->json([
+                            'message' => 'Acceso denegado: Su registro de estudiante se encuentra en estado PENDIENTE de confirmación y asignación de paralelo.'
+                        ], 403);
+                    }
 
-            $userData = $user->toArray();
-            if ($docente) {
-                $userData['docente_id'] = $docente->id_docente;
-                $userData['rol'] = 'docente';
-            } elseif ($estudiante) {
-                $userData['estudiante_id'] = $estudiante->id_estudiante;
-                $userData['rol'] = 'estudiante';
-            } else {
-                $userData['rol'] = 'admin';
-            }
+                    if (in_array($estEstado, ['de baja', 'baja', 'inactivo', 'retirado'])) {
+                        return response()->json([
+                            'message' => 'Acceso denegado: Su registro de estudiante se encuentra DADO DE BAJA.'
+                        ], 403);
+                    }
 
-            $token = $user->createToken('auth_token')->plainTextToken;
-            $userData['token'] = $token;
-            $userData['usuario'] = $user->usuario;
-            $userData['debe_cambiar_password'] = (bool) $user->debe_cambiar_password;
+                    // Verificar inscripciones si existen
+                    if ($estudiante->inscripciones && $estudiante->inscripciones->isNotEmpty()) {
+                        $hasHabilitado = $estudiante->inscripciones->contains(function ($ins) {
+                            return in_array(strtolower(trim($ins->estado ?? '')), ['activo', 'habilitado', 'finalizado', 'aprobado']);
+                        });
 
-            // Registrar Bitácora de Sesión (IP, MAC, Modelo, Lugar, Hora de Ingreso)
-            try {
-                $ip = $request->header('CF-Connecting-IP') ?: ($request->header('X-Forwarded-For') ? explode(',', $request->header('X-Forwarded-For'))[0] : $request->ip());
-                $mac = $request->input('device_mac', $request->input('mac_address', $request->header('X-Device-UUID', 'N/A')));
-                $model = $request->input('device_model', $request->header('User-Agent', 'Navegador Web / Dispositivo Móvil'));
-                $location = $request->input('ubicacion_lugar', $request->input('ubicacion', 'Bolivia'));
-                $platform = $request->input('plataforma', (str_contains($request->header('User-Agent', ''), 'Capacitor') ? 'APK_ANDROID' : 'WEB_VERCEL'));
+                        if (!$hasHabilitado) {
+                            $allPendiente = $estudiante->inscripciones->every(function ($ins) {
+                                return strtolower(trim($ins->estado ?? '')) === 'pendiente';
+                            });
 
-                $bitacora = \App\Models\BitacoraSesion::create([
-                    'id_usuario' => $user->id_usuario,
-                    'usuario_nombre' => $user->usuario ?: $user->correo_institucional,
-                    'ip_address' => $ip,
-                    'mac_address' => $mac,
-                    'modelo_dispositivo' => substr($model, 0, 250),
-                    'ubicacion_lugar' => substr($location, 0, 250),
-                    'plataforma' => $platform,
-                    'hora_ingreso' => now(),
-                    'terminos_aceptados' => true
+                            if ($allPendiente) {
+                                return response()->json([
+                                    'message' => 'Acceso denegado: Su inscripción se encuentra en estado PENDIENTE de aprobación y asignación.'
+                                ], 403);
+                            }
+
+                            $allBaja = $estudiante->inscripciones->every(function ($ins) {
+                                return in_array(strtolower(trim($ins->estado ?? '')), ['baja', 'retirado', 'de baja', 'inactivo']);
+                            });
+
+                            if ($allBaja) {
+                                return response()->json([
+                                    'message' => 'Acceso denegado: Su inscripción académica se encuentra en estado DE BAJA o RETIRADO.'
+                                ], 403);
+                            }
+                        }
+                    }
+                }
+
+                // Iniciar sesión web de forma segura
+                try {
+                    Auth::login($user);
+                } catch (\Throwable $authErr) {
+                    \Illuminate\Support\Facades\Log::warning('Auth::login session optional skipped: ' . $authErr->getMessage());
+                }
+
+                $userData = $user->toArray();
+                if ($docente) {
+                    $userData['docente_id'] = $docente->id_docente;
+                    $userData['rol'] = 'docente';
+                } elseif ($estudiante) {
+                    $userData['estudiante_id'] = $estudiante->id_estudiante;
+                    $userData['rol'] = 'estudiante';
+                } else {
+                    $userData['rol'] = 'admin';
+                }
+
+                $token = $user->createToken('auth_token')->plainTextToken;
+                $userData['token'] = $token;
+                $userData['usuario'] = $user->usuario;
+                $userData['debe_cambiar_password'] = (bool) $user->debe_cambiar_password;
+
+                // Registrar Bitácora de Sesión (IP, MAC, Modelo, Lugar, Hora de Ingreso)
+                try {
+                    $ip = $request->header('CF-Connecting-IP') ?: ($request->header('X-Forwarded-For') ? explode(',', $request->header('X-Forwarded-For'))[0] : $request->ip());
+                    $mac = $request->input('device_mac', $request->input('mac_address', $request->header('X-Device-UUID', 'N/A')));
+                    $model = $request->input('device_model', $request->header('User-Agent', 'Navegador Web / Dispositivo Móvil'));
+                    $location = $request->input('ubicacion_lugar', $request->input('ubicacion', 'Bolivia'));
+                    $platform = $request->input('plataforma', (str_contains($request->header('User-Agent', ''), 'Capacitor') ? 'APK_ANDROID' : 'WEB_VERCEL'));
+
+                    $bitacora = \App\Models\BitacoraSesion::create([
+                        'id_usuario' => $user->id_usuario,
+                        'usuario_nombre' => $user->usuario ?: $user->correo_institucional,
+                        'ip_address' => $ip,
+                        'mac_address' => $mac,
+                        'modelo_dispositivo' => substr($model, 0, 250),
+                        'ubicacion_lugar' => substr($location, 0, 250),
+                        'plataforma' => $platform,
+                        'hora_ingreso' => now(),
+                        'terminos_aceptados' => true
+                    ]);
+
+                    $userData['id_bitacora'] = $bitacora->id_bitacora;
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning('No se pudo guardar la bitácora de sesión: ' . $e->getMessage());
+                }
+
+                return response()->json([
+                    'message' => 'Login exitoso',
+                    'user' => $userData,
+                    'token' => $token
                 ]);
-
-                $userData['id_bitacora'] = $bitacora->id_bitacora;
-            } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::warning('No se pudo guardar la bitácora de sesión: ' . $e->getMessage());
             }
 
             return response()->json([
-                'message' => 'Login exitoso',
-                'user' => $userData,
-                'token' => $token
+                'message' => 'Credenciales inválidas (usuario o contraseña incorrectos)'
+            ], 401);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Error en AuthController::login: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
             ]);
+            return response()->json([
+                'message' => 'Error interno al iniciar sesión: ' . $e->getMessage()
+            ], 500);
         }
-
-        return response()->json([
-            'message' => 'Credenciales inválidas (usuario o contraseña incorrectos)'
-        ], 401);
     }
 
     /**

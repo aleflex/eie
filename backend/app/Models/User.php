@@ -118,6 +118,11 @@ class User extends Authenticatable
         return $this->correo_institucional;
     }
 
+    public function getCorreoPersonalAttribute()
+    {
+        return $this->attributes['correo_personal'] ?? null;
+    }
+
     public function getFotoUrlAttribute()
     {
         return $this->attributes['foto_url'] ?? null;
