@@ -43,6 +43,8 @@ class DocenteController extends Controller
         $request->validate([
             'nombres' => ['required', 'string', 'max:255', 'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\.\-]+$/'],
             'apellidos' => ['nullable', 'string', 'max:255', 'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\.\-]+$/'],
+            'apellido_paterno' => ['nullable', 'string', 'max:255', 'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\.\-]+$/'],
+            'apellido_materno' => ['nullable', 'string', 'max:255', 'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\.\-]+$/'],
             'correo_electronico' => ['nullable', 'email:rfc,filter', 'max:255', 'unique:usuarios,correo_institucional'],
             'ci' => ['required', 'string', 'regex:/^[0-9]{7,8}$/', 'unique:usuarios,ci'],
             'expedido' => ['required', 'string', 'in:LP,CB,SC,OR,PT,TJ,CH,BE,PD'],
@@ -73,8 +75,18 @@ class DocenteController extends Controller
         try {
             DB::beginTransaction();
 
+            // Obtener apellidos combinados o desde paterno y materno
+            $apellidosDocente = null;
+            if ($request->has('apellido_paterno') || $request->has('apellido_materno') || $request->has('apellidoPaterno') || $request->has('apellidoMaterno')) {
+                $paterno = trim((string)$request->input('apellido_paterno', $request->input('apellidoPaterno', '')));
+                $materno = trim((string)$request->input('apellido_materno', $request->input('apellidoMaterno', '')));
+                $apellidosDocente = trim($paterno . ' ' . $materno) ?: null;
+            } elseif ($request->filled('apellidos')) {
+                $apellidosDocente = trim((string)$request->apellidos);
+            }
+
             // 1. Crear el usuario para el docente (Rol 3 = DOCENTE)
-            $username = User::generateUsername($request->nombres, $request->apellidos ?? '');
+            $username = User::generateUsername($request->nombres, $apellidosDocente ?? '');
             
             // Garantizar correo único institucional si no fue especificado manualmente
             if ($request->filled('correo_electronico')) {
@@ -98,7 +110,7 @@ class DocenteController extends Controller
                 'password' => Hash::make($cleanCi),
                 'debe_cambiar_password' => true,
                 'nombres' => $request->nombres,
-                'apellidos' => $request->apellidos,
+                'apellidos' => $apellidosDocente,
                 'ci' => $cleanCi,
                 'expedido' => $request->expedido,
                 'celular' => $request->telefono,
@@ -197,6 +209,8 @@ class DocenteController extends Controller
         $request->validate([
             'nombres' => ['required', 'string', 'max:255', 'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\.\-]+$/'],
             'apellidos' => ['nullable', 'string', 'max:255', 'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\.\-]+$/'],
+            'apellido_paterno' => ['nullable', 'string', 'max:255', 'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\.\-]+$/'],
+            'apellido_materno' => ['nullable', 'string', 'max:255', 'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\.\-]+$/'],
             'correo_electronico' => ['nullable', 'email:rfc,filter', 'max:255', 'unique:usuarios,correo_institucional,' . ($userId ?: 0) . ',id_usuario'],
             'ci' => ['nullable', 'string', 'regex:/^[0-9]{7,8}$/', 'unique:usuarios,ci,' . ($userId ?: 0) . ',id_usuario'],
             'expedido' => ['nullable', 'string', 'in:LP,CB,SC,OR,PT,TJ,CH,BE,PD'],
@@ -225,9 +239,18 @@ class DocenteController extends Controller
             DB::beginTransaction();
 
             // 1. Actualizar o crear el usuario para el docente (Rol 3 = DOCENTE)
+            $apellidosDocente = null;
+            if ($request->has('apellido_paterno') || $request->has('apellido_materno') || $request->has('apellidoPaterno') || $request->has('apellidoMaterno')) {
+                $paterno = trim((string)$request->input('apellido_paterno', $request->input('apellidoPaterno', '')));
+                $materno = trim((string)$request->input('apellido_materno', $request->input('apellidoMaterno', '')));
+                $apellidosDocente = trim($paterno . ' ' . $materno);
+            } elseif ($request->has('apellidos')) {
+                $apellidosDocente = trim((string)$request->apellidos);
+            }
+
             $cleanCi = preg_replace('/[^0-9]/', '', (string)$request->ci) ?: trim((string)$request->ci);
             if (!$userId) {
-                $username = User::generateUsername($request->nombres, $request->apellidos ?? '');
+                $username = User::generateUsername($request->nombres, $apellidosDocente ?? '');
                 $email = $request->correo_electronico ?: ($username . '@eie.edu.bo');
                 $user = User::create([
                     'id_rol' => 3, // DOCENTE
@@ -236,7 +259,7 @@ class DocenteController extends Controller
                     'password' => Hash::make($cleanCi),
                     'debe_cambiar_password' => true,
                     'nombres' => $request->nombres,
-                    'apellidos' => $request->apellidos,
+                    'apellidos' => $apellidosDocente,
                     'ci' => $cleanCi,
                     'expedido' => $request->expedido,
                     'estado' => 'ACTIVO',
@@ -247,7 +270,7 @@ class DocenteController extends Controller
                 if ($user) {
                     $updateData = [
                         'nombres' => $request->nombres,
-                        'apellidos' => $request->apellidos,
+                        'apellidos' => $apellidosDocente !== null ? $apellidosDocente : $user->apellidos,
                         'ci' => $cleanCi,
                         'expedido' => $request->expedido,
                         'celular' => $request->telefono,
@@ -255,7 +278,7 @@ class DocenteController extends Controller
                         'correo_institucional' => $request->correo_electronico ?: $user->correo_institucional,
                     ];
                     if (empty($user->usuario)) {
-                        $updateData['usuario'] = User::generateUsername($request->nombres, $request->apellidos ?? '', $user->id_usuario);
+                        $updateData['usuario'] = User::generateUsername($request->nombres, $apellidosDocente ?? '', $user->id_usuario);
                     }
                     $user->update($updateData);
                 }

@@ -32,6 +32,8 @@ class Docente extends Authenticatable
         'id',
         'nombres',
         'apellidos',
+        'apellido_paterno',
+        'apellido_materno',
         'ci',
         'telefono',
         'correo_electronico',
@@ -97,6 +99,36 @@ class Docente extends Authenticatable
             $this->user->apellidos = $value;
             $this->user->save();
         }
+    }
+
+    public function getApellidoPaternoAttribute()
+    {
+        $apellidos = trim($this->user ? ($this->user->apellidos ?? '') : '');
+        if (!$apellidos) return '';
+        $parts = preg_split('/\s+/', $apellidos);
+        return $parts[0] ?? '';
+    }
+
+    public function setApellidoPaternoAttribute($value)
+    {
+        $pat = trim((string)$value);
+        $mat = $this->apellido_materno;
+        $this->apellidos = trim($pat . ' ' . $mat);
+    }
+
+    public function getApellidoMaternoAttribute()
+    {
+        $apellidos = trim($this->user ? ($this->user->apellidos ?? '') : '');
+        if (!$apellidos) return '';
+        $parts = preg_split('/\s+/', $apellidos);
+        return count($parts) > 1 ? implode(' ', array_slice($parts, 1)) : '';
+    }
+
+    public function setApellidoMaternoAttribute($value)
+    {
+        $pat = $this->apellido_paterno;
+        $mat = trim((string)$value);
+        $this->apellidos = trim($pat . ' ' . $mat);
     }
 
     public function getCiAttribute()

@@ -108,9 +108,16 @@
                   class="form-control" required placeholder="Ej: Juan Carlos">
               </div>
               <div class="form-group">
-                <label for="apellidos">Apellidos</label>
-                <input type="text" id="apellidos" [(ngModel)]="selectedDocente.apellidos" name="apellidos"
-                  class="form-control" placeholder="Ej: Pérez Tapia">
+                <label for="apellido_paterno">Apellido Paterno *</label>
+                <input type="text" id="apellido_paterno" [(ngModel)]="selectedDocente.apellido_paterno"
+                  (input)="syncDocenteApellidos()" name="apellido_paterno"
+                  class="form-control" required placeholder="Ej: Valenzuela">
+              </div>
+              <div class="form-group">
+                <label for="apellido_materno">Apellido Materno</label>
+                <input type="text" id="apellido_materno" [(ngModel)]="selectedDocente.apellido_materno"
+                  (input)="syncDocenteApellidos()" name="apellido_materno"
+                  class="form-control" placeholder="Ej: Solares">
               </div>
               <div class="form-group">
                 <label for="ci">Cédula de Identidad (CI - Solo 7 u 8 dígitos) *</label>
@@ -259,7 +266,9 @@
             <tr>
               <th>Foto</th>
               <th>C.I.</th>
-              <th>Nombre Completo</th>
+              <th>Nombres</th>
+              <th>Ap. Paterno</th>
+              <th>Ap. Materno</th>
               <th>Celular</th>
               <th>Especialidad</th>
               <th>Contrato</th>
@@ -279,7 +288,9 @@
                 </div>
               </td>
               <td><strong>{{ docente.ci || 'N/A' }}</strong></td>
-              <td>{{ docente.nombres }} {{ docente.apellidos }}</td>
+              <td>{{ docente.nombres }}</td>
+              <td>{{ docente.apellido_paterno || '-' }}</td>
+              <td>{{ docente.apellido_materno || '-' }}</td>
               <td>{{ docente.telefono || 'N/A' }}</td>
               <td>{{ docente.especialidad || 'General' }}</td>
               <td>
@@ -332,7 +343,7 @@
               </td>
             </tr>
             <tr *ngIf="filteredDocentes.length === 0">
-              <td colspan="8" class="text-center py-4 text-muted">No hay instructores registrados o que coincidan con la búsqueda.</td>
+              <td colspan="10" class="text-center py-4 text-muted">No hay instructores registrados o que coincidan con la búsqueda.</td>
             </tr>
           </tbody>
         </table>

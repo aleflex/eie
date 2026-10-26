@@ -154,12 +154,31 @@ export class DocentesListComponent implements OnInit {
     });
   }
 
+  private normalizeDocenteNames(d: any) {
+    if (!d) return;
+    if (d.user) {
+      if (!d.nombres && d.user.nombres) d.nombres = d.user.nombres;
+      if (!d.apellidos && d.user.apellidos) d.apellidos = d.user.apellidos;
+      if (!d.apellido_paterno && d.user.apellido_paterno) d.apellido_paterno = d.user.apellido_paterno;
+      if (!d.apellido_materno && d.user.apellido_materno) d.apellido_materno = d.user.apellido_materno;
+    }
+    if (!d.apellido_paterno && !d.apellido_materno && d.apellidos) {
+      const parts = (d.apellidos + '').trim().split(/\s+/);
+      d.apellido_paterno = parts[0] || '';
+      d.apellido_materno = parts.slice(1).join(' ') || '';
+    } else if (!d.apellidos && (d.apellido_paterno || d.apellido_materno)) {
+      d.apellidos = [d.apellido_paterno, d.apellido_materno].filter(Boolean).join(' ');
+    }
+  }
+
   loadDocentes() {
     this.isLoading = true;
     this.docenteService.getDocentes().subscribe({
       next: (data) => {
-        this.docentes = data;
-        this.filteredDocentes = data;
+        const list = data || [];
+        list.forEach((d: any) => this.normalizeDocenteNames(d));
+        this.docentes = list;
+        this.filteredDocentes = list;
         this.isLoading = false;
       },
       error: (err) => {
@@ -177,7 +196,9 @@ export class DocentesListComponent implements OnInit {
 
     const term = this.searchTerm.toLowerCase();
     this.filteredDocentes = this.docentes.filter(d => {
-      const nameMatch = `${d.nombres} ${d.apellidos}`.toLowerCase().includes(term) || d.user?.name?.toLowerCase().includes(term);
+      const pat = d.apellido_paterno || '';
+      const mat = d.apellido_materno || '';
+      const nameMatch = `${d.nombres} ${d.apellidos} ${pat} ${mat}`.toLowerCase().includes(term) || d.user?.name?.toLowerCase().includes(term);
       const emailMatch = d.correo_electronico?.toLowerCase().includes(term) || d.user?.email?.toLowerCase().includes(term);
       const espMatch = d.especialidad?.toLowerCase().includes(term);
       const ciMatch = d.ci?.toLowerCase().includes(term);
@@ -209,6 +230,13 @@ export class DocentesListComponent implements OnInit {
     });
   }
 
+  syncDocenteApellidos() {
+    if (!this.selectedDocente) return;
+    const pat = (this.selectedDocente.apellido_paterno || '').trim();
+    const mat = (this.selectedDocente.apellido_materno || '').trim();
+    this.selectedDocente.apellidos = [pat, mat].filter(Boolean).join(' ');
+  }
+
   openCreateForm() {
     this.isEditing = false;
     this.docentePhotoFile = null;
@@ -218,6 +246,8 @@ export class DocentesListComponent implements OnInit {
     this.selectedDocente = {
       nombres: '',
       apellidos: '',
+      apellido_paterno: '',
+      apellido_materno: '',
       correo_electronico: '',
       ci: '',
       expedido: '',
@@ -249,6 +279,8 @@ export class DocentesListComponent implements OnInit {
       id: docente.id,
       nombres: docente.nombres || '',
       apellidos: docente.apellidos || '',
+      apellido_paterno: docente.apellido_paterno || '',
+      apellido_materno: docente.apellido_materno || '',
       correo_electronico: docente.correo_electronico || '',
       foto_url: docente.foto_url || '',
       ci: docente.ci || '',
@@ -265,6 +297,13 @@ export class DocentesListComponent implements OnInit {
       fecha_fin_contrato: docente.fecha_fin_contrato || '',
       user_id: docente.user_id
     };
+    if (!this.selectedDocente.apellido_paterno && !this.selectedDocente.apellido_materno && this.selectedDocente.apellidos) {
+      const parts = (this.selectedDocente.apellidos + '').trim().split(/\s+/);
+      this.selectedDocente.apellido_paterno = parts[0] || '';
+      this.selectedDocente.apellido_materno = parts.slice(1).join(' ') || '';
+    } else if (!this.selectedDocente.apellidos) {
+      this.selectedDocente.apellidos = [this.selectedDocente.apellido_paterno, this.selectedDocente.apellido_materno].filter(Boolean).join(' ');
+    }
     this.showForm = true;
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -288,9 +327,23 @@ export class DocentesListComponent implements OnInit {
       return;
     }
 
-    if (this.selectedDocente.apellidos && this.selectedDocente.apellidos.trim()) {
-      if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\.\-]+$/.test(this.selectedDocente.apellidos.trim())) {
-        alert('El campo Apellidos solo debe contener letras y espacios.');
+    this.syncDocenteApellidos();
+
+    if (!this.selectedDocente.apellido_paterno && !this.selectedDocente.apellidos) {
+      alert('El campo Apellido Paterno es obligatorio.');
+      return;
+    }
+
+    if (this.selectedDocente.apellido_paterno && this.selectedDocente.apellido_paterno.trim()) {
+      if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\.\-]+$/.test(this.selectedDocente.apellido_paterno.trim())) {
+        alert('El Apellido Paterno solo debe contener letras y espacios.');
+        return;
+      }
+    }
+
+    if (this.selectedDocente.apellido_materno && this.selectedDocente.apellido_materno.trim()) {
+      if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\.\-]+$/.test(this.selectedDocente.apellido_materno.trim())) {
+        alert('El Apellido Materno solo debe contener letras y espacios.');
         return;
       }
     }
@@ -344,6 +397,12 @@ export class DocentesListComponent implements OnInit {
     } else {
       const formData = new FormData();
       formData.append('nombres', this.selectedDocente.nombres.trim());
+      if (this.selectedDocente.apellido_paterno && this.selectedDocente.apellido_paterno.trim()) {
+        formData.append('apellido_paterno', this.selectedDocente.apellido_paterno.trim());
+      }
+      if (this.selectedDocente.apellido_materno && this.selectedDocente.apellido_materno.trim()) {
+        formData.append('apellido_materno', this.selectedDocente.apellido_materno.trim());
+      }
       if (this.selectedDocente.apellidos && this.selectedDocente.apellidos.trim()) {
         formData.append('apellidos', this.selectedDocente.apellidos.trim());
       }
@@ -415,6 +474,12 @@ export class DocentesListComponent implements OnInit {
 
     const formData = new FormData();
     formData.append('nombres', this.selectedDocente.nombres.trim());
+    if (this.selectedDocente.apellido_paterno && this.selectedDocente.apellido_paterno.trim()) {
+      formData.append('apellido_paterno', this.selectedDocente.apellido_paterno.trim());
+    }
+    if (this.selectedDocente.apellido_materno && this.selectedDocente.apellido_materno.trim()) {
+      formData.append('apellido_materno', this.selectedDocente.apellido_materno.trim());
+    }
     if (this.selectedDocente.apellidos && this.selectedDocente.apellidos.trim()) {
       formData.append('apellidos', this.selectedDocente.apellidos.trim());
     }
