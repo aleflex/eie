@@ -554,6 +554,10 @@
                             <span class="email-text" *ngIf="student.user?.email">{{ student.user.email }}</span>
                             <span class="text-muted italic small" *ngIf="!student.user?.email">Sin asignar</span>
                           </div>
+                          <div class="detail-field" *ngIf="student.correo_personal || student.user?.correo_personal">
+                            <span class="field-label">Correo Personal:</span>
+                            <span>{{ student.correo_personal || student.user?.correo_personal }}</span>
+                          </div>
                           <div class="detail-field">
                             <span class="field-label">Domicilio:</span>
                             <span>{{ student.domicilio || 'No especificado' }}</span>

@@ -21,8 +21,13 @@ class AccesoController extends Controller
         // 1. Obtener Docentes con su cuenta de usuario
         $docentes = Docente::with('user')->get()->map(function ($docente) {
             $user = $docente->user;
-            if ($user && empty($user->usuario)) {
-                $user->usuario = User::generateUsername($docente->nombres ?? $user->nombres, $docente->apellidos ?? $user->apellidos ?? '', $user->id_usuario);
+            if ($user) {
+                if (empty($user->usuario)) {
+                    $user->usuario = User::generateUsername($docente->nombres ?? $user->nombres, $docente->apellidos ?? $user->apellidos ?? '', $user->id_usuario);
+                }
+                if (empty($user->correo_institucional) || !str_contains($user->correo_institucional, '@doc.edu.eie.bo')) {
+                    $user->correo_institucional = User::generateInstitutionalEmail($user->usuario, 3, $user->id_usuario);
+                }
                 $user->save();
             }
             return [
@@ -34,7 +39,8 @@ class AccesoController extends Controller
                 'ci' => $docente->ci ?? 'N/A',
                 'tipo' => 'docente',
                 'usuario' => $user ? $user->usuario : null,
-                'correo_electronico' => $user ? $user->email : $docente->correo_electronico,
+                'correo_electronico' => $user ? $user->correo_institucional : ($docente->id_usuario ? "{$user->usuario}@doc.edu.eie.bo" : null),
+                'correo_personal' => $user?->correo_personal ?? $docente->correo_electronico,
                 'telefono' => $docente->telefono,
                 'tiene_cuenta' => $docente->id_usuario !== null,
                 'estado' => $docente->estado ?? 'Activo'
@@ -44,8 +50,13 @@ class AccesoController extends Controller
         // 2. Obtener Estudiantes con su cuenta de usuario
         $estudiantes = Estudiante::with('user')->get()->map(function ($estudiante) {
             $user = $estudiante->user;
-            if ($user && empty($user->usuario)) {
-                $user->usuario = User::generateUsername($estudiante->nombres ?? $user->nombres, $estudiante->apellidos ?? $user->apellidos ?? '', $user->id_usuario);
+            if ($user) {
+                if (empty($user->usuario)) {
+                    $user->usuario = User::generateUsername($estudiante->nombres ?? $user->nombres, $estudiante->apellidos ?? $user->apellidos ?? '', $user->id_usuario);
+                }
+                if (empty($user->correo_institucional) || !str_contains($user->correo_institucional, '@est.edu.eie.bo')) {
+                    $user->correo_institucional = User::generateInstitutionalEmail($user->usuario, 2, $user->id_usuario);
+                }
                 $user->save();
             }
             return [
@@ -57,7 +68,8 @@ class AccesoController extends Controller
                 'ci' => $estudiante->ci,
                 'tipo' => 'estudiante',
                 'usuario' => $user ? $user->usuario : null,
-                'correo_electronico' => $user ? $user->email : $estudiante->correo_electronico,
+                'correo_electronico' => $user ? $user->correo_institucional : ($estudiante->id_usuario ? "{$user->usuario}@est.edu.eie.bo" : null),
+                'correo_personal' => $user?->correo_personal ?? $estudiante->correo_electronico,
                 'telefono' => $estudiante->celular,
                 'tiene_cuenta' => $estudiante->id_usuario !== null,
                 'estado' => 'Activo'
@@ -154,21 +166,6 @@ class AccesoController extends Controller
                 $ci = $estudiante->ci;
             }
 
-            // Usar nombre de usuario personalizado o generar automático
-            $username = $request->filled('usuario') 
-                ? strtolower(trim($request->usuario)) 
-                : User::generateUsername($nombres, $apellidos);
-
-            $email = $request->filled('email') 
-                ? strtolower(trim($request->email)) 
-                : "{$username}@eie.edu.bo";
-
-            // Si no se envió contraseña, usar el carnet limpio (solo dígitos) por defecto
-            $cleanCi = $ci ? preg_replace('/[^0-9]/', '', (string)$ci) : '';
-            $passwordPlain = $request->filled('password') 
-                ? $request->password 
-                : ($cleanCi ?: 'password123');
-
             // Determinar rol
             $idRol = 1;
             if ($request->tipo === 'admin') {
@@ -179,10 +176,26 @@ class AccesoController extends Controller
                 $idRol = 2;
             }
 
+            // Usar nombre de usuario personalizado o generar automático
+            $username = $request->filled('usuario') 
+                ? strtolower(trim($request->usuario)) 
+                : User::generateUsername($nombres, $apellidos);
+
+            $email = $request->filled('email') 
+                ? strtolower(trim($request->email)) 
+                : User::generateInstitutionalEmail($username, $idRol);
+
+            // Si no se envió contraseña, usar el carnet limpio (solo dígitos) por defecto
+            $cleanCi = $ci ? preg_replace('/[^0-9]/', '', (string)$ci) : '';
+            $passwordPlain = $request->filled('password') 
+                ? $request->password 
+                : ($cleanCi ?: 'password123');
+
             // 1. Crear el usuario
             $user = User::create([
                 'id_rol' => $idRol,
                 'correo_institucional' => $email,
+                'correo_personal' => null,
                 'usuario' => $username,
                 'password' => Hash::make($passwordPlain),
                 'debe_cambiar_password' => true,

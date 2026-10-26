@@ -23,6 +23,7 @@ class User extends Authenticatable
     protected $fillable = [
         'id_rol',
         'correo_institucional',
+        'correo_personal',
         'usuario',
         'password',
         'debe_cambiar_password',
@@ -47,7 +48,7 @@ class User extends Authenticatable
         'remember_token',
     ];
 
-    protected $appends = ['id', 'name', 'email', 'correo_electronico', 'foto_url', 'estado_civil', 'grupo_sanguineo', 'apellido_paterno', 'apellido_materno'];
+    protected $appends = ['id', 'name', 'email', 'correo_electronico', 'correo_personal', 'foto_url', 'estado_civil', 'grupo_sanguineo', 'apellido_paterno', 'apellido_materno'];
 
     /**
      * Obtener los atributos que deben ser convertidos.
@@ -213,6 +214,34 @@ class User extends Authenticatable
         }
 
         return $username;
+    }
+
+    /**
+     * Genera un correo institucional único basado en el rol y el usuario
+     * Estudiante: usuario@est.edu.eie.bo
+     * Docente: usuario@doc.edu.eie.bo
+     * Admin: usuario@eie.edu.bo
+     */
+    public static function generateInstitutionalEmail(string $username, int $roleId = 2, ?int $ignoreUserId = null): string
+    {
+        $domain = match ($roleId) {
+            3 => 'doc.edu.eie.bo',
+            2 => 'est.edu.eie.bo',
+            default => 'eie.edu.bo',
+        };
+
+        $baseEmail = strtolower($username) . '@' . $domain;
+        $email = $baseEmail;
+        $counter = 2;
+
+        while (static::where('correo_institucional', $email)
+                    ->when($ignoreUserId, fn($q) => $q->where('id_usuario', '!=', $ignoreUserId))
+                    ->exists()) {
+            $email = strtolower($username) . $counter . '@' . $domain;
+            $counter++;
+        }
+
+        return $email;
     }
 
     /**

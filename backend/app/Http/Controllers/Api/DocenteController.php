@@ -88,24 +88,16 @@ class DocenteController extends Controller
             // 1. Crear el usuario para el docente (Rol 3 = DOCENTE)
             $username = User::generateUsername($request->nombres, $apellidosDocente ?? '');
             
-            // Garantizar correo único institucional si no fue especificado manualmente
-            if ($request->filled('correo_electronico')) {
-                $email = strtolower(trim($request->correo_electronico));
-            } else {
-                $baseEmail = $username . '@eie.edu.bo';
-                $email = $baseEmail;
-                $counter = 1;
-                while (User::where('correo_institucional', $email)->exists()) {
-                    $email = $username . $counter . '@eie.edu.bo';
-                    $counter++;
-                }
-            }
+            // Garantizar correo institucional automático @doc.edu.eie.bo
+            $personalEmail = $request->filled('correo_electronico') ? strtolower(trim($request->correo_electronico)) : null;
+            $email = User::generateInstitutionalEmail($username, 3);
 
             $cleanCi = preg_replace('/[^0-9]/', '', (string)$request->ci) ?: trim((string)$request->ci);
 
             $user = User::create([
                 'id_rol' => 3, // DOCENTE
                 'correo_institucional' => $email,
+                'correo_personal' => $personalEmail,
                 'usuario' => $username,
                 'password' => Hash::make($cleanCi),
                 'debe_cambiar_password' => true,
@@ -251,10 +243,11 @@ class DocenteController extends Controller
             $cleanCi = preg_replace('/[^0-9]/', '', (string)$request->ci) ?: trim((string)$request->ci);
             if (!$userId) {
                 $username = User::generateUsername($request->nombres, $apellidosDocente ?? '');
-                $email = $request->correo_electronico ?: ($username . '@eie.edu.bo');
+                $email = User::generateInstitutionalEmail($username, 3);
                 $user = User::create([
                     'id_rol' => 3, // DOCENTE
                     'correo_institucional' => $email,
+                    'correo_personal' => $request->correo_electronico ? strtolower(trim($request->correo_electronico)) : null,
                     'usuario' => $username,
                     'password' => Hash::make($cleanCi),
                     'debe_cambiar_password' => true,
@@ -268,6 +261,12 @@ class DocenteController extends Controller
             } else {
                 $user = User::find($userId);
                 if ($user) {
+                    $uName = !empty($user->usuario) ? $user->usuario : User::generateUsername($request->nombres, $apellidosDocente ?? '', $user->id_usuario);
+                    $instEmail = $user->correo_institucional;
+                    if (empty($instEmail) || !str_contains($instEmail, '@doc.edu.eie.bo')) {
+                        $instEmail = User::generateInstitutionalEmail($uName, 3, $user->id_usuario);
+                    }
+
                     $updateData = [
                         'nombres' => $request->nombres,
                         'apellidos' => $apellidosDocente !== null ? $apellidosDocente : $user->apellidos,
@@ -275,10 +274,11 @@ class DocenteController extends Controller
                         'expedido' => $request->expedido,
                         'celular' => $request->telefono,
                         'telefono' => $request->telefono,
-                        'correo_institucional' => $request->correo_electronico ?: $user->correo_institucional,
+                        'usuario' => $uName,
+                        'correo_institucional' => $instEmail,
                     ];
-                    if (empty($user->usuario)) {
-                        $updateData['usuario'] = User::generateUsername($request->nombres, $apellidosDocente ?? '', $user->id_usuario);
+                    if ($request->filled('correo_electronico')) {
+                        $updateData['correo_personal'] = strtolower(trim($request->correo_electronico));
                     }
                     $user->update($updateData);
                 }

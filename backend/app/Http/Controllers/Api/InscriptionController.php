@@ -165,10 +165,21 @@ class InscriptionController extends Controller
                         ->orWhere('correo_institucional', strtolower($request->email))
                         ->first();
             
+            $personalEmail = strtolower(trim((string)$request->email));
+
             if ($user) {
                 // Actualizar usuario existente
+                if (empty($user->usuario)) {
+                    $user->usuario = User::generateUsername($request->nombres, $request->apellidos, $user->id_usuario);
+                }
+                $instEmail = $user->correo_institucional;
+                if (empty($instEmail) || str_contains($instEmail, '@gmail') || str_contains($instEmail, '@hotmail') || str_contains($instEmail, '@yahoo') || !str_contains($instEmail, '@est.edu.eie.bo')) {
+                    $instEmail = User::generateInstitutionalEmail($user->usuario, 2, $user->id_usuario);
+                }
+
                 $user->update([
-                    'correo_institucional' => strtolower($request->email),
+                    'correo_institucional' => $instEmail,
+                    'correo_personal' => $personalEmail,
                     'nombres' => $request->nombres,
                     'apellidos' => $request->apellidos,
                     'ci' => $cleanCi,
@@ -178,9 +189,12 @@ class InscriptionController extends Controller
             } else {
                 // Crear nuevo usuario con rol Estudiante (id_rol = 2)
                 $username = User::generateUsername($request->nombres, $request->apellidos);
+                $instEmail = User::generateInstitutionalEmail($username, 2);
+
                 $user = User::create([
                     'id_rol' => 2, // 2 = estudiante en tabla roles
-                    'correo_institucional' => strtolower($request->email),
+                    'correo_institucional' => $instEmail,
+                    'correo_personal' => $personalEmail,
                     'usuario' => $username,
                     'password' => Hash::make($cleanCi),
                     'debe_cambiar_password' => true,

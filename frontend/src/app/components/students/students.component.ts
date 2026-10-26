@@ -822,8 +822,9 @@ export class StudentsComponent implements OnInit, OnDestroy {
   getCategoriaEstudiante(student?: any): string {
     const s = student || this.currentStudentForDocs;
     if (!s) return 'normal';
-    const tipo = (s.tipo_usuario || '').toLowerCase();
-    const grado = (s.grado_academico || s.grado || '').toLowerCase();
+    const tipo = String(s.tipo_usuario || '').toLowerCase();
+    const rawGrado = s.grado_academico || (typeof s.grado === 'object' ? (s.grado?.nombre || s.grado?.nombre_grado) : s.grado) || '';
+    const grado = String(rawGrado || '').toLowerCase();
     const carnetMilitar = s.carnet_militar;
     const carnetCossmil = s.carnet_cossmil;
 
