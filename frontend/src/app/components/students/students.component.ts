@@ -889,7 +889,11 @@ export class StudentsComponent implements OnInit, OnDestroy {
     this.isVerifyingFile = true;
     this.docWarning = 'Analizando autenticidad y textos oficiales del documento...';
 
-    const verification = await this.documentVerifier.verifyDocument(file, this.docType);
+    const verification = await this.documentVerifier.verifyDocument(file, this.docType, {
+      expectedCi: this.selectedStudent?.ci,
+      expectedNombres: this.selectedStudent?.nombres,
+      expectedApellidos: this.selectedStudent?.apellidos
+    });
     this.isVerifyingFile = false;
 
     if (!verification.valid) {

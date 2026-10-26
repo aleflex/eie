@@ -482,7 +482,11 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
     this.docWarning = 'Analizando autenticidad y textos oficiales del documento...';
     this.cdr.detectChanges();
 
-    const verification = await this.documentVerifier.verifyDocument(file, this.docType);
+    const verification = await this.documentVerifier.verifyDocument(file, this.docType, {
+      expectedCi: this.student?.ci || this.user?.ci,
+      expectedNombres: this.student?.nombres || this.user?.nombres,
+      expectedApellidos: this.student?.apellidos || this.user?.apellidos
+    });
     this.isVerifyingFile = false;
     this.cdr.detectChanges();
 
@@ -791,50 +795,97 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
   async captureFrame() {
     if (this.isAnalyzing) return;
     const videoEl = document.getElementById('scannerVideoFeed') as HTMLVideoElement;
-    if (!videoEl || !videoEl.videoWidth) return;
+    if (!videoEl || !videoEl.videoWidth || !videoEl.videoHeight) return;
 
-    const vW = videoEl.videoWidth;
-    const vH = videoEl.videoHeight;
-    const targetAspect = this.isCarnetMode ? 1.58 : 0.71;
+    const guideBox = document.querySelector('.kyc-guide-box') as HTMLElement;
+    const vRect = videoEl.getBoundingClientRect();
+    const gRect = guideBox ? guideBox.getBoundingClientRect() : null;
 
-    let cropW = vW * 0.85;
-    let cropH = cropW / targetAspect;
+    let sourceX = 0;
+    let sourceY = 0;
+    let sourceW = videoEl.videoWidth;
+    let sourceH = videoEl.videoHeight;
 
-    if (cropH > vH * 0.85) {
-      cropH = vH * 0.85;
-      cropW = cropH * targetAspect;
+    if (gRect && vRect && vRect.width > 0 && vRect.height > 0) {
+      // Mapeo 1:1 exacto entre el recuadro guía y el stream de la cámara (object-fit: cover)
+      const videoRatio = videoEl.videoWidth / videoEl.videoHeight;
+      const elemRatio = vRect.width / vRect.height;
+
+      let renderedW: number;
+      let renderedH: number;
+      let offsetX: number;
+      let offsetY: number;
+
+      if (elemRatio > videoRatio) {
+        renderedW = vRect.width;
+        renderedH = vRect.width / videoRatio;
+        offsetX = 0;
+        offsetY = (vRect.height - renderedH) / 2;
+      } else {
+        renderedH = vRect.height;
+        renderedW = vRect.height * videoRatio;
+        offsetX = (vRect.width - renderedW) / 2;
+        offsetY = 0;
+      }
+
+      const scale = videoEl.videoWidth / renderedW;
+      const boxX = (gRect.left - vRect.left) - offsetX;
+      const boxY = (gRect.top - vRect.top) - offsetY;
+
+      sourceX = Math.max(0, boxX * scale);
+      sourceY = Math.max(0, boxY * scale);
+      sourceW = Math.min(videoEl.videoWidth - sourceX, gRect.width * scale);
+      sourceH = Math.min(videoEl.videoHeight - sourceY, gRect.height * scale);
+    } else {
+      const targetAspect = this.isCarnetMode ? 1.58 : 0.71;
+      sourceW = videoEl.videoWidth * 0.88;
+      sourceH = sourceW / targetAspect;
+      if (sourceH > videoEl.videoHeight * 0.88) {
+        sourceH = videoEl.videoHeight * 0.88;
+        sourceW = sourceH * targetAspect;
+      }
+      sourceX = (videoEl.videoWidth - sourceW) / 2;
+      sourceY = (videoEl.videoHeight - sourceH) / 2;
     }
 
-    const startX = (vW - cropW) / 2;
-    const startY = (vH - cropH) / 2;
-
     const canvas = document.createElement('canvas');
-    canvas.width = Math.round(cropW);
-    canvas.height = Math.round(cropH);
+    // Resolución HD para optimizar legibilidad de OCR y evitar recortes
+    const outWidth = Math.max(1280, Math.round(sourceW));
+    const outHeight = Math.round(outWidth * (sourceH / sourceW));
+    canvas.width = outWidth;
+    canvas.height = outHeight;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    ctx.drawImage(videoEl, startX, startY, cropW, cropH, 0, 0, canvas.width, canvas.height);
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(videoEl, sourceX, sourceY, sourceW, sourceH, 0, 0, canvas.width, canvas.height);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.94);
 
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
       try { navigator.vibrate(60); } catch (e) {}
     }
 
-    // Validación inteligente de documento real con OCR y Anti-Spoofing
+    // Validación inteligente de documento real, paso actual y verificación de identidad
     this.isAnalyzing = true;
-    this.analyzingMsg = `Verificando que sea ${this.docType} real...`;
+    this.analyzingMsg = `Verificando ${this.isCarnetMode ? (this.scannerStep === 1 ? 'Anverso (Frente)' : 'Reverso (Dorso)') : this.docType} e identidad...`;
     this.cdr.detectChanges();
 
-    const verification = await this.documentVerifier.verifyDocument(dataUrl, this.docType);
+    const verification = await this.documentVerifier.verifyDocument(dataUrl, this.docType, {
+      step: this.isCarnetMode ? this.scannerStep : undefined,
+      formato: this.formatoCaptura,
+      expectedCi: this.student?.ci || this.user?.ci,
+      expectedNombres: this.student?.nombres || this.user?.nombres,
+      expectedApellidos: this.student?.apellidos || this.user?.apellidos
+    });
     this.isAnalyzing = false;
     this.cdr.detectChanges();
 
     if (!verification.valid) {
       Swal.fire({
         icon: 'error',
-        title: 'Documento No Reconocido',
-        text: verification.errorMessage || 'La captura no parece ser un documento oficial válido. Enfoca el documento físico o su fotocopia oficial y evita enfocar pantallas de computadora o imágenes no relacionadas.',
+        title: 'Documento No Válido',
+        text: verification.errorMessage || 'La captura no parece ser un documento oficial válido. Enfoca el documento físico original y asegúrate de que pertenezca al estudiante registrado.',
         confirmButtonColor: '#0284c7',
         confirmButtonText: 'Entendido, volver a enfocar'
       });

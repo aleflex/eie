@@ -10,6 +10,14 @@ export interface DocumentValidationResult {
   matchedKeywords?: string[];
 }
 
+export interface DocumentVerifierOptions {
+  step?: number; // 1 = frente (anverso), 2 = reverso (posterior)
+  formato?: 'tarjeta_2_caras' | 'hoja_unica';
+  expectedCi?: string;
+  expectedNombres?: string;
+  expectedApellidos?: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -207,7 +215,8 @@ export class DocumentVerifierService {
    */
   public async verifyDocument(
     source: File | string, // File objeto o DataUrl base64 de la cámara
-    expectedDocType: string
+    expectedDocType: string,
+    options?: DocumentVerifierOptions
   ): Promise<DocumentValidationResult> {
     const typeKey = (expectedDocType || '').toLowerCase().trim();
     const dictionary = this.officialDictionaries[typeKey] || this.officialDictionaries['carnet de identidad'];
@@ -250,7 +259,132 @@ export class DocumentVerifierService {
       };
     }
 
-    // 2. Coincidencia de palabras clave institucionales del documento esperado
+    // 2. Validación de Cédula de Identidad por Pasos (Anverso vs Reverso)
+    if (typeKey === 'carnet de identidad' && options?.step) {
+      const hasMrz = /I<BOL/i.test(rawText) || /BOL\d{6,}/i.test(rawText) || /<{4,}/.test(rawText);
+      const hasReverseFields = normText.includes('DOMICILIO') || normText.includes('ESTADO CIVIL') || normText.includes('OCUPACION') || normText.includes('PROFESION') || normText.includes('HUELLA') || normText.includes('PULGAR');
+      const hasFrontFields = normText.includes('NOMBRES') || normText.includes('APELLIDOS') || normText.includes('NACIMIENTO') || normText.includes('EXPIRACION') || normText.includes('EMISION') || normText.includes('SERIE') || normText.includes('SECCION');
+      const hasCedulaTitle = normText.includes('CEDULA DE IDENTIDAD') || normText.includes('CARNET DE IDENTIDAD') || normText.includes('IDENTIFICACION PERSONAL');
+
+      // Si estamos en Paso 1 (FRENTE / ANVERSO)
+      if (options.step === 1) {
+        // Si detectamos el reverso en el paso 1
+        if ((hasMrz || (normText.includes('DOMICILIO') && normText.includes('ESTADO CIVIL'))) && !hasCedulaTitle && !hasFrontFields) {
+          return {
+            valid: false,
+            docType: expectedDocType,
+            confidence: 0,
+            detectedText: rawText,
+            errorMessage: '⚠️ Estás enfocando el REVERSO (dorso) del carnet.\n\nEn el Paso 1 debes enfocar y capturar el FRENTE (Anverso con tu fotografía, nombres y apellidos).'
+          };
+        }
+
+        // En el Paso 1 debe tener membrete oficial o campos de anverso
+        const frontKeywords = ['ESTADO PLURINACIONAL', 'BOLIVIA', 'CEDULA DE IDENTIDAD', 'SEGIP', 'NOMBRES', 'APELLIDOS', 'NACIMIENTO', 'EXPIRACION', 'EMISION', 'SERIE', 'SECCION'];
+        const matchedFront = frontKeywords.filter(k => normText.includes(this.normalize(k)));
+        if (matchedFront.length < 2) {
+          return {
+            valid: false,
+            docType: expectedDocType,
+            confidence: 0,
+            detectedText: rawText,
+            errorMessage: '⚠️ No se reconoció el FRENTE del carnet de identidad.\n\nAsegúrate de que el carnet esté completo dentro del recuadro guía, con buena iluminación y sin recortar los membretes oficiales ni tus nombres.'
+          };
+        }
+      }
+
+      // Si estamos en Paso 2 (REVERSO / POSTERIOR)
+      if (options.step === 2) {
+        // Si detectamos que volvió a enfocar el frente
+        if (hasCedulaTitle && hasFrontFields && !hasMrz && !hasReverseFields) {
+          return {
+            valid: false,
+            docType: expectedDocType,
+            confidence: 0,
+            detectedText: rawText,
+            errorMessage: '⚠️ Has vuelto a enfocar el FRENTE del carnet.\n\nEn el Paso 2 debes dar la vuelta al carnet y enfocar el REVERSO (Dorso con código MRZ, domicilio y huella dactilar).'
+          };
+        }
+
+        // En el Paso 2 debe tener código MRZ o campos de reverso
+        if (!hasMrz && !hasReverseFields) {
+          return {
+            valid: false,
+            docType: expectedDocType,
+            confidence: 0,
+            detectedText: rawText,
+            errorMessage: '⚠️ No se reconoció el REVERSO del carnet de identidad.\n\nNo se detectó el código inferior de lectura óptica (I<BOL...) ni los datos de domicilio/estado civil. Asegúrate de enfocar el reverso completo dentro de la guía.'
+          };
+        }
+      }
+    }
+
+    // 3. Validación de Identidad del Estudiante (Anti-Suplantación de Identidad)
+    if (options?.expectedCi || options?.expectedNombres || options?.expectedApellidos) {
+      const cleanExpectedCi = (options.expectedCi || '').toString().trim().replace(/[^0-9]/g, '');
+
+      // Extraer palabras relevantes de nombres y apellidos del estudiante (mínimo 3 letras)
+      const extractTokens = (str: string) => (str || '')
+        .toUpperCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .split(/[^A-Z]+/)
+        .filter(w => w.length >= 3 && !['DEL', 'DE', 'LA', 'LOS', 'LAS', 'SAN'].includes(w));
+
+      const expectedTokens = [
+        ...extractTokens(options.expectedNombres || ''),
+        ...extractTokens(options.expectedApellidos || '')
+      ];
+
+      // ¿Coincide el número de C.I.?
+      let ciFound = false;
+      if (cleanExpectedCi.length >= 5) {
+        const mrzCiPattern = new RegExp(`BOL${cleanExpectedCi}`, 'i');
+        const exactCiPattern = new RegExp(`\\b${cleanExpectedCi}\\b`);
+        ciFound = exactCiPattern.test(rawText) || normText.includes(cleanExpectedCi) || mrzCiPattern.test(rawText);
+      }
+
+      // ¿Coincide al menos un nombre o apellido significativo del estudiante?
+      let nameFound = false;
+      if (expectedTokens.length > 0) {
+        nameFound = expectedTokens.some(token => normText.includes(token));
+      }
+
+      // Buscar si en el documento se leen números que parezcan otros C.I. (6 a 8 dígitos)
+      const plainNums: string[] = rawText.match(/\b\d{6,8}\b/g) || [];
+      const mrzBolMatches: string[] = (rawText.match(/BOL(\d{6,8})/ig) || []).map(m => m.replace(/BOL/i, ''));
+      const allNumbers: string[] = [...plainNums, ...mrzBolMatches];
+      
+      const distinctForeignCis = Array.from(new Set(allNumbers.filter(num => num !== cleanExpectedCi)));
+
+      // Identificar si la imagen contiene claramente datos de identidad de una persona
+      const hasPersonalDataDetected = distinctForeignCis.length > 0 ||
+        normText.includes('NOMBRES') ||
+        normText.includes('APELLIDOS') ||
+        /I<BOL[0-9A-Z]+/i.test(rawText);
+
+      // Si se detectaron datos personales pero NO coinciden ni el C.I. ni los nombres con el estudiante
+      if (!ciFound && !nameFound && hasPersonalDataDetected) {
+        const detectedSample = distinctForeignCis[0] ? ` (C.I. ajeno detectado: ${distinctForeignCis[0]})` : '';
+        const studentInfo = [
+          options.expectedNombres,
+          options.expectedApellidos,
+          options.expectedCi ? `C.I. ${options.expectedCi}` : ''
+        ].filter(Boolean).join(' ');
+
+        return {
+          valid: false,
+          docType: expectedDocType,
+          confidence: 0,
+          detectedText: rawText,
+          errorMessage: `⚠️ El carnet fotografiado no pertenece al estudiante registrado.\n\n` +
+            `Los datos del carnet no coinciden con tu cuenta registrada (${studentInfo})${detectedSample}.\n\n` +
+            `Por motivos de seguridad y validación oficial, debes escanear únicamente tu propio carnet de identidad.`
+        };
+      }
+    }
+
+    // 4. Coincidencia de palabras clave institucionales del documento esperado
     const matchedKeywords: string[] = [];
     for (const kw of dictionary.keywords) {
       const normKw = this.normalize(kw);
@@ -259,14 +393,14 @@ export class DocumentVerifierService {
       }
     }
 
-    // Verificación especial para código MRZ de C.I. boliviano (ej: I<BOL o líneas <<<)
+    // Verificación especial para código MRZ de C.I. boliviano
     if (typeKey === 'carnet de identidad') {
       if (/I<BOL/i.test(rawText) || /BOL\d{6,}/i.test(rawText) || /<{4,}/.test(rawText)) {
         matchedKeywords.push('CÓDIGO MRZ / DORSO C.I.');
       }
     }
 
-    // 3. Evaluar si cumple con los requisitos mínimos oficiales
+    // 5. Evaluar si cumple con los requisitos mínimos oficiales
     if (matchedKeywords.length >= dictionary.minRequired) {
       return {
         valid: true,
