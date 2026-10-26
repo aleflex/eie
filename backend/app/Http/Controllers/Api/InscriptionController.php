@@ -43,9 +43,23 @@ class InscriptionController extends Controller
             } catch (\Throwable $e) {}
         }
 
+        // Sincronizar apellidos si vienen divididos como apellidoPaterno y apellidoMaterno
+        if (!$request->filled('apellidos')) {
+            $paterno = $request->input('apellidoPaterno', $request->input('apellido_paterno', ''));
+            $materno = $request->input('apellidoMaterno', $request->input('apellido_materno', ''));
+            $comb = trim($paterno . ' ' . $materno);
+            if (!empty($comb)) {
+                $request->merge(['apellidos' => $comb]);
+            }
+        }
+
         $validationRules = [
             'nombres' => ['required', 'string', 'min:2', 'max:255', 'regex:/^[\pL\s\.\'\-]+$/u'],
             'apellidos' => ['required', 'string', 'max:255', 'regex:/^[\pL\s\.\'\-]+$/u'],
+            'apellidoPaterno' => ['nullable', 'string', 'max:255', 'regex:/^[\pL\s\.\'\-]+$/u'],
+            'apellidoMaterno' => ['nullable', 'string', 'max:255', 'regex:/^[\pL\s\.\'\-]+$/u'],
+            'apellido_paterno' => ['nullable', 'string', 'max:255', 'regex:/^[\pL\s\.\'\-]+$/u'],
+            'apellido_materno' => ['nullable', 'string', 'max:255', 'regex:/^[\pL\s\.\'\-]+$/u'],
             'ci' => 'required|string|min:5|max:30',
             'email' => 'required|email',
             'celularPrefix' => 'nullable|string',
@@ -245,9 +259,6 @@ class InscriptionController extends Controller
                 'domicilio' => $request->domicilio,
                 'anio_egreso_bachiller' => $request->anioBachiller,
                 'hermanos_inscritos' => is_numeric($request->hermanosInscritos) ? intval($request->hermanosInscritos) : 0,
-                'nombre_padres' => $request->nombrePadres ?? $request->nombre_padres,
-                'ci_tutor' => $request->ciTutor ?? $request->ci_tutor,
-                'contacto_emergencia' => $contactoEmergenciaCompleto ?: ($contEmergenciaRaw ?? null),
                 'tipo_usuario' => $request->userType ?? $request->tipo_usuario ?? 'normal',
                 'estado' => 'Activo'
             ];

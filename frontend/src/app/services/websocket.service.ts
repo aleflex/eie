@@ -28,9 +28,24 @@ export class WebSocketService implements OnDestroy {
 
   constructor(private ngZone: NgZone) {
     if (typeof window !== 'undefined') {
+      // Cerrar limpiamente al entrar en Back-Forward Cache (bfcache) o cambiar de página
+      window.addEventListener('pagehide', () => {
+        this.stopHeartbeat();
+        if (this.reconnectTimer) {
+          clearTimeout(this.reconnectTimer);
+          this.reconnectTimer = null;
+        }
+        if (this.socket) {
+          try {
+            this.socket.close(1000, 'Page hidden / entered bfcache');
+          } catch (e) {}
+          this.socket = null;
+        }
+      });
+
       // Manejar restauración desde Back-Forward Cache (bfcache)
       window.addEventListener('pageshow', (event) => {
-        if (event.persisted) {
+        if (event.persisted || !this.socket || this.socket.readyState !== WebSocket.OPEN) {
           this.reconnectAttempts = 0;
           this.connect();
         }

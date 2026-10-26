@@ -431,6 +431,8 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
 
     const fecha = this.inscriptionForm.get('fechaNacimiento')?.value;
     const nombres = (this.inscriptionForm.get('nombres')?.value || '').trim();
+    const pat = (this.inscriptionForm.get('apellidoPaterno')?.value || '').trim();
+    const mat = (this.inscriptionForm.get('apellidoMaterno')?.value || '').trim();
     const apellidosStr = (this.inscriptionForm.get('apellidos')?.value || '').trim();
     const apellidos = apellidosStr ? apellidosStr.split(/\s+/) : [];
 
@@ -443,14 +445,22 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
     }
 
     let letPart = '';
-    if (apellidos.length > 0 && apellidos[0]) {
+    if (pat) {
+      letPart += pat.charAt(0).toUpperCase();
+    } else if (apellidos.length > 0 && apellidos[0]) {
       letPart += apellidos[0].charAt(0).toUpperCase();
     }
-    if (apellidos.length > 1 && apellidos[1]) {
+
+    if (mat) {
+      letPart += mat.charAt(0).toUpperCase();
+    } else if (apellidos.length > 1 && apellidos[1]) {
       letPart += apellidos[1].charAt(0).toUpperCase();
+    } else if (pat.length > 1) {
+      letPart += pat.charAt(1).toUpperCase();
     } else if (apellidos.length > 0 && apellidos[0].length > 1) {
       letPart += apellidos[0].charAt(1).toUpperCase();
     }
+
     if (nombres.length > 0) {
       letPart += nombres.charAt(0).toUpperCase();
     }
@@ -464,7 +474,9 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
     this.inscriptionForm = this.fb.group({
       userType: ['normal', Validators.required],
       nombres: ['', [Validators.required, Validators.minLength(3), Validators.pattern(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/)]],
-      apellidos: ['', [Validators.required, Validators.minLength(2), Validators.pattern(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/)]],
+      apellidoPaterno: ['', [Validators.required, Validators.minLength(2), Validators.pattern(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/)]],
+      apellidoMaterno: ['', [Validators.minLength(2), Validators.pattern(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/)]],
+      apellidos: [''],
       gradoAcademico: [''],
       armaEspecialidad: [''],
       lugarNacimiento: ['', Validators.required],
@@ -480,7 +492,7 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
       celular: ['', [Validators.required, Validators.pattern(/^[0-9]{8}$/)]],
       anioBachiller: ['', [Validators.required, Validators.pattern(/^(19[5-9]\d|20[0-2]\d)$/)]],
       edad: ['', [Validators.required, Validators.min(5), Validators.max(60)]],
-      email: ['', [Validators.required, Validators.email]],
+      email: ['', [Validators.required, Validators.email, Validators.pattern(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/)]],
       domicilio: ['', Validators.required],
       horario: ['', Validators.required],
       nivel: ['', Validators.required],
@@ -520,12 +532,18 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
       }
     });
 
-    // Escuchar cambios de nombres y apellidos para COSSMIL
-    this.inscriptionForm.get('nombres')?.valueChanges.subscribe(() => {
+    // Escuchar cambios de nombres y apellidos (Paterno y Materno) para COSSMIL y sincronizar apellidos completos
+    const syncApellidos = () => {
+      const pat = (this.inscriptionForm.get('apellidoPaterno')?.value || '').trim();
+      const mat = (this.inscriptionForm.get('apellidoMaterno')?.value || '').trim();
+      const full = [pat, mat].filter(Boolean).join(' ');
+      this.inscriptionForm.get('apellidos')?.patchValue(full, { emitEvent: false });
       this.autoGenerateCossmil();
-    });
+    };
 
-    this.inscriptionForm.get('apellidos')?.valueChanges.subscribe(() => {
+    this.inscriptionForm.get('apellidoPaterno')?.valueChanges.subscribe(syncApellidos);
+    this.inscriptionForm.get('apellidoMaterno')?.valueChanges.subscribe(syncApellidos);
+    this.inscriptionForm.get('nombres')?.valueChanges.subscribe(() => {
       this.autoGenerateCossmil();
     });
 
@@ -777,7 +795,7 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
     this.isSubmitted = true;
 
     if (step === 1) {
-      const step1Fields = ['userType', 'nombres', 'apellidos', 'ci', 'lugarNacimiento', 'fechaNacimiento', 'edad', 'estadoCivil', 'nombrePadres', 'ciTutor', 'contactoEmergenciaPrefix', 'contactoEmergencia'];
+      const step1Fields = ['userType', 'nombres', 'apellidoPaterno', 'apellidoMaterno', 'ci', 'lugarNacimiento', 'fechaNacimiento', 'edad', 'estadoCivil', 'nombrePadres', 'ciTutor', 'contactoEmergenciaPrefix', 'contactoEmergencia'];
       let isValid = true;
       step1Fields.forEach(field => {
         const control = this.inscriptionForm.get(field);
@@ -896,10 +914,14 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
         else if (f['nombres'].errors['minlength']) errors.push('• Nombres: Mínimo 3 letras.');
         else if (f['nombres'].errors['pattern']) errors.push('• Nombres: Solo se permiten letras (no se admiten números).');
       }
-      if (f['apellidos'].errors) {
-        if (f['apellidos'].errors['required']) errors.push('• Apellidos: Campo obligatorio.');
-        else if (f['apellidos'].errors['minlength']) errors.push('• Apellidos: Mínimo 2 letras.');
-        else if (f['apellidos'].errors['pattern']) errors.push('• Apellidos: Solo se permiten letras (no se admiten números).');
+      if (f['apellidoPaterno']?.errors) {
+        if (f['apellidoPaterno'].errors['required']) errors.push('• Apellido Paterno: Campo obligatorio.');
+        else if (f['apellidoPaterno'].errors['minlength']) errors.push('• Apellido Paterno: Mínimo 2 letras.');
+        else if (f['apellidoPaterno'].errors['pattern']) errors.push('• Apellido Paterno: Solo se permiten letras (no se admiten números).');
+      }
+      if (f['apellidoMaterno']?.errors) {
+        if (f['apellidoMaterno'].errors['minlength']) errors.push('• Apellido Materno: Mínimo 2 letras.');
+        else if (f['apellidoMaterno'].errors['pattern']) errors.push('• Apellido Materno: Solo se permiten letras (no se admiten números).');
       }
       if (f['ci'].errors) {
         errors.push('• Cédula de Identidad: Debe contener entre 7 y 8 dígitos numéricos.');
@@ -936,7 +958,7 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
       }
     } else if (step === 2) {
       if (f['email'].errors) {
-        errors.push('• Correo Electrónico: Ingresa un correo válido (ej. usuario@ejemplo.com).');
+        errors.push('• Correo Electrónico: Tiene que ser un correo electrónico válido con @ (ej. usuario@correo.com).');
       }
       if (f['celular'].errors) {
         const rule = this.currentPhoneRule;
@@ -1579,6 +1601,19 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
 
     const formData = new FormData();
     const formVal = this.inscriptionForm.value;
+
+    const pat = (formVal.apellidoPaterno || '').trim();
+    const mat = (formVal.apellidoMaterno || '').trim();
+    if (pat) {
+      formData.set('apellido_paterno', pat);
+      formData.set('apellidoPaterno', pat);
+    }
+    if (mat) {
+      formData.set('apellido_materno', mat);
+      formData.set('apellidoMaterno', mat);
+    }
+    const fullAp = [pat, mat].filter(Boolean).join(' ') || (formVal.apellidos || '').trim();
+    formData.set('apellidos', fullAp);
 
     // Solo anexar campos de texto que apliquen y que no estén vacíos
     Object.keys(formVal).forEach(key => {

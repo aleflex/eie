@@ -304,7 +304,7 @@ class Estudiante extends Model
     public function setNombrePadresAttribute($value)
     {
         $val = !empty($value) ? trim((string)$value) : '';
-        if ($val === '') {
+        if ($val === '' || empty($this->id_estudiante)) {
             return;
         }
 
@@ -350,6 +350,9 @@ class Estudiante extends Model
 
     public function getCiTutorAttribute()
     {
+        if (empty($this->id_estudiante)) {
+            return null;
+        }
         $resp = \DB::table('responsables')
             ->join('estudiante_responsable', 'responsables.id_responsable', '=', 'estudiante_responsable.id_responsable')
             ->where('estudiante_responsable.id_estudiante', $this->id_estudiante)
@@ -359,6 +362,10 @@ class Estudiante extends Model
 
     public function setCiTutorAttribute($value)
     {
+        if (empty($this->id_estudiante)) {
+            return;
+        }
+
         $cleanCi = !empty($value) ? trim((string)$value) : null;
         if ($cleanCi === '') {
             $cleanCi = null;
@@ -414,6 +421,9 @@ class Estudiante extends Model
 
     public function getContactoEmergenciaAttribute()
     {
+        if (empty($this->id_estudiante)) {
+            return null;
+        }
         $cont = \DB::table('contactos_emergencia')
             ->where('id_estudiante', $this->id_estudiante)
             ->first();
@@ -425,7 +435,7 @@ class Estudiante extends Model
 
     public function setContactoEmergenciaAttribute($value)
     {
-        if (empty($value)) {
+        if (empty($value) || empty($this->id_estudiante)) {
             return;
         }
 

@@ -5,11 +5,80 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Documento;
 use App\Models\Estudiante;
+use App\Models\Configuracion;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 class DocumentController extends Controller
 {
+    /**
+     * Verifica si el usuario o estudiante tiene autorización para subir o eliminar documentos.
+     * Criterio:
+     * 1. Administrador / personal directivo siempre tiene autorización.
+     * 2. Si el periodo oficial de inscripciones está activo (fecha_inicio <= ahora <= fecha_fin),
+     *    TODOS los estudiantes tienen autorización abierta para cargar y modificar su expediente.
+     * 3. Si el periodo oficial de inscripciones ha finalizado o no está activo, el estudiante
+     *    requiere habilitación/autorización expresa otorgada por el administrador (documentos_habilitados_hasta >= ahora).
+     */
+    private function tienePermisoDocumentos($estudianteId, $user = null): array
+    {
+        // 1. Roles administrativos y docentes con permisos siempre autorizados
+        $esAdmin = $user && (
+            ($user->id_rol == 1) ||
+            in_array(strtolower($user->rol ?? ''), ['admin', 'administrador', 'superadmin', 'director', 'secretaria']) ||
+            in_array(strtolower($user->tipo_usuario ?? ''), ['admin', 'docente'])
+        );
+        if ($esAdmin) {
+            return ['permitido' => true];
+        }
+
+        $ahora = now();
+
+        // 2. Verificar periodo oficial de inscripción y matrículas
+        $fechaInicio = Configuracion::where('clave', 'fecha_inicio_inscripcion')->value('valor');
+        $fechaFin = Configuracion::where('clave', 'fecha_fin_inscripcion')->value('valor');
+
+        $periodoAbierto = true;
+        if (!empty($fechaInicio)) {
+            try {
+                $inicio = Carbon::parse($fechaInicio);
+                if ($ahora->lessThan($inicio)) {
+                    $periodoAbierto = false;
+                }
+            } catch (\Throwable $e) {}
+        }
+        if ($periodoAbierto && !empty($fechaFin)) {
+            try {
+                $fin = Carbon::parse($fechaFin);
+                if ($ahora->greaterThan($fin)) {
+                    $periodoAbierto = false;
+                }
+            } catch (\Throwable $e) {}
+        }
+
+        // Si estamos dentro del periodo de inscripción, TODOS los estudiantes tienen acceso abierto
+        if ($periodoAbierto && (!empty($fechaInicio) || !empty($fechaFin))) {
+            return ['permitido' => true, 'motivo' => 'periodo_general'];
+        }
+
+        // 3. Fuera del periodo de inscripciones: verificación individual por autorización del administrador
+        $estudiante = Estudiante::find($estudianteId);
+        if ($estudiante && !empty($estudiante->documentos_habilitados_hasta)) {
+            try {
+                $hasta = Carbon::parse($estudiante->documentos_habilitados_hasta);
+                if ($ahora->lessThanOrEqualTo($hasta)) {
+                    return ['permitido' => true, 'motivo' => 'autorizacion_individual', 'hasta' => $hasta];
+                }
+            } catch (\Throwable $e) {}
+        }
+
+        return [
+            'permitido' => false,
+            'mensaje' => 'La carga de documentos se encuentra bloqueada. El periodo de inscripciones no está activo y no cuentas con autorización individual vigente del administrador.'
+        ];
+    }
+
     // Listar documentos de un estudiante
     public function index($estudianteId)
     {
@@ -31,29 +100,13 @@ class DocumentController extends Controller
             $file = $request->file('archivo');
             $estudianteId = $request->estudiante_id;
 
-            // Verificar si el usuario autenticado es un estudiante y si tiene el permiso vencido/inactivo
-            $user = auth()->user();
-            if ($user) {
-                $checkEstudiante = \App\Models\Estudiante::where('id_usuario', $user->id_usuario)->first();
-                if ($checkEstudiante && $checkEstudiante->id_estudiante == $estudianteId) {
-                    $hasta = $checkEstudiante->documentos_habilitados_hasta;
-                    if (!$hasta || now()->greaterThan(\Carbon\Carbon::parse($hasta))) {
-                        return response()->json([
-                            'message' => 'No tienes permisos activos para subir documentos. Solicita autorización al administrador.'
-                        ], 403);
-                    }
-                }
-            } else {
-                // Fallback: Si no hay sesión activa en el request, validar la fecha en el estudiante objetivo
-                $estudianteObj = Estudiante::find($estudianteId);
-                if ($estudianteObj) {
-                    $hasta = $estudianteObj->documentos_habilitados_hasta;
-                    if (!$hasta || now()->greaterThan(\Carbon\Carbon::parse($hasta))) {
-                        return response()->json([
-                            'message' => 'No tienes permisos activos para subir documentos. Solicita autorización al administrador.'
-                        ], 403);
-                    }
-                }
+            // Verificar permisos de carga de documentos
+            $user = auth()->user() ?? request()->user();
+            $checkPermiso = $this->tienePermisoDocumentos($estudianteId, $user);
+            if (!$checkPermiso['permitido']) {
+                return response()->json([
+                    'message' => $checkPermiso['mensaje'] ?? 'No tienes permisos activos para subir documentos. Solicita autorización al administrador.'
+                ], 403);
             }
 
             // Generar un nombre único para el archivo
@@ -114,39 +167,13 @@ class DocumentController extends Controller
             return response()->json(['message' => 'Documento no encontrado'], 404);
         }
 
-        // Verificar vigencia del plazo de documentos para el estudiante
+        // Verificar permisos de modificación/eliminación de documentos
         $user = auth()->user() ?? request()->user();
-        $esAdmin = $user && ($user->id_rol == 1 || $user->tipo_usuario === 'admin');
-
-        // Si no es administrador, aplicar regla estricta de fecha límite
-        if (!$esAdmin) {
-            $estudianteObj = null;
-            if ($user) {
-                $estudianteObj = Estudiante::where('id_usuario', $user->id_usuario)->first();
-            }
-            if (!$estudianteObj) {
-                $estudianteObj = Estudiante::find($documento->id_estudiante);
-            }
-
-            if ($estudianteObj) {
-                $hasta = $estudianteObj->documentos_habilitados_hasta;
-                if (empty($hasta)) {
-                    return response()->json([
-                        'message' => 'No cuentas con un plazo activo para modificar o eliminar documentos. Contacta con la administración de la Escuela de Idiomas.'
-                    ], 403);
-                }
-
-                $fechaLimite = \Carbon\Carbon::parse($hasta);
-                if (now()->greaterThan($fechaLimite)) {
-                    return response()->json([
-                        'message' => 'El plazo para modificar o eliminar documentos ha vencido el ' . $fechaLimite->format('d/m/Y H:i') . '. No se permite la eliminación fuera de esta fecha límite.'
-                    ], 403);
-                }
-            } else {
-                return response()->json([
-                    'message' => 'No tienes autorización para eliminar este documento.'
-                ], 403);
-            }
+        $checkPermiso = $this->tienePermisoDocumentos($documento->id_estudiante, $user);
+        if (!$checkPermiso['permitido']) {
+            return response()->json([
+                'message' => $checkPermiso['mensaje'] ?? 'No cuentas con un plazo activo para modificar o eliminar documentos. Contacta con la administración de la Escuela de Idiomas.'
+            ], 403);
         }
 
         try {

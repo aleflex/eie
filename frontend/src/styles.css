@@ -642,7 +642,7 @@ html {
   display: flex !important;
   justify-content: space-between !important;
   align-items: center !important;
-  padding: 0.85rem 1.25rem !important;
+  padding: max(0.85rem, env(safe-area-inset-top, 0px)) 1.25rem 0.85rem 1.25rem !important;
   background: #1e293b !important;
   color: #ffffff !important;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
@@ -677,15 +677,17 @@ html {
   background: rgba(255, 255, 255, 0.12);
   color: #ffffff !important;
   border: 1px solid rgba(255, 255, 255, 0.2);
-  padding: 0.4rem 0.75rem;
+  padding: 0.45rem 0.75rem;
   border-radius: 8px;
   font-size: 0.82rem;
+  font-weight: 500;
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
   text-decoration: none;
   transition: all 0.2s ease;
   cursor: pointer;
+  touch-action: manipulation;
 }
 
 .btn-preview-action:hover {
@@ -694,12 +696,12 @@ html {
 }
 
 .btn-preview-close {
-  background: rgba(239, 68, 68, 0.2) !important;
-  color: #fca5a5 !important;
-  border: 1px solid rgba(239, 68, 68, 0.4) !important;
-  width: 36px !important;
-  height: 36px !important;
-  min-width: 36px !important;
+  background: rgba(239, 68, 68, 0.25) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(239, 68, 68, 0.5) !important;
+  width: 38px !important;
+  height: 38px !important;
+  min-width: 38px !important;
   border-radius: 50% !important;
   display: flex !important;
   align-items: center !important;
@@ -708,6 +710,7 @@ html {
   transition: all 0.2s ease !important;
   padding: 0 !important;
   flex-shrink: 0 !important;
+  touch-action: manipulation !important;
 }
 
 .btn-preview-close:hover {
@@ -721,7 +724,7 @@ html {
   display: flex !important;
   flex-direction: column !important;
   align-items: center !important;
-  justify-content: center !important;
+  justify-content: flex-start !important;
   overflow: auto !important;
   width: 100% !important;
   box-sizing: border-box !important;
@@ -751,19 +754,36 @@ html {
   display: flex !important;
   flex-direction: column !important;
   align-items: center !important;
-  justify-content: center !important;
+  justify-content: flex-start !important;
   padding: 1rem !important;
   box-sizing: border-box !important;
   background: #0b1120 !important;
-  overflow: auto !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch !important;
 }
 
 .image-viewer-img {
+  margin: auto 0 !important;
   max-width: 100% !important;
   max-height: 100% !important;
+  height: auto !important;
   object-fit: contain !important;
   border-radius: 8px !important;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6) !important;
+  transition: all 0.2s ease !important;
+  cursor: pointer;
+}
+
+.image-viewer-img.img-fit-width {
+  max-height: none !important;
+  width: 100% !important;
+  max-width: 860px !important;
+}
+
+.image-viewer-img.img-fit-screen {
+  max-height: 85vh !important;
+  width: auto !important;
 }
 
 .preview-fallback-box {
@@ -771,6 +791,7 @@ html {
   background: rgba(30, 41, 59, 0.7);
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.1);
+  margin: auto !important;
 }
 
 @media (max-width: 768px) {
@@ -778,7 +799,8 @@ html {
     width: 100% !important;
     max-width: 100% !important;
     height: 100% !important;
-    max-height: 100% !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
     margin: 0 !important;
     padding: 0 !important;
   }
@@ -786,21 +808,59 @@ html {
   .preview-modal-content {
     border-radius: 0 !important;
     height: 100% !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
     border: none !important;
+    padding-bottom: env(safe-area-inset-bottom, 12px) !important;
   }
 
   .preview-modal-header {
-    padding: 0.65rem 0.85rem !important;
+    /* Padding superior seguro para no solapar reloj, wifi, batería y notch */
+    padding-top: max(1.1rem, env(safe-area-inset-top, 38px)) !important;
+    padding-bottom: 0.75rem !important;
+    padding-left: max(1rem, env(safe-area-inset-left, 16px)) !important;
+    padding-right: max(1rem, env(safe-area-inset-right, 16px)) !important;
+    min-height: 68px !important;
   }
 
   .preview-modal-header .modal-title {
-    font-size: 0.92rem !important;
+    font-size: 0.95rem !important;
   }
 
-  .pdf-viewer-frame,
+  .btn-preview-close {
+    width: 42px !important;
+    height: 42px !important;
+    min-width: 42px !important;
+  }
+
+  .pdf-viewer-frame {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
   .image-viewer-container {
     width: 100% !important;
     max-width: 100% !important;
+    padding: 0.75rem 0.5rem !important;
+    justify-content: flex-start !important;
+    align-items: center !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  .image-viewer-img {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: none !important; /* En celular llena el ancho para que el texto sea 100% legible */
+    border-radius: 8px !important;
+    margin: 0.5rem auto !important;
+  }
+
+  .image-viewer-img.img-fit-screen {
+    max-height: calc(100dvh - 130px) !important;
+    width: auto !important;
   }
 }
 

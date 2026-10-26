@@ -14,6 +14,8 @@ import { WebSocketService } from '../../services/websocket.service';
 import { Subject, Subscription } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { ImageCompressorService } from '../../services/image-compressor.service';
+import { DocumentVerifierService } from '../../services/document-verifier.service';
+import Swal from 'sweetalert2';
 import { AuthService } from '../../services/auth.service';
 
 @Component({
@@ -99,6 +101,8 @@ export class StudentsComponent implements OnInit, OnDestroy {
   isPreviewPdf: boolean = false;
   isPreviewImage: boolean = false;
   previewError: boolean = false;
+  isImageFitWidth: boolean = true;
+  isVerifyingFile: boolean = false;
 
   // Sincronización en tiempo real vía WebSockets (cero polling)
   private wsSubs: Subscription[] = [];
@@ -112,6 +116,7 @@ export class StudentsComponent implements OnInit, OnDestroy {
     private wsService: WebSocketService,
     private sanitizer: DomSanitizer,
     private imageCompressor: ImageCompressorService,
+    private documentVerifier: DocumentVerifierService,
     private http: HttpClient,
     private authService: AuthService
   ) {}
@@ -783,6 +788,7 @@ export class StudentsComponent implements OnInit, OnDestroy {
         'Carnet Militar',
         'Carnet de COSSMIL',
         'Carnet de Identidad',
+        'Título de Bachiller',
         'Certificado de Nacimiento'
       ];
     }
@@ -860,13 +866,13 @@ export class StudentsComponent implements OnInit, OnDestroy {
     });
   }
 
-  onFileSelected(event: any) {
+  async onFileSelected(event: any) {
     const file = event.target.files[0];
     if (!file) return;
 
     // Validación de extensión
     const allowedExtensions = ['pdf', 'jpg', 'jpeg', 'png'];
-    const extension = file.name.split('.').pop().toLowerCase();
+    const extension = file.name.split('.').pop()?.toLowerCase() ?? '';
     if (!allowedExtensions.includes(extension)) {
       alert('Solo se permiten archivos PDF, JPG o PNG');
       event.target.value = '';
@@ -880,36 +886,36 @@ export class StudentsComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Reiniciar advertencia
+    this.isVerifyingFile = true;
+    this.docWarning = 'Analizando autenticidad y textos oficiales del documento...';
+
+    const verification = await this.documentVerifier.verifyDocument(file, this.docType);
+    this.isVerifyingFile = false;
+
+    if (!verification.valid) {
+      this.selectedFile = null;
+      event.target.value = '';
+      this.docWarning = '';
+      Swal.fire({
+        icon: 'error',
+        title: 'Documento No Válido',
+        text: verification.errorMessage || 'El archivo seleccionado no parece ser un documento oficial válido. Asegúrate de subir el documento físico original o su fotocopia oficial.',
+        confirmButtonColor: '#0284c7',
+        confirmButtonText: 'Seleccionar archivo correcto'
+      });
+      return;
+    }
+
     this.docWarning = '';
-
-    // Validación inteligente de coherencia de nombre de archivo (Soft Warning)
-    const nameLower = file.name.toLowerCase();
-    const typeLower = this.docType.toLowerCase();
-
-    if (typeLower === 'carnet de identidad') {
-      if (nameLower.includes('certificado') || nameLower.includes('nacimiento') || nameLower.includes('titulo') || nameLower.includes('bachiller') || nameLower.includes('deposito') || nameLower.includes('boleta') || nameLower.includes('comprobante')) {
-        this.docWarning = `El archivo "${file.name}" parece ser un Certificado, Título o Depósito, y no un Carnet de Identidad. Asegúrate de estar subiendo el archivo correcto.`;
-      }
-    }
-
-    if (typeLower === 'título de bachiller') {
-      if (nameLower.includes('carnet') || nameLower.includes('ci') || nameLower.includes('nacimiento') || nameLower.includes('deposito') || nameLower.includes('boleta') || nameLower.includes('comprobante') || nameLower.includes('certificado')) {
-        this.docWarning = `El archivo "${file.name}" parece ser una Identificación, Certificado o Depósito, y no un Título de Bachiller. Asegúrate de estar subiendo el archivo correcto.`;
-      }
-    }
-
-    if (typeLower === 'certificado de nacimiento') {
-      if (nameLower.includes('carnet') || nameLower.includes('ci') || nameLower.includes('titulo') || nameLower.includes('bachiller') || nameLower.includes('deposito') || nameLower.includes('boleta') || nameLower.includes('comprobante')) {
-        this.docWarning = `El archivo "${file.name}" parece ser una Identificación, Título o Depósito, y no un Certificado de Nacimiento. Asegúrate de estar subiendo el archivo correcto.`;
-      }
-    }
-
-    if (typeLower === 'boleta de depósito') {
-      if (nameLower.includes('carnet') || nameLower.includes('ci') || nameLower.includes('titulo') || nameLower.includes('bachiller') || nameLower.includes('nacimiento')) {
-        this.docWarning = `El archivo "${file.name}" parece ser una Identificación, Título o Certificado, y no un Comprobante de Depósito. Asegúrate de estar subiendo el archivo correcto.`;
-      }
-    }
+    Swal.fire({
+      icon: 'success',
+      title: 'Documento Verificado',
+      text: `Se verificó la autenticidad del documento (${(verification.matchedKeywords || []).slice(0, 3).join(', ')}). Listo para subir.`,
+      timer: 2500,
+      showConfirmButton: false,
+      toast: true,
+      position: 'top-end'
+    });
 
     this.selectedFile = file;
   }
@@ -1001,7 +1007,12 @@ export class StudentsComponent implements OnInit, OnDestroy {
     this.isPreviewPdf = ext === 'pdf';
     this.isPreviewImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext);
 
+    this.isImageFitWidth = true;
     this.showPreviewModal = true;
+  }
+
+  toggleImageFit() {
+    this.isImageFitWidth = !this.isImageFitWidth;
   }
 
   onPreviewImgError() {
@@ -1016,6 +1027,7 @@ export class StudentsComponent implements OnInit, OnDestroy {
     this.isPreviewPdf = false;
     this.isPreviewImage = false;
     this.previewError = false;
+    this.isImageFitWidth = true;
   }
 
   onImageError(event: any) {

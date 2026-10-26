@@ -826,3 +826,45 @@
   object-fit: contain;
   max-height: 220px;
 }
+
+@media (max-width: 768px) {
+  .kyc-modal-overlay {
+    padding: 0 !important;
+  }
+
+  .kyc-scanner-container {
+    max-width: 100% !important;
+    height: 100% !important;
+    height: 100dvh !important;
+    border-radius: 0 !important;
+    border: none !important;
+  }
+
+  .kyc-scanner-header {
+    padding-top: max(1.1rem, env(safe-area-inset-top, 38px)) !important;
+    padding-bottom: 0.75rem !important;
+    padding-left: max(1rem, env(safe-area-inset-left, 16px)) !important;
+    padding-right: max(1rem, env(safe-area-inset-right, 16px)) !important;
+  }
+
+  .kyc-camera-viewport {
+    flex: 1 !important;
+    height: 100% !important;
+    max-height: calc(100dvh - 130px) !important;
+  }
+}
+
+.kyc-analyzing-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(8px);
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}

@@ -10,6 +10,8 @@ import { InscriptionService } from '../../services/inscription.service';
 import { WebSocketService } from '../../services/websocket.service';
 import { downloadFile } from '../../utils/file-downloader';
 import { ImageCompressorService } from '../../services/image-compressor.service';
+import { DocumentVerifierService } from '../../services/document-verifier.service';
+import Swal from 'sweetalert2';
 import { environment } from '../../../environments/environment';
 
 @Component({
@@ -26,6 +28,7 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
   isLoading: boolean = true;
   isRefreshing: boolean = false;
   activeTab: string = 'profile'; // 'profile', 'history', 'documents'
+  periodoInscripcion: any = null;
 
   private wsSubs: Subscription[] = [];
   private userSub: Subscription | null = null;
@@ -43,12 +46,16 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
   setTab(tab: string) {
     this.activeTab = tab;
     this.closeMobileMenu();
+    if (tab === 'documents') {
+      this.cargarPeriodoInscripcion();
+    }
     if (this.user && this.user.estudiante_id) {
       this.loadStudentProfile(this.user.estudiante_id, true);
     }
   }
 
   refreshData() {
+    this.cargarPeriodoInscripcion();
     if (this.user && this.user.estudiante_id) {
       this.isRefreshing = true;
       this.loadStudentProfile(this.user.estudiante_id, true, () => {
@@ -91,6 +98,13 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
   isPreviewPdf: boolean = false;
   isPreviewImage: boolean = false;
   previewError: boolean = false;
+  isImageFitWidth: boolean = true;
+
+  // Verificación y formato de documento
+  isAnalyzing: boolean = false;
+  analyzingMsg: string = '';
+  isVerifyingFile: boolean = false;
+  formatoCaptura: 'tarjeta_2_caras' | 'hoja_unica' = 'tarjeta_2_caras';
 
   constructor(
     private authService: AuthService,
@@ -101,6 +115,7 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
     private sanitizer: DomSanitizer,
     private titleService: Title,
     private imageCompressor: ImageCompressorService,
+    private documentVerifier: DocumentVerifierService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -115,6 +130,8 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
     this.user = this.authService.getUser();
     if (this.user?.rol === 'admin') { this.router.navigate(['/admin']); return; }
     if (this.user?.rol === 'docente') { this.router.navigate(['/docente-dashboard']); return; }
+
+    this.cargarPeriodoInscripcion();
 
     // Pre-cargar datos del estudiante de inmediato si ya existen en la sesión del usuario
     if (this.user?.estudiante) {
@@ -288,6 +305,7 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
         'Carnet Militar',
         'Carnet de COSSMIL',
         'Carnet de Identidad',
+        'Título de Bachiller',
         'Certificado de Nacimiento'
       ];
     }
@@ -439,7 +457,7 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
     });
   }
 
-  onFileSelected(event: any) {
+  async onFileSelected(event: any) {
     const file = event.target.files[0];
     if (!file) return;
 
@@ -457,13 +475,38 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.docWarning = '';
-    const nameLower = file.name.toLowerCase();
-    const typeLower = this.docType.toLowerCase();
+    this.isVerifyingFile = true;
+    this.docWarning = 'Analizando autenticidad y textos oficiales del documento...';
+    this.cdr.detectChanges();
 
-    if (typeLower === 'carnet de identidad' && (nameLower.includes('certificado') || nameLower.includes('titulo') || nameLower.includes('deposito'))) {
-      this.docWarning = `El archivo "${file.name}" parece no ser un Carnet de Identidad. Confirma que es el correcto.`;
+    const verification = await this.documentVerifier.verifyDocument(file, this.docType);
+    this.isVerifyingFile = false;
+    this.cdr.detectChanges();
+
+    if (!verification.valid) {
+      this.selectedFile = null;
+      event.target.value = '';
+      this.docWarning = '';
+      Swal.fire({
+        icon: 'error',
+        title: 'Documento No Válido',
+        text: verification.errorMessage || 'El archivo seleccionado no parece ser un documento oficial válido. Asegúrate de subir el documento físico original o su fotocopia oficial.',
+        confirmButtonColor: '#0284c7',
+        confirmButtonText: 'Seleccionar archivo correcto'
+      });
+      return;
     }
+
+    this.docWarning = '';
+    Swal.fire({
+      icon: 'success',
+      title: 'Documento Verificado',
+      text: `Se verificó la autenticidad del documento (${(verification.matchedKeywords || []).slice(0, 3).join(', ')}). Listo para subir.`,
+      timer: 2500,
+      showConfirmButton: false,
+      toast: true,
+      position: 'top-end'
+    });
 
     // Comprimir imágenes; PDFs pasan sin cambios (RF16 - T2)
     if (file.type.startsWith('image/')) {
@@ -601,7 +644,12 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
     this.isPreviewPdf = isDataPdf || ext === 'pdf';
     this.isPreviewImage = isDataImg || ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext);
 
+    this.isImageFitWidth = true;
     this.showPreviewModal = true;
+  }
+
+  toggleImageFit() {
+    this.isImageFitWidth = !this.isImageFitWidth;
   }
 
   onPreviewImgError() {
@@ -616,6 +664,7 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
     this.isPreviewPdf = false;
     this.isPreviewImage = false;
     this.previewError = false;
+    this.isImageFitWidth = true;
   }
 
   // --- ESCÁNER INTELIGENTE DE DOCUMENTOS (KYC / 2 CARAS) ---
@@ -630,15 +679,34 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
   scannerError: string = '';
 
   get isCarnetMode(): boolean {
-    return (this.docType || '').toLowerCase().includes('carnet');
+    const dt = (this.docType || '').toLowerCase();
+    if (dt.includes('nacimiento') || dt.includes('título') || dt.includes('titulo')) {
+      return false; // Certificados y Títulos siempre son hoja completa vertical
+    }
+    return this.formatoCaptura === 'tarjeta_2_caras';
+  }
+
+  setFormatoCaptura(formato: 'tarjeta_2_caras' | 'hoja_unica') {
+    this.formatoCaptura = formato;
+    this.scannerStep = 1;
+    this.scannerFrontImage = null;
+    this.scannerBackImage = null;
   }
 
   openScanner() {
+    const dt = (this.docType || '').toLowerCase();
+    if (dt.includes('nacimiento') || dt.includes('título') || dt.includes('titulo')) {
+      this.formatoCaptura = 'hoja_unica';
+    } else {
+      this.formatoCaptura = 'tarjeta_2_caras';
+    }
     this.isScannerOpen = true;
     this.scannerStep = 1;
     this.scannerFrontImage = null;
     this.scannerBackImage = null;
     this.scannerError = '';
+    this.isAnalyzing = false;
+    this.analyzingMsg = '';
     setTimeout(() => {
       this.initCamera();
     }, 150);
@@ -651,6 +719,8 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
     this.scannerFrontImage = null;
     this.scannerBackImage = null;
     this.scannerError = '';
+    this.isAnalyzing = false;
+    this.analyzingMsg = '';
   }
 
   async initCamera() {
@@ -712,7 +782,8 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
     }
   }
 
-  captureFrame() {
+  async captureFrame() {
+    if (this.isAnalyzing) return;
     const videoEl = document.getElementById('scannerVideoFeed') as HTMLVideoElement;
     if (!videoEl || !videoEl.videoWidth) return;
 
@@ -742,6 +813,26 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
 
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
       try { navigator.vibrate(60); } catch (e) {}
+    }
+
+    // Validación inteligente de documento real con OCR y Anti-Spoofing
+    this.isAnalyzing = true;
+    this.analyzingMsg = `Verificando que sea ${this.docType} real...`;
+    this.cdr.detectChanges();
+
+    const verification = await this.documentVerifier.verifyDocument(dataUrl, this.docType);
+    this.isAnalyzing = false;
+    this.cdr.detectChanges();
+
+    if (!verification.valid) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Documento No Reconocido',
+        text: verification.errorMessage || 'La captura no parece ser un documento oficial válido. Enfoca el documento físico o su fotocopia oficial y evita enfocar pantallas de computadora o imágenes no relacionadas.',
+        confirmButtonColor: '#0284c7',
+        confirmButtonText: 'Entendido, volver a enfocar'
+      });
+      return; // Bloquea la captura! No avanza
     }
 
     if (this.isCarnetMode) {
@@ -893,21 +984,114 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
     return new Blob([ab], { type: mimeString });
   }
 
+  cargarPeriodoInscripcion() {
+    this.inscriptionService.obtenerPeriodoInscripcion().subscribe({
+      next: (res) => {
+        this.periodoInscripcion = res;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.periodoInscripcion = null;
+      }
+    });
+  }
+
   puedeSubirDocumentos(): boolean {
-    if (!this.student || !this.student.documentos_habilitados_hasta) {
-      return false;
-    }
-    const hasta = new Date(this.student.documentos_habilitados_hasta);
     const ahora = new Date();
-    return ahora <= hasta;
+
+    // 1. Periodo Oficial de Inscripciones (abierto para todos los estudiantes)
+    if (this.periodoInscripcion) {
+      if (this.periodoInscripcion.abierto === true) {
+        return true;
+      }
+      if (this.periodoInscripcion.fecha_inicio && this.periodoInscripcion.fecha_fin) {
+        const inicio = new Date(this.periodoInscripcion.fecha_inicio);
+        const fin = new Date(this.periodoInscripcion.fecha_fin);
+        if (ahora >= inicio && ahora <= fin) {
+          return true;
+        }
+      }
+    }
+
+    // 2. Fuera del periodo de inscripciones: verificación de habilitación individual del administrador
+    if (this.student && this.student.documentos_habilitados_hasta) {
+      const hasta = new Date(this.student.documentos_habilitados_hasta);
+      if (ahora <= hasta) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   obtenerFechaLimiteFormatted(): string {
-    if (!this.student || !this.student.documentos_habilitados_hasta) {
+    const ahora = new Date();
+    let fechaLimite: Date | null = null;
+
+    // Si el periodo general de inscripciones está activo, su fecha de cierre es el plazo base
+    if (this.periodoInscripcion?.fecha_fin) {
+      const finGeneral = new Date(this.periodoInscripcion.fecha_fin);
+      const inicioGeneral = this.periodoInscripcion.fecha_inicio ? new Date(this.periodoInscripcion.fecha_inicio) : null;
+      const enPeriodo = (!inicioGeneral || ahora >= inicioGeneral) && ahora <= finGeneral;
+      if (enPeriodo) {
+        fechaLimite = finGeneral;
+      }
+    }
+
+    // Si el estudiante tiene autorización individual activa, verificar si amplía la fecha límite
+    if (this.student?.documentos_habilitados_hasta) {
+      const hastaIndividual = new Date(this.student.documentos_habilitados_hasta);
+      if (ahora <= hastaIndividual) {
+        if (!fechaLimite || hastaIndividual > fechaLimite) {
+          fechaLimite = hastaIndividual;
+        }
+      }
+    }
+
+    // Fallback: mostrar la fecha más relevante
+    if (!fechaLimite) {
+      if (this.student?.documentos_habilitados_hasta) {
+        fechaLimite = new Date(this.student.documentos_habilitados_hasta);
+      } else if (this.periodoInscripcion?.fecha_fin) {
+        fechaLimite = new Date(this.periodoInscripcion.fecha_fin);
+      }
+    }
+
+    if (!fechaLimite || isNaN(fechaLimite.getTime())) {
       return '';
     }
-    const date = new Date(this.student.documentos_habilitados_hasta);
-    return date.toLocaleString('es-BO', { 
+
+    return fechaLimite.toLocaleString('es-BO', { 
+      day: '2-digit', 
+      month: '2-digit', 
+      year: 'numeric', 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
+  }
+
+  obtenerFechaExpiradaFormatted(): string {
+    let fechaExpirada: Date | null = null;
+
+    if (this.student?.documentos_habilitados_hasta) {
+      const d = new Date(this.student.documentos_habilitados_hasta);
+      if (!isNaN(d.getTime())) {
+        fechaExpirada = d;
+      }
+    }
+
+    if (this.periodoInscripcion?.fecha_fin) {
+      const finGeneral = new Date(this.periodoInscripcion.fecha_fin);
+      if (!isNaN(finGeneral.getTime())) {
+        if (!fechaExpirada || finGeneral > fechaExpirada) {
+          fechaExpirada = finGeneral;
+        }
+      }
+    }
+
+    if (!fechaExpirada) return '';
+
+    return fechaExpirada.toLocaleString('es-BO', { 
       day: '2-digit', 
       month: '2-digit', 
       year: 'numeric', 
