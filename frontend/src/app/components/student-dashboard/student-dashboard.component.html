@@ -7,7 +7,8 @@
         <span class="sidebar-portal-name">EIE PORTAL</span>
         <span class="sidebar-user-role-badge">Estudiante</span>
       </div>
-      <button type="button" class="mobile-hamburger-btn d-lg-none" (click)="toggleMobileMenu()" aria-label="Abrir menú mobile">
+      <button type="button" class="mobile-hamburger-btn d-lg-none" (click)="toggleMobileMenu()"
+        aria-label="Abrir menú mobile">
         <i class="material-icons-outlined">{{ isMobileMenuOpen ? 'close' : 'menu' }}</i>
       </button>
     </div>
@@ -37,7 +38,8 @@
       <div class="d-flex align-items-center gap-2">
         <div class="header-left">
           <h1 style="margin: 0; font-size: 1.5rem; font-weight: 800; color: #003b71;">Portal del Estudiante</h1>
-          <p style="margin: 0; font-size: 0.85rem; color: #64748b;">Consulta tus calificaciones, descarga constancias y administra tus documentos oficiales.</p>
+          <p style="margin: 0; font-size: 0.85rem; color: #64748b;">Consulta tus calificaciones, descarga constancias y
+            administra tus documentos oficiales.</p>
         </div>
       </div>
       <div class="header-right mt-2 mt-sm-0 d-flex align-items-center gap-2">
@@ -47,8 +49,11 @@
             <span class="user-role">Estudiante EIE</span>
           </div>
           <div class="user-header-avatar">
-            <img *ngIf="student?.foto_4x4_url || user?.foto_url" [src]="getPhotoUrl(student?.foto_4x4_url || user?.foto_url)" (error)="onImgError($event)" alt="Avatar" class="avatar-small">
-            <div [style.display]="(student?.foto_4x4_url || user?.foto_url) ? 'none' : 'flex'" class="avatar-small-placeholder">
+            <img *ngIf="student?.foto_4x4_url || user?.foto_url"
+              [src]="getPhotoUrl(student?.foto_4x4_url || user?.foto_url)" (error)="onImgError($event)" alt="Avatar"
+              class="avatar-small">
+            <div [style.display]="(student?.foto_4x4_url || user?.foto_url) ? 'none' : 'flex'"
+              class="avatar-small-placeholder">
               <span class="material-icons-outlined">person</span>
             </div>
           </div>
@@ -70,20 +75,23 @@
 
     <!-- PANELES DE CONTENIDO -->
     <div *ngIf="!isLoading && student" class="settings-card-wrapper animate-fade-in">
-      
+
       <!-- PESTAÑA 1: MI PERFIL -->
       <div *ngIf="activeTab === 'profile'" class="settings-pane-content">
         <div class="profile-dashboard-layout">
-          
+
           <!-- Lado Izquierdo: Foto 4x4 y Datos Rápidos -->
           <div class="profile-card-side">
             <div class="profile-avatar-large-container">
-              <img *ngIf="student?.foto_4x4_url || user?.foto_url" [src]="getPhotoUrl(student?.foto_4x4_url || user?.foto_url)" (error)="onImgError($event)" alt="Foto 4x4" class="profile-avatar-large">
-              <div [style.display]="(student?.foto_4x4_url || user?.foto_url) ? 'none' : 'flex'" class="profile-avatar-large-placeholder">
+              <img *ngIf="student?.foto_4x4_url || user?.foto_url"
+                [src]="getPhotoUrl(student?.foto_4x4_url || user?.foto_url)" (error)="onImgError($event)" alt="Foto 4x4"
+                class="profile-avatar-large">
+              <div [style.display]="(student?.foto_4x4_url || user?.foto_url) ? 'none' : 'flex'"
+                class="profile-avatar-large-placeholder">
                 <span class="material-icons-outlined">person</span>
               </div>
             </div>
-            
+
             <h2 class="profile-name-tag">{{ student.nombres }} {{ student.apellidos }}</h2>
             <div class="profile-role-tag-container mb-2">
               <span class="profile-role-badge">
@@ -92,14 +100,15 @@
               </span>
             </div>
             <span class="profile-ci-tag">C.I. {{ student.ci }}</span>
-            
+
             <div class="profile-photo-change mt-4">
               <label class="form-label-small">Actualizar Fotografía 4x4</label>
               <div class="upload-btn-wrapper w-100">
                 <button type="button" class="btn-upload-photo w-100 justify-content-center">
                   <i class="material-icons-outlined">photo_camera</i> Seleccionar Foto
                 </button>
-                <input type="file" (change)="onPhotoSelected($event)" accept="image/*" aria-label="Seleccionar fotografía 4x4">
+                <input type="file" (change)="onPhotoSelected($event)" accept="image/*"
+                  aria-label="Seleccionar fotografía 4x4">
               </div>
               <span class="file-chosen-name text-center d-block mt-1" *ngIf="photoFileName">{{ photoFileName }}</span>
               <button *ngIf="photoFile" (click)="uploadPhoto()" [disabled]="uploading" class="btn-save-photo-now mt-2">
@@ -108,19 +117,26 @@
             </div>
 
             <!-- Configuración de Biometría Estilo Banco -->
-            <div class="biometric-card-student mt-3 p-3 rounded-3 border" style="background: #f8fafc; border-color: #cbd5e1 !important;">
+            <div class="biometric-card-student mt-3 p-3 rounded-3 border"
+              style="background: #f8fafc; border-color: #cbd5e1 !important;">
               <div class="d-flex align-items-center justify-content-between gap-2">
                 <div class="d-flex align-items-center gap-2">
-                  <div style="background: #e0f2fe; color: #0284c7; min-width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                  <div
+                    style="background: #e0f2fe; color: #0284c7; min-width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
                     <i class="material-icons-outlined" style="font-size: 20px;">fingerprint</i>
                   </div>
                   <div>
-                    <strong style="font-size: 0.85rem; color: #0f172a; display: block;">Acceso por Huella / Rostro</strong>
-                    <small style="font-size: 0.74rem; color: #64748b;" class="d-block">Activar ingreso rápido biométrico</small>
+                    <strong style="font-size: 0.85rem; color: #0f172a; display: block;">Acceso por Huella /
+                      Rostro</strong>
+                    <small style="font-size: 0.74rem; color: #64748b;" class="d-block">Activar ingreso rápido
+                      biométrico</small>
                   </div>
                 </div>
                 <div class="form-check form-switch m-0">
-                  <input class="form-check-input" type="checkbox" id="biometricSwitchStudent" [checked]="biometricEnabled" (change)="toggleBiometric($event)" style="width: 44px; height: 22px; cursor: pointer;" aria-label="Activar ingreso rápido biométrico" title="Activar ingreso rápido biométrico">
+                  <input class="form-check-input" type="checkbox" id="biometricSwitchStudent"
+                    [checked]="biometricEnabled" (change)="toggleBiometric($event)"
+                    style="width: 44px; height: 22px; cursor: pointer;" aria-label="Activar ingreso rápido biométrico"
+                    title="Activar ingreso rápido biométrico">
                   <label class="form-check-label" for="biometricSwitchStudent"></label>
                 </div>
               </div>
@@ -178,7 +194,7 @@
               <ng-container *ngIf="student.tipo_usuario !== 'militar'">
                 <div class="col-span-2 section-divider-dashed"></div>
                 <h3 class="col-span-2 section-subtitle-dashboard">Padres o Tutor</h3>
-                
+
                 <div class="info-item col-span-2">
                   <span class="info-label">Nombres y Apellidos del Tutor</span>
                   <span class="info-value">{{ student.nombre_padres || 'Sin registrar' }}</span>
@@ -194,7 +210,7 @@
               </div>
             </div>
           </div>
-          
+
         </div>
       </div>
 
@@ -203,32 +219,40 @@
         <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
           <div>
             <h2 class="pane-title mb-1">🎓 Historial de Cursos y Calificaciones</h2>
-            <p class="pane-description mb-0">A continuación, se listan los niveles oficiales en los que te has inscrito, junto con las notas asentadas por tus docentes.</p>
+            <p class="pane-description mb-0">A continuación, se listan los niveles oficiales en los que te has inscrito,
+              junto con las notas asentadas por tus docentes.</p>
           </div>
           <div class="d-flex align-items-center gap-2">
-            <span class="badge bg-success-subtle text-success border border-success-subtle d-inline-flex align-items-center gap-1" style="font-size: 0.8rem; padding: 5px 12px; border-radius: 20px;">
-              <span style="width: 8px; height: 8px; background-color: #22c55e; border-radius: 50%; display: inline-block;"></span>
+            <span
+              class="badge bg-success-subtle text-success border border-success-subtle d-inline-flex align-items-center gap-1"
+              style="font-size: 0.8rem; padding: 5px 12px; border-radius: 20px;">
+              <span
+                style="width: 8px; height: 8px; background-color: #22c55e; border-radius: 50%; display: inline-block;"></span>
               Conexión en Vivo
             </span>
           </div>
         </div>
 
-        <div *ngIf="!student.inscripciones || student.inscripciones.length === 0" class="empty-history text-center py-5">
+        <div *ngIf="!student.inscripciones || student.inscripciones.length === 0"
+          class="empty-history text-center py-5">
           <i class="material-icons-outlined text-muted fs-large">school</i>
           <p class="text-muted mt-3">Aún no cuentas con registros de inscripciones académicas activas.</p>
         </div>
 
         <div class="history-list-portal" *ngIf="student.inscripciones && student.inscripciones.length > 0">
-          <div *ngFor="let item of student.inscripciones" class="portal-history-item mb-4 p-4 border rounded-3 bg-light shadow-sm">
+          <div *ngFor="let item of student.inscripciones"
+            class="portal-history-item mb-4 p-4 border rounded-3 bg-light shadow-sm">
             <div class="d-flex justify-content-between align-items-start mb-3 gap-2">
               <div>
                 <h3 class="text-primary mb-1 fw-bold fs-5">{{ item.curso?.idioma }} — {{ item.curso?.nivel }}</h3>
                 <small class="text-muted d-block">
                   <span *ngIf="item.paralelo?.nombre || item.paralelo?.nombre_paralelo">
-                    Paralelo: <strong class="text-dark">{{ item.paralelo?.nombre || item.paralelo?.nombre_paralelo }}</strong> • 
+                    Paralelo: <strong class="text-dark">{{ item.paralelo?.nombre || item.paralelo?.nombre_paralelo
+                      }}</strong> •
                   </span>
-                  Horario: <strong class="text-dark">{{ getHorarioInscripcion(item) }}</strong> • 
-                  Modalidad: <strong class="text-capitalize text-secondary">{{ item.curso?.modalidad || 'Presencial' }}</strong>
+                  Horario: <strong class="text-dark">{{ getHorarioInscripcion(item) }}</strong> •
+                  Modalidad: <strong class="text-capitalize text-secondary">{{ item.curso?.modalidad || 'Presencial'
+                    }}</strong>
                 </small>
               </div>
               <span class="badge rounded-pill status-pill-portal flex-shrink-0" [ngClass]="getEstadoClass(item.estado)">
@@ -238,7 +262,8 @@
 
             <!-- Tabla de Notas para esta Inscripción -->
             <div class="table-responsive" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
-              <table class="table table-hover table-sm border bg-white rounded-2 overflow-hidden mb-0" style="min-width: 100%;">
+              <table class="table table-hover table-sm border bg-white rounded-2 overflow-hidden mb-0"
+                style="min-width: 100%;">
                 <thead class="bg-light">
                   <tr>
                     <th>Actividad / Evaluación</th>
@@ -248,7 +273,8 @@
                 <tbody>
                   <tr *ngFor="let nota of item.notas">
                     <td class="ps-3 fw-semibold text-dark">{{ nota.periodo || nota.descripcion || 'Evaluación' }}</td>
-                    <td class="text-center fw-bold" [class.text-danger]="nota.nota < 71" [class.text-success]="nota.nota >= 71">
+                    <td class="text-center fw-bold" [class.text-danger]="nota.nota < 71"
+                      [class.text-success]="nota.nota >= 71">
                       {{ nota.nota }} / 100
                     </td>
                   </tr>
@@ -267,19 +293,25 @@
       <!-- PESTAÑA 3: EXPEDIENTE DIGITAL -->
       <div *ngIf="activeTab === 'documents'" class="settings-pane-content">
         <h2 class="pane-title">📁 Administración de Documentos Oficiales</h2>
-        <p class="pane-description">Carga de forma digital tu documentación de respaldo para la validación física en dirección. Se permiten formatos PDF, JPG, PNG de máximo 5MB.</p>
+        <p class="pane-description">Carga de forma digital tu documentación de respaldo para la validación física en
+          dirección. Se permiten formatos PDF, JPG, PNG de máximo 5MB.</p>
 
         <!-- Mensajes de Estado del Permiso de Carga -->
-        <div *ngIf="puedeSubirDocumentos()" class="alert alert-info py-2 px-3 mb-3 d-flex align-items-center gap-2" style="font-size: 0.9rem; border-radius: 8px;">
+        <div *ngIf="puedeSubirDocumentos()" class="alert alert-info py-2 px-3 mb-3 d-flex align-items-center gap-2"
+          style="font-size: 0.9rem; border-radius: 8px;">
           <i class="material-icons-outlined" style="font-size: 20px;">info</i>
-          <span>Tienes habilitada la subida de documentos hasta el: <strong>{{ obtenerFechaLimiteFormatted() }}</strong></span>
+          <span>Tienes habilitada la subida de documentos hasta el: <strong>{{ obtenerFechaLimiteFormatted()
+              }}</strong></span>
         </div>
 
-        <div *ngIf="!puedeSubirDocumentos()" class="alert alert-warning py-3 px-4 mb-4 d-flex align-items-start gap-3" style="font-size: 0.95rem; border-radius: 12px; border-left: 5px solid #ffc107; background: #fffdf5; border-top: 1px solid #ffeeba; border-right: 1px solid #ffeeba; border-bottom: 1px solid #ffeeba;">
+        <div *ngIf="!puedeSubirDocumentos()" class="alert alert-warning py-3 px-4 mb-4 d-flex align-items-start gap-3"
+          style="font-size: 0.95rem; border-radius: 12px; border-left: 5px solid #ffc107; background: #fffdf5; border-top: 1px solid #ffeeba; border-right: 1px solid #ffeeba; border-bottom: 1px solid #ffeeba;">
           <i class="material-icons-outlined text-warning" style="font-size: 24px;">lock</i>
           <div>
             <h6 class="fw-bold mb-1 text-dark" style="font-size: 1.05rem;">Carga de documentos bloqueada</h6>
-            <p class="text-muted mb-0">Solo puedes subir documentos durante el periodo oficial de inscripciones o cuando el administrador te otorgue autorización especial. Si requieres subir o corregir respaldos fuera de plazo, ponte en contacto con la administración.</p>
+            <p class="text-muted mb-0">Solo puedes subir documentos durante el periodo oficial de inscripciones o cuando
+              el administrador te otorgue autorización especial. Si requieres subir o corregir respaldos fuera de plazo,
+              ponte en contacto con la administración.</p>
             <span *ngIf="obtenerFechaExpiradaFormatted()" class="d-inline-block mt-2 text-danger small fw-semibold">
               El plazo finalizó el: {{ obtenerFechaExpiradaFormatted() }}
             </span>
@@ -292,13 +324,16 @@
             <div>
               <h6 class="fw-bold mb-1 text-dark d-flex align-items-center gap-2 flex-wrap">
                 <span>Subir Nuevo Documento Oficial</span>
-                <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 fw-semibold" style="font-size: 0.78rem; border-radius: 6px;">
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 fw-semibold"
+                  style="font-size: 0.78rem; border-radius: 6px;">
                   Requisitos: {{ getCategoriaEstudianteNombre() }}
                 </span>
               </h6>
-              <small class="text-muted">Elige el tipo de documento requerido para tu categoría de inscripción ({{ getCategoriaEstudianteNombre() }}) y cárgalo al expediente digital.</small>
+              <small class="text-muted">Elige el tipo de documento requerido para tu categoría de inscripción ({{
+                getCategoriaEstudianteNombre() }}) y cárgalo al expediente digital.</small>
             </div>
-            <button type="button" class="btn btn-primary d-inline-flex align-items-center gap-2 px-3 py-2 shadow-sm" (click)="openScanner()" style="border-radius: 10px; font-weight: 600;">
+            <button *ngIf="isNativeApp" type="button" class="btn btn-primary d-inline-flex align-items-center gap-2 px-3 py-2 shadow-sm"
+              (click)="openScanner()" style="border-radius: 10px; font-weight: 600;">
               <i class="material-icons-outlined" style="font-size: 20px;">camera_alt</i>
               <span>{{ isCarnetMode ? 'Escanear Carnet (Anverso y Reverso)' : 'Escanear con Cámara' }}</span>
             </button>
@@ -306,21 +341,24 @@
 
           <div class="row g-3 align-items-end">
             <div class="col-md-5">
-              <label for="docTypePortal" class="form-label-small">Tipo de Documento (Requisitos {{ getCategoriaEstudianteNombre() }})</label>
+              <label for="docTypePortal" class="form-label-small">Tipo de Documento (Requisitos {{
+                getCategoriaEstudianteNombre() }})</label>
               <select id="docTypePortal" [(ngModel)]="docType" class="form-select" aria-label="Tipo de documento">
                 <option *ngFor="let t of getTiposDocumentosPermitidos()" [value]="t">{{ t }}</option>
               </select>
             </div>
             <div class="col-md-4">
-              <label for="filePortalInput" class="form-label-small">O Seleccionar Archivo (PDF, JPG, PNG)</label>
-              <input type="file" id="filePortalInput" (change)="onFileSelected($event)" [disabled]="isVerifyingFile" class="form-control" accept=".pdf,.jpg,.jpeg,.png">
+              <label for="filePortalInput" class="form-label-small">{{ isNativeApp ? 'O Seleccionar Archivo (PDF, JPG, PNG)' : 'Seleccionar Archivo (PDF, JPG, PNG)' }}</label>
+              <input type="file" id="filePortalInput" (change)="onFileSelected($event)" [disabled]="isVerifyingFile"
+                class="form-control" accept=".pdf,.jpg,.jpeg,.png">
               <div *ngIf="isVerifyingFile" class="text-primary mt-1 small d-flex align-items-center gap-1">
                 <span class="spinner-border spinner-border-sm" role="status"></span>
                 <span>Analizando autenticidad con OCR...</span>
               </div>
             </div>
             <div class="col-md-3">
-              <button (click)="uploadFile()" [disabled]="!selectedFile || uploading" class="btn btn-success w-100 py-2 fw-bold shadow-sm">
+              <button (click)="uploadFile()" [disabled]="!selectedFile || uploading"
+                class="btn btn-success w-100 py-2 fw-bold shadow-sm">
                 <span *ngIf="!uploading" class="d-inline-flex align-items-center justify-content-center gap-1">
                   <i class="material-icons-outlined" style="font-size: 18px;">cloud_upload</i> SUBIR ARCHIVO
                 </span>
@@ -330,12 +368,15 @@
           </div>
 
           <!-- Previsualización de Archivo Preparado / Escaneado -->
-          <div *ngIf="selectedFile" class="mt-3 p-2 px-3 bg-white border border-success-subtle rounded-3 d-flex align-items-center justify-content-between animate-fade-in">
+          <div *ngIf="selectedFile"
+            class="mt-3 p-2 px-3 bg-white border border-success-subtle rounded-3 d-flex align-items-center justify-content-between animate-fade-in">
             <div class="d-flex align-items-center gap-2">
               <i class="material-icons-outlined text-success" style="font-size: 22px;">check_circle</i>
-              <span class="small fw-semibold text-dark">{{ selectedFile.name }} ({{ formatDocSize(selectedFile.size) }})</span>
+              <span class="small fw-semibold text-dark">{{ selectedFile.name }} ({{ formatDocSize(selectedFile.size)
+                }})</span>
             </div>
-            <button type="button" class="btn btn-sm btn-link text-danger p-0 text-decoration-none" (click)="selectedFile = null">
+            <button type="button" class="btn btn-sm btn-link text-danger p-0 text-decoration-none"
+              (click)="selectedFile = null">
               <i class="material-icons-outlined" style="font-size: 18px;">close</i> Quitar
             </button>
           </div>
@@ -349,7 +390,7 @@
         <!-- Tabla de Documentos Subidos -->
         <div class="documents-list-portal">
           <h6 class="fw-bold mb-3 text-secondary">Mis Documentos Cargados</h6>
-          
+
           <div *ngIf="docsLoading" class="text-center py-4">
             <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
             <p class="text-muted mt-2 small">Cargando expediente digital...</p>
@@ -383,10 +424,12 @@
                     <td><small class="text-muted font-monospace">{{ formatDocSize(doc.peso) }}</small></td>
                     <td class="text-center">
                       <div class="d-flex justify-content-center gap-2">
-                        <button (click)="previewDocument(doc)" class="btn btn-sm btn-outline-primary py-1 px-2" title="Ver Documento">
+                        <button (click)="previewDocument(doc)" class="btn btn-sm btn-outline-primary py-1 px-2"
+                          title="Ver Documento">
                           <i class="material-icons-outlined doc-action-icon" style="font-size: 18px;">visibility</i>
                         </button>
-                        <button *ngIf="puedeSubirDocumentos()" (click)="removeDocument(doc)" class="btn btn-sm btn-outline-danger py-1 px-2" title="Eliminar">
+                        <button *ngIf="puedeSubirDocumentos()" (click)="removeDocument(doc)"
+                          class="btn btn-sm btn-outline-danger py-1 px-2" title="Eliminar">
                           <i class="material-icons-outlined doc-action-icon" style="font-size: 18px;">delete</i>
                         </button>
                       </div>
@@ -435,15 +478,19 @@
           </h5>
           <div class="preview-header-actions">
             <!-- Botón para alternar ajuste en pantalla o ancho completo legible -->
-            <button *ngIf="isPreviewImage" type="button" class="btn-preview-action" (click)="toggleImageFit()" [title]="isImageFitWidth ? 'Ajustar a pantalla' : 'Ver en ancho completo'">
-              <span class="material-icons-outlined" style="font-size: 16px;">{{ isImageFitWidth ? 'fit_screen' : 'zoom_in' }}</span>
+            <button *ngIf="isPreviewImage" type="button" class="btn-preview-action" (click)="toggleImageFit()"
+              [title]="isImageFitWidth ? 'Ajustar a pantalla' : 'Ver en ancho completo'">
+              <span class="material-icons-outlined" style="font-size: 16px;">{{ isImageFitWidth ? 'fit_screen' :
+                'zoom_in' }}</span>
               <span class="d-none d-sm-inline">{{ isImageFitWidth ? 'Ajustar' : 'Ampliar' }}</span>
             </button>
-            <a *ngIf="rawPreviewUrl" [href]="rawPreviewUrl" target="_blank" download class="btn-preview-action" title="Abrir en pestaña nueva">
+            <a *ngIf="rawPreviewUrl" [href]="rawPreviewUrl" target="_blank" download class="btn-preview-action"
+              title="Abrir en pestaña nueva">
               <span class="material-icons-outlined" style="font-size: 16px;">open_in_new</span>
               <span class="d-none d-sm-inline">Abrir</span>
             </a>
-            <button type="button" class="btn-preview-close" (click)="closePreviewModal()" aria-label="Cerrar" title="Cerrar">
+            <button type="button" class="btn-preview-close" (click)="closePreviewModal()" aria-label="Cerrar"
+              title="Cerrar">
               <span class="material-icons-outlined" style="font-size: 20px;">close</span>
             </button>
           </div>
@@ -454,18 +501,22 @@
             <iframe [src]="activePreviewUrl" class="pdf-viewer-frame" title="Visor de PDF"></iframe>
             <!-- Aviso de apertura directa para navegadores móviles -->
             <div class="d-md-none p-2 text-center bg-dark text-white-50 small border-top border-secondary">
-              ¿No se ve en tu móvil? 
-              <a *ngIf="rawPreviewUrl" [href]="rawPreviewUrl" target="_blank" class="text-warning fw-semibold ms-1">Abrir en lector PDF</a>
+              ¿No se ve en tu móvil?
+              <a *ngIf="rawPreviewUrl" [href]="rawPreviewUrl" target="_blank"
+                class="text-warning fw-semibold ms-1">Abrir en lector PDF</a>
             </div>
           </div>
-          
+
           <!-- Visor de Imágenes -->
           <div *ngIf="isPreviewImage" class="image-viewer-container">
-            <img *ngIf="!previewError" [src]="activePreviewUrl" (error)="onPreviewImgError()" (click)="toggleImageFit()" [ngClass]="{'img-fit-width': isImageFitWidth, 'img-fit-screen': !isImageFitWidth}" alt="Vista previa del documento" class="image-viewer-img" title="Toca la imagen para alternar zoom">
+            <img *ngIf="!previewError" [src]="activePreviewUrl" (error)="onPreviewImgError()" (click)="toggleImageFit()"
+              [ngClass]="{'img-fit-width': isImageFitWidth, 'img-fit-screen': !isImageFitWidth}"
+              alt="Vista previa del documento" class="image-viewer-img" title="Toca la imagen para alternar zoom">
             <div *ngIf="previewError" class="preview-fallback-box animate-fade-in text-center p-4">
               <span class="material-icons-outlined text-warning mb-2" style="font-size: 50px;">cloud_off</span>
               <h6 class="text-white fw-bold mb-1">Archivo temporalmente inaccesible</h6>
-              <p class="text-white-50 small mb-3">El servidor de almacenamiento remoto se encuentra temporalmente fuera de línea.</p>
+              <p class="text-white-50 small mb-3">El servidor de almacenamiento remoto se encuentra temporalmente fuera
+                de línea.</p>
               <a *ngIf="rawPreviewUrl" [href]="rawPreviewUrl" target="_blank" class="btn-preview-action">
                 <span class="material-icons-outlined" style="font-size: 16px;">open_in_new</span>
                 Probar enlace directo
@@ -478,7 +529,7 @@
   </div>
 
   <!-- MODAL ESCÁNER INTELIGENTE DE DOCUMENTOS (KYC 2 CARAS / ESTILO APP BANCARIA) -->
-  <div class="kyc-modal-overlay animate-fade-in" *ngIf="isScannerOpen">
+  <div class="kyc-modal-overlay animate-fade-in" *ngIf="isNativeApp && isScannerOpen">
     <div class="kyc-scanner-container">
       <!-- Encabezado del Escáner -->
       <div class="kyc-scanner-header">
@@ -499,19 +550,32 @@
       </div>
 
       <!-- Selector de Formato para Carnet Militar o Carnet de Identidad -->
-      <div *ngIf="scannerStep < 3 && (docType === 'Carnet Militar' || docType === 'Carnet de Identidad')" class="p-2 bg-dark border-bottom border-secondary d-flex justify-content-center gap-2">
-        <button *ngIf="docType === 'Carnet Militar'" type="button" class="btn btn-sm" [ngClass]="formatoCaptura === 'tarjeta_2_caras' ? 'btn-primary' : 'btn-outline-secondary text-white'" (click)="setFormatoCaptura('tarjeta_2_caras')">
-          <i class="material-icons-outlined align-middle me-1" style="font-size: 15px;">badge</i> Credencial Militar (2 Caras)
+      <div *ngIf="scannerStep < 3 && (docType === 'Carnet Militar' || docType === 'Carnet de Identidad')"
+        class="p-2 bg-dark border-bottom border-secondary d-flex justify-content-center gap-2">
+        <button *ngIf="docType === 'Carnet Militar'" type="button" class="btn btn-sm"
+          [ngClass]="formatoCaptura === 'tarjeta_2_caras' ? 'btn-primary' : 'btn-outline-secondary text-white'"
+          (click)="setFormatoCaptura('tarjeta_2_caras')">
+          <i class="material-icons-outlined align-middle me-1" style="font-size: 15px;">badge</i> Credencial Militar (2
+          Caras)
         </button>
-        <button *ngIf="docType === 'Carnet Militar'" type="button" class="btn btn-sm" [ngClass]="formatoCaptura === 'hoja_unica' ? 'btn-primary' : 'btn-outline-secondary text-white'" (click)="setFormatoCaptura('hoja_unica')">
-          <i class="material-icons-outlined align-middle me-1" style="font-size: 15px;">menu_book</i> Libreta Militar (1 Hoja)
+        <button *ngIf="docType === 'Carnet Militar'" type="button" class="btn btn-sm"
+          [ngClass]="formatoCaptura === 'hoja_unica' ? 'btn-primary' : 'btn-outline-secondary text-white'"
+          (click)="setFormatoCaptura('hoja_unica')">
+          <i class="material-icons-outlined align-middle me-1" style="font-size: 15px;">menu_book</i> Libreta Militar (1
+          Hoja)
         </button>
 
-        <button *ngIf="docType === 'Carnet de Identidad'" type="button" class="btn btn-sm" [ngClass]="formatoCaptura === 'tarjeta_2_caras' ? 'btn-primary' : 'btn-outline-secondary text-white'" (click)="setFormatoCaptura('tarjeta_2_caras')">
-          <i class="material-icons-outlined align-middle me-1" style="font-size: 15px;">badge</i> Tarjeta Física (2 Pasos)
+        <button *ngIf="docType === 'Carnet de Identidad'" type="button" class="btn btn-sm"
+          [ngClass]="formatoCaptura === 'tarjeta_2_caras' ? 'btn-primary' : 'btn-outline-secondary text-white'"
+          (click)="setFormatoCaptura('tarjeta_2_caras')">
+          <i class="material-icons-outlined align-middle me-1" style="font-size: 15px;">badge</i> Tarjeta Física (2
+          Pasos)
         </button>
-        <button *ngIf="docType === 'Carnet de Identidad'" type="button" class="btn btn-sm" [ngClass]="formatoCaptura === 'hoja_unica' ? 'btn-primary' : 'btn-outline-secondary text-white'" (click)="setFormatoCaptura('hoja_unica')">
-          <i class="material-icons-outlined align-middle me-1" style="font-size: 15px;">description</i> Fotocopia en 1 Hoja
+        <button *ngIf="docType === 'Carnet de Identidad'" type="button" class="btn btn-sm"
+          [ngClass]="formatoCaptura === 'hoja_unica' ? 'btn-primary' : 'btn-outline-secondary text-white'"
+          (click)="setFormatoCaptura('hoja_unica')">
+          <i class="material-icons-outlined align-middle me-1" style="font-size: 15px;">description</i> Fotocopia en 1
+          Hoja
         </button>
       </div>
 
@@ -543,20 +607,24 @@
           <!-- Instrucción dinámica superpuesta -->
           <div class="kyc-guide-hint">
             <span *ngIf="isCarnetMode && scannerStep === 1">
-              <i class="material-icons-outlined align-middle me-1">badge</i> Ubica el <strong>ANVERSO (frente)</strong> dentro del recuadro
+              <i class="material-icons-outlined align-middle me-1">badge</i> Ubica el <strong>ANVERSO (frente)</strong>
+              dentro del recuadro
             </span>
             <span *ngIf="isCarnetMode && scannerStep === 2">
-              <i class="material-icons-outlined align-middle me-1">flip</i> Ahora voltea y ubica el <strong>REVERSO (dorso)</strong>
+              <i class="material-icons-outlined align-middle me-1">flip</i> Ahora voltea y ubica el <strong>REVERSO
+                (dorso)</strong>
             </span>
             <span *ngIf="!isCarnetMode">
-              <i class="material-icons-outlined align-middle me-1">crop_free</i> Centra el <strong>documento completo</strong> nítidamente
+              <i class="material-icons-outlined align-middle me-1">crop_free</i> Centra el <strong>documento
+                completo</strong> nítidamente
             </span>
           </div>
         </div>
 
         <!-- Barra inferior de controles de captura -->
         <div class="kyc-camera-controls">
-          <button type="button" class="btn-kyc-ctrl" [class.active]="scannerTorchOn" *ngIf="scannerHasTorch" (click)="toggleTorch()" title="Linterna">
+          <button type="button" class="btn-kyc-ctrl" [class.active]="scannerTorchOn" *ngIf="scannerHasTorch"
+            (click)="toggleTorch()" title="Linterna">
             <i class="material-icons-outlined">{{ scannerTorchOn ? 'flash_on' : 'flash_off' }}</i>
           </button>
           <div *ngIf="!scannerHasTorch" style="width: 48px;"></div>
@@ -610,10 +678,12 @@
 
         <!-- Acciones de Revisión -->
         <div class="d-flex justify-content-center gap-3 mt-4">
-          <button type="button" class="btn btn-outline-light px-4 py-2 d-inline-flex align-items-center gap-2" (click)="retakeCurrentStep()">
+          <button type="button" class="btn btn-outline-light px-4 py-2 d-inline-flex align-items-center gap-2"
+            (click)="retakeCurrentStep()">
             <i class="material-icons-outlined">refresh</i> Repetir Escaneo
           </button>
-          <button type="button" class="btn btn-success px-4 py-2 d-inline-flex align-items-center gap-2 fw-bold shadow" (click)="confirmScannedDocument()">
+          <button type="button" class="btn btn-success px-4 py-2 d-inline-flex align-items-center gap-2 fw-bold shadow"
+            (click)="confirmScannedDocument()">
             <i class="material-icons-outlined">check_circle</i> Usar este Documento
           </button>
         </div>

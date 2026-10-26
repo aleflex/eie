@@ -13,6 +13,7 @@ import { ImageCompressorService } from '../../services/image-compressor.service'
 import { DocumentVerifierService } from '../../services/document-verifier.service';
 import Swal from 'sweetalert2';
 import { environment } from '../../../environments/environment';
+import { Capacitor } from '@capacitor/core';
 
 @Component({
   selector: 'app-student-dashboard',
@@ -29,6 +30,7 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
   isRefreshing: boolean = false;
   activeTab: string = 'profile'; // 'profile', 'history', 'documents'
   periodoInscripcion: any = null;
+  isNativeApp: boolean = false;
 
   private wsSubs: Subscription[] = [];
   private userSub: Subscription | null = null;
@@ -121,6 +123,7 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.titleService.setTitle('Estudiante - Escuela de Idiomas del Ejército');
+    this.isNativeApp = Capacitor.isNativePlatform();
 
     if (!this.authService.isLoggedIn()) {
       this.router.navigate(['/login']);
@@ -694,6 +697,9 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
   }
 
   openScanner() {
+    if (!this.isNativeApp) {
+      return;
+    }
     const dt = (this.docType || '').toLowerCase();
     if (dt.includes('nacimiento') || dt.includes('título') || dt.includes('titulo')) {
       this.formatoCaptura = 'hoja_unica';
