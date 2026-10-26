@@ -471,7 +471,9 @@ class InscriptionController extends Controller
             return response()->json([
                 'message' => 'Inscripción registrada con éxito',
                 'id' => $inscripcion->id_inscripcion,
-                'id_inscripcion' => $inscripcion->id_inscripcion
+                'id_inscripcion' => $inscripcion->id_inscripcion,
+                'usuario' => $user->usuario,
+                'ci' => $cleanCi,
             ], 201);
 
         } catch (\Illuminate\Validation\ValidationException $ve) {

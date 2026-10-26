@@ -181,27 +181,29 @@ class User extends Authenticatable
     }
 
     /**
-     * Genera un nombre de usuario único basado en nombres y apellidos
-     * Ej: "Juan Carlos", "Pérez López" -> "juan.perez"
+     * Genera un nombre de usuario único y corto basado en inicial del primer nombre + primer apellido
+     * Ej: "Govinda Alejandro", "Maldonado Arredondo" -> "gmaldonado"
      */
     public static function generateUsername(string $nombres, string $apellidos, ?int $ignoreUserId = null): string
     {
         // Limpiar acentos y caracteres especiales
         $cleanString = function($string) {
-            $string = Str::ascii(trim($string));
+            $string = Str::ascii(trim((string)$string));
             $string = preg_replace('/[^a-zA-Z0-9\s]/', '', $string);
             return strtolower($string);
         };
 
-        $nombresArr = explode(' ', $cleanString($nombres));
-        $apellidosArr = explode(' ', $cleanString($apellidos));
+        $nombresArr = array_values(array_filter(explode(' ', $cleanString($nombres))));
+        $apellidosArr = array_values(array_filter(explode(' ', $cleanString($apellidos))));
 
         $firstName = !empty($nombresArr[0]) ? $nombresArr[0] : 'usuario';
         $firstLastName = !empty($apellidosArr[0]) ? $apellidosArr[0] : 'eie';
 
-        $baseUsername = strtolower($firstName . '.' . $firstLastName);
+        // Inicial del primer nombre + primer apellido (ej: gmaldonado)
+        $firstInitial = substr($firstName, 0, 1);
+        $baseUsername = strtolower($firstInitial . $firstLastName);
         $username = $baseUsername;
-        $counter = 1;
+        $counter = 2;
 
         while (static::where('usuario', $username)
                     ->when($ignoreUserId, fn($q) => $q->where('id_usuario', '!=', $ignoreUserId))

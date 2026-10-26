@@ -46,6 +46,7 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
   showModal = false;
   modalType: 'success' | 'error' = 'success';
   modalMessage = '';
+  registeredCredentials: { usuario: string; password: string; } | null = null;
 
   // Configuración de API dinámica (para APK móvil y pruebas)
   showApiConfigModal: boolean = false;
@@ -1524,6 +1525,7 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
   closeModal() {
     const wasSuccess = this.modalType === 'success';
     this.showModal = false;
+    this.registeredCredentials = null;
     if (wasSuccess) {
       this.router.navigate(['/']);
     }
@@ -1662,12 +1664,37 @@ export class InscriptionComponent implements OnInit, AfterViewInit {
           this.cdr.detectChanges();
         });
 
+        // Capturar datos del usuario para el mensaje de credenciales
+        const formNombres = (this.inscriptionForm.get('nombres')?.value || '').toString().trim();
+        const formPaterno = (this.inscriptionForm.get('apellidoPaterno')?.value || '').toString().trim();
+        const formCi = (this.inscriptionForm.get('ci')?.value || '').toString().trim();
+
+        const cleanName = formNombres.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9]/g, '');
+        const cleanPaterno = formPaterno.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9]/g, '');
+        const fallbackUser = ((cleanName.charAt(0) || 'u') + (cleanPaterno || 'eie')).toLowerCase();
+        const fallbackCi = formCi.replace(/[^0-9]/g, '');
+
+        const assignedUser = (response?.usuario || fallbackUser).toLowerCase();
+        const assignedPassword = response?.ci || fallbackCi;
+
         setTimeout(() => {
           this.ngZone.run(() => {
             this.isLoading = false;
             this.isSubmitting = false;
             this.modalType = 'success';
-            this.modalMessage = '¡Inscripción enviada con éxito! Tu solicitud ha sido registrada correctamente y pasará a revisión por el área académica/administrativa.';
+            this.registeredCredentials = {
+              usuario: assignedUser,
+              password: assignedPassword
+            };
+            this.modalMessage = `¡Inscripción registrada con éxito! Tu solicitud ha sido registrada correctamente y pasará a revisión por el área académica/administrativa.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+📋 DATOS DE ACCESO AL SISTEMA:
+• Tu usuario es: ${assignedUser} (inicial de tu primer nombre con tu apellido paterno)
+• Tu contraseña es: ${assignedPassword} (tu número de carnet de identidad)
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Guarda estos datos para iniciar sesión en la plataforma una vez que tu cuenta sea validada.`;
             this.showModal = true;
 
             // Reiniciar formulario

@@ -1069,6 +1069,26 @@
     <h2 class="modal-title">{{ modalType === 'success' ? '¡Inscripción Exitosa!' : 'Atención / Validación de Datos' }}
     </h2>
     <div class="modal-body-text">{{ modalMessage }}</div>
+
+    <!-- Bloque destacado de credenciales de acceso -->
+    <div class="modal-credentials-box" *ngIf="modalType === 'success' && registeredCredentials">
+      <div class="credentials-box-header">
+        <i class="material-icons">vpn_key</i>
+        <span>Credenciales de Acceso Asignadas</span>
+      </div>
+      <div class="credentials-row">
+        <span class="cred-label">Usuario:</span>
+        <strong class="cred-value">{{ registeredCredentials.usuario }}</strong>
+      </div>
+      <div class="credentials-row">
+        <span class="cred-label">Contraseña:</span>
+        <strong class="cred-value">{{ registeredCredentials.password }}</strong>
+      </div>
+      <div class="credentials-note">
+        <i class="material-icons">info</i>
+        <span>Tu usuario es la inicial de tu primer nombre con tu apellido paterno, y tu contraseña es tu carnet de identidad.</span>
+      </div>
+    </div>
     <div class="modal-footer-btn">
       <button type="button" class="btn-modal-close" (click)="closeModal()">
         <ng-container *ngIf="modalType === 'success'">

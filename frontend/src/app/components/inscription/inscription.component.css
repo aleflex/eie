@@ -677,6 +677,74 @@
     box-sizing: border-box;
 }
 
+.modal-credentials-box {
+    width: 100%;
+    background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+    border: 1.5px solid #86efac;
+    border-radius: 14px;
+    padding: 14px 18px;
+    margin-bottom: 1.4rem;
+    box-sizing: border-box;
+    text-align: left;
+}
+
+.credentials-box-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #166534;
+    font-weight: 700;
+    font-size: 0.95rem;
+    margin-bottom: 10px;
+    border-bottom: 1px dashed #bbf7d0;
+    padding-bottom: 6px;
+}
+
+.credentials-box-header i {
+    font-size: 1.25rem;
+    color: #15803d;
+}
+
+.credentials-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    font-size: 0.95rem;
+}
+
+.cred-label {
+    color: #374151;
+    font-weight: 600;
+}
+
+.cred-value {
+    color: #003B71;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 1.05rem;
+    background: #ffffff;
+    padding: 2px 10px;
+    border-radius: 6px;
+    border: 1px solid #cbd5e1;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+}
+
+.credentials-note {
+    margin: 10px 0 0 0;
+    font-size: 0.8rem;
+    color: #15803d;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    line-height: 1.35;
+}
+
+.credentials-note i {
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
 .btn-modal-close {
     background: linear-gradient(135deg, #003B71 0%, #0056b3 100%);
     color: #ffffff;
