@@ -150,7 +150,7 @@
                     <td>{{ $idx++ }}</td>
                     <td>{{ $est?->ci ?? 'N/A' }}</td>
                     <td>{{ mb_convert_case($est?->grado_academico ?? 'Civil', MB_CASE_TITLE, 'UTF-8') }}</td>
-                    <td class="left"><strong>{{ mb_convert_case(trim(($est?->nombres ?? '') . ' ' . ($est?->apellidos ?? '')), MB_CASE_TITLE, 'UTF-8') }}</strong></td>
+                    <td class="left">{{ mb_convert_case(trim(($est?->nombres ?? '') . ' ' . ($est?->apellidos ?? '')), MB_CASE_TITLE, 'UTF-8') }}</td>
                     @if(!empty($isGeneral))
                         <td>{{ mb_convert_case($idmRow . ($nvlRow ? ' - ' . $nvlRow : ''), MB_CASE_TITLE, 'UTF-8') }}</td>
                         <td>{{ mb_convert_case($parRow, MB_CASE_TITLE, 'UTF-8') }}</td>
