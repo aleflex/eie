@@ -233,14 +233,14 @@
           </div>
         </div>
 
-        <div *ngIf="!student.inscripciones || student.inscripciones.length === 0"
+        <div *ngIf="inscripcionesUnicas.length === 0"
           class="empty-history text-center py-5">
           <i class="material-icons-outlined text-muted fs-large">school</i>
           <p class="text-muted mt-3">Aún no cuentas con registros de inscripciones académicas activas.</p>
         </div>
 
-        <div class="history-list-portal" *ngIf="student.inscripciones && student.inscripciones.length > 0">
-          <div *ngFor="let item of student.inscripciones"
+        <div class="history-list-portal" *ngIf="inscripcionesUnicas.length > 0">
+          <div *ngFor="let item of inscripcionesUnicas"
             class="portal-history-item mb-4 p-4 border rounded-3 bg-light shadow-sm">
             <div class="d-flex justify-content-between align-items-start mb-3 gap-2">
               <div>

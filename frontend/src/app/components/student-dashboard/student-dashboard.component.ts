@@ -275,16 +275,53 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
     const carnetMilitar = this.student?.carnet_militar;
     const carnetCossmil = this.student?.carnet_cossmil;
 
-    if (tipo === 'militar' || !!carnetMilitar || (grado && !['civil', 'premilitar', 'bachiller'].includes(grado))) {
+    if (['normal', 'militar', 'hijo_militar', 'emi'].includes(tipo)) {
+      return tipo;
+    }
+    if (!!carnetMilitar || (grado && !['civil', 'premilitar', 'bachiller'].includes(grado))) {
       return 'militar';
     }
-    if (tipo === 'hijo_militar' || (!!carnetCossmil && !carnetMilitar)) {
+    if (!!carnetCossmil && !carnetMilitar) {
       return 'hijo_militar';
     }
-    if (tipo === 'emi') {
-      return 'emi';
-    }
     return 'normal';
+  }
+
+  get inscripcionesUnicas(): any[] {
+    const inscripciones = Array.isArray(this.student?.inscripciones) ? this.student.inscripciones : [];
+    const unicas = new Map<string, any>();
+
+    for (const inscripcion of inscripciones) {
+      const curso = inscripcion.curso;
+      const cursoId = curso?.id_curso ?? inscripcion.id_curso;
+      const nombreCurso = [curso?.idioma, curso?.nivel, curso?.modalidad]
+        .map(valor => String(valor || '').trim().toLowerCase())
+        .filter(Boolean)
+        .join('|');
+      const key = nombreCurso
+        ? `nombre:${nombreCurso}`
+        : cursoId != null
+          ? `curso:${cursoId}`
+          : `inscripcion:${inscripcion.id_inscripcion ?? inscripcion.id}`;
+      const actual = unicas.get(key);
+
+      if (!actual || this.esInscripcionMasReciente(inscripcion, actual)) {
+        unicas.set(key, inscripcion);
+      }
+    }
+
+    return Array.from(unicas.values());
+  }
+
+  private esInscripcionMasReciente(candidata: any, actual: any): boolean {
+    const fechaCandidata = Date.parse(candidata.fecha_registro || candidata.fecha_inscripcion || '');
+    const fechaActual = Date.parse(actual.fecha_registro || actual.fecha_inscripcion || '');
+    if (Number.isFinite(fechaCandidata) && Number.isFinite(fechaActual) && fechaCandidata !== fechaActual) {
+      return fechaCandidata > fechaActual;
+    }
+
+    return Number(candidata.id_inscripcion ?? candidata.id ?? 0) >
+      Number(actual.id_inscripcion ?? actual.id ?? 0);
   }
 
   getCategoriaEstudianteNombre(): string {
