@@ -1311,7 +1311,7 @@ td {
   }
 
   .mobile-student-fullname {
-    font-weight: 800;
+    font-weight: normal;
     color: var(--primary-color);
     font-size: 0.95rem;
     line-height: 1.25;

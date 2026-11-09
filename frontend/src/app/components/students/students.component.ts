@@ -142,6 +142,8 @@ export class StudentsComponent implements OnInit, OnDestroy {
         const idx = this.allStudents.findIndex(s => (s.id || s.id_estudiante) == targetId);
         if (idx !== -1) {
           this.allStudents[idx] = { ...this.allStudents[idx], ...updatedStudent };
+          this.normalizeStudentNames(this.allStudents[idx]);
+          this.sortStudentsAlphabetically(this.allStudents);
           if (this.searchTerm && this.searchTerm.trim() !== '') {
             this.onSearch();
           } else {
@@ -195,6 +197,7 @@ export class StudentsComponent implements OnInit, OnDestroy {
 
         if (currentFingerprint !== newFingerprint) {
           (data || []).forEach(st => this.normalizeStudentNames(st));
+          this.sortStudentsAlphabetically(data);
           this.allStudents = data;
           if (this.searchTerm && this.searchTerm.trim() !== '') {
             this.onSearch();
@@ -206,6 +209,28 @@ export class StudentsComponent implements OnInit, OnDestroy {
       error: () => {
         this.isSyncing = false;
       }
+    });
+  }
+
+  /**
+   * Ordena la lista de estudiantes alfabéticamente por nombres (A-Z) y luego por apellidos
+   */
+  private sortStudentsAlphabetically(list: any[]) {
+    if (!Array.isArray(list)) return;
+    list.sort((a, b) => {
+      const nombreA = (a?.nombres || a?.user?.nombres || '').trim();
+      const nombreB = (b?.nombres || b?.user?.nombres || '').trim();
+      const cmpNombre = nombreA.localeCompare(nombreB, 'es', { sensitivity: 'base' });
+      if (cmpNombre !== 0) return cmpNombre;
+
+      const patA = (a?.apellido_paterno || a?.user?.apellido_paterno || a?.apellidos || '').trim();
+      const patB = (b?.apellido_paterno || b?.user?.apellido_paterno || b?.apellidos || '').trim();
+      const cmpPat = patA.localeCompare(patB, 'es', { sensitivity: 'base' });
+      if (cmpPat !== 0) return cmpPat;
+
+      const matA = (a?.apellido_materno || a?.user?.apellido_materno || '').trim();
+      const matB = (b?.apellido_materno || b?.user?.apellido_materno || '').trim();
+      return matA.localeCompare(matB, 'es', { sensitivity: 'base' });
     });
   }
 
@@ -256,6 +281,7 @@ export class StudentsComponent implements OnInit, OnDestroy {
       next: (data) => {
         const studentList = data || [];
         studentList.forEach(st => this.normalizeStudentNames(st));
+        this.sortStudentsAlphabetically(studentList);
         this.allStudents = studentList;
         this.students = [...studentList];
         this.isLoading = false;

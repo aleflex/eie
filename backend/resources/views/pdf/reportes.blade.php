@@ -80,6 +80,9 @@
         .left {
             text-align: left !important;
         }
+        .student-name, .student-name strong, .student-name b {
+            font-weight: normal !important;
+        }
         .signatures-table {
             width: 100%;
             margin-top: 35px;
@@ -260,7 +263,7 @@
                 <tr>
                     <td>{{ $idx + 1 }}</td>
                     <td>{{ $ci }}</td>
-                    <td class="left"><strong>{{ mb_convert_case($nombre, MB_CASE_TITLE, 'UTF-8') }}</strong></td>
+                    <td class="left student-name">{{ mb_convert_case($nombre, MB_CASE_TITLE, 'UTF-8') }}</td>
                     <td>{{ mb_convert_case($idioma, MB_CASE_TITLE, 'UTF-8') }}</td>
                     <td>{{ mb_convert_case($nivel, MB_CASE_TITLE, 'UTF-8') }}</td>
                     <td>{{ mb_convert_case($paralelo, MB_CASE_TITLE, 'UTF-8') }}</td>

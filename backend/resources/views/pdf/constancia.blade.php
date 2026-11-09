@@ -126,7 +126,7 @@
         </tr>
         <tr>
             <td class="label">Apellidos y Nombres:</td>
-            <td class="value"><strong>{{ mb_convert_case(trim($estudiante->apellidos . ' ' . $estudiante->nombres), MB_CASE_TITLE, 'UTF-8') }}</strong></td>
+            <td class="value">{{ mb_convert_case(trim($estudiante->apellidos . ' ' . $estudiante->nombres), MB_CASE_TITLE, 'UTF-8') }}</td>
         </tr>
         <tr>
             <td class="label">Grado / Ocupación:</td>

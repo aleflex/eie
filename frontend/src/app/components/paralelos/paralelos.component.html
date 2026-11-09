@@ -455,7 +455,7 @@
                   <tbody>
                     <tr *ngFor="let ins of adminEstudiantes; let i = index">
                       <td>{{ i + 1 }}</td>
-                      <td><strong>{{ ins.estudiante?.nombres }} {{ ins.estudiante?.apellidos }}</strong></td>
+                      <td>{{ ins.estudiante?.nombres }} {{ ins.estudiante?.apellidos }}</td>
                       <td>{{ ins.estudiante?.ci }}</td>
                       <td style="text-align: center;">
                         <span *ngIf="adminNotasForm[ins.id || ins.id_inscripcion] !== null" class="badge bg-primary px-3 py-2 fs-6">
@@ -551,7 +551,7 @@
                   <tbody>
                     <tr *ngFor="let ins of adminEstudiantes; let i = index">
                       <td>{{ i + 1 }}</td>
-                      <td><strong>{{ ins.estudiante?.nombres }} {{ ins.estudiante?.apellidos }}</strong></td>
+                      <td>{{ ins.estudiante?.nombres }} {{ ins.estudiante?.apellidos }}</td>
                       <td>{{ ins.estudiante?.ci }}</td>
                       <td style="text-align: center;">
                         <span *ngIf="adminAsistenciaForm[ins.id || ins.id_inscripcion] === 'presente'" class="badge bg-success px-2 py-1">

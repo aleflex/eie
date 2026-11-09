@@ -17,7 +17,16 @@ class StudentController extends Controller
      */
     public function index()
     {
-        return response()->json(Estudiante::with(['user', 'inscripciones.curso', 'inscripciones.paralelo.curso', 'inscripciones.notas', 'gradoRel', 'armaRel'])->get());
+        $estudiantes = Estudiante::with(['user', 'inscripciones.curso', 'inscripciones.paralelo.curso', 'inscripciones.notas', 'gradoRel', 'armaRel'])
+            ->get()
+            ->sortBy(function ($est) {
+                $nombres = mb_strtolower(trim($est->user->nombres ?? $est->nombres ?? ''), 'UTF-8');
+                $apellidos = mb_strtolower(trim($est->user->apellidos ?? $est->apellidos ?? ''), 'UTF-8');
+                return $nombres . ' ' . $apellidos;
+            }, SORT_NATURAL)
+            ->values();
+
+        return response()->json($estudiantes);
     }
 
     /**
@@ -47,7 +56,15 @@ class StudentController extends Controller
             });
         }
 
-        return response()->json($query->get());
+        $estudiantes = $query->get()
+            ->sortBy(function ($est) {
+                $nombres = mb_strtolower(trim($est->user->nombres ?? $est->nombres ?? ''), 'UTF-8');
+                $apellidos = mb_strtolower(trim($est->user->apellidos ?? $est->apellidos ?? ''), 'UTF-8');
+                return $nombres . ' ' . $apellidos;
+            }, SORT_NATURAL)
+            ->values();
+
+        return response()->json($estudiantes);
     }
 
     /**

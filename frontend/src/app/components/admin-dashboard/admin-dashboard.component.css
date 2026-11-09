@@ -142,7 +142,7 @@ td {
 }
 
 .full-name {
-  font-weight: 600;
+  font-weight: normal;
   color: var(--primary-color);
 }
 

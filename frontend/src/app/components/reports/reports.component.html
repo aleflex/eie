@@ -447,7 +447,7 @@
                         </thead>
                         <tbody>
                           <tr *ngFor="let est of getFilteredStudents(item)">
-                            <td><strong>{{ est.nombre_completo }}</strong></td>
+                            <td>{{ est.nombre_completo }}</td>
                             <td>{{ est.ci }}</td>
                             <td>
                               <span class="badge" [ngClass]="{
@@ -588,7 +588,7 @@
 
             <div *ngIf="getFilteredStudents(item).length > 0">
               <div *ngFor="let est of getFilteredStudents(item)" class="p-2 mb-2 bg-white rounded border text-start small">
-                <div class="fw-bold">{{ est.nombre_completo }}</div>
+                <div>{{ est.nombre_completo }}</div>
                 <div class="text-muted d-flex justify-content-between align-items-center mt-1">
                   <span>CI: {{ est.ci }}</span>
                   <span class="badge" [ngClass]="{
@@ -653,7 +653,7 @@
               <tr *ngFor="let est of allFilteredStudents; let idx = index">
                 <td>{{ idx + 1 }}</td>
                 <td>
-                  <strong>{{ est.nombre_completo }}</strong>
+                  {{ est.nombre_completo }}
                 </td>
                 <td>{{ est.ci }}</td>
                 <td>{{ est.curso_nombre }}</td>
@@ -804,7 +804,7 @@
               <tr *ngFor="let est of pendingStudents; let idx = index">
                 <td>{{ idx + 1 }}</td>
                 <td>
-                  <strong class="text-dark">{{ est.nombre_completo }}</strong>
+                  <span class="text-dark">{{ est.nombre_completo }}</span>
                 </td>
                 <td><span class="badge bg-light text-dark border">{{ est.ci }}</span></td>
                 <td><strong>{{ est.curso_nombre }}</strong></td>
@@ -988,7 +988,7 @@
               <tr *ngFor="let est of allGradesList; let idx = index">
                 <td>{{ idx + 1 }}</td>
                 <td>
-                  <strong>{{ est.nombre_completo }}</strong>
+                  {{ est.nombre_completo }}
                 </td>
                 <td><span class="badge bg-light text-dark border">{{ est.ci }}</span></td>
                 <td>{{ est.curso_nombre }}</td>
